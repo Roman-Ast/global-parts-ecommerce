@@ -1,0 +1,47 @@
+a{
+    text-decoration: none;
+}
+
+#search-catalog-main-container{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+}
+
+#search-result-container-header{
+    font-size: 1.5em;
+    font-weight: 800;
+    margin-bottom: 40px;
+}
+
+.catalog-list-item{
+    display: grid;
+    grid-template-columns: 20% 20% 60%;
+    grid-template-rows: 70px;
+    border-bottom: 2px solid #ccc;
+}
+.catalog-list-item-cell{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    padding-left: 10px;
+}
+.catalog-list-item-brand{
+    font-size: 1.4em;
+    font-weight: 800;
+    color: #0d6efd;
+    text-align: center;
+}
+.catalog-list-item-art{
+    color: #0d6efd;
+    font-size: 0.9em;
+    text-align: center;
+}
+.catalog-list-item-name{
+    font-size: 0.9em;
+    color: #666;
+    text-align: center;
+}

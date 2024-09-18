@@ -1,0 +1,102 @@
+#search-res-main-container{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+#search-res-main-wrapper{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: baseline;
+}
+#search-res-filter{
+    width: 20%;
+}
+#search-part-main-container{
+    width: 76%;
+}
+#search-res-header{
+    font-size: 1.3em;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 10px;
+    font-weight: 500;   
+    height: 80px;
+}
+#search-res-part-header{
+    display: grid;
+    grid-template-columns: 55% 10% 10% 30%;
+    background-color: #d8e6eb;
+}
+.search-res-part-header-item{
+    padding: 10px;
+}
+.search-res-part-header-item:nth-child(1){
+    width: 60%;
+}
+
+.searchResForRequestPartNumberHeader{
+    background-color: #f2efe9;
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding-left: 10px;
+    height: 50px;
+}
+#requestPartNumberContainer,
+#crossContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+.requestPartNumberContainer-item{
+    display: grid;
+    grid-template-columns: 10% 10% 25% 10% 10% 10% 15% 10%;
+    grid-template-rows: minmax(80px, flex);
+    
+}
+#requestPartNumber-brand{
+    font-size: 0.9em;
+    text-align: left;
+    font-weight: bold;
+    padding: 10px;
+}
+#requestPartNumber-partnumber{
+    text-align: center;
+    font-size: 0.8em;
+    color: #aaa;
+}
+#requestPartNumber-name{
+    text-align: left;
+    font-size: 0.9em;
+}
+#requestPartNumber-info{
+    text-align: center;
+}
+#requestPartNumber-delivery{
+    text-align: center;
+}
+#requestPartNumber-count{
+    text-align: center;
+}
+#requestPartNumber-price{
+    text-align: center;
+    font-weight: bold;
+}
+#requestPartNumber-cart{
+    text-align: left;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+.cross-item-countable{
+    display: flex;
+    flex-direction: column;
+    justify-content: baseline;
+    align-items: center;
+}
