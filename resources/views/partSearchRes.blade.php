@@ -15,7 +15,7 @@
     
         <div id="search-part-main-container">
             <div id="search-res-header">
-                Предложения для {{ $searchRes[0]['partnumber'] }}
+                
             </div>
             <div id="search-res-part-header">
                 <div class="search-res-part-header-item">
@@ -37,34 +37,36 @@
                 </div>
             </div>
             <div id="requestPartNumberContainer">
-                @foreach ($searchRes as $searchResItem)
-                    <div class="requestPartNumberContainer-item">
-                        <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-brand">
-                            {{ $searchResItem['brand'] }}
+                @if (count($finalArr['searchedNumber']) > 0)
+                    @foreach ($finalArr['searchedNumber'] as $searchItem)
+                        <div class="requestPartNumberContainer-item">
+                            <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-brand">
+                                {{ $searchItem['brand'] }}
+                            </div>
+                            <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-partnumber">
+                                {{ $searchItem['article'] }}
+                            </div>
+                            <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-name">
+                                {{ $searchItem['name'] }}
+                            </div>
+                            <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-info">
+                                info
+                            </div>
+                            <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-delivery">
+                                {{ $searchItem['deliveryStart']  }}
+                            </div>
+                            <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-count">
+                                {{ $searchItem['stocks']  }}
+                            </div>
+                            <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-price">
+                                {{ $searchItem['price'] }}
+                            </div>
+                            <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-cart">
+                                Купить
+                            </div>
                         </div>
-                        <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-partnumber">
-                            {{ $searchResItem['partnumber'] }}
-                        </div>
-                        <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-name">
-                            {{ $searchResItem['name'] }}
-                        </div>
-                        <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-info">
-                            info
-                        </div>
-                        <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-delivery">
-                            {{ $searchResItem['delivery']  }}
-                        </div>
-                        <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-count">
-                            {{ $searchResItem['count']  }}
-                        </div>
-                        <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-price">
-                            {{ $searchResItem['price'] }}
-                        </div>
-                        <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-cart">
-                            Купить
-                        </div>
-                    </div>
-                @endforeach
+                    @endforeach
+                @endif
             </div>
             <div class="searchResForRequestPartNumber">
                 <div class="searchResForRequestPartNumberHeader">
@@ -72,13 +74,13 @@
                 </div>
             </div>
             <div id="crossesContainer">
-                @foreach ($crosses as $index => $crossItem)
+                @foreach ($finalArr['crosses'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
                     <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-brand">
                         {{ $crossItem['brand'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-partnumber">
-                        {{ $crossItem['partnumber'] }}
+                        {{ $crossItem['article'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity" id="requestPartNumber-name">
                         {{ $crossItem['name'] }}
@@ -87,17 +89,14 @@
                         info
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable" id="requestPartNumber-delivery">
-                        @foreach ($crossItem['stocks'] as $stockItem)
                         
-                            <div class="stock-item">
-                                {{ $stockItem['delivery'] }}
-                            </div>
-                        @endforeach
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable" id="requestPartNumber-count">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item">
-                                2
+                                @foreach ($stockItem['stocks'] as $item)
+                                    
+                                @endforeach
                             </div>
                         @endforeach
                     </div>

@@ -18,24 +18,12 @@ class SparePartController extends Controller
     ];
 
     public $finalArr = [
+
         'searchedNumber' => [
-            'guid' => '',
-            'brand' => '',
-            'partnumber' => '',
-            'name' => '',
-            'stock_id' => '',
-            'price' => '',
-            'count' => '',
-            'multiplicity' => '',
-            'type' => '',
-            'delivery' => '',
-            'extra' => '',
-            'description' => '',
-            'deliveryStart' => '',
-            'deliveryEnd' => ''
+            
         ],
         'crosses' => [
-
+            
         ]
     ];
     
@@ -96,6 +84,10 @@ class SparePartController extends Controller
     {
         $this->searchTreid($request->brand, $request->partnumber);
         $this->searchRossko($request->brand, $request->partnumber, $request->guid);
+        //dd($this->finalArr);
+        return view('partSearchRes', [
+            'finalArr' => $this->finalArr
+        ]);
     }
 
     public function searchTreid (String $brand, String $partnumber) 
@@ -128,10 +120,38 @@ class SparePartController extends Controller
         $html = curl_exec($ch);
         curl_close($ch);
         $result = json_decode($html, true);
-        
+        //dd($result);
         //помещаем найденные позиции в итоговый массив
-
-
+        if (strlen($result['message']) <= 2) {
+            foreach ($result['items'] as $key => $item) {
+                if (strlen($result['message']) <= 2) {
+                    $searched_number_stocks = [];
+    
+                    foreach ($item['stocks'] as $key => $stock) {
+                        if ($stock['quantity_unpacked'] > 0) {
+                            array_push($searched_number_stocks, $stock);
+                        }
+                    }
+                    array_push($this->finalArr['searchedNumber'], [
+                        'guid' => '',
+                        'brand' => $item['brand'],
+                        'article' => $item['article'],
+                        'name' => $item['name'],
+                        'item_id' => $item['id'],
+                        'price' => $item['price'],
+                        'stocks' => $searched_number_stocks,
+                        'multiplicity' => '',
+                        'type' => '',
+                        'delivery' => '',
+                        'extra' => '',
+                        'description' => '',
+                        'deliveryStart' => '',
+                        'deliveryEnd' => ''
+                    ]);
+                }
+            }
+        }
+        //dd($this->finalArr);
 
 
         //поиск кроссов по номеру
@@ -182,17 +202,36 @@ class SparePartController extends Controller
         $html = curl_exec($ch);
         curl_close($ch);
         $result = json_decode($html, true);
-        dd($result);
-
-
+        //dd($result);
+       
         
-        
-
-        
-        
-
-            
-
+        foreach ($result['items'] as $item) {
+            if ($item['price']) {
+                $crosses_stocks = [];
+                foreach ($item['stocks'] as $key => $stock) {
+                    if ($stock['quantity_unpacked'] > 0) {
+                        array_push($crosses_stocks, $stock);
+                    }
+                }
+                
+                if (!empty($crosses_stocks)) {
+                        array_push($this->finalArr['crosses'], [
+                            'id' => $item['id'],
+                            'brand' => $item['brand'],
+                            'article' => $item['article'],
+                            'name' => $item['name'],
+                            'stocks' => $crosses_stocks,
+                            'price' => $item['price'],
+                            'supplier_name' => '',
+                            'delivery_date' => ''  
+                        ]);
+                    
+                    
+                }
+            }
+        }
+        //dd($this->finalArr);
+        return;
     }
 
 
@@ -211,7 +250,7 @@ class SparePartController extends Controller
         $param = array(
             'KEY1' => self::API_KEY1_ROSSKO,
             'KEY2' => self::API_KEY2_ROSSKO,
-            'text' => $partGuid,
+            'text' => $guid,
             'delivery_id' => '000000001',
             'address_id'  => '229881'
         );
@@ -219,13 +258,53 @@ class SparePartController extends Controller
         $query  = new SoapClient($connect['wsdl'], $connect['options']);
         $result = $query->GetSearch($param);
         
-        $part = $result->SearchResult->PartsList->Part;
-       
+        //dd($result);
+        //добавляем данные по искомому номеру в итоговый массив
+        if ($result->SearchResult->success == true) {
+            if ($result->SearchResult->PartsList->Part->stocks) {
+                foreach ($result->SearchResult->PartsList->Part->stocks as $key => $stock) {
+                    array_push($this->finalArr['searchedNumber'], [
+                        'guid' => $result->SearchResult->PartsList->Part->guid,
+                        'brand' => $result->SearchResult->PartsList->Part->brand,
+                        'article' => $result->SearchResult->PartsList->Part->partnumber,
+                        'name' => $result->SearchResult->PartsList->Part->name,
+                        'item_id' => $stock->id,
+                        'price' => $stock->price,
+                        'stocks' => $stock->count,
+                        'multiplicity' => $stock->multiplicity,
+                        'type' => '',
+                        'delivery' => '',
+                        'extra' => '',
+                        'description' => $stock->description,
+                        'deliveryStart' => $stock->deliveryStart,
+                        'deliveryEnd' => $stock->deliveryEnd
+                    ]);
+                }
+            }
+        }
 
-        return view('partSearchRes', [
-            'searchRes' => $partSearchRes,
-            'crosses' => $crosses
-        ]);
+        //добавляем данные по кроссам в итоговый массив
+        if ($result->SearchResult->PartsList->Part->crosses) {
+            foreach ($result->SearchResult->PartsList->Part->crosses->Part as $key => $part_stock) {
+                array_push($this->finalArr['crosses'], [
+                    'id' => $part_stock->guid,
+                    'brand' => $part_stock->brand,
+                    'article' => $part_stock->partnumber,
+                    'name' => $part_stock->name,
+                    'stocks' => $part_stock->stocks,
+                    'price' => '',
+                    'supplier_name' => '',
+                    'delivery_date' => ''  
+                ]);
+            }
+        }
+
+        foreach ($result->SearchResult->PartsList->Part->crosses->Part->stocks as $stockItem) {
+            # code...
+        }
+
+        dd($this->finalArr);
+        return;
     }
 
     public function getCheckoutDetails () {
