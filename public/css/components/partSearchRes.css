@@ -29,14 +29,13 @@
 }
 #search-res-part-header{
     display: grid;
-    grid-template-columns: 55% 10% 10% 30%;
+    grid-template-columns: 60% 10% 8% 22%;
     background-color: #d8e6eb;
 }
 .search-res-part-header-item{
     padding: 10px;
-}
-.search-res-part-header-item:nth-child(1){
-    width: 60%;
+    display: flex;
+    align-items: flex-end;
 }
 
 .searchResForRequestPartNumberHeader{
@@ -57,42 +56,69 @@
 }
 .requestPartNumberContainer-item{
     display: grid;
-    grid-template-columns: 10% 10% 25% 10% 10% 10% 15% 10%;
+    grid-template-columns: 13% 12% 25% 10% 10% 10% 10% 10%;
     grid-template-rows: minmax(80px, flex);
     
 }
-#requestPartNumber-brand{
-    font-size: 0.9em;
+.requestPartNumberContainer-item-entity {
+    margin-top: 9px;
+}
+.requestPartNumber-brand{
+    font-size: 14px;
     text-align: left;
     font-weight: bold;
-    padding: 10px;
+    color: #363636;
+    padding-left: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: baseline;
 }
-#requestPartNumber-partnumber{
-    text-align: center;
-    font-size: 0.8em;
-    color: #aaa;
+.requestPartNumber-partnumber{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: baseline;
+    font-size: 12px;
+    color: #808080;
 }
-#requestPartNumber-name{
+.requestPartNumber-name{
     text-align: left;
-    font-size: 0.9em;
+    font-size: 14px;
 }
-#requestPartNumber-info{
+.requestPartNumber-info{
     text-align: center;
 }
-#requestPartNumber-delivery{
+.requestPartNumber-delivery{
     text-align: center;
+    color: #92b6c8;
+    font-size: 13px;
 }
-#requestPartNumber-count{
-    text-align: center;
+.requestPartNumber-count{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #92b6c8;
 }
-#requestPartNumber-price{
-    text-align: center;
-    font-weight: bold;
+.requestPartNumber-price{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
 }
-#requestPartNumber-cart{
+.stock-item-price{
     text-align: left;
-    font-size: 1.1em;
     font-weight: bold;
+    font-size: 15px;
+    color: #646464;
+}
+.requestPartNumber-cart{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
 }
 .cross-item-countable{
     display: flex;
@@ -100,3 +126,14 @@
     justify-content: baseline;
     align-items: center;
 }
+.stock-item-cart{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.stock-item-cart-qty input{
+    max-width: 70%;
+    margin-left: 5px;
+}
+

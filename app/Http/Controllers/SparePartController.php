@@ -22,8 +22,11 @@ class SparePartController extends Controller
         'searchedNumber' => [
             
         ],
-        'crosses' => [
+        'crosses_on_stock' => [
             
+        ],
+        'crosses_to_order' => [
+
         ]
     ];
     
@@ -84,7 +87,7 @@ class SparePartController extends Controller
     {
         $this->searchTreid($request->brand, $request->partnumber);
         $this->searchRossko($request->brand, $request->partnumber, $request->guid);
-        //dd($this->finalArr);
+        
         return view('partSearchRes', [
             'finalArr' => $this->finalArr
         ]);
@@ -92,7 +95,6 @@ class SparePartController extends Controller
 
     public function searchTreid (String $brand, String $partnumber) 
     {
-        //dd([$brand, $partnumber]);
         $url = "https://api2.autotrade.su/?json";
 
         //поиск по конкретно запрошенному номеру
@@ -120,7 +122,7 @@ class SparePartController extends Controller
         $html = curl_exec($ch);
         curl_close($ch);
         $result = json_decode($html, true);
-        //dd($result);
+        
         //помещаем найденные позиции в итоговый массив
         if (strlen($result['message']) <= 2) {
             foreach ($result['items'] as $key => $item) {
@@ -136,7 +138,7 @@ class SparePartController extends Controller
                         'guid' => '',
                         'brand' => $item['brand'],
                         'article' => $item['article'],
-                        'name' => $item['name'],
+                        'name' => substr($item['name'], 50),
                         'item_id' => $item['id'],
                         'price' => $item['price'],
                         'stocks' => $searched_number_stocks,
@@ -151,8 +153,6 @@ class SparePartController extends Controller
                 }
             }
         }
-        //dd($this->finalArr);
-
 
         //поиск кроссов по номеру
         $request_data_search_crosses = array(
@@ -202,35 +202,40 @@ class SparePartController extends Controller
         $html = curl_exec($ch);
         curl_close($ch);
         $result = json_decode($html, true);
-        //dd($result);
-       
         
+        //помещаем кроссы в наличии в итоговый массив
         foreach ($result['items'] as $item) {
             if ($item['price']) {
                 $crosses_stocks = [];
                 foreach ($item['stocks'] as $key => $stock) {
-                    if ($stock['quantity_unpacked'] > 0) {
-                        array_push($crosses_stocks, $stock);
+                    if ($stock['quantity_unpacked'] > 0 ) {
+                        if ($key == 168102 || $key == 247102 || $key == 262102) {
+                            $crosses_stocks[] = [
+                                'stock_id' => $stock['id'],
+                                'stock_name' => substr($stock['name'], 50),
+                                'stock_legend' => $stock['legend'],
+                                'qty' => $stock['quantity_unpacked'],
+                                'delivery_time' => '1.5-2 часа'
+                            ];
+                        }
                     }
                 }
-                
-                if (!empty($crosses_stocks)) {
-                        array_push($this->finalArr['crosses'], [
+                    if (!empty($crosses_stocks)) {
+                        array_push($this->finalArr['crosses_on_stock'], [
                             'id' => $item['id'],
                             'brand' => $item['brand'],
                             'article' => $item['article'],
-                            'name' => $item['name'],
+                            'name' => substr($item['name'], 50),
                             'stocks' => $crosses_stocks,
-                            'price' => $item['price'],
+                            'price' => round($item['price']),
                             'supplier_name' => '',
-                            'delivery_date' => ''  
+                            'delivery_date' => '',
+                            'delivery_time' => '1.5-2 часа'
                         ]);
-                    
-                    
-                }
+                } 
             }
         }
-        //dd($this->finalArr);
+        
         return;
     }
 
@@ -258,10 +263,10 @@ class SparePartController extends Controller
         $query  = new SoapClient($connect['wsdl'], $connect['options']);
         $result = $query->GetSearch($param);
         
-        //dd($result);
+        
         //добавляем данные по искомому номеру в итоговый массив
         if ($result->SearchResult->success == true) {
-            if ($result->SearchResult->PartsList->Part->stocks) {
+            if (isset($result->SearchResult->PartsList->Part->stocks)) {
                 foreach ($result->SearchResult->PartsList->Part->stocks as $key => $stock) {
                     array_push($this->finalArr['searchedNumber'], [
                         'guid' => $result->SearchResult->PartsList->Part->guid,
@@ -269,7 +274,7 @@ class SparePartController extends Controller
                         'article' => $result->SearchResult->PartsList->Part->partnumber,
                         'name' => $result->SearchResult->PartsList->Part->name,
                         'item_id' => $stock->id,
-                        'price' => $stock->price,
+                        'price' => round($stock->price),
                         'stocks' => $stock->count,
                         'multiplicity' => $stock->multiplicity,
                         'type' => '',
@@ -282,28 +287,63 @@ class SparePartController extends Controller
                 }
             }
         }
-
+        $result = (json_decode(json_encode($result), true));
+        //dd($result);
+        
         //добавляем данные по кроссам в итоговый массив
-        if ($result->SearchResult->PartsList->Part->crosses) {
-            foreach ($result->SearchResult->PartsList->Part->crosses->Part as $key => $part_stock) {
-                array_push($this->finalArr['crosses'], [
-                    'id' => $part_stock->guid,
-                    'brand' => $part_stock->brand,
-                    'article' => $part_stock->partnumber,
-                    'name' => $part_stock->name,
-                    'stocks' => $part_stock->stocks,
-                    'price' => '',
-                    'supplier_name' => '',
-                    'delivery_date' => ''  
-                ]);
+        if ($result['SearchResult']['PartsList']['Part']['crosses']) {
+            foreach ($result['SearchResult']['PartsList']['Part']['crosses']['Part'] as $key => $part_stock) {
+                foreach ($part_stock['stocks'] as $key => $innerArr) {
+                    $crosses_stocks = [];
+                    if (count($innerArr) == 10) {
+                        if (str_contains($innerArr['description'], 'Астана')) {
+                            $crosses_stocks[] = [
+                                'stock_id' => $innerArr['id'],
+                                'stock_name' => $innerArr['description'],
+                                'stock_legend' => '',
+                                'qty' => $innerArr['count'],
+                                'price' => round($innerArr['price']),
+                                'delivery_time' => '1.5-2 часа'
+                            ];
+
+                            array_push($this->finalArr['crosses_on_stock'], [
+                                'guid' => $part_stock['guid'],
+                                'brand' => $part_stock['brand'],
+                                'article' => $part_stock['partnumber'],
+                                'name' => $part_stock['name'],
+                                'price' => round($innerArr['price']),
+                                'stocks' => $crosses_stocks,
+                                'delivery_time' => '1.5-2 часа'
+                            ]);
+                        }
+                    } else {
+                        foreach ($innerArr as $key => $item) {
+                            if (str_contains($item['description'], 'Астана')) {
+                                $crosses_stocks[] = [
+                                    'stock_id' => $item['id'],
+                                    'stock_name' => $item['description'],
+                                    'stock_legend' => '',
+                                    'qty' => $item['count'],
+                                    'price' => round($item['price']),
+                                    'delivery_time' => '1.5-2 часа'
+                                ];
+                                array_push($this->finalArr['crosses_on_stock'], [
+                                    'guid' => $part_stock['guid'],
+                                    'brand' => $part_stock['brand'],
+                                    'article' => $part_stock['partnumber'],
+                                    'name' => $part_stock['name'],
+                                    'price' => round($item['price']),
+                                    'stocks' => $crosses_stocks,
+                                    'delivery_time' => '1.5-2 часа'
+                                ]);
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        foreach ($result->SearchResult->PartsList->Part->crosses->Part->stocks as $stockItem) {
-            # code...
-        }
-
-        dd($this->finalArr);
+        //dd($this->finalArr);
         return;
     }
 
@@ -353,3 +393,37 @@ class SparePartController extends Controller
         dd($result);
     }
 }
+
+
+
+/*
+foreach ($part_stock['stocks'] as $key => $stockItem) {
+                    var_dump(count($stockItem));
+                    if (count($stockItem) == 10) {
+                        
+                        array_push($this->finalArr['crosses']['stocks'],[
+                            'id' => $stockItem['id']
+                        ]);
+                        dd($this->finalArr['crosses']);
+                    } else if (count($stockItem) < 10) {
+                        foreach ($stockItem as $key => $item) {
+                            $this->finalArr['crosses']['stocks'] = [
+                                'id' => $item['id']
+                            ];
+                        }
+                    }
+                    
+                }
+
+foreach ($innerArr as $key => $item) {
+                                if (str_contains($item['description'], 'Астана')) {
+                                    $crosses_stocks[] = [
+                                        'stock_id' => $item['id'],
+                                        'stock_name' => $item['description'],
+                                        'stock_legend' => '',
+                                        'qty' => $item['count']
+                                    ];
+                            }
+}
+                
+*/
