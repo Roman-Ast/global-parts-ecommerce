@@ -15,7 +15,7 @@
     
         <div id="search-part-main-container">
             <div id="search-res-header">
-                Предложения для {{ $searchedPartNumber }}
+                Предложения для {{ $searchedPartNumber }}   
             </div>
             <div id="search-res-part-header">
                 <div class="search-res-part-header-item">
@@ -34,7 +34,7 @@
             @if (count($finalArr['searchedNumber']) > 0)
             <div class="searchResForRequestPartNumber">
                 <div class="searchResForRequestPartNumberHeader">
-                    ЗАПРОШЕННЫЙ АРТИКУЛ
+                    Запрошенный артикул
                 </div>
             </div>
             @endif
@@ -42,6 +42,9 @@
                 @if (count($finalArr['searchedNumber']) > 0)
                     @foreach ($finalArr['searchedNumber'] as $searchItem)
                         <div class="requestPartNumberContainer-item">
+                            <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
+                                {{ $searchItem['supplier_name'] }}
+                            </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                                 {{ $searchItem['brand'] }}
                             </div>
@@ -85,6 +88,9 @@
             <div id="crossesContainer">
                 @foreach ($finalArr['crosses_on_stock'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
+                        {{ $crossItem['supplier_name'] }}
+                    </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                         {{ $crossItem['brand'] }}
                     </div>
@@ -97,7 +103,7 @@
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
                         <img src="/images/info_pic.png" alt="info">
                     </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery parts-on-stock">
                         {{ $crossItem['delivery_time'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
@@ -139,6 +145,9 @@
             <div id="crossesContainer">
                 @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
+                        {{ $crossItem['supplier_name'] }}
+                    </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                         {{ $crossItem['brand'] }}
                     </div>
@@ -185,7 +194,8 @@
             </div>
         </div>
     </div>
-    
-    @include('components.footer')
 </div>
+
+
+@include('components.footer')
 @endsection

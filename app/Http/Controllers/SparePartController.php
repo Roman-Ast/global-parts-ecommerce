@@ -70,39 +70,34 @@ class SparePartController extends Controller
         if (!$result->SearchResult->success) {
             return view('components.nothingFound');
         }
+        $catalog = [];
         if (!is_countable($result->SearchResult->PartsList->Part)) {
-            $finalArr = [];
-
-            array_push($finalArr,[
+            array_push($catalog,[
                 'brand' => $result->SearchResult->PartsList->Part->brand,
                 'partnumber' => $result->SearchResult->PartsList->Part->partnumber,
                 'name' => $result->SearchResult->PartsList->Part->name,
                 'guid' => $result->SearchResult->PartsList->Part->guid
             ]);
-            
-            return view('catalogSearchRes', ['finalArr' => $finalArr]);
         } else {
-            $finalArr = [];
-
             foreach ($result->SearchResult->PartsList->Part as $part) {
-                array_push($finalArr,[
+                array_push($catalog,[
                     'brand' => $part->brand,
                     'partnumber' => $part->partnumber,
                     'name' => $part->name,
                     'guid' => $part->guid
                 ]);
             }
-            
-            return view('catalogSearchRes')->with(['finalArr' => $finalArr]);
         }
+        
+        return view('catalogSearchRes')->with(['finalArr' => $catalog]);
         
     }
 
     public function getSearchedPartAndCrosses (Request $request)
     {
-        $this->searchTreid($request->brand, $request->partnumber);
         $this->searchRossko($request->brand, $request->partnumber, $request->guid);
         $this->searchArmtek($request->brand, $request->partnumber);
+        $this->searchTreid($request->brand, $request->partnumber);
         
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
@@ -157,7 +152,7 @@ class SparePartController extends Controller
                                 'guid' => '',
                                 'brand' => $item['brand'],
                                 'article' => $item['article'],
-                                'name' => substr($item['name'], 50, -1),
+                                'name' => substr($item['name'], 0, 60),
                                 'item_id' => $item['id'],
                                 'price' => $item['price'],
                                 'stocks' => $searched_number_stocks,
@@ -165,9 +160,10 @@ class SparePartController extends Controller
                                 'type' => '',
                                 'delivery' => '',
                                 'extra' => '',
-                                'description' => '',
+                                'description' => 'trd',
                                 'deliveryStart' => '',
-                                'deliveryEnd' => ''
+                                'deliveryEnd' => '',
+                                'supplier_name' => 'trd'
                             ]);
                         }
                     }
@@ -235,10 +231,11 @@ class SparePartController extends Controller
                             if ($key == 168102 || $key == 247102 || $key == 262102) {
                                 $crosses_stocks[] = [
                                     'stock_id' => $stock['id'],
-                                    'stock_name' => substr($stock['name'], 50, -1),
+                                    'stock_name' => substr($stock['name'], 0, 60),
                                     'stock_legend' => $stock['legend'],
                                     'qty' => $stock['quantity_unpacked'],
-                                    'delivery_time' => '1.5-2 часа'
+                                    'delivery_time' => '1.5-2 часа',
+                                    'supplier_name' => 'trd'
                                 ];
                             }
                         }
@@ -248,10 +245,10 @@ class SparePartController extends Controller
                             'id' => $item['id'],
                             'brand' => $item['brand'],
                             'article' => $item['article'],
-                            'name' => substr($item['name'], 50, -1),
+                            'name' => substr($item['name'], 0, 60),
                             'stocks' => $crosses_stocks,
                             'price' => round($item['price']),
-                            'supplier_name' => '',
+                            'supplier_name' => 'trd',
                             'delivery_date' => '',
                             'delivery_time' => '1.5-2 часа'
                         ]);   
@@ -303,11 +300,13 @@ class SparePartController extends Controller
                             'extra' => '',
                             'description' => $stock['description'],
                             'deliveryStart' => $stock['deliveryStart'],
-                            'deliveryEnd' => $stock['deliveryEnd']
+                            'deliveryEnd' => $stock['deliveryEnd'],
+                            'supplier_name' => 'rssk',
                         ]);
                     }
                 } else {
                     foreach ($result['SearchResult']['PartsList']['Part']['stocks']['stock'] as $stockItem) {
+                        dd($stockItem);
                         array_push($this->finalArr['searchedNumber'], [
                             'guid' => $result['SearchResult']['PartsList']['Part']['guid'],
                             'brand' => $result['SearchResult']['PartsList']['Part']['brand'],
@@ -321,7 +320,8 @@ class SparePartController extends Controller
                             'extra' => '',
                             'description' => $stockItem['description'],
                             'deliveryStart' => $stockItem['deliveryStart'],
-                            'deliveryEnd' => $stockItem['deliveryEnd']
+                            'deliveryEnd' => $stockItem['deliveryEnd'],
+                            'supplier_name' => 'rssk'
                         ]);
                     }
                 }
@@ -329,7 +329,7 @@ class SparePartController extends Controller
         }
         
         //добавляем данные по кроссам в итоговый массив
-        if ($result['SearchResult']['PartsList']['Part']['crosses']) {
+        if (array_key_exists('crosse',$result['SearchResult']['PartsList']['Part'])) {
             //dd($result['SearchResult']['PartsList']['Part']['crosses']);
             $firstKey = array_key_first($result['SearchResult']['PartsList']['Part']['crosses']['Part']);
             $firstElem = $result['SearchResult']['PartsList']['Part']['crosses']['Part'][$firstKey];
@@ -347,7 +347,7 @@ class SparePartController extends Controller
                                     'stock_legend' => '',
                                     'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
-                                    'delivery_time' => '1.5-2 часа'
+                                    'delivery_time' => '1.5-2 часа',
                                 ];
     
                                 array_push($this->finalArr['crosses_on_stock'], [
@@ -357,7 +357,8 @@ class SparePartController extends Controller
                                     'name' => $part_stock['name'],
                                     'price' => round($innerArr['price']),
                                     'stocks' => $crosses_stocks,
-                                    'delivery_time' => '1.5-2 часа'
+                                    'delivery_time' => '1.5-2 часа',
+                                    'supplier_name' => 'rssk',
                                 ]);
                             } elseif (str_contains($innerArr['description'], 'Павлодар') || str_contains($innerArr['description'], 'Караганда') ) {
                                 $crosses_stocks[] = [
@@ -376,7 +377,8 @@ class SparePartController extends Controller
                                     'name' => $part_stock['name'],
                                     'price' => round($innerArr['price']),
                                     'stocks' => $crosses_stocks,
-                                    'delivery_time' => $innerArr['deliveryEnd']
+                                    'delivery_time' => $innerArr['deliveryEnd'],
+                                    'supplier_name' => 'rssk',
                                 ]);
                             }
                         } else {
@@ -398,7 +400,8 @@ class SparePartController extends Controller
                                         'name' => $part_stock['name'],
                                         'price' => round($item['price']),
                                         'stocks' => $crosses_stocks,
-                                        'delivery_time' => '1.5-2 часа'
+                                        'delivery_time' => '1.5-2 часа',
+                                        'supplier_name' => 'rssk',
                                     ]);
                                 } elseif (str_contains($item['description'], 'Павлодар') || str_contains($item['description'], 'Караганда') ) {
                                     $crosses_stocks[] = [
@@ -416,7 +419,8 @@ class SparePartController extends Controller
                                         'name' => $part_stock['name'],
                                         'price' => round($item['price']),
                                         'stocks' => $crosses_stocks,
-                                        'delivery_time' => $item['deliveryEnd']
+                                        'delivery_time' => $item['deliveryEnd'],
+                                        'supplier_name' => 'rssk',
                                     ]);
                                 }
                             }
@@ -424,7 +428,6 @@ class SparePartController extends Controller
                     }
                 }
             } else {
-                
                     foreach ($result['SearchResult']['PartsList']['Part']['crosses']['Part']['stocks'] as $key => $innerArr) {
                         $crosses_stocks = [];
                         if (count($innerArr) == 10) {
@@ -445,7 +448,8 @@ class SparePartController extends Controller
                                     'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
                                     'price' => round($innerArr['price']),
                                     'stocks' => $crosses_stocks,
-                                    'delivery_time' => '1.5-2 часа'
+                                    'delivery_time' => '1.5-2 часа',
+                                    'supplier_name' => 'rssk',
                                 ]);
                             } elseif (str_contains($innerArr['description'], 'Павлодар') || str_contains($innerArr['description'], 'Караганда') ) {
                                 $crosses_stocks[] = [
@@ -464,7 +468,8 @@ class SparePartController extends Controller
                                     'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
                                     'price' => round($innerArr['price']),
                                     'stocks' => $crosses_stocks,
-                                    'delivery_time' => $innerArr['deliveryEnd']
+                                    'delivery_time' => $innerArr['deliveryEnd'],
+                                    'supplier_name' => 'rssk',
                                 ]);
                             }
                         } else {
@@ -486,7 +491,8 @@ class SparePartController extends Controller
                                         'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
                                         'price' => round($item['price']),
                                         'stocks' => $crosses_stocks,
-                                        'delivery_time' => '1.5-2 часа'
+                                        'delivery_time' => '1.5-2 часа',
+                                        'supplier_name' => 'rssk',
                                     ]);
                                 } elseif (str_contains($item['description'], 'Павлодар') || str_contains($item['description'], 'Караганда') ) {
                                     $crosses_stocks[] = [
@@ -504,7 +510,8 @@ class SparePartController extends Controller
                                         'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
                                         'price' => round($item['price']),
                                         'stocks' => $crosses_stocks,
-                                        'delivery_time' => $item['deliveryEnd']
+                                        'delivery_time' => $item['deliveryEnd'],
+                                        '   ' => 'rssk',
                                     ]);
                                 }
                             }
@@ -521,9 +528,6 @@ class SparePartController extends Controller
 
     public function searchArmtek(String $brand, String $partnumber)
     {
-        error_reporting(-1);
-        ini_set('display_errors', 1);
-
         require_once '../config.php';
         require_once '../autoloader.php';
 
@@ -588,7 +592,8 @@ class SparePartController extends Controller
                                 'qty' => $crossItem->RVALUE,
                                 'price' => $crossItem->PRICE
                             ]
-                        ]
+                            ],
+                        'supplier_name' => 'rmtk',
                     ]);
                 } else {
                     break;

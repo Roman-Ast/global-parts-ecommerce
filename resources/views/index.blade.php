@@ -5,11 +5,13 @@
 
 
 @section('content')
-    
+    @include('components.header')
+
     <div id="main-container" class="container">
-        @include('components.header')
+
     </div>
-    
+
+    @include('components.footer')
 @endsection
 
 
