@@ -7,6 +7,7 @@
 
 <div id="search-catalog-main-container" class="container">
     @include('components.header')
+    
     <div id="search-result-container-header">
         Результаты поиска
     </div>
@@ -15,7 +16,7 @@
         @foreach ($finalArr as $index => $part)
         <form method="post" action="{{ route('getPart') }}">
             @csrf
-        <button type="submit">
+        <button type="submit" class="btn btn-light w-100">
             <div class="catalog-list-item">
                 <div class="catalog-list-item-brand catalog-list-item-cell">
                     {{ $part['brand'] }}
@@ -35,4 +36,6 @@
         @endforeach
     </div>
 </div>
+
+@include('components.footer')
 @endsection

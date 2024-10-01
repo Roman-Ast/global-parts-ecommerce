@@ -3,10 +3,10 @@
 
         <form action="/getCatalog" method="GET " enctype="multipart/form-data" id="search-bar-container">
             <div id="search-button-container">
-                <button type="submit" class="btn btn-primary btn-lg" id="search-btn">Найтии</button>
+                <button type="submit" class="btn btn-primary btn-lg" id="search-btn">Найти</button>
             </div>
             <div class="input-group input-group-lg">
-                <input type="text" name="partNumber" id="searchBarInput" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg" placeholder="введите VIN код авто или партномер детали">
+                <input type="text" name="partNumber" id="searchBarInput" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg" placeholder="введите VIN код авто или партномер детали" required>
             </div>
         </form>
     

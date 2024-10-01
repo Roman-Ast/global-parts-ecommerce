@@ -9,4 +9,4 @@ Route::get('/', function () {
 
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);
 Route::post('/getPart/', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
-Route::get('/searchTreid', [SparePartController::class, 'searchTreid']);
+//Route::get('/', [SparePartController::class, 'searchTreid']);

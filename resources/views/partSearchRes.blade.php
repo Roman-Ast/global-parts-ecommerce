@@ -15,7 +15,7 @@
     
         <div id="search-part-main-container">
             <div id="search-res-header">
-                
+                Предложения для {{ $searchedPartNumber }}
             </div>
             <div id="search-res-part-header">
                 <div class="search-res-part-header-item">
@@ -31,11 +31,13 @@
                     Цена
                 </div>
             </div>
+            @if (count($finalArr['searchedNumber']) > 0)
             <div class="searchResForRequestPartNumber">
                 <div class="searchResForRequestPartNumberHeader">
                     ЗАПРОШЕННЫЙ АРТИКУЛ
                 </div>
             </div>
+            @endif
             <div id="requestPartNumberContainer">
                 @if (count($finalArr['searchedNumber']) > 0)
                     @foreach ($finalArr['searchedNumber'] as $searchItem)
@@ -127,8 +129,63 @@
                 </div>
                 @endforeach
             </div>
+            @if (count($finalArr['crosses_to_order']) > 0)
+            <div class="searchResForRequestPartNumber">
+                <div class="searchResForRequestPartNumberHeader">
+                    Аналоги на заказ
+                </div>
+            </div>
+            @endif
+            <div id="crossesContainer">
+                @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
+                <div class="requestPartNumberContainer-item">
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
+                        {{ $crossItem['brand'] }}
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-partnumber">
+                        {{ $crossItem['article'] }}
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-name">
+                        {{ $crossItem['name'] }}
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
+                        <img src="/images/info_pic.png" alt="info">
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
+                        {{ date('d.m.y',strtotime($crossItem['delivery_time'])) }}
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
+                        @foreach ($crossItem['stocks'] as $stockItem)
+                            <div class="stock-item stock-item-qty">
+                                {{ $stockItem['qty'] }}
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
+                        @foreach ($crossItem['stocks'] as $stockItem)
+                            <div class="stock-item stock-item-price">
+                                {{ $crossItem['price'] }}тг.
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
+                        @foreach ($crossItem['stocks'] as $stockItem)
+                            <div class="stock-item-cart">
+                                <div class="stock-item-cart-btn">
+                                    <img src="/images/cart_pic_20.png" alt="cart">
+                                </div>
+                                <div class="stock-item-cart-qty">
+                                    <input type='number' value="1" class="form-control">
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endforeach
+            </div>
         </div>
     </div>
     
+    @include('components.footer')
 </div>
 @endsection

@@ -14,6 +14,8 @@
         <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/components/notfound.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
         <script src="{{ URL::asset('js/jquery.min.js') }}"></script>
         <!--<script src="{{ URL::asset('js/actions/getSearch.js') }}" type="text/javascript"></script>-->
