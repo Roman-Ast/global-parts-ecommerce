@@ -109,7 +109,11 @@
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item stock-item-qty">
-                                {{ $stockItem['qty'] }}
+                                @if ($stockItem['qty'] > 10)
+                                    >10
+                                @else
+                                    {{ $stockItem['qty'] }}
+                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -166,7 +170,11 @@
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item stock-item-qty">
-                                {{ $stockItem['qty'] }}
+                                @if ($stockItem['qty'] > 10)
+                                    >10
+                                @else
+                                    {{ $stockItem['qty'] }}
+                                @endif
                             </div>
                         @endforeach
                     </div>

@@ -22,6 +22,8 @@ class SparePartController extends Controller
     const ARMTEK_SBIT_ORG = '8000';
     const ARMTEK_CUSTOMER = '43387356'; 
     const ARMTEK_STOCK_ASTANA = 'MOV0005505';
+    const TISS_API_KEY = 'QXO7oqkH1_aifhVdi8W1GiMx4SEwzkPMTdwYjgcktOjW70aX_ve_xGDC7bTRBmQ37rH1k2ETsA3ZdCIfja0yHosRNNGwaYGGXuXFR6U4TADCRZF6lLvyjfKcg-zS5y4xQT4SNpi86vVPN5zOEFdhiZfRaKGh_U1MfHJz9IpAsyuc0ZHDHRaw0dO1tDHgQw2N4uPP0sq0kStch43q9zfZKhMsqTSNtgGVBnGRzaCkJzzuaXmfrL4Ot5ODBJ3x1tXnyVGW-p5IeZXOtIfeRWZMSnw3luiMztyY1m7p84r_qWJeVvr1J_3rR0R1EP7qAHjvX_QEnud83oqMCJppN4RCnD4sb5_fkylpyrEyuXRVvqviPx2-xiNhBwwLLkt67cNaZYBbtcaLcaZT5apXtVFW4B0IcwMHyqt_Oy3USMl3bkiBiJ7fGW6bOBidnoRCE6OqS1JTWKCkAZEoqY8rOX4A7p8YZTkamldmGbzf7sveBYhPSJvwmaUVWvzju6iEr7cB';
+    const SHATEM_API_KEY = '{a9000264-381b-4c69-9af4-51fdd93b8eda}';
 
     public $partNumber = '';
 
@@ -41,8 +43,9 @@ class SparePartController extends Controller
 
     public function catalogSearch(Request $request) 
     {
-        $partNumber = trim($request->partNumber);   
-       
+        $partNumber = trim($request->partNumber); 
+
+        //поиск брэндлиста по каталогам росско
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
             'options' => array(
@@ -60,44 +63,87 @@ class SparePartController extends Controller
         );
         
         $query  = new SoapClient($connect['wsdl'], $connect['options']);
-
+        
         try {
             $result = $query->GetSearch($param);
+            
         } catch (\Throwable $th) {
             return view('components.hostError');
         }
-        
-        if (!$result->SearchResult->success) {
-            return view('components.nothingFound');
-        }
-        $catalog = [];
-        if (!is_countable($result->SearchResult->PartsList->Part)) {
-            array_push($catalog,[
-                'brand' => $result->SearchResult->PartsList->Part->brand,
-                'partnumber' => $result->SearchResult->PartsList->Part->partnumber,
-                'name' => $result->SearchResult->PartsList->Part->name,
-                'guid' => $result->SearchResult->PartsList->Part->guid
-            ]);
-        } else {
-            foreach ($result->SearchResult->PartsList->Part as $part) {
+        //dd($result->SearchResult);
+        if ($result->SearchResult->success) {
+            $catalog = [];
+
+            if (!is_countable($result->SearchResult->PartsList->Part)) {
                 array_push($catalog,[
-                    'brand' => $part->brand,
-                    'partnumber' => $part->partnumber,
-                    'name' => $part->name,
-                    'guid' => $part->guid
+                    'brand' => $result->SearchResult->PartsList->Part->brand,
+                    'partnumber' => $result->SearchResult->PartsList->Part->partnumber,
+                    'name' => $result->SearchResult->PartsList->Part->name,
+                    'guid' => $result->SearchResult->PartsList->Part->guid,
+                    'rossko_need_to_search' => true
+                ]);
+            } else {
+                foreach ($result->SearchResult->PartsList->Part as $part) {
+                    array_push($catalog,[
+                        'brand' => $part->brand,
+                        'partnumber' => $part->partnumber,
+                        'name' => $part->name,
+                        'guid' => $part->guid,
+                        'rossko_need_to_search' => true
+                    ]);
+                }
+            }
+            
+            return view('catalogSearchRes')->with(['finalArr' => $catalog]);
+        } else {
+            $ch1 = curl_init(); 
+        
+            $fields = array("JSONparameter" => "{'Article': '".$partNumber."'}");
+            
+            curl_setopt($ch1, CURLOPT_URL, "api.tmparts.ru/api/ArticleBrandList?".http_build_query($fields)); 
+            curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
+            
+            $headers = array(         
+            'Authorization: Bearer '. self::TISS_API_KEY
+            ); 
+            curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+            
+            try {
+                $response = json_decode(curl_exec($ch1),true);
+            } catch (\Throwable $th) {
+                return view('components.hostError');
+            }
+            
+            if (!array_key_exists('BrandList', $response)) {
+                return view('components.nothingFound');
+            }
+            $catalog = [];
+            
+            foreach ($response['BrandList'] as $item) {
+                array_push($catalog,[
+                    'brand' => $item['BrandName'],
+                    'partnumber' => $response['Article'],
+                    'name' => '',
+                    'guid' => '',
+                    'rossko_need_to_search' => false
                 ]);
             }
+            if(empty($catalog)) {
+                return view('components.nothingFound');
+            }
+            return view('catalogSearchRes')->with(['finalArr' => $catalog]);
         }
-        
-        return view('catalogSearchRes')->with(['finalArr' => $catalog]);
-        
     }
 
     public function getSearchedPartAndCrosses (Request $request)
     {
-        $this->searchRossko($request->brand, $request->partnumber, $request->guid);
+        if($request->rossko_need_to_search) {
+            $this->searchRossko($request->brand, $request->partnumber, $request->guid);
+        }
         $this->searchArmtek($request->brand, $request->partnumber);
         $this->searchTreid($request->brand, $request->partnumber);
+        //$this->searchTiss($request->brand, $request->partnumber);
+        //$this->searchShatem($request->brand, $request->partnumber);
         
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
@@ -148,23 +194,25 @@ class SparePartController extends Controller
                                     array_push($searched_number_stocks, $stock);
                                 }
                             }
-                            array_push($this->finalArr['searchedNumber'], [
-                                'guid' => '',
-                                'brand' => $item['brand'],
-                                'article' => $item['article'],
-                                'name' => substr($item['name'], 0, 60),
-                                'item_id' => $item['id'],
-                                'price' => $item['price'],
-                                'stocks' => $searched_number_stocks,
-                                'multiplicity' => '',
-                                'type' => '',
-                                'delivery' => '',
-                                'extra' => '',
-                                'description' => 'trd',
-                                'deliveryStart' => '',
-                                'deliveryEnd' => '',
-                                'supplier_name' => 'trd'
-                            ]);
+                            if(!empty($searched_number_stocks)) {
+                                array_push($this->finalArr['searchedNumber'], [
+                                    'guid' => '',
+                                    'brand' => $item['brand'],
+                                    'article' => $item['article'],
+                                    'name' => substr($item['name'], 0, 60),
+                                    'item_id' => $item['id'],
+                                    'price' => $item['price'],
+                                    'stocks' => $searched_number_stocks,
+                                    'multiplicity' => '',
+                                    'type' => '',
+                                    'delivery' => '',
+                                    'extra' => '',
+                                    'description' => 'trd',
+                                    'deliveryStart' => '',
+                                    'deliveryEnd' => '',
+                                    'supplier_name' => 'trd'
+                                ]);
+                            }
                         }
                     }
             }
@@ -224,7 +272,7 @@ class SparePartController extends Controller
             }
             //помещаем кроссы в наличии в итоговый массив
             foreach ($result['items'] as $item) {
-                if ($item['price']) {
+                if (array_key_exists('price', $item)) {
                     $crosses_stocks = [];
                     foreach ($item['stocks'] as $key => $stock) {
                         if ($stock['quantity_unpacked'] > 0 ) {
@@ -255,7 +303,7 @@ class SparePartController extends Controller
                     } 
                 }
             }
-        
+        //dd($this->finalArr);
         return;
     }
 
@@ -278,35 +326,41 @@ class SparePartController extends Controller
         );
         
         $query  = new SoapClient($connect['wsdl'], $connect['options']);
-        $result = $query->GetSearch($param);
+        try {
+            $result = $query->GetSearch($param);
+        } catch (\Throwable $th) {
+            return view('components.hostError');
+        }
         
         $result = (json_decode(json_encode($result), true));
         //dd($result);
+
+        if (!$result['SearchResult']['success']) {
+            return;
+        }
+
         //добавляем данные по искомому номеру в итоговый массив
         if ($result['SearchResult']['success'] == true) {
             if (isset($result['SearchResult']['PartsList']['Part']['stocks'])) {
-                if (count($result['SearchResult']['PartsList']['Part']['stocks']) == 10) {
-                    foreach ($result['SearchResult']['PartsList']['Part']['stocks'] as $key => $stock) {
+                if (count($result['SearchResult']['PartsList']['Part']['stocks']['stock']) == 10) {
                         array_push($this->finalArr['searchedNumber'], [
-                            'guid' => $result->SearchResult->PartsList->Part->guid,
-                            'brand' => $result->SearchResult->PartsList->Part->brand,
-                            'article' => $result->SearchResult->PartsList->Part->partnumber,
-                            'name' => $result->SearchResult->PartsList->Part->name,
-                            'price' => round($stock['price']),
-                            'stocks' => $stock['count'],
-                            'multiplicity' => $stock['multiplicity'],
+                            'guid' => $result['SearchResult']['PartsList']['Part']['guid'],
+                            'brand' => $result['SearchResult']['PartsList']['Part']['brand'],
+                            'article' => $result['SearchResult']['PartsList']['Part']['partnumber'],
+                            'name' => $result['SearchResult']['PartsList']['Part']['name'],
+                            'price' => round($result['SearchResult']['PartsList']['Part']['stocks']['stock']['price']),
+                            'stocks' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['count'],
+                            'multiplicity' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['multiplicity'],
                             'type' => '',
-                            'delivery' => $stock['delivery'],
+                            'delivery' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['delivery'],
                             'extra' => '',
-                            'description' => $stock['description'],
-                            'deliveryStart' => $stock['deliveryStart'],
-                            'deliveryEnd' => $stock['deliveryEnd'],
+                            'description' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['description'],
+                            'deliveryStart' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['deliveryStart'],
+                            'deliveryEnd' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['deliveryEnd'],
                             'supplier_name' => 'rssk',
                         ]);
-                    }
                 } else {
                     foreach ($result['SearchResult']['PartsList']['Part']['stocks']['stock'] as $stockItem) {
-                        dd($stockItem);
                         array_push($this->finalArr['searchedNumber'], [
                             'guid' => $result['SearchResult']['PartsList']['Part']['guid'],
                             'brand' => $result['SearchResult']['PartsList']['Part']['brand'],
@@ -329,7 +383,7 @@ class SparePartController extends Controller
         }
         
         //добавляем данные по кроссам в итоговый массив
-        if (array_key_exists('crosse',$result['SearchResult']['PartsList']['Part'])) {
+        if (array_key_exists('crosses',$result['SearchResult']['PartsList']['Part'])) {
             //dd($result['SearchResult']['PartsList']['Part']['crosses']);
             $firstKey = array_key_first($result['SearchResult']['PartsList']['Part']['crosses']['Part']);
             $firstElem = $result['SearchResult']['PartsList']['Part']['crosses']['Part'][$firstKey];
@@ -531,8 +585,6 @@ class SparePartController extends Controller
         require_once '../config.php';
         require_once '../autoloader.php';
 
-        
-
         try {
 
             // init configuration 
@@ -577,6 +629,9 @@ class SparePartController extends Controller
             // in case of json
             $json_responce_data = $response->json();
             //dd($json_responce_data);
+            if(gettype($json_responce_data) == 'array' && property_exists($json_responce_data->RESP, 'MSG')){
+                return;
+            }
             foreach ($json_responce_data->RESP as $key => $crossItem) {
                 if ($crossItem->KEYZAK == 'MOV0005505' || $crossItem->KEYZAK == 'MOV0009026') {
                     array_push($this->finalArr['crosses_on_stock'], [
@@ -607,6 +662,62 @@ class SparePartController extends Controller
 
         }
         return;
+    }
+
+    public function searchShatem(String $brand, String $partnumber)
+    {
+        $request_params = [
+            'ApiKey' => '{a9000264-381b-4c69-9af4-51fdd93b8eda}'
+        ];
+        $ch = curl_init('https://api.shate-m.kz/api/v1/auth/loginbyapikey/');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($request_params));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+        
+        $access_token = json_decode($response)->access_token;
+        //dd($access_token);
+        $request_params1 = [
+            'Authorization: Bearer' => $access_token,
+            'articleId' => $partnumber
+        ];
+        //dd(http_build_query($request_params1));
+        $ch1 = curl_init('https://api.shate-m.kz/api/v1/articles/search/Authorization: Bearer'.$access_token);
+        curl_setopt($ch1, CURLOPT_POST, true);
+        curl_setopt($ch1, CURLOPT_POSTFIELDS, http_build_query($request_params1));
+        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
+
+        
+        curl_close($ch1);
+        $response = curl_exec($ch1);
+        dd($response);
+    }
+
+    public function searchTiss(String $brand, String $partnumber)
+    {
+        $ch1 = curl_init(); 
+        //�������� ������� ������� JSON ��� ������ ���� ��������� ������� �� ��������� ������. ��������: {'Article': 'OC727'}
+        $fields = array("JSONparameter" => "{'Brand': '".$brand."', 'Article': '".$partnumber."', 'is_main_warehouse': ".'0'." }" );
+        
+        //URL ������ � �����������
+        curl_setopt($ch1, CURLOPT_URL, "api.tmparts.ru/api/StockByArticle?".http_build_query($fields));
+        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
+        //�����������
+        $headers = array(         
+        'Authorization: Bearer '. self::TISS_API_KEY      //$ApiKey ��������� � ����� 'ApiKey.txt'
+        ); 
+        curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+        
+        //------------------------------------------------------		
+        //1. �������� ��� ��������� ������ ��� ��������� ������
+        //------------------------------------------------------
+        $Art_List_With_Prices = json_decode(curl_exec($ch1),true);   
+
+
+
+        dd($Art_List_With_Prices);
     }
 
     public function getCheckoutDetails () {
@@ -655,3 +766,323 @@ class SparePartController extends Controller
         dd($result);
     }
 }
+
+
+
+
+
+
+/**/
+/*
+$connect = array(
+            'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
+            'options' => array(
+                'connection_timeout' => 1,
+                'trace' => true
+            )
+        );
+        
+        $param = array(
+            'KEY1' => self::API_KEY1_ROSSKO,
+            'KEY2' => self::API_KEY2_ROSSKO,
+            'text' => $partNumber,
+            'delivery_id' => '000000001',
+            'address_id'  => '229881'
+        );
+        
+        $query  = new SoapClient($connect['wsdl'], $connect['options']);
+
+        try {
+            $result = $query->GetSearch($param);
+        } catch (\Throwable $th) {
+            return view('components.hostError');
+        }
+        
+        if (!$result->SearchResult->success) {
+            return view('components.nothingFound');
+        }
+        $catalog = [];
+        if (!is_countable($result->SearchResult->PartsList->Part)) {
+            array_push($catalog,[
+                'brand' => $result->SearchResult->PartsList->Part->brand,
+                'partnumber' => $result->SearchResult->PartsList->Part->partnumber,
+                'name' => $result->SearchResult->PartsList->Part->name,
+                'guid' => $result->SearchResult->PartsList->Part->guid
+            ]);
+        } else {
+            foreach ($result->SearchResult->PartsList->Part as $part) {
+                array_push($catalog,[
+                    'brand' => $part->brand,
+                    'partnumber' => $part->partnumber,
+                    'name' => $part->name,
+                    'guid' => $part->guid
+                ]);
+            }
+        }
+*/
+
+/*
+public function searchRossko(String $brand, String $partNumber)
+    {   
+        $connect = array(
+            'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
+            'options' => array(
+                'connection_timeout' => 1,
+                'trace' => true
+            )
+        );
+        
+        $param = array(
+            'KEY1' => self::API_KEY1_ROSSKO,
+            'KEY2' => self::API_KEY2_ROSSKO,
+            'text' => $partNumber,
+            'delivery_id' => '000000001',
+            'address_id'  => '229881'
+        );
+        
+        $query  = new SoapClient($connect['wsdl'], $connect['options']);
+        $result = $query->GetSearch($param);
+        
+        $result = (json_decode(json_encode($result), true));
+        //dd($result);
+        //добавляем данные по искомому номеру в итоговый массив
+        if ($result['SearchResult']['success'] == true) {
+            if (isset($result['SearchResult']['PartsList']['Part']['stocks'])) {
+                if (count($result['SearchResult']['PartsList']['Part']['stocks']['stock']) == 10) {
+                        array_push($this->finalArr['searchedNumber'], [
+                            'guid' => $result['SearchResult']['PartsList']['Part']['guid'],
+                            'brand' => $result['SearchResult']['PartsList']['Part']['brand'],
+                            'article' => $result['SearchResult']['PartsList']['Part']['partnumber'],
+                            'name' => $result['SearchResult']['PartsList']['Part']['name'],
+                            'price' => round($result['SearchResult']['PartsList']['Part']['stocks']['stock']['price']),
+                            'stocks' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['count'],
+                            'multiplicity' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['multiplicity'],
+                            'type' => '',
+                            'delivery' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['delivery'],
+                            'extra' => '',
+                            'description' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['description'],
+                            'deliveryStart' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['deliveryStart'],
+                            'deliveryEnd' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['deliveryEnd'],
+                            'supplier_name' => 'rssk',
+                        ]);
+                } else {
+                    foreach ($result['SearchResult']['PartsList']['Part']['stocks']['stock'] as $stockItem) {
+                        array_push($this->finalArr['searchedNumber'], [
+                            'guid' => $result['SearchResult']['PartsList']['Part']['guid'],
+                            'brand' => $result['SearchResult']['PartsList']['Part']['brand'],
+                            'article' => $result['SearchResult']['PartsList']['Part']['partnumber'],
+                            'name' => $result['SearchResult']['PartsList']['Part']['name'],
+                            'price' => round($stockItem['price']),
+                            'stocks' => $stockItem['count'],
+                            'multiplicity' => $stockItem['multiplicity'],
+                            'type' => '',
+                            'delivery' => $stockItem['delivery'],
+                            'extra' => '',
+                            'description' => $stockItem['description'],
+                            'deliveryStart' => $stockItem['deliveryStart'],
+                            'deliveryEnd' => $stockItem['deliveryEnd'],
+                            'supplier_name' => 'rssk'
+                        ]);
+                    }
+                }
+            }
+        }
+        
+        //добавляем данные по кроссам в итоговый массив
+        if (array_key_exists('crosses',$result['SearchResult']['PartsList']['Part'])) {
+            //dd($result['SearchResult']['PartsList']['Part']['crosses']);
+            $firstKey = array_key_first($result['SearchResult']['PartsList']['Part']['crosses']['Part']);
+            $firstElem = $result['SearchResult']['PartsList']['Part']['crosses']['Part'][$firstKey];
+            
+            //dd($firstElem);
+            if (is_array($firstElem)) {
+                foreach ($result['SearchResult']['PartsList']['Part']['crosses']['Part'] as $key => $part_stock) {
+                    foreach ($part_stock['stocks'] as $key => $innerArr) {
+                        $crosses_stocks = [];
+                        if (count($innerArr) == 10) {
+                            if (str_contains($innerArr['description'], 'Астана')) {
+                                $crosses_stocks[] = [
+                                    'stock_id' => $innerArr['id'],
+                                    'stock_name' => $innerArr['description'],
+                                    'stock_legend' => '',
+                                    'qty' => $innerArr['count'],
+                                    'price' => round($innerArr['price']),
+                                    'delivery_time' => '1.5-2 часа',
+                                ];
+    
+                                array_push($this->finalArr['crosses_on_stock'], [
+                                    'guid' => $part_stock['guid'],
+                                    'brand' => $part_stock['brand'],
+                                    'article' => $part_stock['partnumber'],
+                                    'name' => $part_stock['name'],
+                                    'price' => round($innerArr['price']),
+                                    'stocks' => $crosses_stocks,
+                                    'delivery_time' => '1.5-2 часа',
+                                    'supplier_name' => 'rssk',
+                                ]);
+                            } elseif (str_contains($innerArr['description'], 'Павлодар') || str_contains($innerArr['description'], 'Караганда') ) {
+                                $crosses_stocks[] = [
+                                    'stock_id' => $innerArr['id'],
+                                    'stock_name' => $innerArr['description'],
+                                    'stock_legend' => '',
+                                    'qty' => $innerArr['count'],
+                                    'price' => round($innerArr['price']),
+                                    'delivery_time' => $innerArr['deliveryEnd']
+                                ];
+    
+                                array_push($this->finalArr['crosses_to_order'], [
+                                    'guid' => $part_stock['guid'],
+                                    'brand' => $part_stock['brand'],
+                                    'article' => $part_stock['partnumber'],
+                                    'name' => $part_stock['name'],
+                                    'price' => round($innerArr['price']),
+                                    'stocks' => $crosses_stocks,
+                                    'delivery_time' => $innerArr['deliveryEnd'],
+                                    'supplier_name' => 'rssk',
+                                ]);
+                            }
+                        } else {
+                            foreach ($innerArr as $key => $item) {
+                                
+                                if (str_contains($item['description'], 'Астана')) {
+                                    $crosses_stocks[] = [
+                                        'stock_id' => $item['id'],
+                                        'stock_name' => $item['description'],
+                                        'stock_legend' => '',
+                                        'qty' => $item['count'],
+                                        'price' => round($item['price']),
+                                        'delivery_time' => '1.5-2 часа'
+                                    ];
+                                    array_push($this->finalArr['crosses_on_stock'], [
+                                        'guid' => $part_stock['guid'],
+                                        'brand' => $part_stock['brand'],
+                                        'article' => $part_stock['partnumber'],
+                                        'name' => $part_stock['name'],
+                                        'price' => round($item['price']),
+                                        'stocks' => $crosses_stocks,
+                                        'delivery_time' => '1.5-2 часа',
+                                        'supplier_name' => 'rssk',
+                                    ]);
+                                } elseif (str_contains($item['description'], 'Павлодар') || str_contains($item['description'], 'Караганда') ) {
+                                    $crosses_stocks[] = [
+                                        'stock_id' => $item['id'],
+                                        'stock_name' => $item['description'],
+                                        'stock_legend' => '',
+                                        'qty' => $item['count'],
+                                        'price' => round($item['price']),
+                                        'delivery_time' => $item['deliveryEnd']
+                                    ];
+                                    array_push($this->finalArr['crosses_to_order'], [
+                                        'guid' => $part_stock['guid'],
+                                        'brand' => $part_stock['brand'],
+                                        'article' => $part_stock['partnumber'],
+                                        'name' => $part_stock['name'],
+                                        'price' => round($item['price']),
+                                        'stocks' => $crosses_stocks,
+                                        'delivery_time' => $item['deliveryEnd'],
+                                        'supplier_name' => 'rssk',
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                    foreach ($result['SearchResult']['PartsList']['Part']['crosses']['Part']['stocks'] as $key => $innerArr) {
+                        $crosses_stocks = [];
+                        if (count($innerArr) == 10) {
+                            if (str_contains($innerArr['description'], 'Астана')) {
+                                $crosses_stocks[] = [
+                                    'stock_id' => $innerArr['id'],
+                                    'stock_name' => $innerArr['description'],
+                                    'stock_legend' => '',
+                                    'qty' => $innerArr['count'],
+                                    'price' => round($innerArr['price']),
+                                    'delivery_time' => '1.5-2 часа'
+                                ];
+    
+                                array_push($this->finalArr['crosses_on_stock'], [
+                                    'guid' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['guid'],
+                                    'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
+                                    'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
+                                    'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
+                                    'price' => round($innerArr['price']),
+                                    'stocks' => $crosses_stocks,
+                                    'delivery_time' => '1.5-2 часа',
+                                    'supplier_name' => 'rssk',
+                                ]);
+                            } elseif (str_contains($innerArr['description'], 'Павлодар') || str_contains($innerArr['description'], 'Караганда') ) {
+                                $crosses_stocks[] = [
+                                    'stock_id' => $innerArr['id'],
+                                    'stock_name' => $innerArr['description'],
+                                    'stock_legend' => '',
+                                    'qty' => $innerArr['count'],
+                                    'price' => round($innerArr['price']),
+                                    'delivery_time' => $innerArr['deliveryEnd']
+                                ];
+    
+                                array_push($this->finalArr['crosses_to_order'], [
+                                    'guid' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['guid'],
+                                    'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
+                                    'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
+                                    'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
+                                    'price' => round($innerArr['price']),
+                                    'stocks' => $crosses_stocks,
+                                    'delivery_time' => $innerArr['deliveryEnd'],
+                                    'supplier_name' => 'rssk',
+                                ]);
+                            }
+                        } else {
+                            foreach ($innerArr as $key => $item) {
+                                
+                                if (str_contains($item['description'], 'Астана')) {
+                                    $crosses_stocks[] = [
+                                        'stock_id' => $item['id'],
+                                        'stock_name' => $item['description'],
+                                        'stock_legend' => '',
+                                        'qty' => $item['count'],
+                                        'price' => round($item['price']),
+                                        'delivery_time' => '1.5-2 часа'
+                                    ];
+                                    array_push($this->finalArr['crosses_on_stock'], [
+                                        'guid' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['guid'],
+                                        'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
+                                        'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
+                                        'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
+                                        'price' => round($item['price']),
+                                        'stocks' => $crosses_stocks,
+                                        'delivery_time' => '1.5-2 часа',
+                                        'supplier_name' => 'rssk',
+                                    ]);
+                                } elseif (str_contains($item['description'], 'Павлодар') || str_contains($item['description'], 'Караганда') ) {
+                                    $crosses_stocks[] = [
+                                        'stock_id' => $item['id'],
+                                        'stock_name' => $item['description'],
+                                        'stock_legend' => '',
+                                        'qty' => $item['count'],
+                                        'price' => round($item['price']),
+                                        'delivery_time' => $item['deliveryEnd']
+                                    ];
+                                    array_push($this->finalArr['crosses_to_order'], [
+                                        'guid' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['guid'],
+                                        'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
+                                        'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
+                                        'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
+                                        'price' => round($item['price']),
+                                        'stocks' => $crosses_stocks,
+                                        'delivery_time' => $item['deliveryEnd'],
+                                        '   ' => 'rssk',
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                
+            }
+            
+            
+        }
+        //dd($this->finalArr);
+        return;
+    }
+*/

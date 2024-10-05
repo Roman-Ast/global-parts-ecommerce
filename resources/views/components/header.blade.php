@@ -1,6 +1,6 @@
 <div id="main-header" class="">
     <div id="logo-container">
-        <a id="logo-wrapper" href="/">
+        <a id="logo-wrapper" href="/home">
             <img src="/images/main-logo.png" alt="main-logo" id="logo-img">
         </a>
     </div>
@@ -16,13 +16,20 @@
     
 
     <div id="auth-buttons-container">
-        <div id="sign-in-button-container">
-            <button id="sign-in-btn" class="btn btn-sm btn-secondary">Войти</button>
-        </div>
-
-        <div id="sign-up-button-container">
-            <button id="sign-up-btn" class="btn btn-sm btn-dark">Регистрация</button>
-        </div>
+        @if (Auth::user())
+            <div id="user-data">
+               {{ Auth::user()->name }}
+                <a href="logout"><button class="btn btn-link">Выход</button></a>
+            </div>
+        @else   
+            <a id="sign-in-button-container" href="{{ route('login') }}">
+                <button id="sign-in-btn" class="btn btn-sm btn-secondary">Войти</button>
+            </a>
+        
+            <a id="sign-up-button-container" href="{{ route('register') }}">
+                <button id="sign-up-btn" class="btn btn-sm btn-dark">Регистрация</button>
+            </a>
+        @endif
     </div>
 </div>
 

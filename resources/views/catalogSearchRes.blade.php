@@ -29,6 +29,7 @@
                 <div class="catalog-list-item-name catalog-list-item-cell">
                     {{ $part['name'] }}
                     <input type="hidden" name="guid" value="{{ $part['guid'] }}">
+                    <input type="hidden" name="rossko_need_to_search" value="{{ $part['rossko_need_to_search'] }}">
                 </div>
             </div>
         </button>
