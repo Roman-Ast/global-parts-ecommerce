@@ -16,19 +16,21 @@
     
 
     <div id="auth-buttons-container">
-        @if (Auth::user())
-            <div id="user-data">
-               {{ Auth::user()->name }}
-                <a href="logout"><button class="btn btn-link">Выход</button></a>
-            </div>
-        @else   
-            <a id="sign-in-button-container" href="{{ route('login') }}">
-                <button id="sign-in-btn" class="btn btn-sm btn-secondary">Войти</button>
-            </a>
-        
-            <a id="sign-up-button-container" href="{{ route('register') }}">
-                <button id="sign-up-btn" class="btn btn-sm btn-dark">Регистрация</button>
-            </a>
+        @if (Route::has('login'))
+            @auth
+                <div id="user-data">
+                {{ auth()->user()->name }}
+                    <a href="{{ route('logout') }}"><button class="btn btn-link">Выход</button></a>
+                </div>
+            @else   
+                <a id="sign-in-button-container" href="{{ route('login') }}">
+                    <button id="sign-in-btn" class="btn btn-sm btn-secondary">Войти</button>
+                </a>
+            
+                <a id="sign-up-button-container" href="{{ route('register') }}">
+                    <button id="sign-up-btn" class="btn btn-sm btn-dark">Регистрация</button>
+                </a>
+            @endif
         @endif
     </div>
 </div>

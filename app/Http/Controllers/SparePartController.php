@@ -137,12 +137,12 @@ class SparePartController extends Controller
 
     public function getSearchedPartAndCrosses (Request $request)
     {
-        if($request->rossko_need_to_search) {
+        /*if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand, $request->partnumber, $request->guid);
         }
         $this->searchArmtek($request->brand, $request->partnumber);
-        $this->searchTreid($request->brand, $request->partnumber);
-        //$this->searchTiss($request->brand, $request->partnumber);
+        $this->searchTreid($request->brand, $request->partnumber);*/
+        $this->searchTiss($request->brand, $request->partnumber);
         //$this->searchShatem($request->brand, $request->partnumber);
         
         return view('partSearchRes', [
@@ -698,24 +698,18 @@ class SparePartController extends Controller
     public function searchTiss(String $brand, String $partnumber)
     {
         $ch1 = curl_init(); 
-        //�������� ������� ������� JSON ��� ������ ���� ��������� ������� �� ��������� ������. ��������: {'Article': 'OC727'}
-        $fields = array("JSONparameter" => "{'Brand': '".$brand."', 'Article': '".$partnumber."', 'is_main_warehouse': ".'0'." }" );
         
-        //URL ������ � �����������
+        $fields = array("JSONparameter" => "{'Brand': '".$brand."', 'Article': '".$partnumber."', 'is_main_warehouse': ".'1'." }" );
+        
         curl_setopt($ch1, CURLOPT_URL, "api.tmparts.ru/api/StockByArticle?".http_build_query($fields));
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
-        //�����������
+       
         $headers = array(         
-        'Authorization: Bearer '. self::TISS_API_KEY      //$ApiKey ��������� � ����� 'ApiKey.txt'
+        'Authorization: Bearer '. self::TISS_API_KEY 
         ); 
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
         
-        //------------------------------------------------------		
-        //1. �������� ��� ��������� ������ ��� ��������� ������
-        //------------------------------------------------------
         $Art_List_With_Prices = json_decode(curl_exec($ch1),true);   
-
-
 
         dd($Art_List_With_Prices);
     }
