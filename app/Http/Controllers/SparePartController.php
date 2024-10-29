@@ -137,13 +137,14 @@ class SparePartController extends Controller
 
     public function getSearchedPartAndCrosses (Request $request)
     {
-        /*if($request->rossko_need_to_search) {
+        if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand, $request->partnumber, $request->guid);
         }
         $this->searchArmtek($request->brand, $request->partnumber);
-        $this->searchTreid($request->brand, $request->partnumber);*/
-        $this->searchTiss($request->brand, $request->partnumber);
+        $this->searchTreid($request->brand, $request->partnumber);
+        //$this->searchTiss($request->brand, $request->partnumber);
         //$this->searchShatem($request->brand, $request->partnumber);
+        $this->searchAutopiter($request->brand, $request->partnumber);
         
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
@@ -421,7 +422,7 @@ class SparePartController extends Controller
                                     'stock_legend' => '',
                                     'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
-                                    'delivery_time' => $innerArr['deliveryEnd']
+                                    'delivery_time' => $innerArr['deliveryEnd'],
                                 ];
     
                                 array_push($this->finalArr['crosses_to_order'], [
@@ -437,7 +438,6 @@ class SparePartController extends Controller
                             }
                         } else {
                             foreach ($innerArr as $key => $item) {
-                                
                                 if (str_contains($item['description'], 'Астана')) {
                                     $crosses_stocks[] = [
                                         'stock_id' => $item['id'],
@@ -464,7 +464,7 @@ class SparePartController extends Controller
                                         'stock_legend' => '',
                                         'qty' => $item['count'],
                                         'price' => round($item['price']),
-                                        'delivery_time' => $item['deliveryEnd']
+                                        'delivery_time' => $item['deliveryEnd'],
                                     ];
                                     array_push($this->finalArr['crosses_to_order'], [
                                         'guid' => $part_stock['guid'],
@@ -474,7 +474,7 @@ class SparePartController extends Controller
                                         'price' => round($item['price']),
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => $item['deliveryEnd'],
-                                        'supplier_name' => 'rssk',
+                                        'supplier_name' => 'rssk'
                                     ]);
                                 }
                             }
@@ -512,7 +512,7 @@ class SparePartController extends Controller
                                     'stock_legend' => '',
                                     'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
-                                    'delivery_time' => $innerArr['deliveryEnd']
+                                    'delivery_time' => $innerArr['deliveryEnd'],
                                 ];
     
                                 array_push($this->finalArr['crosses_to_order'], [
@@ -555,7 +555,7 @@ class SparePartController extends Controller
                                         'stock_legend' => '',
                                         'qty' => $item['count'],
                                         'price' => round($item['price']),
-                                        'delivery_time' => $item['deliveryEnd']
+                                        'delivery_time' => $item['deliveryEnd'],
                                     ];
                                     array_push($this->finalArr['crosses_to_order'], [
                                         'guid' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['guid'],
@@ -565,7 +565,7 @@ class SparePartController extends Controller
                                         'price' => round($item['price']),
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => $item['deliveryEnd'],
-                                        '   ' => 'rssk',
+                                        'supplier_name' => 'rssk',
                                     ]);
                                 }
                             }
@@ -712,6 +712,84 @@ class SparePartController extends Controller
         $Art_List_With_Prices = json_decode(curl_exec($ch1),true);   
 
         dd($Art_List_With_Prices);
+    }
+
+    public function searchAutopiter(String $brand, String $partnumber)
+    {
+        $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL");
+        
+
+        if (!($client->IsAuthorization()->IsAuthorizationResult)) {
+            $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
+        }
+
+        $result = $client->FindCatalog (array("Number"=>$partnumber));
+
+        $articleId = '';
+        //dd($result);
+        foreach ($result->FindCatalogResult->SearchCatalogModel as $key => $item) {
+            if(trim(strtolower($item->CatalogName)) == trim(strtolower($brand))) {
+                $articleId = $item->ArticleId;
+            }
+        }
+        
+        $result2 = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 0, "DetailUid"=>null));
+        $result2 = (json_decode(json_encode($result2), true));
+
+        $modifiedResult2 = array_slice($result2['GetPriceIdResult']['PriceSearchModel'], 0, 10, true);
+
+        dd($modifiedResult2);
+
+        foreach ($modifiedResult2 as $key => $item) {
+            array_push($this->finalArr['searchedNumber'], [
+                'guid' => '',
+                'brand' => $item['CatalogName'],
+                'article' => $item['Number'],
+                'name' => $item['Name'],
+                'price' => round($item['SalePrice']),
+                'stocks' => $item['NumberOfAvailable'],
+                'multiplicity' => '',
+                'type' => '',
+                'delivery' => '',
+                'extra' => '',
+                'description' => '',
+                'deliveryStart' => $item['DeliveryDate'],
+                'deliveryEnd' => '',
+                'supplier_name' => $item['Region'],
+            ]);
+        }
+
+        $result3 = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 1, "DetailUid"=>null));
+        $result3 = (json_decode(json_encode($result3), true));
+        //dd($result3);
+        foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
+            
+                array_push($this->finalArr['crosses_to_order'], [
+                    'brand' => $item['CatalogName'],
+                    'article' => $item['Number'],
+                    'name' => $item['Name'],
+                    'price' => $item['SalePrice'],
+                    'stocks' => [
+                        [
+                            "stock_id" => $item['SellerId'],
+                            "stock_name" => $item['Region'],
+                            "stock_legend" => "",
+                            "qty" =>$item['NumberOfAvailable'],
+                            "price" => $item['SalePrice'],
+                            "delivery_time" => $item['DeliveryDate'],
+                            "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
+                            "city" => $item['Region']
+                        ]
+                    ],
+                    "delivery_time" => $item['DeliveryDate'],
+                    "supplier_name" => $item['Region']
+                ]);
+            
+            
+        }
+
+        return;
+        
     }
 
     public function getCheckoutDetails () {

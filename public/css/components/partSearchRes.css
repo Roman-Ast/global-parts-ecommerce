@@ -56,7 +56,7 @@
 }
 .requestPartNumberContainer-item{
     display: grid;
-    grid-template-columns: 3% 13% 12% 26% 10% 8% 8% 10% 10%;
+    grid-template-columns: 5% 13% 12% 26% 10% 7% 7% 10% 10%;
     grid-template-rows: minmax(80px, flex);
     
 }
