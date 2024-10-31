@@ -5,6 +5,7 @@
         </a>
     </div>
 
+    <div id="search-bar-wrapper">
         <form action="/getCatalog" method="GET " enctype="multipart/form-data" id="search-bar-container">
             <div id="search-button-container">
                 <button type="submit" class="btn btn-primary btn-lg" id="search-btn">Найти</button>
@@ -13,6 +14,25 @@
                 <input type="text" name="partNumber" id="searchBarInput" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg" placeholder="введите VIN код авто или партномер детали" required>
             </div>
         </form>
+
+        <div id="searchOptions">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="inlineCheckbox1" value="inStock&toOrder" checked>
+                <label class="form-check-label" for="inlineCheckbox1">в наличии и на заказ</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="inlineCheckbox2" value="onlyInStock">
+                <label class="form-check-label" for="inlineCheckbox1">только в наличии</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="inlineCheckbox3" value="onlyToOrder">
+                <label class="form-check-label" for="inlineCheckbox2">только на заказ</label>
+            </div>
+        </div>
+    </div>
+
+      
+    
     
 
     <div id="auth-buttons-container">
