@@ -1,0 +1,30 @@
+#cart-content-wrapper{
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+}
+#cart-content-inner-wrapper{
+    width: 80%;
+}
+#cart-header{
+    width: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    margin-top: 30px;
+}
+#cart-header-name{
+    font-size: 2em;
+    font-weight: 600;
+}
+#cart-header-sum{
+    font-size: 2em;
+    font-weight: 600;
+}
+.cart-table-item{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-end;
+}

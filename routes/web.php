@@ -5,6 +5,7 @@ use App\Http\Controllers\SparePartController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
+use App\Http\Controllers\CartController;
 
 
 Route::get('/', function () {
@@ -13,8 +14,9 @@ Route::get('/', function () {
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);
 Route::post('/getPart/', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
-
-
+Route::get('/cart', [CartController::class, 'index']);
+Route::post('/cart/add', [CartController::class, 'store']);
+Route::post('/cart/delete', [CartController::class, 'deleteItem']);
 
 Route::middleware(['auth', 'verified'])->group(function() {
     Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard');

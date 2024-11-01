@@ -69,7 +69,7 @@
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-cart">
                                 <div class="stock-item-cart">
                                     <div class="stock-item-cart-btn">
-                                        <img src="/images/cart_pic_20.png" alt="cart">
+                                        <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
                                     </div>
                                     <div class="stock-item-cart-qty">
                                         <input type='number' value="1" class="form-control">
@@ -128,7 +128,7 @@
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item-cart">
                                 <div class="stock-item-cart-btn">
-                                    <img src="/images/cart_pic_20.png" alt="cart">
+                                    <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
                                 </div>
                                 <div class="stock-item-cart-qty">
                                     <input type='number' value="1" class="form-control">
@@ -189,7 +189,7 @@
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item-cart">
                                 <div class="stock-item-cart-btn">
-                                    <img src="/images/cart_pic_20.png" alt="cart">
+                                    <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
                                 </div>
                                 <div class="stock-item-cart-qty">
                                     <input type='number' value="1" class="form-control">
