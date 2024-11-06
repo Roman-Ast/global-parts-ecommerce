@@ -64,7 +64,7 @@
                                 {{ $searchItem['stocks']  }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-price stock-item-price">
-                                {{ $searchItem['price'] }}тг.
+                                {{ $searchItem['price'] }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-cart">
                                 <div class="stock-item-cart">
@@ -107,25 +107,25 @@
                         {{ $crossItem['delivery_time'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
-                        @foreach ($crossItem['stocks'] as $stockItem)
+                        
                             <div class="stock-item stock-item-qty">
-                                @if ($stockItem['qty'] > 10)
+                                @if ($crossItem['stocks'] > 10)
                                     >10
                                 @else
-                                    {{ $stockItem['qty'] }}
+                                    {{ $crossItem['stocks'] }}
                                 @endif
                             </div>
-                        @endforeach
+                        
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
-                        @foreach ($crossItem['stocks'] as $stockItem)
+                        
                             <div class="stock-item stock-item-price">
-                                {{ $crossItem['price'] }}тг.
+                                {{ $crossItem['price'] }}
                             </div>
-                        @endforeach
+                        
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
-                        @foreach ($crossItem['stocks'] as $stockItem)
+                       
                             <div class="stock-item-cart">
                                 <div class="stock-item-cart-btn">
                                     <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
@@ -134,7 +134,7 @@
                                     <input type='number' value="1" class="form-control">
                                 </div>
                             </div>
-                        @endforeach
+                        
                     </div>
                 </div>
                 @endforeach
@@ -181,7 +181,7 @@
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item stock-item-price">
-                                {{ $crossItem['price'] }}тг.
+                                {{ $crossItem['price'] }}
                             </div>
                         @endforeach
                     </div>

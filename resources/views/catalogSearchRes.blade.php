@@ -11,9 +11,11 @@
             <div class="spinner-border text-primary" style="width: 6rem; height: 6rem;" role="status">
             <span class="visually-hidden">Loading...</span>
             </div>
+        </div>
+        <div id="loading" class="d-flex justify-content-center mt-5 pouring">
+            Выполняется проценка складов... это может занять несколько секунд, пожалуйста ожидайте...
+        </div>
     </div>
-    <div id="loading" class="d-flex justify-content-center mt-5 pouring">Выполняется проценка складов... это может занять несколько секунд, пожалуйста ожидайте...</div>
-</div>
     @include('components.header')
     
     <div id="search-result-container-header">

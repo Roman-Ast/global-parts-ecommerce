@@ -3,13 +3,14 @@
 namespace App;
 
 use Ramsey\Uuid\Type\Integer;
+use Illuminate\Http\Request;
 
 class Cart
 {
     public $items = [];
 
     public function add(
-        string $brand, string $article, string $name,
+        string $article, string $brand, string $name,
         string $deliveryTime, string $price, int $qty, string $stockFrom
     )
     {
@@ -28,15 +29,11 @@ class Cart
         return $count;
     }
 
-    public function update(string $article, array $params)
+    public function update(string $article, string $qty)
     {    
         foreach ($this->items as $key => $item) {
             if ($article == $item['article']) {
-                foreach ($params as $paramsKey => $paramsValue) {
-                    if (array_key_exists($paramsKey, $item) && $paramsKey) {
-                        $this->items[$key][$paramsKey] = $paramsValue;
-                    }
-                }
+                $this->items[$key]['qty'] = $qty;
             }
         }
 
@@ -50,9 +47,12 @@ class Cart
 
     public function search(string $article)
     {
-        if (array_key_exists($article, $this->items)) {
-            return $this;
+        foreach ($this->items as $key => $item) {
+            if ($article == $item['article']) {
+                return 'bingo';
+            }
         }
+        
         return null;
     }
 
@@ -60,25 +60,19 @@ class Cart
     {
         $total = 0;
         foreach ($this->items as $item) {
-            $total += (int)$item['price'];
+            $total += ((int)$item['price'] * (int)$item['qty']);
         }
         return $total;
     }
 
-    /*public function update(string $id, string $newQty)
-    {
-        if (array_key_exists(self::PREFIX . $id, $this->items)) {
-            $this->items[self::PREFIX . $id]['qty'] = $newQty;
-        }
-        
-    }*/
-
     public function remove(string $article)
     {
-        if (array_key_exists($article, $this->items)) {
-            unset($this->items['article']);
+        foreach ($this->items as $key => $cartItem) {
+            if($cartItem['article'] == $article) {
+                unset($this->items[$key]);
+            }
         }
-        return null;
+        return $this->items;
     }
 
     public function clear()

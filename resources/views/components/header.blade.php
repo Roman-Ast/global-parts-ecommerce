@@ -34,9 +34,10 @@
 
     <div id="cart-wrapper">
         <a href="/cart"><img src="/images/cart-main.png" alt="корзина" id="cart-big-img"></a>
+        
         @if (session()->has('cart') && session()->get('cart')->count() != 0)
-            <div id="cart-qty">{{ session()->get('cart')->count() }}</div>
-            <div id="cart-sum">{{ session()->get('cart')->total() }} T</div>
+            <div id="header-cart-qty">кол-во: {{ session()->get('cart')->count() }}</div>
+            <div id="header-cart-sum">сумма: {{ number_format(session()->get('cart')->total(), 0, '.', ' ') }} T</div>
         @endif
         
     </div>

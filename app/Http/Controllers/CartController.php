@@ -43,8 +43,6 @@ class CartController extends Controller
      */
     public function store(Request $request)
     {
-        //var_dump($request->data);
-        //return json_encode($request->data);
         if ($request->session()->has('cart')) {
             $cart = $request->session()->get('cart');
         } else {
@@ -52,19 +50,29 @@ class CartController extends Controller
         }
 
         $duplicates = $cart->search($request->data['article']);
-
-        if ($duplicates) {
-            $duplicates->items[$request->data->article]['qty'] += 1;
+        //return json_encode($duplicates);
+        if ($duplicates == 'bingo') {
+            return json_encode([
+                'items' => $cart->content(),
+                'total' => $cart->total(),
+                'count' => $cart->count(),
+                'duplicates' => true
+            ]);
         } else {
             $cart->add(
-                $request->data['article'], $request->data['name'], $request->data['brand'],
+                $request->data['article'], $request->data['brand'], $request->data['name'],
                 $request->data['deliveryTime'],  $request->data['price'],  $request->data['qty'],  $request->data['stockFrom']
             );
         }
         
         $request->session()->put('cart', $cart);
         
-        return 'ok';
+        return json_encode([
+            'items' => $cart->content(),
+            'total' => $cart->total(),
+            'count' => $cart->count(),
+            'duplicates' => false
+        ]);
     }
 
     /**
@@ -82,24 +90,42 @@ class CartController extends Controller
     {
         $cart = $request->session()->get('cart');
 
-        $cart->remove($request->data['article']);
+        $ost = $cart->remove($request->data['article']);
 
-        return json_encode($cart);
+        return json_encode([
+            'items' => $cart->content(),
+            'total' => $cart->total(),
+            'count' => $cart->count()
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Cart $cart)
+    public function update(Request $request)
     {
-        //
+        $cart = $request->session()->get('cart');
+        $article = $request->data['article'];
+        $qty = $request->data['qty'];
+
+        $cart->update($article, $qty);
+
+        return json_encode([
+            'items' => $cart->content(),
+            'total' => $cart->total(),
+            'count' => $cart->count()
+        ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Cart $cart)
+    public function clear(Request $request)
     {
-        //
+        $cart = $request->session()->get('cart');
+
+        $cart->clear();
+
+        return view('index');
     }
 }

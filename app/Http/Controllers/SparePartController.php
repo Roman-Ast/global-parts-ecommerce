@@ -138,11 +138,11 @@ class SparePartController extends Controller
 
     public function getSearchedPartAndCrosses (Request $request)
     {
-        /*if($request->rossko_need_to_search) {
+        if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand, $request->partnumber, $request->guid);
-        }*/
-        //$this->searchArmtek($request->brand, $request->partnumber);
-        $this->searchTreid($request->brand, $request->partnumber);
+        }
+        $this->searchArmtek($request->brand, $request->partnumber);
+        //$this->searchTreid($request->brand, $request->partnumber);
         //$this->searchTiss($request->brand, $request->partnumber);
         //$this->searchShatem($request->brand, $request->partnumber);
         //$this->searchAutopiter($request->brand, $request->partnumber);
@@ -277,18 +277,11 @@ class SparePartController extends Controller
             //помещаем кроссы в наличии в итоговый массив
             foreach ($result['items'] as $item) {
                 if (array_key_exists('price', $item)) {
-                    $crosses_stocks = [];
+                    $crosses_stocks = 0;
                     foreach ($item['stocks'] as $key => $stock) {
                         if ($stock['quantity_unpacked'] > 0 ) {
                             if ($key == 168102 || $key == 247102 || $key == 262102) {
-                                $crosses_stocks[] = [
-                                    'stock_id' => $stock['id'],
-                                    'stock_name' => substr($stock['name'], 0, 60),
-                                    'stock_legend' => $stock['legend'],
-                                    'qty' => $stock['quantity_unpacked'],
-                                    'delivery_time' => '1.5-2 часа',
-                                    'supplier_name' => 'trd'
-                                ];
+                                $crosses_stocks += $stock['quantity_unpacked'];
                             }
                         }
                     }
@@ -631,7 +624,7 @@ class SparePartController extends Controller
 
             // in case of json
             $json_responce_data = $response->json();
-            //dd(gettype($json_responce_data->RESP));
+            //dd($json_responce_data->RESP);
             if(gettype($json_responce_data->RESP) == 'object') {
                 if(property_exists($json_responce_data->RESP, 'MSG')) {
                     return;

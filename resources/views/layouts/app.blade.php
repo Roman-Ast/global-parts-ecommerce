@@ -28,7 +28,16 @@
     <body>
 
         @yield('content')
-
+        <div id="shadow">
+            <div class="d-flex justify-content-center">
+                <div class="spinner-border text-primary" style="width: 6rem; height: 6rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <div id="loading" class="d-flex justify-content-center mt-5 pouring">
+                Выполняется проценка складов... это может занять несколько секунд, пожалуйста ожидайте...
+            </div>
+        </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
         
         <script src="{{ URL::asset('js/jquery.min.js') }}"></script>

@@ -17,6 +17,8 @@ Route::post('/getPart/', [SparePartController::class, 'getSearchedPartAndCrosses
 Route::get('/cart', [CartController::class, 'index']);
 Route::post('/cart/add', [CartController::class, 'store']);
 Route::post('/cart/delete', [CartController::class, 'deleteItem']);
+Route::post('/cart/update', [CartController::class, 'update']);
+Route::get('cart/clear', [CartController::class, 'clear']);
 
 Route::middleware(['auth', 'verified'])->group(function() {
     Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard');
