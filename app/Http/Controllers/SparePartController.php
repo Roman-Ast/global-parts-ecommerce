@@ -28,7 +28,7 @@ class SparePartController extends Controller
     public $partNumber = '';
 
     public $finalArr = [
-
+        'originNumber' => '',
         'searchedNumber' => [
             
         ],
@@ -44,7 +44,7 @@ class SparePartController extends Controller
     public function catalogSearch(Request $request) 
     {
         $partNumber = trim($request->partNumber); 
-
+        
         //поиск брэндлиста по каталогам
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
@@ -138,6 +138,9 @@ class SparePartController extends Controller
 
     public function getSearchedPartAndCrosses (Request $request)
     {
+        
+        $this->finalArr['originNumber'] = $request->partnumber;
+
         if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand, $request->partnumber, $request->guid);
         }

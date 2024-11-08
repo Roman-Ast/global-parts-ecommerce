@@ -60,7 +60,7 @@ class CartController extends Controller
             ]);
         } else {
             $cart->add(
-                $request->data['article'], $request->data['brand'], $request->data['name'],
+                $request->data['article'], $request->data['brand'], $request->data['name'], $request->data['originNumber'],
                 $request->data['deliveryTime'],  $request->data['price'],  $request->data['qty'],  $request->data['stockFrom']
             );
         }

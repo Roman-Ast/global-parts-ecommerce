@@ -13,6 +13,7 @@
         <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/cart.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/orders.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/registerForm.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">

@@ -17,14 +17,17 @@ $('.stock-item-cart-btn').on('click', function () {
        'price': '',
        'qty': +$(this).next().children().first().val(),
        'deliveryTime': '',
-       'stockFrom': ''
+       'stockFrom': '',
+       'searchedNumber': ''
    };
    params.brand = $(this).parent().parent().prev().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
    params.article = $(this).parent().parent().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');;
    params.name = $(this).parent().parent().prev().prev().prev().prev().prev().text().replaceAll(regExp, '');;
    params.price = $(this).parent().parent().prev().text().replaceAll(' ', '').replaceAll(regExp, '');;
    params.deliveryTime = $(this).parent().parent().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');;
-   params.stockFrom = $(this).parent().parent().prev().prev().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');;
+   params.stockFrom = $(this).parent().parent().prev().prev().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
+   params.originNumber = $('#originNumber').val();
+   params.qty = +$(this).next().children().first().val();
 
    $.ajax({
       data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: params},
@@ -115,8 +118,8 @@ $('.cart-qty-change').on('input', function () {
    });
 });
 
-
-$('.order').on('click', function () {
+//открытие формы подтверждения заказа
+$('#modal-show').on('click', function () {
    $('#order-confirmation-form').fadeIn(400);
    $('#cart-shadow').fadeIn(300);
 });
@@ -125,3 +128,10 @@ $('.modal-close').on('click', function () {
    $('#order-confirmation-form').fadeOut(300);
    $('#cart-shadow').fadeOut(400);
 });
+
+//подтверждение отправки формы
+$('#order-confirm').on('click', function () {
+   $('#order-btn-submit').click();
+});
+
+

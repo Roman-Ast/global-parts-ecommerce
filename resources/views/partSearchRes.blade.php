@@ -39,6 +39,7 @@
             </div>
             @endif
             <div id="requestPartNumberContainer">
+                <input type="hidden" value="{{ $finalArr['originNumber'] }}" id="originNumber">
                 @if (count($finalArr['searchedNumber']) > 0)
                     @foreach ($finalArr['searchedNumber'] as $searchItem)
                         <div class="requestPartNumberContainer-item">
@@ -107,22 +108,18 @@
                         {{ $crossItem['delivery_time'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
-                        
-                            <div class="stock-item stock-item-qty">
-                                @if ($crossItem['stocks'] > 10)
-                                    >10
-                                @else
-                                    {{ $crossItem['stocks'] }}
-                                @endif
-                            </div>
-                        
+                        <div class="stock-item stock-item-qty">
+                            @if ($crossItem['stocks'] > 10)
+                                >10
+                            @else
+                                {{ $crossItem['stocks'] }}
+                            @endif
+                        </div>
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
-                        
-                            <div class="stock-item stock-item-price">
-                                {{ $crossItem['price'] }}
-                            </div>
-                        
+                        <div class="stock-item stock-item-price">
+                            {{ $crossItem['price'] }}
+                        </div>
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
                        

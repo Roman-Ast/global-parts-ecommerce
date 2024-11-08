@@ -6,7 +6,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\CartController;
-
+use App\Http\Controllers\OrderController;
 
 Route::get('/', function () {
     return view('index');
@@ -19,6 +19,8 @@ Route::post('/cart/add', [CartController::class, 'store']);
 Route::post('/cart/delete', [CartController::class, 'deleteItem']);
 Route::post('/cart/update', [CartController::class, 'update']);
 Route::get('cart/clear', [CartController::class, 'clear']);
+Route::post('/makeorder', [OrderController::class, 'store']);
+Route::get('orders', [OrderController::class, 'index']);
 
 Route::middleware(['auth', 'verified'])->group(function() {
     Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard');

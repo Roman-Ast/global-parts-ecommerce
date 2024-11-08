@@ -10,12 +10,12 @@ class Cart
     public $items = [];
 
     public function add(
-        string $article, string $brand, string $name,
+        string $article, string $brand, string $name, string $originNumber,
         string $deliveryTime, string $price, int $qty, string $stockFrom
     )
     {
         return $this->items[] = [
-            'article' => $article, 'name' => $name, 'price' => $price,
+            'article' => $article, 'name' => $name, 'price' => $price, 'originNumber' => $originNumber,
             'qty' => $qty, 'brand' => $brand, 'deliveryTime' => $deliveryTime, 'stockFrom' => $stockFrom
         ];
     }
