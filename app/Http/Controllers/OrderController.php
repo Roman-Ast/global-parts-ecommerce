@@ -7,6 +7,7 @@ use App\Models\OrderProduct;
 use App\Models\Setlement;
 use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
+use Laravel\Ui\Presets\React;
 
 class OrderController extends Controller
 {
@@ -19,7 +20,7 @@ class OrderController extends Controller
         $user = auth()->user();
         
         $orders = $user->orders;
-
+        
         return view('orders', [
             'orders' => $orders
         ]);
@@ -28,9 +29,17 @@ class OrderController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function products(Request $request)
     {
-        //
+        $order = Order::find($request->data['order_id']);
+        $orderSum = $order->sum;
+        $products = $order->products;
+
+        return json_encode([
+            'products' => $products,
+            'orderSum' => $orderSum,
+            'orderId' => $order->id
+        ]);
     }
 
     /**
@@ -73,6 +82,8 @@ class OrderController extends Controller
             'released' => true,
             'paid' => false
         ]);
+        
+        $order->setlement_id = $settlement->id;
         
         $cart->clear();
 

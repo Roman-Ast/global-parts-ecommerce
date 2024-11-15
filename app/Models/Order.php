@@ -13,16 +13,12 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
+        'setlement_id',
         'date',
         'time',
         'sum',
         'status'
     ];
-
-    public function orders()
-    {
-        return $this->belongsToMany(Order::class);
-    }
 
     public function products(): HasMany
     {

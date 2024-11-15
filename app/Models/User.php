@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Http\Controllers\SettlementController;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -53,5 +54,10 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPassword
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function settlements(): HasMany
+    {
+        return $this->hasMany(Setlement::class);
     }
 }

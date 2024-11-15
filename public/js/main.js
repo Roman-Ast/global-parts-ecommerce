@@ -134,4 +134,56 @@ $('#order-confirm').on('click', function () {
    $('#order-btn-submit').click();
 });
 
+//загрузка данных заказа
+$('.settlement-item-id').on('click', function (e) {
+   let data = {
+      'order_id': $(this).children().first().val(),
+
+   };
+   console.log();
+
+   $.ajax({
+      data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
+      url: "/order/products",
+      type: "POST",
+      dataType: 'json',
+      success: function (data) {
+         let searchedElem = $(`input[class~=order_${data.orderId}]`);
+         let table = $(searchedElem).parent().parent().next().children().first();
+         let changedBorder = $(searchedElem).parent().parent();
+         let changedBackground = $(searchedElem).parent().parent().parent();
+
+         if ($(table).html() == '') {
+            data.products.forEach(item => {
+               
+               $(table).append(
+                  `
+                  <tr>
+                     <td>${item.article}</td>
+                     <td>${item.brand}</td>
+                     <td>${item.name}</td>
+                     <td>${item.qty}</td>
+                     <td>${item.price * item.qty}</td>
+                     <td>${item.fromStock}</td>
+                  </tr>
+                  `
+               );
+            });
+
+            $(changedBackground).css({'border': '1px solid #aaa'});
+            $(changedBorder).css({'background-color': '#ebe8e2'});
+         } else {
+            $(table).empty();
+            $(changedBackground).css({'border': 'none'});
+            $(changedBorder).css({'background-color': 'transparent'});
+         }
+      },
+      error: function (error) {
+         console.log(error);
+      }
+   });
+});
+
+
+
 
