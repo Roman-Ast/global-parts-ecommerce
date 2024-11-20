@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminPanelController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SparePartController;
 use App\Http\Controllers\UserController;
@@ -24,6 +25,9 @@ Route::post('/makeorder', [OrderController::class, 'store']);
 Route::get('orders', [OrderController::class, 'index']);
 Route::get('settlements', [SettlementController::class, 'index']);
 Route::post('order/products', [OrderController::class, 'products']);
+Route::get('admin_panel', [AdminPanelController::class, 'index'])->name('admin_panel');
+Route::post('/payment', [AdminPanelController::class, 'pay']);
+Route::post('/product/change_status', [AdminPanelController::class, 'changeStatus']);
 
 Route::middleware(['auth', 'verified'])->group(function() {
     Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard');

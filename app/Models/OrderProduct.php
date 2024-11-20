@@ -21,7 +21,8 @@ class OrderProduct extends Model
         'searched_number',
         'fromStock',
         'deliveryTime',
-        'qty'
+        'qty',
+        'status'
     ];
 
     

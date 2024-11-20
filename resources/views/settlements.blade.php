@@ -54,7 +54,11 @@
                 </div>
                 <div class="settlement-item-id">
                     <input type="hidden" class="order_{{ $settlementItem->order_id }}" name="order_id" value="{{ $settlementItem->order_id }}">
+                    @if ($settlementItem->operation == 'realization')
                     <a href="#">Реализация товаров №0000{{ $settlementItem->order_id }}</a>
+                    @else
+                        <div>Оплата</div>
+                    @endif
                 </div>
                 <div class="settlement-item-username">
                     {{ $settlementItem->user->name }}
@@ -70,7 +74,11 @@
                     @endif
                 </div>
                 <div class="settlement-item-sum">
-                    - {{ number_format($settlementItem->sum, 2, '.', ' ') }}
+                    @if ($settlementItem->operation == 'realization')
+                    - {{ number_format($settlementItem->sum, 2, '.', ' ') }} 
+                    @else
+                    {{ number_format($settlementItem->sum, 2, '.', ' ') }}
+                    @endif
                 </div>
             </div>
             <div class="settlement-item-content">

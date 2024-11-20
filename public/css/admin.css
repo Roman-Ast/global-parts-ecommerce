@@ -1,0 +1,124 @@
+#admin-main-container{
+    width: 100%;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 6% 94%;
+    grid-template-columns: 20% 80%;
+    
+}
+#container-header{
+    grid-column: span 3;
+    border: 1px solid #333;
+}
+#menu{
+    width: 100%;
+    background-color: #555;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding-left: 10px;
+    border-right: 1px solid #333;
+}
+#content{
+    width: 100%;
+    overflow: scroll;
+    width: 100%;
+    grid-column: span 2;
+    position: relative;
+}
+
+.menu-item-container{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    width: 90%;
+    height: 50px;
+}
+.menu-item-name{
+    color: #fff;
+    transition: 0.1s;
+}
+#make-pay{
+    display: none;
+    justify-content: center;
+    align-items: stretch;
+}
+#pay-container{
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: flex-start;
+}
+.pay-item-container{
+    width: 60%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.pay-item-container-name{
+    width: 30%;
+}
+.pay-item-container-input{
+    width: 70%;
+}
+
+#all-payments{
+    
+    flex-direction: column;
+    justify-content: space-between;
+}
+#payment-item-header{
+    display: grid;
+    grid-template-columns: 10% 18% 18% 18% 18% 18%;
+    margin-bottom: 10px;
+}
+.payments-item-wrapper{
+    display: grid;
+    grid-template-columns: 10% 18% 18% 18% 18% 18%;
+    border-bottom: 1px solid #aaa;
+    margin-bottom: 8px;
+}
+.admin-order-item-products-content-header{
+    margin-bottom: 10px;
+    width: 94%;
+    display: grid;
+    grid-template-columns: 9% 7% 7% 25% 6% 6% 6% 7% 7% 11% 8%;
+    grid-template-rows: 1fr;
+    font-weight: bold;
+}
+.admin-order-item-products-content{
+    width: 94%;
+    display: grid;
+    grid-template-columns: 9% 7% 7% 25% 6% 6% 6% 7% 7% 11% 8%;
+    grid-template-rows: 1fr;
+    font-size: 15px;
+    font-style: italic;
+    margin-bottom: 10px;
+}
+
+.admin-content-item{
+    position: absolute;
+    left: 15px;
+    top: 10px;
+    display: none;
+    width: 97%;
+}
+
+#customers-header{
+    display: grid;
+    grid-template-columns: 6% 18% 18% 20% 18% 15% 15%;
+    margin-bottom: 10px;
+}
+.customer-content{
+    display: grid;
+    grid-template-columns: 6% 18% 18% 20% 18% 15% 15%;
+    border-bottom: 1px solid #aaa;
+    margin-bottom: 8px;
+}

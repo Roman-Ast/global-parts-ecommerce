@@ -15,7 +15,7 @@
     
         <div id="search-part-main-container">
             <div id="search-res-header">
-                Предложения для {{ $searchedPartNumber }}   
+                Предложения для "{{ $finalArr['originNumber'] }}" 
             </div>
             <div id="search-res-part-header">
                 <div class="search-res-part-header-item">

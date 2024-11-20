@@ -22,16 +22,16 @@
 }
 .order-item-products-content-header{
     margin-bottom: 10px;
-    width: 90%;
+    width: 94%;
     display: grid;
-    grid-template-columns: 10% 9% 9% 36% 7% 7% 7% 7% 8%;
+    grid-template-columns: 9% 10% 8% 30% 6% 6% 6% 7% 8% 10%;
     grid-template-rows: 1fr;
     font-weight: bold;
 }
 .order-item-products-content{
-    width: 90%;
+    width: 94%;
     display: grid;
-    grid-template-columns: 10% 9% 9% 38% 5% 7% 7% 7% 8%;
+    grid-template-columns: 9% 10% 8% 30% 6% 6% 6% 7% 8% 10%;
     grid-template-rows: 1fr;
     font-size: 15px;
     font-style: italic;
@@ -44,4 +44,33 @@
 .order-item-user-name{
     padding: 5px;
 }
+.change_status{
+    margin-left: 5px;
+}
+.order-products-status{
+    font-size: 0.9em;
+}
+.payment_waiting{
+    background-color: #FF4F00;
+}
+.processing{
+    background-color: #FFB841;
+    
+}
+.supplier_refusal{
+    background-color: red;
+    color: #fff;
+}
+.arrived_at_the_point_of_delivery{
+    background-color: #adff2f;
+}
+.issued{
+    background-color: #00ff00;
+}
+.returned{
+    background-color: #5353ec;
+    color: #fff;
+}
+
+
 

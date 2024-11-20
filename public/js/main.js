@@ -184,6 +184,44 @@ $('.settlement-item-id').on('click', function (e) {
    });
 });
 
+//смена статуса продукта
+$('.change_status_submit').on('click', function () {
+   let productId = $(this).prev().val();
+   let newStatus = $(this).parent().prev().children().first().val();
+
+   if (!newStatus) {
+      alert('Игорь, смени статус бля!');
+      return;
+   }
+
+   let data = {
+      'product_id': productId,
+      'new_status': newStatus
+   }
+
+   $.ajax({
+      data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
+      url: "/product/change_status",
+      type: "POST",
+      dataType: 'json',
+      success: function (data) {
+         console.log(data);
+      },
+      error: function (error) {
+         console.log(error);
+      }
+   });
+  
+});
+
+$('.menu-item-name').on('mouseenter', function () {
+   $(this).css({'scale': '1.1'});
+   $(this).css({'cursor': 'pointer'});
+});
+$('.menu-item-name').on('mouseleave', function () {
+   $(this).css({'scale': '1'});
+});
+
 
 
 

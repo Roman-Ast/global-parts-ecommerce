@@ -12,8 +12,9 @@ class SettlementController extends Controller
         
         $settlements = $user->settlements;
         $order = $user->orders;
-        $sumReleased = $order->sum('sum');
-        $sumPaid = 0;
+        $sumReleased = $settlements->where('released', 1)->sum('sum');
+        $sumPaid = $settlements->where('paid', 1)->sum('sum');
+
 
         return view('settlements', [
             'settlements' => $settlements,

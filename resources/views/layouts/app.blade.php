@@ -14,6 +14,7 @@
         <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/cart.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/orders.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/admin.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/settlements.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/registerForm.css') }}" rel="stylesheet">
@@ -44,6 +45,7 @@
         
         <script src="{{ URL::asset('js/jquery.min.js') }}"></script>
         <script src="{{ URL::asset('js/main.js') }}"></script>
+        <script src="{{ URL::asset('js/admin.js') }}"></script>
         <script>
             
         </script>

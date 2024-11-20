@@ -40,6 +40,7 @@
                 <div class="products-content-header-item">Сумма</div>
                 <div class="products-content-header-item">Склад</div>
                 <div class="products-content-header-item">Доставка</div>
+                <div class="products-content-header-item">Статус</div>
             </div>
             @foreach ($orderItem->products as $product)
             <div class="order-item-products-content">
@@ -69,6 +70,21 @@
                 </div>
                 <div class="order-products-deliveryTime">
                     {{ $product->deliveryTime }}
+                </div>
+                <div class="order-products-status">
+                    @if ($product->status == 'payment_waiting' )
+                        <div class="payment_waiting">ожидание оплаты</div>
+                    @elseif($product->status == 'processing' )
+                        <div class="processing">принят в работу</div>
+                    @elseif($product->status == 'supplier_refusal' )
+                        <div class="supplier_refusal">отказ поставщика</div>
+                    @elseif($product->status == 'arrived_at_the_point_of_delivery' )
+                        <div class="arrived_at_the_point_of_delivery">поступил в ПВЗ</div>
+                    @elseif($product->status == 'issued' )
+                        <div class="issued">выдано</div>
+                    @elseif($product->status == 'returned' )
+                        <div class="returned">возвращено</div>
+                    @endif
                 </div>
             </div>
             @endforeach

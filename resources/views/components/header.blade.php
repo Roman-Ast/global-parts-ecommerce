@@ -50,6 +50,9 @@
                     <div id="user-data">
                     {{ auth()->user()->name }}
                         <a href="{{ route('logout') }}"><button class="btn btn-link">Выход</button></a>
+                        @if (auth()->user()->user_role = "admin")
+                            <a href="{{ route('admin_panel') }}"><button class="btn btn-link">Админка</button></a>
+                        @endif
                     </div>
                 @else   
                     <a id="sign-in-button-container" href="{{ route('login') }}">

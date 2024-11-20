@@ -70,6 +70,7 @@ class OrderController extends Controller
                 'searched_number' => $cartItem['originNumber'],
                 'fromStock' => $cartItem['stockFrom'],
                 'deliveryTime' => $cartItem['deliveryTime'],
+                'status' => 'payment_waiting'
             ]);
         }
 

@@ -22,7 +22,6 @@
         Результаты поиска
     </div>
     <div id="search-result-main-container">
-        
         @foreach ($finalArr as $index => $part)
         <form method="post" action="{{ route('getPart') }}" class="form-search-item">
             @csrf
