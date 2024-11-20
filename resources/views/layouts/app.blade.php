@@ -15,6 +15,7 @@
         <link href="{{ URL::asset('css/cart.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/orders.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/admin.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/garage.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/settlements.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/registerForm.css') }}" rel="stylesheet">

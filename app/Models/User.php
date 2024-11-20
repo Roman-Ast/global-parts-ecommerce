@@ -60,4 +60,9 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPassword
     {
         return $this->hasMany(Setlement::class);
     }
+
+    public function garage(): HasMany
+    {
+        return $this->hasMany(GaraGE::class);
+    }
 }

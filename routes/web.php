@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\GarageController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SettlementController;
 
@@ -28,6 +29,10 @@ Route::post('order/products', [OrderController::class, 'products']);
 Route::get('admin_panel', [AdminPanelController::class, 'index'])->name('admin_panel');
 Route::post('/payment', [AdminPanelController::class, 'pay']);
 Route::post('/product/change_status', [AdminPanelController::class, 'changeStatus']);
+Route::get('/garage', [GarageController::class, 'index']);
+Route::get('/garage/create', [GarageController::class, 'create']);
+Route::post('/garage/store', [GarageController::class, 'store'])->name('garage.store');
+
 
 Route::middleware(['auth', 'verified'])->group(function() {
     Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard');

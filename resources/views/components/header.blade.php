@@ -70,7 +70,7 @@
         <nav class="nav">
             <a class="nav-link" href="/orders">Заказы</a>
             <a class="nav-link" href="/settlements">Взаиморасчеты</a>
-            <a class="nav-link" href="#">Гараж</a>
+            <a class="nav-link" href="/garage">Гараж</a>
         </nav>
     </div>
 </div>
