@@ -4,7 +4,6 @@
    
 @section('content')
 
-
 <div id="search-res-main-container" class="container" class="container">
     @include('components.header')
 

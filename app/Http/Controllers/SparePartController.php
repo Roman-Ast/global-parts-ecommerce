@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\View;
 use ArmtekRestClient\Http\Exception\ArmtekException as ArmtekException; 
 use ArmtekRestClient\Http\Config\Config as ArmtekRestClientConfig;
 use ArmtekRestClient\Http\ArmtekRestClient as ArmtekRestClient; 
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class SparePartController extends Controller
 {
@@ -24,6 +25,7 @@ class SparePartController extends Controller
     const ARMTEK_STOCK_ASTANA = 'MOV0005505';
     const TISS_API_KEY = 'QXO7oqkH1_aifhVdi8W1GiMx4SEwzkPMTdwYjgcktOjW70aX_ve_xGDC7bTRBmQ37rH1k2ETsA3ZdCIfja0yHosRNNGwaYGGXuXFR6U4TADCRZF6lLvyjfKcg-zS5y4xQT4SNpi86vVPN5zOEFdhiZfRaKGh_U1MfHJz9IpAsyuc0ZHDHRaw0dO1tDHgQw2N4uPP0sq0kStch43q9zfZKhMsqTSNtgGVBnGRzaCkJzzuaXmfrL4Ot5ODBJ3x1tXnyVGW-p5IeZXOtIfeRWZMSnw3luiMztyY1m7p84r_qWJeVvr1J_3rR0R1EP7qAHjvX_QEnud83oqMCJppN4RCnD4sb5_fkylpyrEyuXRVvqviPx2-xiNhBwwLLkt67cNaZYBbtcaLcaZT5apXtVFW4B0IcwMHyqt_Oy3USMl3bkiBiJ7fGW6bOBidnoRCE6OqS1JTWKCkAZEoqY8rOX4A7p8YZTkamldmGbzf7sveBYhPSJvwmaUVWvzju6iEr7cB';
     const SHATEM_API_KEY = '{a9000264-381b-4c69-9af4-51fdd93b8eda}';
+
 
     public $partNumber = '';
 
@@ -138,25 +140,40 @@ class SparePartController extends Controller
 
     public function getSearchedPartAndCrosses (Request $request)
     {
-        
         $this->finalArr['originNumber'] = $request->partnumber;
 
         if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand, $request->partnumber, $request->guid);
         }
         $this->searchArmtek($request->brand, $request->partnumber);
-        //$this->searchTreid($request->brand, $request->partnumber);
+        //$this->searchPhaeton($request->brand, $request->partnumber);
+        $this->searchTreid($request->brand, $request->partnumber);
         //$this->searchTiss($request->brand, $request->partnumber);
         //$this->searchShatem($request->brand, $request->partnumber);
-        //$this->searchAutopiter($request->brand, $request->partnumber);
-        
-        //dd($this->finalArr);
+        $this->searchAutopiter($request->brand, $request->partnumber);
+
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber
         ]);
     }
 
+    public function searchPhaeton(String $brand, String $partnumber)
+    {
+        $partnumber = str_replace(' ', '', $partnumber);
+        
+        $ch = curl_init();
+        $resUrl = 'https://api.phaeton.kz/api/Search?Article='.$partnumber.'&Brand='.$brand.'&includeAnalogs=true&Source[]=1&UserGuid=9F6414C4-9683-11EF-BBBC-F8F21E092C7D&ApiKey=LnxrDfpQVZz1ncuoI14e';
+        
+        curl_setopt($ch, CURLOPT_URL, $resUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $res = curl_exec($ch);
+        curl_close($ch);
+        $result = json_decode($res, true);
+
+        dd($result);
+    }
     public function searchTreid (String $brand, String $partnumber) 
     {
         $this->partNumber = $partnumber;
@@ -672,8 +689,10 @@ class SparePartController extends Controller
 
     public function searchShatem(String $brand, String $partnumber)
     {
+        $partnumber = str_replace(' ', '', $partnumber);
+        
         $request_params = [
-            'ApiKey' => '{a9000264-381b-4c69-9af4-51fdd93b8eda}'
+            'ApiKey' => '{a9000264-381b-4c69-9af4-51fdd93b8eda}',
         ];
         $ch = curl_init('https://api.shate-m.kz/api/v1/auth/loginbyapikey/');
         curl_setopt($ch, CURLOPT_POST, true);
@@ -682,27 +701,29 @@ class SparePartController extends Controller
 
         $response = curl_exec($ch);
         curl_close($ch);
-        //dd($response);
-        $access_token = json_decode($response)->access_token;
-        //dd($access_token);
-        $request_params1 = [
-            
-            
-                "articleId" => 1248288,
-                "includeAnalogs" => true
-             
-            
-        ];
-        //dd(http_build_query($request_params1));
-        $ch1 = curl_init('https://api.shate-m.kz/api/v1/articles/1248291/analogs ');
-        //curl_setopt($ch1, CURLOPT_POST, true);
-        //curl_setopt($ch1, CURLOPT_POSTFIELDS, http_build_query($request_params1));
-        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
-
         
+        $access_token = json_decode($response)->access_token;
+
+        //получение информации по артикулу
+        $params = [
+            'searchString' => $partnumber,
+            'tradeMarkNames' => $brand
+        ];
+        $ch1 = curl_init();
+        $resUrl = 'https://api.shate-m.kz/api/v1/articles/search?' . http_build_query($params);
+        curl_setopt($ch1, CURLOPT_URL, $resUrl);
+        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true); 
+
+        $headers = [
+            'Authorization:' => 'Bearer ' . $access_token
+        ];
+        curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+
+        $html = curl_exec($ch1);
         curl_close($ch1);
-        $response = curl_exec($ch1);
-        dd($response);
+        
+        dd($html);
+
     }
 
     public function searchTiss(String $brand, String $partnumber)
@@ -749,7 +770,6 @@ class SparePartController extends Controller
 
         $articleId = '';
         
-        //dd($brand, $noAnalogsResult->FindCatalogResult->SearchCatalogModel);
         if (is_countable($noAnalogsResult->FindCatalogResult->SearchCatalogModel)) {
             foreach ($noAnalogsResult->FindCatalogResult->SearchCatalogModel as $key => $item) {
                 if(trim(strtolower($item->CatalogName)) == trim(strtolower($brand)) ||
@@ -767,165 +787,173 @@ class SparePartController extends Controller
             }
         }
         
-        //dd($articleId);
+        //получаем цены оригинального артикула
+        try {
+            $result = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 0, "DetailUid"=>null));
+            if (empty($result)) {
+                return 'error';
+            } else {
+                $result2 = (json_decode(json_encode($result), true));
         
-        $result = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 0, "DetailUid"=>null));
-        $result2 = (json_decode(json_encode($result), true));
-        
-        //dd($result);
-        if (!empty($result2) && is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
-            foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
-                array_push($this->finalArr['searchedNumber'], [
-                    'guid' => '',
-                    'brand' => $item['CatalogName'],
-                    'article' => $item['Number'],
-                    'name' => $item['Name'],
-                    'price' => round($item['SalePrice']),
-                    'stocks' => $item['NumberOfAvailable'],
-                    'multiplicity' => '',
-                    'type' => '',
-                    'delivery' => '',
-                    'extra' => '',
-                    'description' => '',
-                    'deliveryStart' => $item['DeliveryDate'],
-                    'deliveryEnd' => '',
-                    'supplier_name' => $item['Region'],
-                ]);
-            }
-        } else if(!empty($result2)) {
-            array_push($this->finalArr['searchedNumber'], [
-                'guid' => '',
-                'brand' => $result2['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
-                'article' => $result2['GetPriceIdResult']['PriceSearchModel']['Number'],
-                'name' => $result2['GetPriceIdResult']['PriceSearchModel']['Name'],
-                'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
-                'stocks' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
-                'multiplicity' => '',
-                'type' => '',
-                'delivery' => '',
-                'extra' => '',
-                'description' => '',
-                'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                'deliveryEnd' => '',
-                'supplier_name' => $result2['GetPriceIdResult']['PriceSearchModel']['Region'],
-            ]);
-        }
-        
-
-        
-
-        $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 2, "DetailUid"=>null));
-        //dd($resultWithAnalogs->GetPriceIdResult->PriceSearchModel[257]);
-        $result3 = (json_decode(json_encode($resultWithAnalogs), true));
-        
-        //dd($result3);
-        if(!empty($result2)) {
-            if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
-                foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
-                    if(
-                       !str_contains(trim(strtolower($item['CatalogName'])), trim(strtolower($brand)))
-                    ) {
-                        array_push($this->finalArr['crosses_to_order'], [
+                if (!empty($result2) && is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
+                    foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
+                        array_push($this->finalArr['searchedNumber'], [
+                            'guid' => '',
                             'brand' => $item['CatalogName'],
                             'article' => $item['Number'],
                             'name' => $item['Name'],
-                            'price' => $item['SalePrice'],
-                            'stocks' => [
-                                [
-                                    "stock_id" => $item['SellerId'],
-                                    "stock_name" => $item['Region'],
-                                    "stock_legend" => "",
-                                    "qty" =>$item['NumberOfAvailable'],
-                                    "price" => $item['SalePrice'],
-                                    "delivery_time" => $item['DeliveryDate'],
-                                    "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
-                                    "city" => $item['Region']
-                                ]
-                            ],
-                            "delivery_time" => $item['DeliveryDate'],
-                            "supplier_name" => $item['Region']
+                            'price' => round($item['SalePrice']),
+                            'stocks' => $item['NumberOfAvailable'],
+                            'multiplicity' => '',
+                            'type' => '',
+                            'delivery' => '',
+                            'extra' => '',
+                            'description' => '',
+                            'deliveryStart' => $item['DeliveryDate'],
+                            'deliveryEnd' => '',
+                            'supplier_name' => $item['Region'],
                         ]);
                     }
-                    
-                }
-            } else {
-                if(!str_contains(trim(strtolower($result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'])), $brand)) {
-                    array_push($this->finalArr['crosses_to_order'], [
-                        'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
-                        'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
-                        'name' => $result3['GetPriceIdResult']['PriceSearchModel']['Name'],
-                        'price' => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
-                        'stocks' => [
-                            [
-                                "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
-                                "stock_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
-                                "stock_legend" => "",
-                                "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
-                                "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
-                                "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                                "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
-                                "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
-                            ]
-                        ],
-                        "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                        "supplier_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                } else if(!empty($result2)) {
+                    array_push($this->finalArr['searchedNumber'], [
+                        'guid' => '',
+                        'brand' => $result2['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
+                        'article' => $result2['GetPriceIdResult']['PriceSearchModel']['Number'],
+                        'name' => $result2['GetPriceIdResult']['PriceSearchModel']['Name'],
+                        'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
+                        'stocks' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
+                        'multiplicity' => '',
+                        'type' => '',
+                        'delivery' => '',
+                        'extra' => '',
+                        'description' => '',
+                        'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
+                        'deliveryEnd' => '',
+                        'supplier_name' => $result2['GetPriceIdResult']['PriceSearchModel']['Region'],
                     ]);
                 }
             }
-        }else {
-            if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
-                foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
-                    
+        } catch (\Throwable $th) {
+            return 'error';
+        }
+
+        //получаем цены аналогов
+        try {
+            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 1, "DetailUid"=>null));
+            if (empty($resultWithAnalogs)) {
+                return 'error';
+            } else {
+                $result3 = (json_decode(json_encode($resultWithAnalogs), true));
+                
+                if(!empty($result2)) {
+                    if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
+                        foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
+                            if(
+                               !str_contains(trim(strtolower($item['Number'])), trim(strtolower($partnumber)))
+                            ) {
+                                array_push($this->finalArr['crosses_to_order'], [
+                                    'brand' => $item['CatalogName'],
+                                    'article' => $item['Number'],
+                                    'name' => $item['Name'],
+                                    'price' => $item['SalePrice'],
+                                    'stocks' => [
+                                        [
+                                            "stock_id" => $item['SellerId'],
+                                            "stock_name" => $item['Region'],
+                                            "stock_legend" => "",
+                                            "qty" =>$item['NumberOfAvailable'],
+                                            "price" => $item['SalePrice'],
+                                            "delivery_time" => $item['DeliveryDate'],
+                                            "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
+                                            "city" => $item['Region']
+                                        ]
+                                    ],
+                                    "delivery_time" => $item['DeliveryDate'],
+                                    "supplier_name" => $item['Region']
+                                ]);
+                            }
+                            
+                        }
+                    } else {
+                        if(!str_contains(trim(strtolower($result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'])), $brand)) {
+                            array_push($this->finalArr['crosses_to_order'], [
+                                'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
+                                'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
+                                'name' => $result3['GetPriceIdResult']['PriceSearchModel']['Name'],
+                                'price' => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
+                                'stocks' => [
+                                    [
+                                        "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
+                                        "stock_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
+                                        "stock_legend" => "",
+                                        "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
+                                        "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
+                                        "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
+                                        "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
+                                        "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                                    ]
+                                ],
+                                "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
+                                "supplier_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                            ]);
+                        }
+                    }
+                }else {
+                    if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
+                        foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
+                            
+                                array_push($this->finalArr['crosses_to_order'], [
+                                    'brand' => $item['CatalogName'],
+                                    'article' => $item['Number'],
+                                    'name' => $item['Name'],
+                                    'price' => $item['SalePrice'],
+                                    'stocks' => [
+                                        [
+                                            "stock_id" => $item['SellerId'],
+                                            "stock_name" => $item['Region'],
+                                            "stock_legend" => "",
+                                            "qty" =>$item['NumberOfAvailable'],
+                                            "price" => $item['SalePrice'],
+                                            "delivery_time" => $item['DeliveryDate'],
+                                            "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
+                                            "city" => $item['Region']
+                                        ]
+                                    ],
+                                    "delivery_time" => $item['DeliveryDate'],
+                                    "supplier_name" => $item['Region']
+                                ]);
+                            
+                            
+                        }
+                    } else {
+                       
                         array_push($this->finalArr['crosses_to_order'], [
-                            'brand' => $item['CatalogName'],
-                            'article' => $item['Number'],
-                            'name' => $item['Name'],
-                            'price' => $item['SalePrice'],
+                            'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
+                            'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
+                            'name' => $result3['GetPriceIdResult']['PriceSearchModel']['Name'],
+                            'price' => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
                             'stocks' => [
                                 [
-                                    "stock_id" => $item['SellerId'],
-                                    "stock_name" => $item['Region'],
+                                    "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
+                                    "stock_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
                                     "stock_legend" => "",
-                                    "qty" =>$item['NumberOfAvailable'],
-                                    "price" => $item['SalePrice'],
-                                    "delivery_time" => $item['DeliveryDate'],
-                                    "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
-                                    "city" => $item['Region']
+                                    "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
+                                    "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
+                                    "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
+                                    "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
+                                    "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
                                 ]
                             ],
-                            "delivery_time" => $item['DeliveryDate'],
-                            "supplier_name" => $item['Region']
+                            "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
+                            "supplier_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
                         ]);
-                    
-                    
+                    }
                 }
-            } else {
-               
-                    array_push($this->finalArr['crosses_to_order'], [
-                        'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
-                        'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
-                        'name' => $result3['GetPriceIdResult']['PriceSearchModel']['Name'],
-                        'price' => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
-                        'stocks' => [
-                            [
-                                "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
-                                "stock_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
-                                "stock_legend" => "",
-                                "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
-                                "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
-                                "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                                "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
-                                "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
-                            ]
-                        ],
-                        "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                        "supplier_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
-                    ]);
-                }
-            
+            }
+        } catch (\Throwable $th) {
+            return 'error';
         }
-        
-        //dd(count($this->finalArr['crosses_to_order']));
+
         return;
     }
 
@@ -1116,3 +1144,4 @@ class SparePartController extends Controller
         } else {
             return view('components.nothingFound');
         }*/
+       // 'http://api.phaeton.kz/api/Search?Article=03c103383d&Brand=vag&Sources[]=1&includeAnalogs=true&UserGuid=9F6414C4-9683-11EF-BBBC-F8F21E092C7D&ApiKey=LnxrDfpQVZz1ncuoI14e'

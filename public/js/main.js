@@ -1,10 +1,13 @@
 
+$(window).on('load', function () {
+   console.log($('#requestPartNumberContainer').children().length);
+});
+
+
 $('.form-search-item').on('click', function () {
    $('#shadow').fadeIn(400);
    $('#shadow').css({'display': 'flex'});
 });
-
-
 
 //добавление товара в корзину
 $('.stock-item-cart-btn').on('click', function () {
@@ -184,6 +187,7 @@ $('.settlement-item-id').on('click', function (e) {
    });
 });
 
+
 //смена статуса продукта
 $('.change_status_submit').on('click', function () {
    let productId = $(this).prev().val();
@@ -221,6 +225,8 @@ $('.menu-item-name').on('mouseenter', function () {
 $('.menu-item-name').on('mouseleave', function () {
    $(this).css({'scale': '1'});
 });
+
+
 
 
 
