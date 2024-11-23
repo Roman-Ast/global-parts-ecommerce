@@ -154,7 +154,7 @@ class SparePartController extends Controller
 
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
-            'searchedPartNumber' => $this->partNumber
+            'searchedPartNumber' => $this->partNumber,
         ]);
     }
 
@@ -1015,6 +1015,7 @@ class SparePartController extends Controller
 
         return strtolower(implode('', $arr));
     }
+    
 }
 
 

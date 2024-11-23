@@ -1,27 +1,55 @@
 
 $(window).on('load', function () {
+   //показываем кнопку "показать еще", если список оригинальных номеров больше 10
    let counter = 0;
    $('#requestPartNumberContainer').children().each(function () {
-      counter ++;
       if(counter > 10) {
          $(this).css({'display': 'none'});
       }
+      counter ++;
    });
 
    if (counter > 10) {
       $('#show-other-items').css({'display': 'block'});
-      $('#show-other-items a').text(`Показать еще ${$('#show-other-items').attr('counter')} из ${$('#requestPartNumberContainer').children().length}`);
+      $('#show-other-items a').text(`Показать еще ${$('#requestPartNumberContainer').children().length - Number($('#show-other-items').attr('counter'))} из ${$('#requestPartNumberContainer').children().length} (по 10)`);
+   }
+
+   //пагинация
+   const perPage = 50;
+
+   if ($('#crossesContainer-to-order').children().length > perPage) {
+      $('#crossesContainer-to-order').children().each(function (key, elem) {
+         if (key > perPage) {
+            $(this).css({'display': 'none'})
+         }
+      });
+
+      const pageCount = Math.floor($('#crossesContainer-to-order').children().length / perPage);
+      
+      $('#pagination-nav').css({'display': 'block'});
+
+      $('#pagination-nav ul').children().each(function (key, elem) {
+         if (Number($(elem).children().first().attr('page-num')) > pageCount) {
+            $(elem).css({'display': 'none'});
+         }
+      });
    }
 });
+
 //показывать еще товар когда список большой
 $('#show-other-items').on('click', function () {
    let counter1 = Number($(this).attr('counter'));
    let step = 10;
    counter1 += step;
 
-   $('#show-other-items a').text(`Показать еще ${step} из ${$('#requestPartNumberContainer').children().length}`);
+   $('#show-other-items a').text(`Показать еще ${($('#requestPartNumberContainer').children().length - $(this).attr('counter')) - 10} из ${$('#requestPartNumberContainer').children().length} (по ${step})`);
 
    $('#requestPartNumberContainer').children().each(function (key,elem) {
+      if (counter1 > $('#requestPartNumberContainer').children().length) {
+         $('#show-other-items').css({'display': 'none'});
+         return false;
+      }
+      
       if (counter1 == key) {
          $('#show-other-items').attr('counter', key)
          return false;
@@ -30,6 +58,26 @@ $('#show-other-items').on('click', function () {
       }
    });
 });
+
+//пагинация
+$('.page-link').on('click', function () {
+   $('.page-item').removeClass('active');
+   $(this).parent().addClass('active');
+   const perPage = 50;
+   const desirePage = $(this).attr('page-num');
+   const start  = (desirePage - 1) * perPage;
+   const end = desirePage * perPage;
+
+   $('#crossesContainer-to-order').children().each(function (key, elem) {
+      if (key >= start && key <= end) {
+         $(elem).css({'display': 'grid'});
+      } else {
+         $(elem).css({'display': 'none'});
+      }
+   });
+});
+
+
 
 $('.form-search-item').on('click', function () {
    $('#shadow').fadeIn(400);
