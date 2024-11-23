@@ -79,6 +79,9 @@
                         </div>
                     @endforeach
                 @endif
+                <div id="show-other-items" counter="10">
+                    <a href="###">Показать еще 10</a>
+                </div>
             </div>
             <div class="searchResForRequestPartNumber">
                 <div class="searchResForRequestPartNumberHeader">

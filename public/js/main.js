@@ -1,8 +1,35 @@
 
 $(window).on('load', function () {
-   console.log($('#requestPartNumberContainer').children().length);
-});
+   let counter = 0;
+   $('#requestPartNumberContainer').children().each(function () {
+      counter ++;
+      if(counter > 10) {
+         $(this).css({'display': 'none'});
+      }
+   });
 
+   if (counter > 10) {
+      $('#show-other-items').css({'display': 'block'});
+      $('#show-other-items a').text(`Показать еще ${$('#show-other-items').attr('counter')} из ${$('#requestPartNumberContainer').children().length}`);
+   }
+});
+//показывать еще товар когда список большой
+$('#show-other-items').on('click', function () {
+   let counter1 = Number($(this).attr('counter'));
+   let step = 10;
+   counter1 += step;
+
+   $('#show-other-items a').text(`Показать еще ${step} из ${$('#requestPartNumberContainer').children().length}`);
+
+   $('#requestPartNumberContainer').children().each(function (key,elem) {
+      if (counter1 == key) {
+         $('#show-other-items').attr('counter', key)
+         return false;
+      } else {
+         $(elem).css({'display': 'grid'});
+      }
+   });
+});
 
 $('.form-search-item').on('click', function () {
    $('#shadow').fadeIn(400);
@@ -215,7 +242,6 @@ $('.change_status_submit').on('click', function () {
          console.log(error);
       }
    });
-  
 });
 
 $('.menu-item-name').on('mouseenter', function () {

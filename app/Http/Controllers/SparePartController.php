@@ -142,12 +142,12 @@ class SparePartController extends Controller
     {
         $this->finalArr['originNumber'] = $request->partnumber;
 
-        if($request->rossko_need_to_search) {
+        /*if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand, $request->partnumber, $request->guid);
-        }
-        $this->searchArmtek($request->brand, $request->partnumber);
+        }*/
+        //$this->searchArmtek($request->brand, $request->partnumber);
         //$this->searchPhaeton($request->brand, $request->partnumber);
-        $this->searchTreid($request->brand, $request->partnumber);
+        //$this->searchTreid($request->brand, $request->partnumber);
         //$this->searchTiss($request->brand, $request->partnumber);
         //$this->searchShatem($request->brand, $request->partnumber);
         $this->searchAutopiter($request->brand, $request->partnumber);
