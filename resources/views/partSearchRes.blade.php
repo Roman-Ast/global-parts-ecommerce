@@ -146,85 +146,6 @@
             </div>
             @endif
             <div id="crossesContainer-to-order">
-                <nav aria-label="..." id="pagination-nav">
-                    <ul class="pagination pagination-sm">
-                        <li class="page-item active">
-                            <a class="page-link"  page-num="1">1</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link"  page-num="2">2</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link"  page-num="3">3</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link"  page-num="4">4</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link"  page-num="5">5</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="6">6</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="7">7</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="8">8</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="9">9</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="10">10</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="11">11</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="12">12</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="13">13</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="14">14</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="15">15</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="16">16</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="17">17</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="18">18</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="19">19</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="20">20</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="21">21</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="22">22</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="23">23</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="24">24</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" page-num="25">25</a>
-                        </li>
-                    </ul>
-                </nav>
                 @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
@@ -278,22 +199,22 @@
                 </div>
                 @endforeach
             </div>
-            <nav aria-label="..." id="pagination-nav">
+            <nav aria-label="..." class="pagination-nav">
                 <ul class="pagination pagination-sm">
                     <li class="page-item active">
-                        <a class="page-link"  page-num="1">1</a>
+                        <a class="page-link" page-num="1">1</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link"  page-num="2">2</a>
+                        <span class="page-link" page-num="2">2</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link"  page-num="3">3</a>
+                        <a class="page-link" page-num="3">3</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link"  page-num="4">4</a>
+                        <a class="page-link" page-num="4">4</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link"  page-num="5">5</a>
+                        <a class="page-link" page-num="5">5</a>
                     </li>
                     <li class="page-item">
                         <a class="page-link" page-num="6">6</a>

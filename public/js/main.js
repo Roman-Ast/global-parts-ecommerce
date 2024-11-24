@@ -26,9 +26,9 @@ $(window).on('load', function () {
 
       const pageCount = Math.floor($('#crossesContainer-to-order').children().length / perPage);
       
-      $('#pagination-nav').css({'display': 'block'});
+      $('.pagination-nav').css({'display': 'flex'});
 
-      $('#pagination-nav ul').children().each(function (key, elem) {
+      $('.pagination-nav ul').children().each(function (key, elem) {
          if (Number($(elem).children().first().attr('page-num')) > pageCount) {
             $(elem).css({'display': 'none'});
          }

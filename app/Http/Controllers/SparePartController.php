@@ -37,7 +37,7 @@ class SparePartController extends Controller
         'crosses_on_stock' => [
             
         ],
-        'crosses_to_order' => [
+        '' => [
 
         ]
     ];
@@ -149,8 +149,8 @@ class SparePartController extends Controller
         //$this->searchPhaeton($request->brand, $request->partnumber);
         //$this->searchTreid($request->brand, $request->partnumber);
         //$this->searchTiss($request->brand, $request->partnumber);
-        //$this->searchShatem($request->brand, $request->partnumber);
-        $this->searchAutopiter($request->brand, $request->partnumber);
+        $this->searchShatem($request->brand, $request->partnumber);
+        //$this->searchAutopiter($request->brand, $request->partnumber);
 
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
@@ -691,6 +691,7 @@ class SparePartController extends Controller
     {
         $partnumber = str_replace(' ', '', $partnumber);
         
+        //получение токена
         $request_params = [
             'ApiKey' => '{a9000264-381b-4c69-9af4-51fdd93b8eda}',
         ];
@@ -704,7 +705,7 @@ class SparePartController extends Controller
         
         $access_token = json_decode($response)->access_token;
 
-        //получение информации по артикулу
+        //получение внутреннего id товара
         $params = [
             'searchString' => $partnumber,
             'tradeMarkNames' => $brand
@@ -715,15 +716,31 @@ class SparePartController extends Controller
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true); 
 
         $headers = [
-            'Authorization:' => 'Bearer ' . $access_token
+            'Authorization:Bearer ' . $access_token,
+            'Content-Type: application/x-www-form-urlencoded; charset=UTF-8'
         ];
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
 
-        $html = curl_exec($ch1);
+        $html = json_decode(curl_exec($ch1));
         curl_close($ch1);
         
-        dd($html);
-
+        $articleId = $html[0]->article->id;
+        //dd($articleId);
+        //получение ценового предложения
+        $request_data1 = 
+            array(["articleId" =>  $articleId, "includeAnalogs" => true])
+        ;
+        //dd(json_encode($request_data1));
+        $ch2 = curl_init();
+        curl_setopt($ch2, CURLOPT_URL, 'https://api.shate-m.kz/api/v1/prices/search');
+        curl_setopt($ch2, CURLOPT_POST, true);
+        curl_setopt($ch2, CURLOPT_POSTFIELDS, http_build_query($request_data1));
+        curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
+        $html2 = curl_exec($ch2);
+        curl_close($ch2);
+        
+        dd($html2);
     }
 
     public function searchTiss(String $brand, String $partnumber)
@@ -1015,134 +1032,4 @@ class SparePartController extends Controller
 
         return strtolower(implode('', $arr));
     }
-    
 }
-
-
-
-
-/*$connect = array(
-            'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
-            'options' => array(
-                'connection_timeout' => 1,
-                'trace' => true
-            )
-        );
-        
-        $param = array(
-            'KEY1' => self::API_KEY1_ROSSKO,
-            'KEY2' => self::API_KEY2_ROSSKO,
-            'text' => $partNumber,
-            'delivery_id' => '000000001',
-            'address_id'  => '229881'
-        );
-        
-        $query  = new SoapClient($connect['wsdl'], $connect['options']);
-        
-        try {
-            $result = $query->GetSearch($param);
-            
-        } catch (\Throwable $th) {
-            return view('components.hostError');
-        }
-        //dd($result->SearchResult);
-        if ($result->SearchResult->success) {
-            $catalog = [];
-
-            if (!is_countable($result->SearchResult->PartsList->Part)) {
-                array_push($catalog,[
-                    'brand' => $result->SearchResult->PartsList->Part->brand,
-                    'partnumber' => $result->SearchResult->PartsList->Part->partnumber,
-                    'name' => $result->SearchResult->PartsList->Part->name,
-                    'guid' => $result->SearchResult->PartsList->Part->guid,
-                    'rossko_need_to_search' => true
-                ]);
-            } else {
-                foreach ($result->SearchResult->PartsList->Part as $part) {
-                    array_push($catalog,[
-                        'brand' => $part->brand,
-                        'partnumber' => $part->partnumber,
-                        'name' => $part->name,
-                        'guid' => $part->guid,
-                        'rossko_need_to_search' => true
-                    ]);
-                }
-            }
-            
-            return view('catalogSearchRes')->with(['finalArr' => $catalog]);
-        } else {
-            $ch1 = curl_init(); 
-        
-            $fields = array("JSONparameter" => "{'Article': '".$partNumber."'}");
-            
-            curl_setopt($ch1, CURLOPT_URL, "api.tmparts.ru/api/ArticleBrandList?".http_build_query($fields)); 
-            curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
-            
-            $headers = array(         
-            'Authorization: Bearer '. self::TISS_API_KEY
-            ); 
-            curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
-            
-            try {
-                $response = json_decode(curl_exec($ch1),true);
-            } catch (\Throwable $th) {
-                return view('components.hostError');
-            }
-            
-            if (!array_key_exists('BrandList', $response)) {
-                return view('components.nothingFound');
-            }
-            $catalog = [];
-            
-            foreach ($response['BrandList'] as $item) {
-                array_push($catalog,[
-                    'brand' => $item['BrandName'],
-                    'partnumber' => $response['Article'],
-                    'name' => '',
-                    'guid' => '',
-                    'rossko_need_to_search' => false
-                ]);
-            }
-            if(empty($catalog)) {
-                return view('components.nothingFound');
-            }
-            return view('catalogSearchRes')->with(['finalArr' => $catalog]);
-        }*/
-
-
-
-
-        /*$client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL");
-        
-        if (!($client->IsAuthorization()->IsAuthorizationResult)) {
-            $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
-        }
-
-        $result = $client->FindCatalog (array("Number"=>$partNumber));
-
-        $catalog = [];
-
-        if(property_exists($result->FindCatalogResult, 'SearchCatalogModel')){
-            if(is_countable($result->FindCatalogResult->SearchCatalogModel)){
-                foreach ($result->FindCatalogResult->SearchCatalogModel as $item) {
-                    array_push($catalog,[
-                        'brand' => $item->CatalogName,
-                        'partnumber' => $item->Number,
-                        'name' => $item->Name,
-                        'articleIdForPiter' => $item->ArticleId
-                    ]);
-                }
-            } else {
-                array_push($catalog,[
-                    'brand' => $result->FindCatalogResult->SearchCatalogModel->CatalogName,
-                    'partnumber' => $result->FindCatalogResult->SearchCatalogModel->Number,
-                    'name' => $result->FindCatalogResult->SearchCatalogModel->Name,
-                    'articleIdForPiter' => $result->FindCatalogResult->SearchCatalogModel->ArticleId
-                ]);
-            }
-
-            return view('catalogSearchRes')->with(['finalArr' => $catalog]);
-        } else {
-            return view('components.nothingFound');
-        }*/
-       // 'http://api.phaeton.kz/api/Search?Article=03c103383d&Brand=vag&Sources[]=1&includeAnalogs=true&UserGuid=9F6414C4-9683-11EF-BBBC-F8F21E092C7D&ApiKey=LnxrDfpQVZz1ncuoI14e'

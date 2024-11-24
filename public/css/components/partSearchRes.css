@@ -158,7 +158,11 @@
     margin-bottom: 10px;
 }
 
-#pagination-nav{
+.pagination-nav{
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: baseline;
+    margin-right: 10px;
     display: none;
 }
 .page-item{
