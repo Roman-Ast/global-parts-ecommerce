@@ -37,7 +37,7 @@ class SparePartController extends Controller
         'crosses_on_stock' => [
             
         ],
-        '' => [
+        'crosses_to_order' => [
 
         ]
     ];
@@ -142,16 +142,16 @@ class SparePartController extends Controller
     {
         $this->finalArr['originNumber'] = $request->partnumber;
 
-        /*if($request->rossko_need_to_search) {
+        if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand, $request->partnumber, $request->guid);
-        }*/
-        //$this->searchArmtek($request->brand, $request->partnumber);
+        }
+        $this->searchArmtek($request->brand, $request->partnumber);
         //$this->searchPhaeton($request->brand, $request->partnumber);
-        //$this->searchTreid($request->brand, $request->partnumber);
+        $this->searchTreid($request->brand, $request->partnumber);
         //$this->searchTiss($request->brand, $request->partnumber);
         $this->searchShatem($request->brand, $request->partnumber);
-        //$this->searchAutopiter($request->brand, $request->partnumber);
-
+        $this->searchAutopiter($request->brand, $request->partnumber);
+        //dd($this->finalArr);
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
@@ -178,6 +178,11 @@ class SparePartController extends Controller
     {
         $this->partNumber = $partnumber;
         //dd([$brand, $partnumber]);
+        if ($brand == 'Hyundai/Kia') {
+            $brand = 'Hyundai';
+        } else if ($brand == 'Peugeot/Citroen') {
+            $brand = 'Peugeot';
+        }
         $url = "https://api2.autotrade.su/?json";
 
         //поиск по конкретно запрошенному номеру
@@ -231,8 +236,8 @@ class SparePartController extends Controller
                                     'delivery' => '',
                                     'extra' => '',
                                     'description' => 'trd',
-                                    'deliveryStart' => '',
-                                    'deliveryEnd' => '',
+                                    'deliveryStart' => '1.5-2 часа',
+                                    'deliveryEnd' => '1.5-2 часа',
                                     'supplier_name' => 'trd'
                                 ]);
                             }
@@ -670,7 +675,7 @@ class SparePartController extends Controller
                                 'qty' => $crossItem->RVALUE,
                                 'price' => $crossItem->PRICE
                             ]
-                            ],
+                        ],
                         'supplier_name' => 'rmtk',
                     ]);
                 } else {
@@ -690,6 +695,12 @@ class SparePartController extends Controller
     public function searchShatem(String $brand, String $partnumber)
     {
         $partnumber = str_replace(' ', '', $partnumber);
+        //dd($brand);
+        if ($brand == 'Citroen/Peugeot') {
+            $brand = 'PSA';
+        } else if ($brand == 'Hyundai/Kia') {
+            $brand = 'HYUNDAI-KIA';
+        }
         
         //получение токена
         $request_params = [
@@ -708,39 +719,113 @@ class SparePartController extends Controller
         //получение внутреннего id товара
         $params = [
             'searchString' => $partnumber,
-            'tradeMarkNames' => $brand
+            'TradeMarkNames' => $brand
         ];
+        
         $ch1 = curl_init();
         $resUrl = 'https://api.shate-m.kz/api/v1/articles/search?' . http_build_query($params);
         curl_setopt($ch1, CURLOPT_URL, $resUrl);
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true); 
-
         $headers = [
             'Authorization:Bearer ' . $access_token,
-            'Content-Type: application/x-www-form-urlencoded; charset=UTF-8'
         ];
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
 
         $html = json_decode(curl_exec($ch1));
+        //dd($html);
         curl_close($ch1);
-        
+        if (empty($html)) {
+            return ;
+        }
         $articleId = $html[0]->article->id;
-        //dd($articleId);
-        //получение ценового предложения
-        $request_data1 = 
-            array(["articleId" =>  $articleId, "includeAnalogs" => true])
-        ;
-        //dd(json_encode($request_data1));
-        $ch2 = curl_init();
-        curl_setopt($ch2, CURLOPT_URL, 'https://api.shate-m.kz/api/v1/prices/search');
-        curl_setopt($ch2, CURLOPT_POST, true);
-        curl_setopt($ch2, CURLOPT_POSTFIELDS, http_build_query($request_data1));
-        curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
-        $html2 = curl_exec($ch2);
-        curl_close($ch2);
         
-        dd($html2);
+        //получение ценового предложения
+        $headers1 = [
+            'Authorization:Bearer ' . $access_token,
+            'Content-Type: application/json',
+        ];
+        $request_params2 = [
+            array(
+                'articleId' => $articleId,
+                'includeAnalogs' => true
+            )
+        ];
+        $ch2 = curl_init();
+        curl_setopt($ch2, CURLOPT_URL, "https://api.shate-m.kz/api/v1/prices/search/with_article_info/");
+        curl_setopt($ch2, CURLOPT_POST, true);
+        curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($request_params2));
+        curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers1);
+
+        $response = json_decode(curl_exec($ch2));
+        
+        curl_close($ch2);
+        //dd($response);
+
+        foreach ($response as $key => $item) {
+            if ($item->article->code == $partnumber) {
+                foreach ($item->prices as $key => $price) {
+                    if ($price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || $price->addInfo->city == 'Подольск') {
+                        array_push($this->finalArr['searchedNumber'], [
+                            'brand' => $item->article->tradeMarkName,
+                            'article' => $item->article->code,
+                            'name' => $item->article->name,
+                            'price' => $price->price->value,
+                            'stocks' => $price->quantity->available,
+                            'multiplicity' => '',
+                            'deliveryStart' => '',
+                            'type' =>'',
+                            'delivery' => '',
+                            'extra' => '',
+                            'description' => '',
+                            'deliveryStart' => '',
+                            'deliveryEnd' => '',
+                            'supplier_name' => 'shtm'
+                        ]);
+                    }
+                }
+            } else {
+                foreach ($item->prices as $key => $price) {
+                    if($price->addInfo->city == 'Астана') {
+                        array_push($this->finalArr['crosses_on_stock'], [
+                            'brand' => $item->article->tradeMarkName,
+                            'article' => $item->article->code,
+                            'name' => $item->article->name,
+                            'stock_legend' => $price->addInfo->city,
+                            'qty' => $price->quantity->available,
+                            'price' => $price->price->value,
+                            'delivery_time' => '1.5-2 часа',
+                            'stocks' => [
+                                [
+                                    'qty' => $price->quantity->available,
+                                    'price' => $price->price->value
+                                ]
+                            ],
+                            'supplier_name' => 'shtm'
+                        ]);
+                    } else if ($price->addInfo->city == 'Екатеринбург' || $price->addInfo->city == 'Подольск') {
+                        array_push($this->finalArr['crosses_to_order'], [
+                            'brand' => $item->article->tradeMarkName,
+                            'article' => $item->article->code,
+                            'name' => $item->article->name,
+                            'qty' => $price->quantity->available,
+                            'price' => $price->price->value,
+                            'delivery_time' => $price->shippingDateTime,
+                            'stocks' => [
+                                [
+                                    'qty' => $price->quantity->available,
+                                    'price' => $price->price->value
+                                ]
+                            ],
+                            'supplier_name' => $price->addInfo->city . '(shtm)'
+                        ]);
+                    }
+                    
+                }
+            }
+        }
+        //dd($this->finalArr);
+        return;
     }
 
     public function searchTiss(String $brand, String $partnumber)
@@ -868,6 +953,7 @@ class SparePartController extends Controller
                             if(
                                !str_contains(trim(strtolower($item['Number'])), trim(strtolower($partnumber)))
                             ) {
+                                
                                 array_push($this->finalArr['crosses_to_order'], [
                                     'brand' => $item['CatalogName'],
                                     'article' => $item['Number'],
@@ -889,10 +975,10 @@ class SparePartController extends Controller
                                     "supplier_name" => $item['Region']
                                 ]);
                             }
-                            
                         }
                     } else {
                         if(!str_contains(trim(strtolower($result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'])), $brand)) {
+                            dd($resultWithAnalogs);
                             array_push($this->finalArr['crosses_to_order'], [
                                 'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
                                 'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
@@ -918,7 +1004,6 @@ class SparePartController extends Controller
                 }else {
                     if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
                         foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
-                            
                                 array_push($this->finalArr['crosses_to_order'], [
                                     'brand' => $item['CatalogName'],
                                     'article' => $item['Number'],
@@ -939,11 +1024,8 @@ class SparePartController extends Controller
                                     "delivery_time" => $item['DeliveryDate'],
                                     "supplier_name" => $item['Region']
                                 ]);
-                            
-                            
                         }
                     } else {
-                       
                         array_push($this->finalArr['crosses_to_order'], [
                             'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
                             'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
@@ -970,7 +1052,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return 'error';
         }
-
+        
         return;
     }
 
