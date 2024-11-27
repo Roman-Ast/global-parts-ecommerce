@@ -9,7 +9,36 @@
 
     <div id="search-res-main-wrapper">
         <div id="search-res-filter">
-
+            <div class="search-res-filter-item" id="filter-diaposon">
+                <div class="search-res-filter-item-header">
+                    ЦЕНА
+                </div>
+                <div class="search-res-filter-item-content">
+                    
+                    <input type="range" class="form-range" id="customRange1">
+                </div>
+            </div>
+            <div class="search-res-filter-item" id="filter-brands">
+                <div class="search-res-filter-item-header">
+                    БРЕНД
+                </div>
+                <div class="search-res-filter-item-content">
+                    <ul>
+                        <li>
+                            
+                                @foreach ($brands as $brand)
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="{{ $brand }}" id="flexCheckDefault">
+                                    <label class="form-check-label" for="flexCheckDefault" class="filter-brand-name">
+                                        {{ $brand }}
+                                    </label>
+                                </div>
+                                @endforeach
+                            
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
     
         <div id="search-part-main-container">
@@ -21,7 +50,7 @@
                     Наименование
                 </div>
                 <div class="search-res-part-header-item">
-                    Срок поставки
+                    Доставка
                 </div>
                 <div class="search-res-part-header-item">
                     Кол-во

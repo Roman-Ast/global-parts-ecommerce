@@ -8,13 +8,101 @@ body{
 a {
     text-decoration: none;
 }
-
-#main-container{
-    width: 100;
-    min-height: 50vh;
-    margin-top: 120px;
+ul{
+    list-style-type: none;
 }
-
+::-webkit-input-placeholder {
+    font-style: italic;
+ }
+#main-container{
+    min-height: 50vh;
+    margin-top: 80px;
+    display: grid;
+    grid-template-columns: 50% 50%;
+    grid-template-rows: 50% 50%;
+    padding: 0;
+}
+#steering{
+    grid-row: span 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#steering-wrapper{
+    width: 90%;
+    height: 95%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #eee;
+}
+#steering-reika{
+    position: absolute;
+    width: 80%;
+    height: 80%;
+    background-image: url('/images/reika.png');
+    background-size: cover;
+    background-position: 50% 50%;
+    display: none;
+}
+#steering-gur{
+    position: absolute;
+    width: 80%;
+    height: 80%;
+    background-image: url('/images/gur.png');
+    background-size: contain;
+}
+#steering-text{
+    align-self: flex-end;
+    margin-bottom: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+}
+#mobis{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+#mobis-wrapper{
+    background-image: url('/images/mobis3.png');
+    background-size: 70%;
+    background-repeat: no-repeat;
+    background-position: 50% 60%;
+    width: 80%;
+    height: 90%;
+    border: 1px solid #eee;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+#mobis-text{
+    align-self: flex-end;
+    margin-bottom: 5px;
+    
+    font-weight: 600;
+}
+#all-parts{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+#all-parts-wrapper{
+    background-image: url('/images/car-from-parts.jpg');
+    width: 80%;
+    height: 90%;
+    border: 1px solid #eee;
+    background-size: 70%;
+    background-repeat: no-repeat;
+    background-position: 50% 100%;
+    display: flex;
+    justify-content: center;
+}
+#all-cars-text{
+    align-self: flex-end;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
 .stock-item-cart-btn{
     padding: 1px;
     border-radius: 2px;
@@ -24,3 +112,21 @@ a {
     cursor: pointer;
     border: 1px solid #8fcae6;
 }
+#whatsapp-container{
+    margin-left: 20px;
+    cursor: pointer;
+}
+#modal-qr{
+    width: 300px;
+    height: 300px;
+    margin-top: 200px;
+    z-index: 5;
+    text-align: center;
+    color: #fff;
+}
+#modal-qr img{
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+

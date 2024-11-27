@@ -28,7 +28,12 @@
     </div>
 
     @include('components.header')
-    
+    @auth
+    @else
+    <div class="alert alert-warning" role="alert">
+      Что оформить заказ, войдите или зарегестрируйтесь
+    </div>
+    @endauth
     <div id="cart-content-wrapper" class="container">
         <div id="cart-content-inner-wrapper">
             <div id="cart-header">
@@ -45,7 +50,9 @@
                 <a href="cart/clear">
                     <button class="btn btn-danger" style="margin-right: 5px">Очистить</button>
                 </a>
+                @auth
                 <a href="#"><button class="btn btn-success" id="modal-show">Заказать</button></a>
+                @endauth
             </div>
             <div id="cart-content">
                 @if (session()->has('cart'))
@@ -65,7 +72,10 @@
                     <tbody>
                         <form action="/makeorder" method="POST" id="make-order-form">
                           @csrf
+                            @auth
                             <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+                            @endauth
+                            
                             @foreach (session()->get('cart')->content() as $cartItem)
                                 <tr class="cart-item">
                                     <td><input type="hidden" name="stockFrom" value="$cartItem['stockFrom']">{{ $cartItem['stockFrom'] }}</td>

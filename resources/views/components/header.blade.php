@@ -1,23 +1,21 @@
 <div id="main-header" class="">
-    <div id="main-header-wrapper">
+    <div id="main-header-wrapper" class="container">
 
-        <div id="logo-container">
-            <a id="logo-wrapper" href="/home">
-                <img src="/images/logo.jpg" alt="main-logo" id="logo-img">
-            </a>
-        </div>
+        <a id="logo-container" href="/">
+            <img src="/images/logo1.png" alt="main-logo" id="logo-img">
+        </a>
 
         <div id="search-bar-wrapper">
             <form action="/getCatalog" method="GET " enctype="multipart/form-data" id="search-bar-container">
                 <div id="input-searchbtn-wrapper">
                     <div id="search-button-container">
-                        <button type="submit" class="btn btn-primary btn-lg" id="search-btn">Найти</button>
+                        <button type="submit" class="btn" id="search-btn"><img src="/images/lupa-24.png"></button>
                     </div>
-                    <div class="input-group input-group-lg">
-                        <input type="text" name="partNumber" id="searchBarInput" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg" placeholder="введите VIN код авто или партномер детали" required>
+                    <div class="input-group input-group">
+                        <input type="text" name="partNumber" id="searchBarInput" class="form-control" placeholder="введите номер детали" required>
                     </div>
                 </div>
-                <div id="searchOptions">
+                <!--<div id="searchOptions">
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" id="inlineCheckbox1" value="inStockAndToOrder" checked name="searchType">
                         <label class="form-check-label" for="inlineCheckbox1">в наличии и на заказ</label>
@@ -30,20 +28,18 @@
                         <input class="form-check-input" type="radio" id="inlineCheckbox3" value="onlyToOrder" name="searchType">
                         <label class="form-check-label" for="inlineCheckbox2">только на заказ</label>
                     </div>
-                </div>
+                </div>-->
             </form>
         </div>
 
         <div id="cart-wrapper">
-            <a href="/cart"><img src="/images/cart-main.png" alt="корзина" id="cart-big-img"></a>
-            
+            <a href="/cart"><img src="/images/cart-36.png" alt="корзина" id="cart-big-img"></a>
+                    
             @if (session()->has('cart') && session()->get('cart')->count() != 0)
                 <div id="header-cart-qty">кол-во: {{ session()->get('cart')->count() }}</div>
                 <div id="header-cart-sum">сумма: {{ number_format(session()->get('cart')->total(), 0, '.', ' ') }} T</div>
             @endif
-            
         </div>
-
         <div id="auth-buttons-container">
             @if (Route::has('login'))
                 @auth
@@ -56,22 +52,23 @@
                     </div>
                 @else   
                     <a id="sign-in-button-container" href="{{ route('login') }}">
-                        <button id="sign-in-btn" class="btn btn-sm btn-info">Войти</button>
+                        <button id="sign-in-btn" class="btn btn-sm btn-link">Войти</button>
                     </a>
-                
                     <a id="sign-up-button-container" href="{{ route('register') }}">
-                        <button id="sign-up-btn" class="btn btn-sm btn-light">Регистрация</button>
+                        <button id="sign-up-btn" class="btn btn-sm btn-link">Регистрация</button>
                     </a>
                 @endif
             @endif
         </div>
     </div>
     <div id="dropdown-menu-container" class="container">
-        <nav class="nav">
-            <a class="nav-link" href="/orders">Заказы</a>
-            <a class="nav-link" href="/settlements">Взаиморасчеты</a>
-            <a class="nav-link" href="/garage">Гараж</a>
-        </nav>
+        @auth
+            <nav class="nav">
+                <a class="nav-link" href="/orders">Заказы</a>
+                <a class="nav-link" href="/settlements">Взаиморасчеты</a>
+                <a class="nav-link" href="/garage">Гараж</a>
+            </nav>
+        @endauth
     </div>
 </div>
 

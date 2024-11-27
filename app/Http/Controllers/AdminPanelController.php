@@ -18,7 +18,7 @@ class AdminPanelController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $orders = Order::all();
+        $orders = Order::orderBy('date', 'desc')->get();
         $settlements = Setlement::all();
         $users = User::all();
         $payments = Payment::all();

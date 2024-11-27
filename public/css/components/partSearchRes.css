@@ -1,10 +1,12 @@
 #search-res-main-container{
-    margin-top: 150px;
+    margin-top: 100px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
     min-height: 47vh;
+    background-color: #eeeeee;
+    padding-bottom: 20px;
 }
 #search-res-main-wrapper{
     display: flex;
@@ -60,7 +62,8 @@
     display: grid;
     grid-template-columns: 7% 13% 12% 26% 10% 5% 7% 10% 10%;
     grid-template-rows: minmax(80px, flex);
-    
+    background-color: #fff;
+    padding-left: 5px;
 }
 .requestPartNumberContainer-item-entity {
     margin-top: 9px;
@@ -157,7 +160,6 @@
     margin-left: 5px;
     margin-bottom: 10px;
 }
-
 .pagination-nav{
     flex-direction: row;
     justify-content: flex-end;
@@ -168,4 +170,19 @@
 .page-item{
     cursor: pointer;
 }
+#crossesContainer-on-stock{
+    padding-bottom: 10px;
+}
+#search-res-filter{
+    font-size: 0.9em;
+    letter-spacing: 1px;
+    background-color: #fff;
+    padding: 5px;
+}
+.search-res-filter-item-header{
+    background-color: #eeeeee;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
 

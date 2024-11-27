@@ -13,7 +13,7 @@
             </div>
         </div>
         <div id="loading" class="d-flex justify-content-center mt-5 pouring">
-            Выполняется проценка складов... это может занять несколько секунд, пожалуйста ожидайте...
+            Выполняется поиск... это может занять несколько секунд, пожалуйста ожидайте...
         </div>
     </div>
     @include('components.header')

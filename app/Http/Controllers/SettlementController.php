@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setlement;
 use Illuminate\Http\Request;
 
 class SettlementController extends Controller
@@ -10,8 +11,8 @@ class SettlementController extends Controller
     {
         $user = auth()->user();
         
-        $settlements = $user->settlements;
-        $order = $user->orders;
+        $settlements = Setlement::where('user_id', $user->id)->orderBy('date', 'desc')->get();
+        $orders = $user->orders;
         $sumReleased = $settlements->where('released', 1)->sum('sum');
         $sumPaid = $settlements->where('paid', 1)->sum('sum');
 

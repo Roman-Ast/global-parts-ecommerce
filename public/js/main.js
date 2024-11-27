@@ -300,8 +300,31 @@ $('.menu-item-name').on('mouseleave', function () {
    $(this).css({'scale': '1'});
 });
 
+//скрытие/появление картинок гур/рейка
+setInterval(function () {
+   $('#steering-reika').toggle('slow');
+   $('#steering-gur').toggle('slow');
+}, 5000)
 
-
+//показ wa-qr
+$('#whatsapp-container img').on('click', function () {
+   $('#shadow').fadeIn();
+   $('#shadow').css({'background-color': 'rgba(0, 0, 0, .8)'});
+});
+$('#footer-wa').on('click', function () {
+   $('#shadow').fadeIn();
+   $('#shadow').css({'background-color': 'rgba(0, 0, 0, .8)'});
+});
+$('#footer-phone').on('click', function () {
+   $('#shadow').fadeIn();
+   $('#shadow').css({'background-color': 'rgba(0, 0, 0, .8)'});
+});
+$('#model-qr').on('click', function () {
+   $('#shadow').fadeOut();
+});
+$('#shadow').on('click', function () {
+   $('#shadow').fadeOut();
+});
 
 
 

@@ -31,15 +31,10 @@ class SparePartController extends Controller
 
     public $finalArr = [
         'originNumber' => '',
-        'searchedNumber' => [
-            
-        ],
-        'crosses_on_stock' => [
-            
-        ],
-        'crosses_to_order' => [
-
-        ]
+        'searchedNumber' => [],
+        'crosses_on_stock' => [],
+        'crosses_to_order' => [],
+        'brands' => []
     ];
     
 
@@ -151,10 +146,11 @@ class SparePartController extends Controller
         //$this->searchTiss($request->brand, $request->partnumber);
         $this->searchShatem($request->brand, $request->partnumber);
         $this->searchAutopiter($request->brand, $request->partnumber);
-        //dd($this->finalArr);
+        
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
+            'brands' => array_unique($this->finalArr['brands'])
         ]);
     }
 
@@ -209,8 +205,13 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded; charset=UTF-8'));
         $html = curl_exec($ch);
         curl_close($ch);
-        $result = json_decode($html, true);
-        //dd($result);
+        
+        try {
+            $result = json_decode($html, true);
+        } catch (\Throwable $th) {
+            return;
+        }
+
         //помещаем найденные позиции в итоговый массив
         if (strlen($result['message']) <= 2) {
             foreach ($result['items'] as $key => $item) {
@@ -223,6 +224,8 @@ class SparePartController extends Controller
                                 }
                             }
                             if(!empty($searched_number_stocks)) {
+                                array_push($this->finalArr['brands'], $item['brand']);
+                                
                                 array_push($this->finalArr['searchedNumber'], [
                                     'guid' => '',
                                     'brand' => $item['brand'],
@@ -265,7 +268,6 @@ class SparePartController extends Controller
         $html = curl_exec($ch);
         curl_close($ch);
         $result = json_decode($html, true);
-        //dd($result);
         
         //проверка остатков кросс-номеров на складе 
         $crossArr = [];
@@ -310,6 +312,8 @@ class SparePartController extends Controller
                         }
                     }
                     if (!empty($crosses_stocks)) {
+                        array_push( $this->finalArr['brands'], $item['brand']);
+                       
                         array_push($this->finalArr['crosses_on_stock'], [
                             'id' => $item['id'],
                             'brand' => $item['brand'],
@@ -364,6 +368,8 @@ class SparePartController extends Controller
         if ($result['SearchResult']['success'] == true) {
             if (isset($result['SearchResult']['PartsList']['Part']['stocks'])) {
                 if (count($result['SearchResult']['PartsList']['Part']['stocks']['stock']) == 10) {
+                    array_push($this->finalArr['brands'],  $result['SearchResult']['PartsList']['Part']['brand']);
+                        
                         array_push($this->finalArr['searchedNumber'], [
                             'guid' => $result['SearchResult']['PartsList']['Part']['guid'],
                             'brand' => $result['SearchResult']['PartsList']['Part']['brand'],
@@ -382,6 +388,8 @@ class SparePartController extends Controller
                         ]);
                 } else {
                     foreach ($result['SearchResult']['PartsList']['Part']['stocks']['stock'] as $stockItem) {
+                        array_push($this->finalArr['brands'],  $result['SearchResult']['PartsList']['Part']['brand']);
+                        
                         array_push($this->finalArr['searchedNumber'], [
                             'guid' => $result['SearchResult']['PartsList']['Part']['guid'],
                             'brand' => $result['SearchResult']['PartsList']['Part']['brand'],
@@ -405,11 +413,9 @@ class SparePartController extends Controller
         
         //добавляем данные по кроссам в итоговый массив
         if (array_key_exists('crosses',$result['SearchResult']['PartsList']['Part'])) {
-            //dd($result['SearchResult']['PartsList']['Part']['crosses']);
             $firstKey = array_key_first($result['SearchResult']['PartsList']['Part']['crosses']['Part']);
             $firstElem = $result['SearchResult']['PartsList']['Part']['crosses']['Part'][$firstKey];
             
-            //dd($firstElem);
             if (is_array($firstElem)) {
                 foreach ($result['SearchResult']['PartsList']['Part']['crosses']['Part'] as $key => $part_stock) {
                     foreach ($part_stock['stocks'] as $key => $innerArr) {
@@ -424,7 +430,8 @@ class SparePartController extends Controller
                                     'price' => round($innerArr['price']),
                                     'delivery_time' => '1.5-2 часа',
                                 ];
-    
+                                array_push($this->finalArr['brands'], $part_stock['brand']);
+
                                 array_push($this->finalArr['crosses_on_stock'], [
                                     'guid' => $part_stock['guid'],
                                     'brand' => $part_stock['brand'],
@@ -444,7 +451,8 @@ class SparePartController extends Controller
                                     'price' => round($innerArr['price']),
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                 ];
-    
+                                array_push($this->finalArr['brands'] , $part_stock['brand']);
+
                                 array_push($this->finalArr['crosses_to_order'], [
                                     'guid' => $part_stock['guid'],
                                     'brand' => $part_stock['brand'],
@@ -467,6 +475,8 @@ class SparePartController extends Controller
                                         'price' => round($item['price']),
                                         'delivery_time' => '1.5-2 часа'
                                     ];
+                                    array_push($this->finalArr['brands'],  $part_stock['brand']);
+
                                     array_push($this->finalArr['crosses_on_stock'], [
                                         'guid' => $part_stock['guid'],
                                         'brand' => $part_stock['brand'],
@@ -486,6 +496,8 @@ class SparePartController extends Controller
                                         'price' => round($item['price']),
                                         'delivery_time' => $item['deliveryEnd'],
                                     ];
+                                    array_push($this->finalArr['brands'], $part_stock['brand']);
+                                    
                                     array_push($this->finalArr['crosses_to_order'], [
                                         'guid' => $part_stock['guid'],
                                         'brand' => $part_stock['brand'],
@@ -514,7 +526,8 @@ class SparePartController extends Controller
                                     'price' => round($innerArr['price']),
                                     'delivery_time' => '1.5-2 часа'
                                 ];
-    
+                                array_push($this->finalArr['brands'], $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand']);
+                                
                                 array_push($this->finalArr['crosses_on_stock'], [
                                     'guid' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['guid'],
                                     'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
@@ -534,7 +547,8 @@ class SparePartController extends Controller
                                     'price' => round($innerArr['price']),
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                 ];
-    
+                                array_push($this->finalArr['brands'], $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand']);
+                                
                                 array_push($this->finalArr['crosses_to_order'], [
                                     'guid' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['guid'],
                                     'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
@@ -548,7 +562,6 @@ class SparePartController extends Controller
                             }
                         } else {
                             foreach ($innerArr as $key => $item) {
-                                
                                 if (str_contains($item['description'], 'Астана')) {
                                     $crosses_stocks[] = [
                                         'stock_id' => $item['id'],
@@ -558,6 +571,8 @@ class SparePartController extends Controller
                                         'price' => round($item['price']),
                                         'delivery_time' => '1.5-2 часа'
                                     ];
+                                    array_push($this->finalArr['brands'], $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand']);
+                                    
                                     array_push($this->finalArr['crosses_on_stock'], [
                                         'guid' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['guid'],
                                         'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
@@ -577,6 +592,8 @@ class SparePartController extends Controller
                                         'price' => round($item['price']),
                                         'delivery_time' => $item['deliveryEnd'],
                                     ];
+                                    array_push($this->finalArr['brands'], $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand']);
+                                    
                                     array_push($this->finalArr['crosses_to_order'], [
                                         'guid' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['guid'],
                                         'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
@@ -591,12 +608,9 @@ class SparePartController extends Controller
                             }
                         }
                     }
-                
             }
-            
-            
         }
-        //dd($this->finalArr);
+        
         return;
     }
 
@@ -627,7 +641,6 @@ class SparePartController extends Controller
 
             // requeest params for send
             $request_params = [
-
                 'url' => 'search/search',
                 'params' => [
                     'VKORG'         => !empty($params['VKORG'])?$params['VKORG']:(isset($ws_default_settings['VKORG'])?$ws_default_settings['VKORG']:'')       
@@ -640,7 +653,6 @@ class SparePartController extends Controller
                     ,'VBELN'        => isset($params['VBELN'])?$params['VBELN']:(isset($ws_default_settings['VBELN'])?$ws_default_settings['VBELN']:'')
                     ,'format'       => 'json'
                 ]
-
             ];
 
             // send data
@@ -648,7 +660,7 @@ class SparePartController extends Controller
 
             // in case of json
             $json_responce_data = $response->json();
-            //dd($json_responce_data->RESP);
+            
             if(gettype($json_responce_data->RESP) == 'object') {
                 if(property_exists($json_responce_data->RESP, 'MSG')) {
                     return;
@@ -662,6 +674,8 @@ class SparePartController extends Controller
             
             foreach ($json_responce_data->RESP as $key => $crossItem) {
                 if ($crossItem->KEYZAK == 'MOV0005505' || $crossItem->KEYZAK == 'MOV0009026') {
+                    array_push($this->finalArr['brands'], $crossItem->BRAND);
+                    
                     array_push($this->finalArr['crosses_on_stock'], [
                         'brand' => $crossItem->BRAND,
                         'article' => $crossItem->PIN,
@@ -682,20 +696,19 @@ class SparePartController extends Controller
                     break;
                 }
             }
-            //dd($this->finalArr);
-
         } catch (ArmtekException $e) {
 
             $json_responce_data = $e -> getMessage(); 
 
         }
+
         return;
     }
 
     public function searchShatem(String $brand, String $partnumber)
     {
         $partnumber = str_replace(' ', '', $partnumber);
-        //dd($brand);
+        
         if ($brand == 'Citroen/Peugeot') {
             $brand = 'PSA';
         } else if ($brand == 'Hyundai/Kia') {
@@ -732,7 +745,7 @@ class SparePartController extends Controller
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
 
         $html = json_decode(curl_exec($ch1));
-        //dd($html);
+        
         curl_close($ch1);
         if (empty($html)) {
             return ;
@@ -760,12 +773,13 @@ class SparePartController extends Controller
         $response = json_decode(curl_exec($ch2));
         
         curl_close($ch2);
-        //dd($response);
 
         foreach ($response as $key => $item) {
             if ($item->article->code == $partnumber) {
                 foreach ($item->prices as $key => $price) {
                     if ($price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || $price->addInfo->city == 'Подольск') {
+                        array_push($this->finalArr['brands'], $item->article->tradeMarkName);
+                        
                         array_push($this->finalArr['searchedNumber'], [
                             'brand' => $item->article->tradeMarkName,
                             'article' => $item->article->code,
@@ -787,6 +801,8 @@ class SparePartController extends Controller
             } else {
                 foreach ($item->prices as $key => $price) {
                     if($price->addInfo->city == 'Астана') {
+                        array_push($this->finalArr['brands'], $item->article->tradeMarkName);
+                        
                         array_push($this->finalArr['crosses_on_stock'], [
                             'brand' => $item->article->tradeMarkName,
                             'article' => $item->article->code,
@@ -804,6 +820,8 @@ class SparePartController extends Controller
                             'supplier_name' => 'shtm'
                         ]);
                     } else if ($price->addInfo->city == 'Екатеринбург' || $price->addInfo->city == 'Подольск') {
+                        array_push($this->finalArr['brands'], $item->article->tradeMarkName);
+                        
                         array_push($this->finalArr['crosses_to_order'], [
                             'brand' => $item->article->tradeMarkName,
                             'article' => $item->article->code,
@@ -824,7 +842,7 @@ class SparePartController extends Controller
                 }
             }
         }
-        //dd($this->finalArr);
+        
         return;
     }
 
@@ -838,7 +856,7 @@ class SparePartController extends Controller
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
        
         $headers = array(         
-        'Authorization: Bearer '. self::TISS_API_KEY 
+            'Authorization: Bearer '. self::TISS_API_KEY
         ); 
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
         
@@ -850,10 +868,8 @@ class SparePartController extends Controller
     public function searchAutopiter(String $brand, String $partnumber)
     {
         $brand = $this->removeAllUnnecessaries($brand);
-
         $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL");
         
-
         if (!($client->IsAuthorization()->IsAuthorizationResult)) {
             $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
         }
@@ -953,6 +969,7 @@ class SparePartController extends Controller
                             if(
                                !str_contains(trim(strtolower($item['Number'])), trim(strtolower($partnumber)))
                             ) {
+                                array_push($this->finalArr['brands'], $item['CatalogName']);
                                 
                                 array_push($this->finalArr['crosses_to_order'], [
                                     'brand' => $item['CatalogName'],
@@ -978,7 +995,8 @@ class SparePartController extends Controller
                         }
                     } else {
                         if(!str_contains(trim(strtolower($result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'])), $brand)) {
-                            dd($resultWithAnalogs);
+                            array_push($this->finalArr['brands'], $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName']);
+                            
                             array_push($this->finalArr['crosses_to_order'], [
                                 'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
                                 'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
@@ -1004,6 +1022,8 @@ class SparePartController extends Controller
                 }else {
                     if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
                         foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
+                            array_push($this->finalArr['brands'], $item['CatalogName']);
+                            
                                 array_push($this->finalArr['crosses_to_order'], [
                                     'brand' => $item['CatalogName'],
                                     'article' => $item['Number'],
@@ -1026,6 +1046,8 @@ class SparePartController extends Controller
                                 ]);
                         }
                     } else {
+                        array_push($this->finalArr['brands'], $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName']);
+                        
                         array_push($this->finalArr['crosses_to_order'], [
                             'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
                             'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
