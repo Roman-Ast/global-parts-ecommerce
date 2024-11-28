@@ -46,58 +46,63 @@
                     @endif
                 </div>
             </div>
+            @if (session()->has('cart') && session()->get('cart')->count() != 0)
+              <div id="cart-pre-header">
+                  <a href="cart/clear">
+                      <button class="btn btn-danger" style="margin-right: 5px">Очистить</button>
+                  </a>
+                  @auth
+                  <a href="#"><button class="btn btn-success" id="modal-show">Заказать</button></a>
+                  @endauth
+              </div>
+              <div id="cart-content">
+                  @if (session()->has('cart'))
+                  <table class="table" id="cart-content">
+                      <thead>
+                        <tr>
+                          <th scope="col">Склад</th>
+                          <th scope="col">Бренд</th>
+                          <th scope="col">Артикул</th>
+                          <th scope="col">Наименование</th>
+                          <th scope="col">Дата поставки</th>
+                          <th scope="col">Цена</th>
+                          <th scope="col">Кол-во</th>
+                          <th scope="col">Сумма</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                          <form action="/makeorder" method="POST" id="make-order-form">
+                            @csrf
+                              @auth
+                              <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+                              @endauth
+                              
+                              @foreach (session()->get('cart')->content() as $cartItem)
+                                  <tr class="cart-item">
+                                      <td><input type="hidden" name="stockFrom" value="$cartItem['stockFrom']">{{ $cartItem['stockFrom'] }}</td>
+                                      <td>{{ $cartItem['brand'] }}</td>
+                                      <td>{{ $cartItem['article'] }}</td>
+                                      <td>{{ $cartItem['name'] }}</td>
+                                      <td>{{ $cartItem['deliveryTime'] }}</td>
+                                      <td>{{ $cartItem['price'] }}</td>
+                                      <td><input type="number" class="form-control cart-qty-change" value="{{ $cartItem['qty'] }}" name="qty"></td>
+                                      <td>{{ (int)$cartItem['qty'] * (int)$cartItem['price'] }}</td>
+                                      <td class="cart-item-delete">&times;</td>
+                                  </tr>
+                              @endforeach
+                              <input type="submit" id="order-btn-submit">
+                          </form>
+                      </tbody>
+                    </table>
+                  @endif
+              </div>
+            @else
             <div id="cart-pre-header">
-                <a href="cart/clear">
-                    <button class="btn btn-danger" style="margin-right: 5px">Очистить</button>
-                </a>
-                @auth
-                <a href="#"><button class="btn btn-success" id="modal-show">Заказать</button></a>
-                @endauth
+              <span style="font-style: italic;">Ваша корзина пуста...</span>
             </div>
-            <div id="cart-content">
-                @if (session()->has('cart'))
-                <table class="table" id="cart-content">
-                    <thead>
-                      <tr>
-                        <th scope="col">Склад</th>
-                        <th scope="col">Бренд</th>
-                        <th scope="col">Артикул</th>
-                        <th scope="col">Наименование</th>
-                        <th scope="col">Дата поставки</th>
-                        <th scope="col">Цена</th>
-                        <th scope="col">Кол-во</th>
-                        <th scope="col">Сумма</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                        <form action="/makeorder" method="POST" id="make-order-form">
-                          @csrf
-                            @auth
-                            <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
-                            @endauth
-                            
-                            @foreach (session()->get('cart')->content() as $cartItem)
-                                <tr class="cart-item">
-                                    <td><input type="hidden" name="stockFrom" value="$cartItem['stockFrom']">{{ $cartItem['stockFrom'] }}</td>
-                                    <td>{{ $cartItem['brand'] }}</td>
-                                    <td>{{ $cartItem['article'] }}</td>
-                                    <td>{{ $cartItem['name'] }}</td>
-                                    <td>{{ $cartItem['deliveryTime'] }}</td>
-                                    <td>{{ $cartItem['price'] }}</td>
-                                    <td><input type="number" class="form-control cart-qty-change" value="{{ $cartItem['qty'] }}" name="qty"></td>
-                                    <td>{{ (int)$cartItem['qty'] * (int)$cartItem['price'] }}</td>
-                                    <td class="cart-item-delete">&times;</td>
-                                </tr>
-                            @endforeach
-                            <input type="submit" id="order-btn-submit">
-                        </form>
-                    </tbody>
-                  </table>
-                    
-                @endif
-            </div>
+            @endif
         </div>
     </div>
-
-    
+</div>
+    @include('components.footer')
 @endsection

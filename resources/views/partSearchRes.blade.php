@@ -4,20 +4,11 @@
    
 @section('content')
 
-<div id="search-res-main-container" class="container" class="container">
+<div id="search-res-main-container" class="container">
     @include('components.header')
 
     <div id="search-res-main-wrapper">
         <div id="search-res-filter">
-            <div class="search-res-filter-item" id="filter-diaposon">
-                <div class="search-res-filter-item-header">
-                    ЦЕНА
-                </div>
-                <div class="search-res-filter-item-content">
-                    
-                    <input type="range" class="form-range" id="customRange1">
-                </div>
-            </div>
             <div class="search-res-filter-item" id="filter-brands">
                 <div class="search-res-filter-item-header">
                     БРЕНД
@@ -25,16 +16,14 @@
                 <div class="search-res-filter-item-content">
                     <ul>
                         <li>
-                            
-                                @foreach ($brands as $brand)
+                            @foreach ($brands as $brand)
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" value="{{ $brand }}" id="flexCheckDefault">
+                                    <input class="form-check-input brand-filter" type="checkbox" value="{{ $brand }}" id="flexCheckDefault">
                                     <label class="form-check-label" for="flexCheckDefault" class="filter-brand-name">
                                         {{ $brand }}
                                     </label>
                                 </div>
-                                @endforeach
-                            
+                            @endforeach
                         </li>
                     </ul>
                 </div>
@@ -93,7 +82,7 @@
                                 {{ $searchItem['stocks']  }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-price stock-item-price">
-                                {{ $searchItem['price'] }}
+                                {{ $searchItem['priceWithMargine'] }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-cart">
                                 <div class="stock-item-cart">
@@ -149,7 +138,7 @@
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
                         <div class="stock-item stock-item-price">
-                            {{ $crossItem['price'] }}
+                            {{ $crossItem['priceWithMargine'] }}
                         </div>
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
@@ -209,7 +198,7 @@
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item stock-item-price">
-                                {{ $crossItem['price'] }}
+                                {{ $crossItem['priceWithMargine'] }}
                             </div>
                         @endforeach
                     </div>

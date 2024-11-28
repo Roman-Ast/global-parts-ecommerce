@@ -1,17 +1,17 @@
 <div id="main-header" class="">
     <div id="main-header-wrapper" class="container">
 
-        <a id="logo-container" href="/">
+        <a id="logo-container" href="/" class="header-item">
             <img src="/images/logo1.png" alt="main-logo" id="logo-img">
         </a>
 
-        <div id="search-bar-wrapper">
+        <div id="search-bar-wrapper" class="header-item">
             <form action="/getCatalog" method="GET " enctype="multipart/form-data" id="search-bar-container">
                 <div id="input-searchbtn-wrapper">
                     <div id="search-button-container">
-                        <button type="submit" class="btn" id="search-btn"><img src="/images/lupa-24.png"></button>
+                        <button type="submit" class="btn btn-lg" id="search-btn"><img src="/images/lupa-24.png"></button>
                     </div>
-                    <div class="input-group input-group">
+                    <div class="input-group input-group-lg">
                         <input type="text" name="partNumber" id="searchBarInput" class="form-control" placeholder="введите номер детали" required>
                     </div>
                 </div>
@@ -32,24 +32,33 @@
             </form>
         </div>
 
-        <div id="cart-wrapper">
+        <div id="cart-wrapper" class="header-item">
             <a href="/cart"><img src="/images/cart-36.png" alt="корзина" id="cart-big-img"></a>
                     
             @if (session()->has('cart') && session()->get('cart')->count() != 0)
-                <div id="header-cart-qty">кол-во: {{ session()->get('cart')->count() }}</div>
-                <div id="header-cart-sum">сумма: {{ number_format(session()->get('cart')->total(), 0, '.', ' ') }} T</div>
+                <div id="header-cart-qty">{{ session()->get('cart')->count() }} шт</div>
+                <div id="header-cart-sum">{{ number_format(session()->get('cart')->total(), 0, '.', ' ') }} T</div>
             @endif
         </div>
-        <div id="auth-buttons-container">
+        <div id="auth-buttons-container" class="header-item">
             @if (Route::has('login'))
-                @auth
-                    <div id="user-data">
+            @auth
+            <div class="dropdown">
+                <button class="btn btn-link dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
                     {{ auth()->user()->name }}
-                        <a href="{{ route('logout') }}"><button class="btn btn-link">Выход</button></a>
-                        @if (auth()->user()->user_role = "admin")
-                            <a href="{{ route('admin_panel') }}"><button class="btn btn-link">Админка</button></a>
-                        @endif
-                    </div>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                  <li><a class="dropdown-item" href="/orders">Заказы</a></li>
+                  <li><a class="dropdown-item" href="/settlements">Взаиморасчеты</a></li>
+                  <li><a class="dropdown-item" href="/garage">Гараж</a></li>
+                  @if (auth()->user()->user_role == "admin")
+                    <li>
+                        <a href="{{ route('admin_panel') }}" class="dropdown-item">Админка</a>
+                    </li>
+                  @endif
+                  <li><a href="{{ route('logout') }}" class="dropdown-item">Выход</a></li>
+                </ul>
+            </div>
                 @else   
                     <a id="sign-in-button-container" href="{{ route('login') }}">
                         <button id="sign-in-btn" class="btn btn-sm btn-link">Войти</button>
@@ -60,15 +69,6 @@
                 @endif
             @endif
         </div>
-    </div>
-    <div id="dropdown-menu-container" class="container">
-        @auth
-            <nav class="nav">
-                <a class="nav-link" href="/orders">Заказы</a>
-                <a class="nav-link" href="/settlements">Взаиморасчеты</a>
-                <a class="nav-link" href="/garage">Гараж</a>
-            </nav>
-        @endauth
     </div>
 </div>
 

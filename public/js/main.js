@@ -113,12 +113,10 @@ $('.stock-item-cart-btn').on('click', function () {
       url: "/cart/add",
       type: "POST",
       dataType: 'json',
-      success: function (data) { 
-         console.log(data);
-
-         $('#header-cart-qty').text('кол-во: ' + new Intl.NumberFormat('ru-RU').format(data.count));
-         $('#header-cart-sum').text('сумма: ' + new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
-
+      success: function (data) {
+         $('#header-cart-qty').html(new Intl.NumberFormat('ru-RU').format(data.qty) + 'шт');
+         $('#header-cart-sum').html(new Intl.NumberFormat('ru-RU').format(data.total) + 'T');
+         console.log([data.count, data.total]);
          if(data.duplicates) {
             $("#search-part-main-container").prepend(`
                <div class="alert alert-warning alert-cart" style="align-text:center;">
@@ -161,8 +159,8 @@ $('.cart-item-delete').on('click', function () {
       dataType: 'json',
       success: function (data) {
          console.log(data);
-         $('#header-cart-qty').text('кол-во: ' + new Intl.NumberFormat('ru-RU').format(data.count));
-         $('#header-cart-sum').text('сумма: ' + new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
+         $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + "шт");
+         $('#header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + 'T');
          $('#cart-header-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
       },
       error: function (error) {
@@ -186,8 +184,8 @@ $('.cart-qty-change').on('input', function () {
       dataType: 'json',
       success: function (data) {
          console.log(data);
-         $('#header-cart-qty').text('кол-во: ' + new Intl.NumberFormat('ru-RU').format(data.count));
-         $('#header-cart-sum').text('сумма: ' + new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
+         $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + ' шт');
+         $('#header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
          $('#cart-header-sum').text(new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 2}).format(data.total,) + ' T');
       },
       error: function (error) {
@@ -218,7 +216,6 @@ $('.settlement-item-id').on('click', function (e) {
       'order_id': $(this).children().first().val(),
 
    };
-   console.log();
 
    $.ajax({
       data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
@@ -233,6 +230,14 @@ $('.settlement-item-id').on('click', function (e) {
 
          if ($(table).html() == '') {
             data.products.forEach(item => {
+               let statuses = {
+                  'processing': 'в работе',
+                  'returned': 'возвращено',
+                  'payment_waiting': 'ожидание оплаты',
+                  'supplier_refusal': 'отказ поставщика',
+                  'arrived_at_the_point_of_delivery': 'поступило в ПВЗ',
+                  'issued': 'выдано'
+               };
                
                $(table).append(
                   `
@@ -240,7 +245,8 @@ $('.settlement-item-id').on('click', function (e) {
                      <td>${item.article}</td>
                      <td>${item.brand}</td>
                      <td>${item.name}</td>
-                     <td>${item.qty}</td>
+                     <td class="${item.status}">${statuses[item.status]}</td>
+                     <td>${item.qty}шт</td>
                      <td>${item.price * item.qty}</td>
                      <td>${item.fromStock}</td>
                   </tr>
@@ -324,6 +330,33 @@ $('#model-qr').on('click', function () {
 });
 $('#shadow').on('click', function () {
    $('#shadow').fadeOut();
+});
+
+//фильтр по брендам
+$('.brand-filter').on('change', function () {
+   let choosedBrand = [];
+   $('.brand-filter').each(function (key, elem) {
+      if (elem.checked) {
+         choosedBrand.push($(elem).val());
+      }
+   });
+   console.log(choosedBrand);
+
+   $('.requestPartNumber-brand').each(function (key, elem) {
+      if (!choosedBrand.includes($(elem).text().replace(/\s+/g, ''))) {
+         $(elem).parent().css({'display': 'none'});
+      } else {
+         $(elem).parent().css({'display': 'grid'});
+      }
+   });
+});
+
+//перемещение фильтра за прокруткой страницы
+$(window).on('scroll', function (params) {
+   
+   if ($(this).scrollTop() > 40) {
+      $('#search-res-filter').offsetTop() += $(this).scrollTop();
+   }
 });
 
 

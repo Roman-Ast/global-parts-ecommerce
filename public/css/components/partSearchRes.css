@@ -1,10 +1,10 @@
 #search-res-main-container{
-    margin-top: 100px;
+    margin-top: 120px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
-    min-height: 47vh;
+    min-height: 55vh;
     background-color: #eeeeee;
     padding-bottom: 20px;
 }

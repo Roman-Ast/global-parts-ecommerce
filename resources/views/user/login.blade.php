@@ -39,7 +39,7 @@
                 </label>
               </div>
               <button type="submit" class="btn btn-primary">Войти</button>
-              <a href="{{ route('password.request') }}" class="ms-2">Забыли пароль?</a>
+              <a href="/" class="ms-2">Забыли пароль?</a>
               <a href="{{ route('home') }}">На главную</a>
           </form>
     </div>

@@ -126,6 +126,6 @@ class CartController extends Controller
 
         $cart->clear();
 
-        return view('index');
+        return redirect('/');
     }
 }

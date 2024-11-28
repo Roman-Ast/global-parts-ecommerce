@@ -147,6 +147,7 @@ class SparePartController extends Controller
         $this->searchShatem($request->brand, $request->partnumber);
         $this->searchAutopiter($request->brand, $request->partnumber);
         
+        //dd($this->finalArr);
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
@@ -233,6 +234,7 @@ class SparePartController extends Controller
                                     'name' => substr($item['name'], 0, 60),
                                     'item_id' => $item['id'],
                                     'price' => $item['price'],
+                                    'priceWithMargine' => round($this->setPrice($item['price'])),
                                     'stocks' => $searched_number_stocks,
                                     'multiplicity' => '',
                                     'type' => '',
@@ -321,6 +323,7 @@ class SparePartController extends Controller
                             'name' => substr($item['name'], 0, 60),
                             'stocks' => $crosses_stocks,
                             'price' => round($item['price']),
+                            'priceWithMargine' => round($this->setPrice($item['price'])),
                             'supplier_name' => 'trd',
                             'delivery_date' => '',
                             'delivery_time' => '1.5-2 часа'
@@ -328,7 +331,7 @@ class SparePartController extends Controller
                     } 
                 }
             }
-        //dd($this->finalArr);
+       
         return;
     }
 
@@ -358,7 +361,6 @@ class SparePartController extends Controller
         }
         
         $result = (json_decode(json_encode($result), true));
-        //dd($result);
 
         if (!$result['SearchResult']['success']) {
             return;
@@ -376,6 +378,7 @@ class SparePartController extends Controller
                             'article' => $result['SearchResult']['PartsList']['Part']['partnumber'],
                             'name' => $result['SearchResult']['PartsList']['Part']['name'],
                             'price' => round($result['SearchResult']['PartsList']['Part']['stocks']['stock']['price']),
+                            'priceWithMargine' => round($this->setPrice($result['SearchResult']['PartsList']['Part']['stocks']['stock']['price'])),
                             'stocks' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['count'],
                             'multiplicity' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['multiplicity'],
                             'type' => '',
@@ -396,6 +399,7 @@ class SparePartController extends Controller
                             'article' => $result['SearchResult']['PartsList']['Part']['partnumber'],
                             'name' => $result['SearchResult']['PartsList']['Part']['name'],
                             'price' => round($stockItem['price']),
+                            'priceWithMargine' => round($this->setPrice($stockItem['price'])),
                             'stocks' => $stockItem['count'],
                             'multiplicity' => $stockItem['multiplicity'],
                             'type' => '',
@@ -428,6 +432,7 @@ class SparePartController extends Controller
                                     'stock_legend' => '',
                                     'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
+                                    'priceWithMargine' => round($this->setPrice($innerArr['price'])),
                                     'delivery_time' => '1.5-2 часа',
                                 ];
                                 array_push($this->finalArr['brands'], $part_stock['brand']);
@@ -438,6 +443,7 @@ class SparePartController extends Controller
                                     'article' => $part_stock['partnumber'],
                                     'name' => $part_stock['name'],
                                     'price' => round($innerArr['price']),
+                                    'priceWithMargine' => round($this->setPrice($innerArr['price'])),
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => '1.5-2 часа',
                                     'supplier_name' => 'rssk',
@@ -449,6 +455,7 @@ class SparePartController extends Controller
                                     'stock_legend' => '',
                                     'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
+                                    'priceWithMargine' => round($this->setPrice($innerArr['price'])),
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                 ];
                                 array_push($this->finalArr['brands'] , $part_stock['brand']);
@@ -459,6 +466,7 @@ class SparePartController extends Controller
                                     'article' => $part_stock['partnumber'],
                                     'name' => $part_stock['name'],
                                     'price' => round($innerArr['price']),
+                                    'priceWithMargine' => round($this->setPrice($innerArr['price'])),
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                     'supplier_name' => 'rssk',
@@ -473,6 +481,7 @@ class SparePartController extends Controller
                                         'stock_legend' => '',
                                         'qty' => $item['count'],
                                         'price' => round($item['price']),
+                                        'priceWithMargine' => round($this->setPrice($item['price'])),
                                         'delivery_time' => '1.5-2 часа'
                                     ];
                                     array_push($this->finalArr['brands'],  $part_stock['brand']);
@@ -483,6 +492,7 @@ class SparePartController extends Controller
                                         'article' => $part_stock['partnumber'],
                                         'name' => $part_stock['name'],
                                         'price' => round($item['price']),
+                                        'priceWithMargine' => round($this->setPrice($item['price'])),
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => '1.5-2 часа',
                                         'supplier_name' => 'rssk',
@@ -494,6 +504,7 @@ class SparePartController extends Controller
                                         'stock_legend' => '',
                                         'qty' => $item['count'],
                                         'price' => round($item['price']),
+                                        'priceWithMargine' => round($this->setPrice($item['price'])),
                                         'delivery_time' => $item['deliveryEnd'],
                                     ];
                                     array_push($this->finalArr['brands'], $part_stock['brand']);
@@ -504,6 +515,7 @@ class SparePartController extends Controller
                                         'article' => $part_stock['partnumber'],
                                         'name' => $part_stock['name'],
                                         'price' => round($item['price']),
+                                        'priceWithMargine' => round($this->setPrice($item['price'])),
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => $item['deliveryEnd'],
                                         'supplier_name' => 'rssk'
@@ -524,6 +536,7 @@ class SparePartController extends Controller
                                     'stock_legend' => '',
                                     'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
+                                    'priceWithMargine' => round($this->setPrice($innerArr['price'])),
                                     'delivery_time' => '1.5-2 часа'
                                 ];
                                 array_push($this->finalArr['brands'], $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand']);
@@ -534,6 +547,7 @@ class SparePartController extends Controller
                                     'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
                                     'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
                                     'price' => round($innerArr['price']),
+                                    'priceWithMargine' => round($this->setPrice($innerArr['price'])),
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => '1.5-2 часа',
                                     'supplier_name' => 'rssk',
@@ -545,6 +559,7 @@ class SparePartController extends Controller
                                     'stock_legend' => '',
                                     'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
+                                    'priceWithMargine' => round($this->setPrice($innerArr['price'])),
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                 ];
                                 array_push($this->finalArr['brands'], $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand']);
@@ -555,6 +570,7 @@ class SparePartController extends Controller
                                     'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
                                     'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
                                     'price' => round($innerArr['price']),
+                                    'priceWithMargine' => round($this->setPrice($innerArr['price'])),
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                     'supplier_name' => 'rssk',
@@ -569,6 +585,7 @@ class SparePartController extends Controller
                                         'stock_legend' => '',
                                         'qty' => $item['count'],
                                         'price' => round($item['price']),
+                                        'priceWithMargine' => round($this->setPrice($item['price'])),
                                         'delivery_time' => '1.5-2 часа'
                                     ];
                                     array_push($this->finalArr['brands'], $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand']);
@@ -579,6 +596,7 @@ class SparePartController extends Controller
                                         'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
                                         'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
                                         'price' => round($item['price']),
+                                        'priceWithMargine' => round($this->setPrice($item['price'])),
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => '1.5-2 часа',
                                         'supplier_name' => 'rssk',
@@ -590,6 +608,7 @@ class SparePartController extends Controller
                                         'stock_legend' => '',
                                         'qty' => $item['count'],
                                         'price' => round($item['price']),
+                                        'priceWithMargine' => round($this->setPrice($item['price'])),
                                         'delivery_time' => $item['deliveryEnd'],
                                     ];
                                     array_push($this->finalArr['brands'], $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand']);
@@ -600,6 +619,7 @@ class SparePartController extends Controller
                                         'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
                                         'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
                                         'price' => round($item['price']),
+                                        'priceWithMargine' => round($this->setPrice($item['price'])),
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => $item['deliveryEnd'],
                                         'supplier_name' => 'rssk',
@@ -620,7 +640,6 @@ class SparePartController extends Controller
         require_once '../autoloader.php';
 
         try {
-
             // init configuration 
             $armtek_client_config = new ArmtekRestClientConfig($user_settings);  
 
@@ -683,11 +702,13 @@ class SparePartController extends Controller
                         'stock_legend' => 'armtek_ast',
                         'qty' => $crossItem->RVALUE,
                         'price' => round($crossItem->PRICE),
+                        'priceWithMargine' => round($this->setPrice($crossItem->PRICE)),
                         'delivery_time' => '1.5-2 часа',
                         'stocks' => [
                             [
                                 'qty' => $crossItem->RVALUE,
-                                'price' => $crossItem->PRICE
+                                'price' => $crossItem->PRICE,
+                                'priceWithMargine' => round($this->setPrice($crossItem->PRICE)),
                             ]
                         ],
                         'supplier_name' => 'rmtk',
@@ -713,6 +734,10 @@ class SparePartController extends Controller
             $brand = 'PSA';
         } else if ($brand == 'Hyundai/Kia') {
             $brand = 'HYUNDAI-KIA';
+        } else if ($brand == 'GM') {
+            $brand = 'General Motors';
+        } else if ($brand == 'nissan/infiniti') {
+            $brand = 'nissan';
         }
         
         //получение токена
@@ -785,6 +810,7 @@ class SparePartController extends Controller
                             'article' => $item->article->code,
                             'name' => $item->article->name,
                             'price' => $price->price->value,
+                            'priceWithMargine' => round($this->setPrice($price->price->value)),
                             'stocks' => $price->quantity->available,
                             'multiplicity' => '',
                             'deliveryStart' => '',
@@ -810,11 +836,13 @@ class SparePartController extends Controller
                             'stock_legend' => $price->addInfo->city,
                             'qty' => $price->quantity->available,
                             'price' => $price->price->value,
+                            'priceWithMargine' => round($this->setPrice($price->price->value)),
                             'delivery_time' => '1.5-2 часа',
                             'stocks' => [
                                 [
                                     'qty' => $price->quantity->available,
-                                    'price' => $price->price->value
+                                    'price' => $price->price->value,
+                                    'priceWithMargine' => round($this->setPrice($price->price->value)),
                                 ]
                             ],
                             'supplier_name' => 'shtm'
@@ -828,11 +856,13 @@ class SparePartController extends Controller
                             'name' => $item->article->name,
                             'qty' => $price->quantity->available,
                             'price' => $price->price->value,
+                            'priceWithMargine' => round($this->setPrice($price->price->value)),
                             'delivery_time' => $price->shippingDateTime,
                             'stocks' => [
                                 [
                                     'qty' => $price->quantity->available,
-                                    'price' => $price->price->value
+                                    'price' => $price->price->value,
+                                    'priceWithMargine' => round($this->setPrice($price->price->value)),
                                 ]
                             ],
                             'supplier_name' => $price->addInfo->city . '(shtm)'
@@ -884,6 +914,10 @@ class SparePartController extends Controller
             $brand = 'toyota';
         } else if ($brand == 'citroen/peugeot' || $brand == 'citroen-peugeot') {
             $brand = 'peugeot';
+        } else if ($brand == 'gm') {
+            $brand = 'General Motors';
+        } else if ($brand == 'nissan/infiniti') {
+            $brand = 'nissan';
         }
 
         $articleId = '';
@@ -921,6 +955,7 @@ class SparePartController extends Controller
                             'article' => $item['Number'],
                             'name' => $item['Name'],
                             'price' => round($item['SalePrice']),
+                            'priceWithMargine' => round($this->setPrice($item['SalePrice'])),
                             'stocks' => $item['NumberOfAvailable'],
                             'multiplicity' => '',
                             'type' => '',
@@ -939,6 +974,7 @@ class SparePartController extends Controller
                         'article' => $result2['GetPriceIdResult']['PriceSearchModel']['Number'],
                         'name' => $result2['GetPriceIdResult']['PriceSearchModel']['Name'],
                         'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
+                        'priceWithMargine' => round($this->setPrice($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice'])),
                         'stocks' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
                         'multiplicity' => '',
                         'type' => '',
@@ -976,6 +1012,7 @@ class SparePartController extends Controller
                                     'article' => $item['Number'],
                                     'name' => $item['Name'],
                                     'price' => $item['SalePrice'],
+                                    'priceWithMargine' => round($this->setPrice($item['SalePrice'])),
                                     'stocks' => [
                                         [
                                             "stock_id" => $item['SellerId'],
@@ -983,6 +1020,7 @@ class SparePartController extends Controller
                                             "stock_legend" => "",
                                             "qty" =>$item['NumberOfAvailable'],
                                             "price" => $item['SalePrice'],
+                                            'priceWithMargine' => round($this->setPrice($item['SalePrice'])),
                                             "delivery_time" => $item['DeliveryDate'],
                                             "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
                                             "city" => $item['Region']
@@ -1002,6 +1040,7 @@ class SparePartController extends Controller
                                 'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
                                 'name' => $result3['GetPriceIdResult']['PriceSearchModel']['Name'],
                                 'price' => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
+                                'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'])),
                                 'stocks' => [
                                     [
                                         "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
@@ -1009,6 +1048,7 @@ class SparePartController extends Controller
                                         "stock_legend" => "",
                                         "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
                                         "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
+                                        'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'])),
                                         "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                                         "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
                                         "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
@@ -1029,6 +1069,7 @@ class SparePartController extends Controller
                                     'article' => $item['Number'],
                                     'name' => $item['Name'],
                                     'price' => $item['SalePrice'],
+                                    'priceWithMargine' => round($this->setPrice($item['SalePrice'])),
                                     'stocks' => [
                                         [
                                             "stock_id" => $item['SellerId'],
@@ -1036,6 +1077,7 @@ class SparePartController extends Controller
                                             "stock_legend" => "",
                                             "qty" =>$item['NumberOfAvailable'],
                                             "price" => $item['SalePrice'],
+                                            'priceWithMargine' => round($this->setPrice($item['SalePrice'])),
                                             "delivery_time" => $item['DeliveryDate'],
                                             "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
                                             "city" => $item['Region']
@@ -1053,6 +1095,7 @@ class SparePartController extends Controller
                             'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
                             'name' => $result3['GetPriceIdResult']['PriceSearchModel']['Name'],
                             'price' => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
+                            'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'])),
                             'stocks' => [
                                 [
                                     "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
@@ -1060,6 +1103,7 @@ class SparePartController extends Controller
                                     "stock_legend" => "",
                                     "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
                                     "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
+                                    'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'])),
                                     "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                                     "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
                                     "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
@@ -1135,5 +1179,52 @@ class SparePartController extends Controller
         }
 
         return strtolower(implode('', $arr));
+    }
+
+    function setPrice($price)
+    {
+        if ($price > 0 && $price <= 600) {
+            $priceWithMargin = $price * 3; 
+        } else if ($price > 600 && $price <= 2000) {
+            $priceWithMargin = $price * 2;
+        } else if ($price > 2000 && $price <= 4000) {
+            $priceWithMargin = $price * 1.63;
+        } else if ($price > 4000 && $price <= 10000) {
+            $priceWithMargin = $price * 1.40;
+        } else if ($price > 10000 && $price <= 20000) {
+            $priceWithMargin = $price * 1.34;
+        } else if ($price > 20000 && $price <= 30000) {
+            $priceWithMargin = $price * 1.33;
+        } else if ($price > 30000 && $price <= 40000) {
+            $priceWithMargin = $price * 1.29;
+        } else if ($price > 40000 && $price <= 50000) {
+            $priceWithMargin = $price * 1.27;
+        } else if ($price > 50000 && $price <= 60000) {
+            $priceWithMargin = $price * 1.26;
+        } else if ($price > 60000 && $price <= 70000) {
+            $priceWithMargin = $price * 1.25;
+        } else if ($price > 70000 && $price <= 80000) {
+            $priceWithMargin = $price * 1.24;
+        } else if ($price > 80000 && $price <= 90000) {
+            $priceWithMargin = $price * 1.23;
+        } else if ($price > 90000 && $price <= 100000) {
+            $priceWithMargin = $price * 1.22;
+        } else if ($price > 100000 && $price <= 120000) {
+            $priceWithMargin = $price * 1.21;
+        } else if ($price > 120000) {
+            $priceWithMargin = $price * 1.20;
+        }
+        
+        if (Auth()->user() && Auth()->user()->user_role == 'common') {
+            return $priceWithMargin;
+        } else if(Auth()->user() && Auth()->user()->user_role == 'opt') {
+            return $priceWithMargin - ($priceWithMargin * 0.08);
+        } else {
+            return $priceWithMargin;
+        }
+        
+        
+        
+        
     }
 }

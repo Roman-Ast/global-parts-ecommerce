@@ -13,6 +13,7 @@
     </div>
      
     @include('components.header')
+    
     <div id="shadow">
         <div id="modal-qr" class="container">
             <img src="images/wa-qr.jpeg" alt="wa-qr">
