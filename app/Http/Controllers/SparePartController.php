@@ -143,7 +143,7 @@ class SparePartController extends Controller
         $this->searchArmtek($request->brand, $request->partnumber);
         //$this->searchPhaeton($request->brand, $request->partnumber);
         $this->searchTreid($request->brand, $request->partnumber);
-        //$this->searchTiss($request->brand, $request->partnumber);
+        $this->searchTiss($request->brand, $request->partnumber);
         $this->searchShatem($request->brand, $request->partnumber);
         $this->searchAutopiter($request->brand, $request->partnumber);
         
@@ -179,7 +179,12 @@ class SparePartController extends Controller
             $brand = 'Hyundai';
         } else if ($brand == 'Peugeot/Citroen') {
             $brand = 'Peugeot';
+        } else if ($brand == 'TOYOTA/LEXUS') {
+            $brand = 'Toyota';
+        } else if ($brand == 'NISSAN/INFINITI') {
+            $brand = 'Nissan';
         }
+
         $url = "https://api2.autotrade.su/?json";
 
         //поиск по конкретно запрошенному номеру
@@ -214,7 +219,7 @@ class SparePartController extends Controller
         }
 
         //помещаем найденные позиции в итоговый массив
-        if (strlen($result['message']) <= 2) {
+        if (strlen($result['message']) <= 2 && !empty($result)) {
             foreach ($result['items'] as $key => $item) {
                 if (strlen($result['message']) <= 2) {
                     if ($item['price']) {
@@ -865,7 +870,7 @@ class SparePartController extends Controller
                                     'priceWithMargine' => round($this->setPrice($price->price->value)),
                                 ]
                             ],
-                            'supplier_name' => $price->addInfo->city . '(shtm)'
+                            'supplier_name' => 'shtm'
                         ]);
                     }
                     
@@ -882,17 +887,55 @@ class SparePartController extends Controller
         
         $fields = array("JSONparameter" => "{'Brand': '".$brand."', 'Article': '".$partnumber."', 'is_main_warehouse': ".'1'." }" );
         
-        curl_setopt($ch1, CURLOPT_URL, "api.tmparts.ru/api/StockByArticle?".http_build_query($fields));
-        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
-       
         $headers = array(         
             'Authorization: Bearer '. self::TISS_API_KEY
-        ); 
+        );
+        //dd(json_encode($fields));
+        curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/StockByArticle?". http_build_query($fields));
+        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
-        
-        $Art_List_With_Prices = json_decode(curl_exec($ch1),true);   
 
-        dd($Art_List_With_Prices);
+        try {
+            $result = json_decode(curl_exec($ch1));   
+        } catch (\Throwable $th) {
+            return;
+        }
+        //dd($result);
+        foreach ($result as $key => $item) {
+            if (strtolower($item->brand) == strtolower($this->finalArr['originNumber']) ) {
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand' => $item->brand,
+                    'article' => $item->article,
+                    'name' => $item->article_name,
+                    'price' => $item->min_price,
+                    'priceWithMargine' => $this->setPrice($item->min_price),
+                    'stocks' => $item->warehouse_offers[0]->quantity,
+                    'supplier_name' => 'tss',
+                    'deliveryStart' => '1.5-2 часа',
+                ]);
+            } else {
+                $stocks = [];
+                foreach ($item->warehouse_offers as $key => $offer) {
+                    array_push($stocks, [
+                        'qty' => $offer->quantity,
+                        'price' => $offer->price,
+                        'priceWithMargine' => $this->setPrice($offer->price)
+                    ]);
+                }
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand' => $item->brand,
+                    'article' => $item->article,
+                    'name' => $item->article_name,
+                    'price' => $item->min_price,
+                    'priceWithMargine' => round($this->setPrice($item->min_price)),
+                    'stocks' => $stocks,
+                    'supplier_name' => 'tss',
+                    'stock_legend' => $item->warehouse_offers[0]->warehouse_name,
+                    'delivery_time' => '1.5-2 часа',
+                ]);
+            }
+        }
+
     }
 
     public function searchAutopiter(String $brand, String $partnumber)
@@ -993,7 +1036,7 @@ class SparePartController extends Controller
 
         //получаем цены аналогов
         try {
-            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 1, "DetailUid"=>null));
+            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 2, "DetailUid"=>null));
             if (empty($resultWithAnalogs)) {
                 return 'error';
             } else {

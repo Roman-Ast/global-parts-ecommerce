@@ -68,11 +68,27 @@ $('.page-link').on('click', function () {
    const start  = (desirePage - 1) * perPage;
    const end = desirePage * perPage;
 
+   let choosedBrand = [];
+   $('.brand-filter').each(function (key, elem) {
+      if (elem.checked) {
+         choosedBrand.push($(elem).val());
+      }
+   });
+
    $('#crossesContainer-to-order').children().each(function (key, elem) {
       if (key >= start && key <= end) {
-         $(elem).css({'display': 'grid'});
+         if (!choosedBrand.length) {
+            $(elem).css({'display': 'grid'});
+         } else if (choosedBrand.includes($('.requestPartNumber-brand').text().replace(/\s+/g, ''))) {
+            $(elem).css({'display': 'grid'});
+         }
+         console.log(elem);
       } else {
-         $(elem).css({'display': 'none'});
+         if (!choosedBrand.length) {
+            $(elem).css({'display': 'none'});
+         } else if (choosedBrand.includes($('.requestPartNumber-brand').text().replace(/\s+/g, ''))) {
+            $(elem).css({'display': 'none'});
+         }
       }
    });
 });
@@ -340,12 +356,15 @@ $('.brand-filter').on('change', function () {
          choosedBrand.push($(elem).val());
       }
    });
-   console.log(choosedBrand);
-
+   
    $('.requestPartNumber-brand').each(function (key, elem) {
       if (!choosedBrand.includes($(elem).text().replace(/\s+/g, ''))) {
          $(elem).parent().css({'display': 'none'});
       } else {
+         $(elem).parent().css({'display': 'grid'});
+      }
+
+      if (!choosedBrand.length) {
          $(elem).parent().css({'display': 'grid'});
       }
    });
@@ -353,9 +372,13 @@ $('.brand-filter').on('change', function () {
 
 //перемещение фильтра за прокруткой страницы
 $(window).on('scroll', function (params) {
+   let elemOffsetTop = $('#search-res-filter').offset().top;
+   let windowYoffset = $(this).scrollTop();
    
-   if ($(this).scrollTop() > 40) {
-      $('#search-res-filter').offsetTop() += $(this).scrollTop();
+   if (elemOffsetTop > windowYoffset) {
+      $('#search-res-filter').css({'position': 'sticky', 'top': '110px'});
+   } else {
+      $('#search-res-filter').removeClass('sticky');
    }
 });
 
