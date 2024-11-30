@@ -88,10 +88,9 @@ class OrderController extends Controller
         
         $cart->clear();
 
-        return view('index')
-            ->with('success_message', '!')
+        return redirect('orders')
+            ->with('message', 'Ваш заказ успешно создан!')
             ->with('class', 'alert-success');
-        
     }
 
     /**

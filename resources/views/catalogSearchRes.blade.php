@@ -42,6 +42,7 @@
                     </div>
                 </div>
             </button>
+            <input type="hidden" value="{{ $only_on_stock }}" name="only_on_stock" id="search_parametr">
         </form>
         @endforeach
     </div>

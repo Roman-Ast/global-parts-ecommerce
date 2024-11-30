@@ -47,7 +47,8 @@ a{
     text-align: center;
 }
 
-#shadow{
+#shadow,
+#shadow-main{
     left: 0;
     top: 0;
     position: absolute;

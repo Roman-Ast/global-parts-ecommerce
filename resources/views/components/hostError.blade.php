@@ -7,7 +7,7 @@
 <div id="nothing-found-wrapper" class="container">
     @include('components.header')
 
-    <div id="not-found-wrapper">
+    <div class="nothing-found-wrapper">
         <h4 id="not-found-header">
             <i>Кто-то всё сломал... попробуйте еще раз</i>
         </h4>

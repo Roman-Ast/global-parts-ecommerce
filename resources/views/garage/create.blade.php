@@ -14,7 +14,7 @@
      
     @include('components.header')
     
-    <div id="main-container" class="container garage-container">
+    <div id="garage-new-item-create" class="container ">
         <div id="garage-create-wrapper">
         <form action="{{ route('garage.store') }}" method="POST">
             @csrf <!-- {{ csrf_field() }} -->

@@ -40,8 +40,8 @@ class SparePartController extends Controller
 
     public function catalogSearch(Request $request) 
     {
-        $partNumber = trim($request->partNumber); 
-        
+        $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber)); 
+        //dd($request);
         //поиск брэндлиста по каталогам
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
@@ -91,7 +91,10 @@ class SparePartController extends Controller
                 }
             }
             
-            return view('catalogSearchRes')->with(['finalArr' => $catalog]);
+            return view('catalogSearchRes')->with([
+                'finalArr' => $catalog,
+                'only_on_stock' => $request->only_on_stock
+            ]);
         } else {
             $ch1 = curl_init(); 
         
@@ -101,7 +104,7 @@ class SparePartController extends Controller
             curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
             
             $headers = array(         
-            'Authorization: Bearer '. self::TISS_API_KEY
+                'Authorization: Bearer '. self::TISS_API_KEY
             ); 
             curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
             
@@ -128,9 +131,13 @@ class SparePartController extends Controller
             if(empty($catalog)) {
                 return view('components.nothingFound');
             }
-            return view('catalogSearchRes')->with(['finalArr' => $catalog]);
+            
+            return view('catalogSearchRes')->with([
+                    'finalArr' => $catalog,
+                    'only_on_stock' => $request->only_on_stock
+                ]
+            );
         }
-
     }
 
     public function getSearchedPartAndCrosses (Request $request)
@@ -145,7 +152,10 @@ class SparePartController extends Controller
         $this->searchTreid($request->brand, $request->partnumber);
         $this->searchTiss($request->brand, $request->partnumber);
         $this->searchShatem($request->brand, $request->partnumber);
-        $this->searchAutopiter($request->brand, $request->partnumber);
+
+        if (!$request->only_on_stock) {
+            $this->searchAutopiter($request->brand, $request->partnumber);
+        }
         
         //dd($this->finalArr);
         return view('partSearchRes', [
@@ -219,7 +229,7 @@ class SparePartController extends Controller
         }
 
         //помещаем найденные позиции в итоговый массив
-        if (strlen($result['message']) <= 2 && !empty($result)) {
+        if ($result && strlen($result['message']) <= 2 && !empty($result)) {
             foreach ($result['items'] as $key => $item) {
                 if (strlen($result['message']) <= 2) {
                     if ($item['price']) {
@@ -802,6 +812,15 @@ class SparePartController extends Controller
 
         $response = json_decode(curl_exec($ch2));
         
+        try {
+            $response = json_decode(curl_exec($ch2));
+        } catch (\Throwable $th) {
+            return;
+        }
+        if (empty($response) || isset($response->messages)) {
+            return;
+        }
+        
         curl_close($ch2);
 
         foreach ($response as $key => $item) {
@@ -862,7 +881,7 @@ class SparePartController extends Controller
                             'qty' => $price->quantity->available,
                             'price' => $price->price->value,
                             'priceWithMargine' => round($this->setPrice($price->price->value)),
-                            'delivery_time' => $price->shippingDateTime,
+                            'delivery_time' => date('d.m.Y', strtotime(stristr($price->shippingDateTime, 'T', true))),
                             'stocks' => [
                                 [
                                     'qty' => $price->quantity->available,
@@ -873,7 +892,6 @@ class SparePartController extends Controller
                             'supplier_name' => 'shtm'
                         ]);
                     }
-                    
                 }
             }
         }

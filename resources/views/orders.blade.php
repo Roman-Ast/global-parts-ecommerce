@@ -6,6 +6,15 @@
 
 @include('components.header')
 
+@if (session()->has('message'))
+    <div class="alert {{ Session::get('class') }}" style="align-text:center;">
+        <div style="display:flex;justify-content:flex-end;" class="close-flash">
+            &times;
+        </div>
+        {{ Session::get('message') }}
+    </div>    
+@endif
+
 <div id="orders-content-wrapper" class="container">
     @foreach ($orders as $orderItem)
     <div class="order-item-wrapper">

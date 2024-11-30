@@ -5,19 +5,24 @@
 
 
 @section('content')
+    @if (session()->has('message'))
     <div class="alert {{ Session::get('class') }}" style="align-text:center;" id>
-        <div style="display:flex;justify-content:flex-end;" class="close-flash">
-            &times;
-        </div>
-        {{ Session::get('message') }}
+      <div style="display:flex;justify-content:flex-end;" class="close-flash">
+          &times;
+      </div>
+      {{ Session::get('message') }}
     </div>
+    @endif
+    
      
     @include('components.header')
     
-    <div id="main-container" class="container garage">
-        <a href="/garage/create"><button class="btn btn-primary">Добавить авто</button></a>
+    <div id="" class="container garage">
+        <a href="/garage/create">
+          <button class="btn btn-primary">Добавить авто</button>
+        </a>
 
-        <table class="table">
+        <table class="table" id="garage-list">
             <thead>
               <tr>
                 <th scope="col">#</th>
@@ -32,6 +37,9 @@
             </thead>
             <tbody>
                 @foreach ($cars_in_garage as $car)
+                <form action="/garage/destroy" method="POST">
+                  <input type="hidden" value="{{ $car->id }}" name="car_id">
+                  @csrf
                 <tr>
                     <th scope="row">{{ $car->id }}</th>
                     <td>{{ $car->model }}</td>
@@ -41,7 +49,9 @@
                     <td>{{ $car->owner_name }}</td>
                     <td>{{ $car->owner_phone }}</td>
                     <td>{{ $car->note }}</td>
+                    <td><button class="btn btn-sm btn-danger">&times;</button></td>
                   </tr>
+                </form>
                 @endforeach
             </tbody>
           </table>

@@ -69,6 +69,9 @@
 .returned{
     color: #5353ec;
 }
+.close-flash{
+    cursor: pointer;
+}
 
 
 

@@ -58,10 +58,10 @@ Route::middleware(['auth', 'verified'])->group(function() {
     Route::get('admin_panel', [AdminPanelController::class, 'index'])->name('admin_panel');
     Route::post('/payment', [AdminPanelController::class, 'pay']);
     Route::post('/product/change_status', [AdminPanelController::class, 'changeStatus']);
-    Route::get('/garage', [GarageController::class, 'index']);
+    Route::get('/garage', [GarageController::class, 'index'])->name('garage');
     Route::get('/garage/create', [GarageController::class, 'create']);
     Route::post('/garage/store', [GarageController::class, 'store'])->name('garage.store');
-    
+    Route::post('/garage/destroy', [GarageController::class, 'destroy']);
 });
 
 Route::middleware('auth')->group(function() {

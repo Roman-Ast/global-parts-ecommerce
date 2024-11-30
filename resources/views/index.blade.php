@@ -2,25 +2,17 @@
 
 @section('title', 'Главная')
     
-
-
 @section('content')
-    <div class="alert {{ Session::get('class') }}" style="align-text:center;" id>
+    @include('components.header')
+    
+    @if (session()->has('message'))
+    <div class="alert {{ Session::get('class') }}" style="align-text:center;">
         <div style="display:flex;justify-content:flex-end;" class="close-flash">
             &times;
         </div>
         {{ Session::get('message') }}
-    </div>
-     
-    @include('components.header')
-    
-    <div id="shadow">
-        <div id="modal-qr" class="container">
-            <img src="images/wa-qr.jpeg" alt="wa-qr">
-            Для перехода в Whatsapp отсканируйте QR-код с камеры мобильного телефона
-        </div>
-    </div>
-    
+    </div>    
+    @endif
     <div id="main-container" class="container">
         <div id="steering">
             <div id="steering-wrapper">

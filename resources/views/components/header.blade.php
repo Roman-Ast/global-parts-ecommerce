@@ -4,7 +4,6 @@
         <a id="logo-container" href="/" class="header-item">
             <img src="/images/logo1.png" alt="main-logo" id="logo-img">
         </a>
-
         <div id="search-bar-wrapper" class="header-item">
             <form action="/getCatalog" method="GET " enctype="multipart/form-data" id="search-bar-container">
                 <div id="input-searchbtn-wrapper">
@@ -16,17 +15,9 @@
                     </div>
                 </div>
                 <!--<div id="searchOptions">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" id="inlineCheckbox1" value="inStockAndToOrder" checked name="searchType">
-                        <label class="form-check-label" for="inlineCheckbox1">в наличии и на заказ</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" id="inlineCheckbox2" value="onlyInStock" name="searchType">
-                        <label class="form-check-label" for="inlineCheckbox1">только в наличии</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" id="inlineCheckbox3" value="onlyToOrder" name="searchType">
-                        <label class="form-check-label" for="inlineCheckbox2">только на заказ</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="stock_or_order" name="only_on_stock">
+                        <label class="form-check-label" for="flexSwitchCheckDefault">Только в наличии</label>
                     </div>
                 </div>-->
             </form>

@@ -12,9 +12,8 @@ class GarageController extends Controller
      */
     public function index()
     {
-        $user = auth()->user();
-        $cars_in_garage = $user->garage;
-        //dd($cars_in_garage);
+        $cars_in_garage = GaraGE::where('user_id', auth()->user()->id)->orderBy('id', 'desc')->get();
+        
         return view('garage.index', [
             'cars_in_garage' => $cars_in_garage
         ]);
@@ -33,7 +32,6 @@ class GarageController extends Controller
      */
     public function store(Request $request)
     {
-        //dd($request);
         $car_in_garage = GaraGE::create([
             'user_id' => $request->user_id,
             'model' => $request->model,
@@ -45,8 +43,11 @@ class GarageController extends Controller
             'note' => $request->note,
         ]);
 
+        $cars_in_garage = GaraGE::where('user_id', auth()->user()->id)->orderBy('id', 'desc')->get();
+
         return view('garage.index')
-            ->with('success_message', '!')
+            ->with('cars_in_garage', $cars_in_garage)
+            ->with('message', 'Авто успешно добавлен в гараж')
             ->with('class', 'alert-success');
     }
 
@@ -77,8 +78,14 @@ class GarageController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(GaraGE $garaGE)
+    public function destroy(Request $request)
     {
-        //
+        $car = GaraGE::find($request->car_id)->delete();
+        $cars_in_garage = GaraGE::where('user_id', auth()->user()->id)->orderBy('id', 'desc')->get();
+
+        return redirect()->back()
+            ->with('cars_in_garage', $cars_in_garage)
+            ->with('message', 'Авто удалено из гаража!')
+            ->with('class', 'alert-success');
     }
 }

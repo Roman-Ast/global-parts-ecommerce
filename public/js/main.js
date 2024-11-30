@@ -330,22 +330,22 @@ setInterval(function () {
 
 //показ wa-qr
 $('#whatsapp-container img').on('click', function () {
-   $('#shadow').fadeIn();
-   $('#shadow').css({'background-color': 'rgba(0, 0, 0, .8)'});
+   $('#shadow-main').fadeIn();
+   $('#shadow-main').css({'background-color': 'rgba(0, 0, 0, .8)'});
 });
 $('#footer-wa').on('click', function () {
-   $('#shadow').fadeIn();
-   $('#shadow').css({'background-color': 'rgba(0, 0, 0, .8)'});
+   $('#shadow-main').fadeIn();
+   $('#shadow-main').css({'background-color': 'rgba(0, 0, 0, .8)'});
 });
 $('#footer-phone').on('click', function () {
-   $('#shadow').fadeIn();
-   $('#shadow').css({'background-color': 'rgba(0, 0, 0, .8)'});
+   $('#shadow-main').fadeIn();
+   $('#shadow-main').css({'background-color': 'rgba(0, 0, 0, .8)'});
 });
 $('#model-qr').on('click', function () {
-   $('#shadow').fadeOut();
+   $('#shadow-main').fadeOut();
 });
-$('#shadow').on('click', function () {
-   $('#shadow').fadeOut();
+$('#shadow-main').on('click', function () {
+   $('#shadow-main').fadeOut();
 });
 
 //фильтр по брендам
@@ -380,6 +380,11 @@ $(window).on('scroll', function (params) {
    } else {
       $('#search-res-filter').removeClass('sticky');
    }
+});
+
+//закрыть алерт
+$('.close-flash').on('click', function (params) {
+   $(this).parent().slideUp();
 });
 
 
