@@ -16,12 +16,11 @@ class SettlementController extends Controller
         $sumReleased = $settlements->where('released', 1)->sum('sum');
         $sumPaid = $settlements->where('paid', 1)->sum('sum');
 
-
         return view('settlements', [
             'settlements' => $settlements,
             'sumReleased' => $sumReleased,
             'sumPaid' => $sumPaid,
-            'balance' => $sumPaid - $sumReleased
+            'balance' => $sumPaid + $sumReleased
         ]);
     }
 }

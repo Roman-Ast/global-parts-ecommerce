@@ -34,6 +34,13 @@ $(window).on('load', function () {
          }
       });
    }
+   //проверка сатуса returned
+   $('.order_product_status').each(function (key, elem) {
+      if ($(elem).find('option:selected').val() == 'returned') {
+         $(this).attr('disabled', true);
+         $(this).parent().next().children().first().next().attr('disabled', true);
+      }
+   });
 });
 
 //показывать еще товар когда список большой
@@ -92,8 +99,6 @@ $('.page-link').on('click', function () {
       }
    });
 });
-
-
 
 $('.form-search-item').on('click', function () {
    $('#shadow').fadeIn(400);
@@ -184,7 +189,7 @@ $('.cart-item-delete').on('click', function () {
       }
    });
 });
-
+//изменение кол-ва в корзине
 $('.cart-qty-change').on('input', function () {
    let data = {
       'article': $(this).parent().prev().prev().prev().prev().text(),
@@ -229,8 +234,7 @@ $('#order-confirm').on('click', function () {
 //загрузка данных заказа
 $('.settlement-item-id').on('click', function (e) {
    let data = {
-      'order_id': $(this).children().first().val(),
-
+      'order_id': $(this).children().first().val()
    };
 
    $.ajax({
@@ -240,6 +244,7 @@ $('.settlement-item-id').on('click', function (e) {
       dataType: 'json',
       success: function (data) {
          let searchedElem = $(`input[class~=order_${data.orderId}]`);
+         console.log(searchedElem);
          let table = $(searchedElem).parent().parent().next().children().first();
          let changedBorder = $(searchedElem).parent().parent();
          let changedBackground = $(searchedElem).parent().parent().parent();
@@ -306,10 +311,40 @@ $('.change_status_submit').on('click', function () {
       type: "POST",
       dataType: 'json',
       success: function (data) {
-         console.log(data);
+         $("#admin-main-container").append(`
+            <div class="alert alert-success" style="align-text:center;position: absolute;top:0, left:0;width:100%">
+               <div style="display:flex;justify-content:flex-end;" class="close-flash">
+                     &times;
+               </div>
+               ${data.message}
+            </div>   
+         `);
+
+         $('.close-flash').on('click', function (params) {
+            $(this).parent().slideUp();
+         });
+
+         if (data.status == 'returned') {
+            $(this).prev().children().first().css({'pointer-events': 'none'});
+         }
       },
-      error: function (error) {
-         console.log(error);
+      error: function (data) {
+         $("#admin-main-container").append(`
+            <div class="alert alert-success" style="align-text:center;position: absolute;top:0, left:0;width:100%">
+               <div style="display:flex;justify-content:flex-end;" class="close-flash">
+                     &times;
+               </div>
+               ${data.message}
+            </div>   
+         `);
+
+         $('.close-flash').on('click', function (params) {
+            $(this).parent().slideUp();
+         });
+
+         if (data.status == 'returned') {
+            $(this).prev().children().first().css({'pointer-events': 'none'});
+         }
       }
    });
 });

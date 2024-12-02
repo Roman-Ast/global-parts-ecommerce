@@ -38,7 +38,7 @@
                     
                 </div>
                 <div class="menu-item-name">
-                    Провести оплату
+                    Оплата клиента
                 </div>
             </div>
             <div class="menu-item-container" target="all-payments">
@@ -49,7 +49,7 @@
                     Все оплаты
                 </div>
             </div>
-            <div class="menu-item-container">
+            <div class="menu-item-container" target="products_in_office">
                 <div class="menu-item-img">
                     
                 </div>
@@ -57,9 +57,51 @@
                     Товар в наличии в офисе
                 </div>
             </div>
+            <div class="menu-item-container" target="supplier_settlements">
+                <div class="menu-item-img">
+                    
+                </div>
+                <div class="menu-item-name">
+                    Взаиморасчеты с поставщиками
+                </div>
+            </div>
+            <div class="menu-item-container" target="supplier_payments">
+                <div class="menu-item-img">
+                    
+                </div>
+                <div class="menu-item-name">
+                    Оплата поставщикам
+                </div>
+            </div>
         </div>
         <div id="content">
             <div id="orders" class="container admin-content-item">
+                <div id="orders-filter">
+                    <form action="/orders/filter" method="POST" id="orders-filter-bar">
+                        @csrf
+                        <div id="orders-filter-date" class="order-filter-item">
+                            <input type="date" name="filter_date_from" class="input-group input-group-sm">
+                            <input type="date" name="filter_date_to" class="input-group input-group-sm">
+                        </div>
+                        <div id="orders-filter-user" class="order-filter-item">
+                            <select name="user">
+                                <option selected disabled>Выбери пользователя</option>
+                                @foreach ($users as $user)
+                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                @endforeach
+                        </select>
+                        </div>
+                        <div id="orders-filter-customer" class="order-filter-item">
+                            <select name="customer">
+                                <option selected disabled>Выбери клиента</option>
+                                @foreach ($customers as $customer)
+                                    <option value="{{ $customer }}">{{ $customer }}</option>
+                                @endforeach
+                        </select>
+                        </div>
+                        <input type="submit" name="" id="" value="применить">
+                    </form>
+                </div>
                 @foreach ($orders as $orderItem)
                 <div class="order-item-wrapper">
                     <div class="order-item-header">
@@ -67,7 +109,8 @@
                             0000{{ $orderItem->id }}
                        </div>
                        <div class="order-item-user-name">
-                            {{ $orderItem->user->name }}
+                            <span>{{ $orderItem->user->name }}</span> 
+                            <span style="font-size: 0.7em">{{ $orderItem->customer_phone }}</span> 
                        </div>
                        <div class="order-item-status">
                             {{ $orderItem->status }} <img src="/images/clock-wait-16.png">
@@ -94,6 +137,7 @@
                             <div class="products-content-header-item">Склад</div>
                             <div class="products-content-header-item">Доставка</div>
                             <div class="products-content-header-item">Статус</div>
+                            
                         </div>
                         @foreach ($orderItem->products as $product)
                         <div class="admin-order-item-products-content">
@@ -130,7 +174,7 @@
                                         @if ($key != $product->status)
                                             <option value="{{ $key }}">{{ $status }}</option>
                                         @else
-                                            <option value="{{ $status }}" selected disabled>{{ $status }}</option>
+                                            <option value="{{ $key }}" selected disabled>{{ $status }}</option>
                                         @endif
                                     @endforeach
                                 </select>
@@ -181,7 +225,7 @@
                             </div>
                             <div class="settlement-item-operation">
                                 @if ($settlementItem->paid)
-                                    <img src="images/paid-24.png">
+                                    <img src="images/cash-24.png">
                                 @endif
                             </div>
                             <div class="settlement-item-operation">
@@ -190,7 +234,7 @@
                                 @endif
                             </div>
                             <div class="settlement-item-sum">
-                                - {{ number_format($settlementItem->sum, 2, '.', ' ') }}
+                                {{ number_format($settlementItem->sum, 2, '.', ' ') }}
                             </div>
                         </div>
                         <div class="settlement-item-content">
@@ -354,6 +398,116 @@
                         </div>
                     </div>
                 @endforeach
+            </div>
+            <div id="supplier_settlements" class="container admin-content-item">
+                <div id="supplier_settlements-header">
+                    <div class="supplier_settlements-header-item">
+                        <div></div>
+                        <div>Заказы</div>
+                        <div>Оплата</div>
+                        <div>Итог</div>
+                    </div>
+                    @foreach ($suppliers_debt as $supplierName => $supplierSettlement)
+                    <div class="supplier_settlements-header-item">
+                        <div class="supplier_settlements-header-item-name">
+                            {{ $supplierName }}
+                        </div>
+                        <div class="supplier_settlements-header-item-sum-order" style="color: red;">
+                            {{ $supplierSettlement['ralizationSum'] }}
+                        </div>
+                        <div class="supplier_settlements-header-item-sum-pay" style="color: green;">
+                            {{ $supplierSettlement['pay'] }}
+                        </div>
+                        <div class="supplier_settlements-header-item-total">
+                            @if (($supplierSettlement['pay'] + $supplierSettlement['ralizationSum']) < 0) 
+                                <span style="color: red">{{ $supplierSettlement['pay'] + $supplierSettlement['ralizationSum']}}</span>
+                            @else 
+                                <span style="color: green">{{ $supplierSettlement['pay'] + $supplierSettlement['ralizationSum']}}</span>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                    
+                </div>
+                <div id="customers-header">
+                    <div class="customers-header-item">
+                        Заказ
+                    </div>
+                    <div class="customers-header-item">
+                        Поставщик
+                    </div>
+                    <div class="customers-header-item">
+                        Сумма
+                    </div>
+                    <div class="customers-header-item">
+                        Дата
+                    </div>
+                    <div class="customers-header-item">
+                        Операция
+                    </div>
+                </div>
+                @foreach ($supplerSettlements as $settlement)
+                    <div class="customer-content">
+                        <div class="customer-content-item">
+                            {{ $settlement['order_id'] }}
+                        </div>
+                        <div class="customer-content-item">
+                            {{ $settlement['supplier'] }}
+                        </div>
+                        <div class="customer-content-item">
+                            @if ($settlement['operation'] == 'realization')
+                                <span style="color: red">{{ $settlement['sum'] }}</span>
+                            @else
+                                <span style="color: green">{{ $settlement['sum'] }}</span>
+                            @endif
+                        </div>
+                        <div class="customer-content-item">
+                            {{ $settlement['date'] }}
+                        </div>
+                        <div class="customer-content-item">
+                            @if ($settlement['operation'] == 'realization')
+                                <img src="images/realised-24.png">
+                            @else
+                                <img src="images/cash-24.png">
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            <div id="supplier_payments" class="container admin-content-item">
+                <form id="pay-container" action="{{ route('supplier.payment') }}" method="POST">
+                    @csrf
+                    <div class="pay-item-container">
+                        <div class="pay-item-container-name">
+                            Дата
+                        </div>
+                        <div class="pay-item-container-input">
+                            <input type="date" name="date" class="form-control">
+                        </div>
+                    </div>
+                    <div class="pay-item-container">
+                        <div class="pay-item-container-name">
+                            Сумма
+                        </div>
+                        <div class="pay-item-container-input">
+                            <input type="number" name="sum" class="form-control" min="0">
+                        </div>
+                    </div>
+                    <div class="pay-item-container">
+                        <div class="pay-item-container-name">
+                            Поставщик
+                        </div>
+                        <div class="pay-item-container-input">
+                            <select name="supplier" class="form-control">
+                                <option disabled selected>Выбери поставщика</option>
+                                @foreach ($suppliers as $supplierEng => $supplierRus)
+                                    <option value="{{ $supplierEng }}">{{ $supplierRus }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <input type="submit" class="btn btn-success" value="Провести оплату">
+                </form>
             </div>
         </div>
     </div>

@@ -17,7 +17,8 @@ class Order extends Model
         'date',
         'time',
         'sum',
-        'status'
+        'status',
+        'customer_phone'
     ];
 
     public function products(): HasMany

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\Setlement;
+use App\Models\SupplierSettlement;
 use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
 use Laravel\Ui\Presets\React;
@@ -19,7 +20,7 @@ class OrderController extends Controller
         /*$user = auth()->user();
         $orders = $user->orders;*/
 
-        $orders = Order::where('user_id', auth()->user()->id)->orderBy('date', 'desc')->get();
+        $orders = Order::where('user_id', auth()->user()->id)->orderBy('created_at', 'desc')->get();
         
         return view('orders', [
             'orders' => $orders
@@ -48,14 +49,14 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $cart = $request->session()->get('cart');
-
-        //dd($cart);
+        
         $order = Order::create([
             'user_id' => $request->user_id,
             'date' => date('d.m.y'),
             'time' => date('H:i:s'),
             'sum' => $cart->total(),
-            'status' => 'заказано'
+            'status' => 'заказано',
+            'customer_phone' => $request->customer_phone
         ]);
         
         foreach ($cart->content() as $cartItem) {
@@ -72,6 +73,14 @@ class OrderController extends Controller
                 'deliveryTime' => $cartItem['deliveryTime'],
                 'status' => 'payment_waiting'
             ]);
+            $supplier_settlement = SupplierSettlement::create([
+                'order_id' => $order->id,
+                'product_id' => $orderProduct->id,
+                'supplier' => $cartItem['stockFrom'],
+                'sum' => -($cartItem['price'] * $cartItem['qty']),
+                'date' => date('d.m.y'),
+                'operation' => 'realization'
+            ]);
         }
 
         $settlement = Setlement::create([
@@ -79,13 +88,12 @@ class OrderController extends Controller
             'user_id' => $request->user_id,
             'operation' => 'realization',
             'date' => date('d.m.y'),
-            'sum' => $cart->total(),
+            'sum' => -$cart->total(),
             'released' => true,
             'paid' => false
         ]);
-        
+
         $order->setlement_id = $settlement->id;
-        
         $cart->clear();
 
         return redirect('orders')

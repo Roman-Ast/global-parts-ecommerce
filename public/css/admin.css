@@ -110,7 +110,6 @@
     display: none;
     width: 97%;
 }
-
 #customers-header{
     display: grid;
     grid-template-columns: 6% 18% 18% 20% 18% 15% 15%;
@@ -122,3 +121,39 @@
     border-bottom: 1px solid #aaa;
     margin-bottom: 8px;
 }
+.order-item-user-name{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+#orders-filter-bar{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    margin-bottom: 10px;
+}
+#orders-filter-date{
+    display: flex;
+    justify-content: flex-start;
+}
+.order-filter-item{
+    margin-right: 6px;
+}
+#supplier_settlements-header{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #aaa;
+}
+.supplier_settlements-header-item{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+

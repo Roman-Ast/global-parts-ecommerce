@@ -1025,7 +1025,7 @@ class SparePartController extends Controller
                             'description' => '',
                             'deliveryStart' => $item['DeliveryDate'],
                             'deliveryEnd' => '',
-                            'supplier_name' => $item['Region'],
+                            'supplier_name' => 'atptr',
                         ]);
                     }
                 } else if(!empty($result2)) {
@@ -1044,7 +1044,7 @@ class SparePartController extends Controller
                         'description' => '',
                         'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                         'deliveryEnd' => '',
-                        'supplier_name' => $result2['GetPriceIdResult']['PriceSearchModel']['Region'],
+                        'supplier_name' => 'atptr',
                     ]);
                 }
             }
@@ -1088,7 +1088,7 @@ class SparePartController extends Controller
                                         ]
                                     ],
                                     "delivery_time" => $item['DeliveryDate'],
-                                    "supplier_name" => $item['Region']
+                                    "supplier_name" => 'atptr'
                                 ]);
                             }
                         }
@@ -1105,18 +1105,18 @@ class SparePartController extends Controller
                                 'stocks' => [
                                     [
                                         "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
-                                        "stock_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
+                                        "stock_name" => 'atptr',
                                         "stock_legend" => "",
                                         "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
                                         "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
                                         'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'])),
                                         "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                                         "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
-                                        "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                                        "city" => 'atptr'
                                     ]
                                 ],
                                 "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                                "supplier_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                                "supplier_name" => 'atptr'
                             ]);
                         }
                     }
@@ -1134,18 +1134,18 @@ class SparePartController extends Controller
                                     'stocks' => [
                                         [
                                             "stock_id" => $item['SellerId'],
-                                            "stock_name" => $item['Region'],
+                                            "stock_name" => 'atptr',
                                             "stock_legend" => "",
                                             "qty" =>$item['NumberOfAvailable'],
                                             "price" => $item['SalePrice'],
                                             'priceWithMargine' => round($this->setPrice($item['SalePrice'])),
                                             "delivery_time" => $item['DeliveryDate'],
                                             "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
-                                            "city" => $item['Region']
+                                            "city" => 'atptr'
                                         ]
                                     ],
                                     "delivery_time" => $item['DeliveryDate'],
-                                    "supplier_name" => $item['Region']
+                                    "supplier_name" => 'atptr'
                                 ]);
                         }
                     } else {
@@ -1160,18 +1160,18 @@ class SparePartController extends Controller
                             'stocks' => [
                                 [
                                     "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
-                                    "stock_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
+                                    "stock_name" => 'atptr',
                                     "stock_legend" => "",
                                     "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
                                     "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
                                     'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'])),
                                     "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                                     "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
-                                    "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                                    "city" => 'atptr'
                                 ]
                             ],
                             "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                            "supplier_name" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                            "supplier_name" => 'atptr'
                         ]);
                     }
                 }

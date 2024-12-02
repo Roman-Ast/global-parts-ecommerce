@@ -19,7 +19,7 @@
         <div id="settlement-container-pre-header">
             <div class="settlement-container-sum-realised">
                 <div class="sum-realised">Всего заказано:</div>
-                <div class="sum-relised-sum">- {{ number_format($sumReleased, 2, '.', ' ') }}</div> 
+                <div class="sum-relised-sum">{{ number_format($sumReleased, 2, '.', ' ') }}</div> 
             </div>
             <div class="settlement-container-sum-realised">
                 <div class="sum-realised">Всего оплачено:</div>
@@ -65,7 +65,7 @@
                 </div>
                 <div class="settlement-item-operation">
                     @if ($settlementItem->paid)
-                        <img src="images/paid-24.png">
+                        <img src="images/cash-24.png">
                     @endif
                 </div>
                 <div class="settlement-item-operation">
@@ -75,7 +75,7 @@
                 </div>
                 <div class="settlement-item-sum">
                     @if ($settlementItem->operation == 'realization')
-                    - {{ number_format($settlementItem->sum, 2, '.', ' ') }} 
+                    {{ number_format($settlementItem->sum, 2, '.', ' ') }} 
                     @else
                     {{ number_format($settlementItem->sum, 2, '.', ' ') }}
                     @endif
