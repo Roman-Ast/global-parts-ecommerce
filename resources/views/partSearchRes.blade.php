@@ -220,79 +220,79 @@
             <nav aria-label="..." class="pagination-nav">
                 <ul class="pagination pagination-sm">
                     <li class="page-item active">
-                        <a class="page-link" page-num="1" href="###">1</a>
+                        <span class="page-link" page-num="1">1</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="2" href="###">2</a>
+                        <span class="page-link" page-num="2">2</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="3" href="###">3</a>
+                        <span class="page-link" page-num="3">3</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="4" href="###">4</a>
+                        <span class="page-link" page-num="4">4</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="5" href="###">5</a>
+                        <span class="page-link" page-num="5">5</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="6" href="###">6</a>
+                        <span class="page-link" page-num="6">6</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="7" href="###">7</a>
+                        <span class="page-link" page-num="7">7</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="8" href="###">8</a>
+                        <span class="page-link" page-num="8">8</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="9" href="###">9</a>
+                        <span class="page-link" page-num="9">9</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="10" href="###">10</a>
+                        <span class="page-link" page-num="10">10</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="11" href="###">11</a>
+                        <span class="page-link" page-num="11">11</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="12" href="###">12</a>
+                        <span class="page-link" page-num="12">12</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="13" href="###">13</a>
+                        <span class="page-link" page-num="13">13</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="14" href="###">14</a>
+                        <span class="page-link" page-num="14">14</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="15" href="###">15</a>
+                        <span class="page-link" page-num="15">15</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="16" href="###">16</a>
+                        <span class="page-link" page-num="16">16</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="17" href="###">17</a>
+                        <span class="page-link" page-num="17">17</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="18" href="###">18</a>
+                        <span class="page-link" page-num="18">18</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="19" href="###">19</a>
+                        <span class="page-link" page-num="19">19</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="20" href="###">20</a>
+                        <span class="page-link" page-num="20">20</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="21" href="###">21</a>
+                        <span class="page-link" page-num="21">21</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="22" href="###">22</a>
+                        <span class="page-link" page-num="22">22</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="23" href="###">23</a>
+                        <span class="page-link" page-num="23">23</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="24" href="###">24</a>
+                        <span class="page-link" page-num="24">24</span>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" page-num="25" href="###">25</a>
+                        <span class="page-link" page-num="25">25</span>
                     </li>
                 </ul>
             </nav>
