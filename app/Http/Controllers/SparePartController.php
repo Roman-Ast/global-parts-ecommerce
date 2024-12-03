@@ -170,8 +170,13 @@ class SparePartController extends Controller
         $partnumber = str_replace(' ', '', $partnumber);
         
         $ch = curl_init();
-        $resUrl = 'https://api.phaeton.kz/api/Search?Article='.$partnumber.'&Brand='.$brand.'&includeAnalogs=true&Source[]=1&UserGuid=9F6414C4-9683-11EF-BBBC-F8F21E092C7D&ApiKey=LnxrDfpQVZz1ncuoI14e';
-        
+        $resUrl = 'https://api.phaeton.kz/api/Search?Article='.$partnumber.'&Brand='.$brand.'&includeAnalogs=true&Source[1]&UserGuid=9F6414C4-9683-11EF-BBBC-F8F21E092C7D&ApiKey=LnxrDfpQVZz1ncuoI14e';
+        $params = [
+            'Article' => $partnumber,
+            'Brand' => $brand,
+            'includeAnalogs' => true,
+
+        ];
         curl_setopt($ch, CURLOPT_URL, $resUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
@@ -908,7 +913,6 @@ class SparePartController extends Controller
         $headers = array(         
             'Authorization: Bearer '. self::TISS_API_KEY
         );
-        //dd(json_encode($fields));
         curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/StockByArticle?". http_build_query($fields));
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
