@@ -197,32 +197,32 @@ class SparePartController extends Controller
             foreach ($result['Items'] as $item) {
                 if (strtolower($item['Article']) == strtolower($partnumber)) {
                     array_push($this->finalArr['searchedNumber'], [
-                        'brand' => $item->Brand,
-                        'article' => $item->Article,
-                        'name' => $item->Name,
-                        'price' => $item->Presence,
-                        'priceWithMargine' => round($this->setPrice($item->Price)),
-                        'stocks' => $item->Presence,
+                        'brand' => $item['Brand'],
+                        'article' => $item['Article'],
+                        'name' => $item['Name'],
+                        'price' => $item['Presence'],
+                        'priceWithMargine' => round($this->setPrice($item['Price'])),
+                        'stocks' => $item['Presence'],
                         'supplier_name' => 'phtn',
-                        'deliveryStart' => $item->GuaranteedShipmentDays,
+                        'deliveryStart' => $item['GuaranteedShipmentDays'],
                     ]);
                 } else {
                     array_push($stocks, [
-                        'qty' => $item->Presence,
-                        'price' => $item->Price,
-                        'priceWithMargine' => round($this->setPrice($item->Price))
+                        'qty' => $item['Presence'],
+                        'price' => $item['Price'],
+                        'priceWithMargine' => round($this->setPrice($item['Price']))
                     ]);
                     
                     array_push($this->finalArr['crosses_on_stock'], [
-                        'brand' => $item->Brand,
-                        'article' => $item->Article,
-                        'name' => $item->Name,
-                        'price' => $item->Presence,
-                        'priceWithMargine' => round($this->setPrice($item->Price)),
+                        'brand' => $item['Brand'],
+                        'article' => $item['Article'],
+                        'name' => $item['Name'],
+                        'price' => $item['Presence'],
+                        'priceWithMargine' => round($this->setPrice($item['Price'])),
                         'stocks' => $stocks,
-                        'supplier_name' => 'tss',
-                        'stock_legend' => $item->warehouse_offers[0]->warehouse_name,
-                        'delivery_time' => '1.5-2 часа',
+                        'supplier_name' => 'phtn',
+                        'stock_legend' => 'phtn',
+                        'delivery_time' => $item['GuaranteedShipmentDays'],
                     ]);
                 }
             }
