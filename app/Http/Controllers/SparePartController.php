@@ -179,9 +179,13 @@ class SparePartController extends Controller
             'Sources[1]' => 1,
             'includeAnalogs' => true
         ];
+        $headers1 = [
+            'Content-Type: application/json',
+        ];
 
         curl_setopt($ch, CURLOPT_URL, $resUrl . http_build_query($params));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers1);
 
         $res = curl_exec($ch);
         curl_close($ch);
