@@ -178,7 +178,6 @@ class SparePartController extends Controller
             'Brand' => $brand,
             "Sources[]" => 1,
             "Sources[]" => 2,
-            'includeAnalogs' => false,
         ];
 
         curl_setopt($ch, CURLOPT_URL, $resUrl . http_build_query($params));
