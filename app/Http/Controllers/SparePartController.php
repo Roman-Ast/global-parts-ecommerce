@@ -177,7 +177,6 @@ class SparePartController extends Controller
             'Article' => $partnumber,
             'Brand' => $brand,
             'Sources[]' => 1,
-            'Sources[]' => 2,
             'includeAnalogs' => true
         ];
         $headers1 = [
