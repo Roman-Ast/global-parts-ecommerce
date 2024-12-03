@@ -144,18 +144,18 @@ class SparePartController extends Controller
     {
         $this->finalArr['originNumber'] = $request->partnumber;
 
-        if($request->rossko_need_to_search) {
+        /*if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand, $request->partnumber, $request->guid);
         }
-        $this->searchArmtek($request->brand, $request->partnumber);
-        //$this->searchPhaeton($request->brand, $request->partnumber);
-        $this->searchTreid($request->brand, $request->partnumber);
-        $this->searchTiss($request->brand, $request->partnumber);
-        $this->searchShatem($request->brand, $request->partnumber);
+        $this->searchArmtek($request->brand, $request->partnumber);*/
+        $this->searchPhaeton($request->brand, $request->partnumber);
+        //$this->searchTreid($request->brand, $request->partnumber);
+        //$this->searchTiss($request->brand, $request->partnumber);
+        //$this->searchShatem($request->brand, $request->partnumber);
 
-        if (!$request->only_on_stock) {
-            $this->searchAutopiter($request->brand, $request->partnumber);
-        }
+        
+        //$this->searchAutopiter($request->brand, $request->partnumber);
+        
         
         //dd($this->finalArr);
         return view('partSearchRes', [
@@ -983,78 +983,80 @@ class SparePartController extends Controller
 
         $articleId = '';
         
-        if (is_countable($noAnalogsResult->FindCatalogResult->SearchCatalogModel)) {
-            foreach ($noAnalogsResult->FindCatalogResult->SearchCatalogModel as $key => $item) {
-                if(trim(strtolower($item->CatalogName)) == trim(strtolower($brand)) ||
-                   str_contains(trim(strtolower($item->CatalogName)), trim(strtolower($brand)))
+        if ($noAnalogsResult && !empty($noAnalogsResult)) {
+            if (is_countable($noAnalogsResult->FindCatalogResult->SearchCatalogModel)) {
+                foreach ($noAnalogsResult->FindCatalogResult->SearchCatalogModel as $key => $item) {
+                    if(trim(strtolower($item->CatalogName)) == trim(strtolower($brand)) ||
+                    str_contains(trim(strtolower($item->CatalogName)), trim(strtolower($brand)))
+                    ) {
+                        $articleId = $item->ArticleId;
+                    }
+                }
+            } else {
+                if(
+                    trim(strtolower($noAnalogsResult->FindCatalogResult->SearchCatalogModel->CatalogName)) == $brand ||
+                    str_contains(trim(strtolower($noAnalogsResult->FindCatalogResult->SearchCatalogModel->CatalogName)), $brand)
                 ) {
-                    $articleId = $item->ArticleId;
+                    $articleId = $noAnalogsResult->FindCatalogResult->SearchCatalogModel->ArticleId;
                 }
             }
-        } else {
-            if(
-                trim(strtolower($noAnalogsResult->FindCatalogResult->SearchCatalogModel->CatalogName)) == $brand ||
-                str_contains(trim(strtolower($noAnalogsResult->FindCatalogResult->SearchCatalogModel->CatalogName)), $brand)
-            ) {
-                $articleId = $noAnalogsResult->FindCatalogResult->SearchCatalogModel->ArticleId;
-            }
-        }
-        
-        //получаем цены оригинального артикула
-        try {
-            $result = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 0, "DetailUid"=>null));
-            if (empty($result)) {
-                return 'error';
-            } else {
-                $result2 = (json_decode(json_encode($result), true));
-        
-                if (!empty($result2) && is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
-                    foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
+            
+            //получаем цены оригинального артикула
+            try {
+                $result = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 0, "DetailUid"=>null));
+                if (empty($result)) {
+                    return 'error';
+                } else {
+                    $result2 = (json_decode(json_encode($result), true));
+            
+                    if (!empty($result2) && is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
+                        foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
+                            array_push($this->finalArr['searchedNumber'], [
+                                'guid' => '',
+                                'brand' => $item['CatalogName'],
+                                'article' => $item['Number'],
+                                'name' => $item['Name'],
+                                'price' => round($item['SalePrice']),
+                                'priceWithMargine' => round($this->setPrice($item['SalePrice'])),
+                                'stocks' => $item['NumberOfAvailable'],
+                                'multiplicity' => '',
+                                'type' => '',
+                                'delivery' => '',
+                                'extra' => '',
+                                'description' => '',
+                                'deliveryStart' => $item['DeliveryDate'],
+                                'deliveryEnd' => '',
+                                'supplier_name' => 'atptr',
+                            ]);
+                        }
+                    } else if(!empty($result2)) {
                         array_push($this->finalArr['searchedNumber'], [
                             'guid' => '',
-                            'brand' => $item['CatalogName'],
-                            'article' => $item['Number'],
-                            'name' => $item['Name'],
-                            'price' => round($item['SalePrice']),
-                            'priceWithMargine' => round($this->setPrice($item['SalePrice'])),
-                            'stocks' => $item['NumberOfAvailable'],
+                            'brand' => $result2['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
+                            'article' => $result2['GetPriceIdResult']['PriceSearchModel']['Number'],
+                            'name' => $result2['GetPriceIdResult']['PriceSearchModel']['Name'],
+                            'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
+                            'priceWithMargine' => round($this->setPrice($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice'])),
+                            'stocks' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
                             'multiplicity' => '',
                             'type' => '',
                             'delivery' => '',
                             'extra' => '',
                             'description' => '',
-                            'deliveryStart' => $item['DeliveryDate'],
+                            'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                             'deliveryEnd' => '',
                             'supplier_name' => 'atptr',
                         ]);
                     }
-                } else if(!empty($result2)) {
-                    array_push($this->finalArr['searchedNumber'], [
-                        'guid' => '',
-                        'brand' => $result2['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
-                        'article' => $result2['GetPriceIdResult']['PriceSearchModel']['Number'],
-                        'name' => $result2['GetPriceIdResult']['PriceSearchModel']['Name'],
-                        'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
-                        'priceWithMargine' => round($this->setPrice($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice'])),
-                        'stocks' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
-                        'multiplicity' => '',
-                        'type' => '',
-                        'delivery' => '',
-                        'extra' => '',
-                        'description' => '',
-                        'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                        'deliveryEnd' => '',
-                        'supplier_name' => 'atptr',
-                    ]);
                 }
+            } catch (\Throwable $th) {
+                return 'error';
             }
-        } catch (\Throwable $th) {
-            return 'error';
         }
-
         //получаем цены аналогов
         try {
-            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 2, "DetailUid"=>null));
+            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "SearchCross"=> 12));
+           
             if (empty($resultWithAnalogs)) {
                 return 'error';
             } else {
