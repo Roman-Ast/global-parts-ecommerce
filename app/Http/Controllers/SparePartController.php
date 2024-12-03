@@ -192,7 +192,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        
+         dd($result);
         if (!$result['isError']) {
             foreach ($result['items'] as $item) {
                 if (strtolower($item['Article']) == strtolower($partnumber)) {
@@ -227,7 +227,7 @@ class SparePartController extends Controller
                 }
             }
         }
-        //dd($result);
+       
         return;
     }
     public function searchTreid (String $brand, String $partnumber) 
