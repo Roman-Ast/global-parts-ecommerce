@@ -209,7 +209,7 @@ class SparePartController extends Controller
                     ]);
                 } else {
                     $stocks = [];
-                    
+
                     array_push($stocks, [
                         'qty' => $item['Presence'],
                         'price' => $item['Price'],
@@ -223,7 +223,7 @@ class SparePartController extends Controller
                         'price' => $item['Presence'],
                         'priceWithMargine' => round($this->setPrice($item['Price'])),
                         'stocks' => $stocks,
-                        'supplier_name' => 'phtn',
+                        'supplier_name' => $item['Warehouse'],
                         'stock_legend' => $item['Warehouse'],
                         'delivery_time' => $item['GuaranteedShipmentDays'],
                     ]);
