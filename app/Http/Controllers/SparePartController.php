@@ -208,6 +208,8 @@ class SparePartController extends Controller
                         'deliveryStart' => $item['GuaranteedShipmentDays'],
                     ]);
                 } else {
+                    $stocks = [];
+                    
                     array_push($stocks, [
                         'qty' => $item['Presence'],
                         'price' => $item['Price'],
