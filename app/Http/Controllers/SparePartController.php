@@ -175,9 +175,6 @@ class SparePartController extends Controller
             'UserGuid' => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
             'ApiKey' => 'LnxrDfpQVZz1ncuoI14e',
             'Article' => $partnumber,
-            'Brand' => $brand,
-            'Sources[]' => 1,
-            'includeAnalogs' => true
         ];
         $headers1 = [
             'Content-Type: application/json',
