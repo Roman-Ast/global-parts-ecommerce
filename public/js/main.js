@@ -41,6 +41,13 @@ $(window).on('load', function () {
          $(this).parent().next().children().first().next().attr('disabled', true);
       }
    });
+
+   if($(location).attr('href').includes('getCatalog') && $(location).attr('href').includes('only_on_stock')) {
+      $('#stock_or_order').prop('checked', 'checked');
+      $('#stock_or_order').attr('disabled', 'disabled');
+   } else if ($(location).attr('href').includes('getCatalog') ) {
+      $('#stock_or_order').attr('disabled', 'disabled');
+   };
 });
 
 //показывать еще товар когда список большой

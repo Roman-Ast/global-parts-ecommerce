@@ -75,8 +75,8 @@ class UserController extends Controller
         ]);
 
         if(Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->flush();
             $request->session()->regenerate();
+ 
             return redirect()->intended('/')
                 ->with('message', 'Добро пожаловать' . ' ' . Auth::user()->name)
                 ->with('class', 'alert-success');

@@ -75,12 +75,10 @@
                             @csrf
                               @auth
                                 <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
-                              @endauth
-                              @if (Route::has('login'))
                                 @if (auth()->user()->user_role == 'admin' || auth()->user()->user_role == 'pre_admin')
                                   <input type="tel" placeholder="телефон клиента" name="customer_phone" required>
                                 @endif
-                              @endif
+                               @endauth
                               @foreach (session()->get('cart')->content() as $cartItem)
                                   <tr class="cart-item">
                                       <td><input type="hidden" name="stockFrom" value="$cartItem['stockFrom']">{{ $cartItem['stockFrom'] }}</td>

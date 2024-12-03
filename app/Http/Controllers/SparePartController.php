@@ -143,20 +143,20 @@ class SparePartController extends Controller
     public function getSearchedPartAndCrosses (Request $request)
     {
         $this->finalArr['originNumber'] = $request->partnumber;
-
-        /*if($request->rossko_need_to_search) {
+        //dd($request);
+        if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand, $request->partnumber, $request->guid);
         }
-        $this->searchArmtek($request->brand, $request->partnumber);*/
-        $this->searchPhaeton($request->brand, $request->partnumber);
-        //$this->searchTreid($request->brand, $request->partnumber);
-        //$this->searchTiss($request->brand, $request->partnumber);
-        //$this->searchShatem($request->brand, $request->partnumber);
+        $this->searchArmtek($request->brand, $request->partnumber);
+        //$this->searchPhaeton($request->brand, $request->partnumber);
+        $this->searchTreid($request->brand, $request->partnumber);
+        $this->searchTiss($request->brand, $request->partnumber);
+        $this->searchShatem($request->brand, $request->partnumber);
 
-        
-        //$this->searchAutopiter($request->brand, $request->partnumber);
-        
-        
+        if (!$request->only_on_stock) {
+            $this->searchAutopiter($request->brand, $request->partnumber);
+        }
+
         //dd($this->finalArr);
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,

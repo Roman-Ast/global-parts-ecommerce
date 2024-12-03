@@ -14,12 +14,12 @@
                         <input type="text" name="partNumber" id="searchBarInput" class="form-control" placeholder="введите номер детали" required>
                     </div>
                 </div>
-                <!--<div id="searchOptions">
+                <div id="searchOptions">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="stock_or_order" name="only_on_stock">
                         <label class="form-check-label" for="flexSwitchCheckDefault">Только в наличии</label>
                     </div>
-                </div>-->
+                </div>
             </form>
         </div>
 
