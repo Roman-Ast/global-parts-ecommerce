@@ -193,7 +193,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        dd($result);
+        //dd($result);
         if (!$result['IsError']) {
             foreach ($result['Items'] as $item) {
                 if (strtolower($item['Article']) == strtolower($partnumber)) {
@@ -222,7 +222,7 @@ class SparePartController extends Controller
                         'priceWithMargine' => round($this->setPrice($item['Price'])),
                         'stocks' => $stocks,
                         'supplier_name' => 'phtn',
-                        'stock_legend' => 'phtn',
+                        'stock_legend' => $item['Warehouse'],
                         'delivery_time' => $item['GuaranteedShipmentDays'],
                     ]);
                 }
