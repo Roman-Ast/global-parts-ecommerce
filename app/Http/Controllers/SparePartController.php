@@ -170,7 +170,7 @@ class SparePartController extends Controller
         $partnumber = str_replace(' ', '', $partnumber);
         
         $ch = curl_init();
-        $resUrl = 'https://api.phaeton.kz/api/Search?Article='.$partnumber.'&Brand='.$brand.'&Sources[]=1&Sources[2]=falseSources[3]=false&includeAnalogs=True&UserGuid=9F6414C4-9683-11EF-BBBC-F8F21E092C7D&ApiKey=LnxrDfpQVZz1ncuoI14e';
+        $resUrl = 'https://api.phaeton.kz/api/Search?Article='.$partnumber.'&Brand='.$brand.'&Sources[]=1&Sources[1]=falseSources[3]=false&includeAnalogs=True&UserGuid=9F6414C4-9683-11EF-BBBC-F8F21E092C7D&ApiKey=LnxrDfpQVZz1ncuoI14e';
         $params = [
             'Article' => $partnumber,
             'Brand' => $brand,
