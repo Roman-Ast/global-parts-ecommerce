@@ -227,7 +227,8 @@ class SparePartController extends Controller
                 }
             }
         }
-        dd($result);
+        //dd($result);
+        return;
     }
     public function searchTreid (String $brand, String $partnumber) 
     {
