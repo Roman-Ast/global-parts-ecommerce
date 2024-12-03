@@ -194,7 +194,7 @@ class SparePartController extends Controller
         }
         //dd($result);
         if (!$result['IsError']) {
-            foreach ($result['items'] as $item) {
+            foreach ($result['Items'] as $item) {
                 if (strtolower($item['Article']) == strtolower($partnumber)) {
                     array_push($this->finalArr['searchedNumber'], [
                         'brand' => $item->Brand,
