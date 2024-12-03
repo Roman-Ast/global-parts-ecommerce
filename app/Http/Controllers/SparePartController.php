@@ -176,7 +176,7 @@ class SparePartController extends Controller
             'ApiKey' => 'LnxrDfpQVZz1ncuoI14e',
             'Article' => $partnumber,
             'Brand' => $brand,
-            "Sources[]" => 3,
+            "Sources[]" => 2,
         ];
 
         curl_setopt($ch, CURLOPT_URL, $resUrl . http_build_query($params));
