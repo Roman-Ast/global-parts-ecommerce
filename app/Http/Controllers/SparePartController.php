@@ -176,7 +176,7 @@ class SparePartController extends Controller
             'ApiKey' => 'LnxrDfpQVZz1ncuoI14e',
             'Article' => $partnumber,
             'Brand' => $brand,
-            'Sources[1]' => 1,
+            'Sources[]' => 1,
             'includeAnalogs' => true
         ];
         $headers1 = [
