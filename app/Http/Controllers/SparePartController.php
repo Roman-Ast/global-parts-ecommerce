@@ -195,7 +195,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        //dd($result);
+        dd($result);
         if (!$result['IsError']) {
             foreach ($result['Items'] as $item) {
                 if (strtolower($item['Article']) == strtolower($partnumber)) {
