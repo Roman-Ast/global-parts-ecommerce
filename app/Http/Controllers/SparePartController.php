@@ -176,8 +176,9 @@ class SparePartController extends Controller
             'ApiKey' => 'LnxrDfpQVZz1ncuoI14e',
             'Article' => $partnumber,
             'Brand' => $brand,
-            'Sources[]' => '1',
-            'includeAnalogs' => 'true'
+            'Sources[]' => 1,
+            'Sources[]' => 2,
+            'includeAnalogs' => true
         ];
 
         curl_setopt($ch, CURLOPT_URL, $resUrl . http_build_query($params));
@@ -185,8 +186,47 @@ class SparePartController extends Controller
 
         $res = curl_exec($ch);
         curl_close($ch);
-        $result = json_decode($res, true);
 
+        try {
+            $result = json_decode($res, true);
+        } catch (\Throwable $th) {
+            return;
+        }
+        
+        if (!$result->isError) {
+            foreach ($result->items as $item) {
+                if (strtolower($item['Article']) == strtolower($partnumber)) {
+                    array_push($this->finalArr['searchedNumber'], [
+                        'brand' => $item->Brand,
+                        'article' => $item->Article,
+                        'name' => $item->Name,
+                        'price' => $item->Presence,
+                        'priceWithMargine' => round($this->setPrice($item->Price)),
+                        'stocks' => $item->Presence,
+                        'supplier_name' => 'phtn',
+                        'deliveryStart' => $item->GuaranteedShipmentDays,
+                    ]);
+                } else {
+                    array_push($stocks, [
+                        'qty' => $item->Presence,
+                        'price' => $item->Price,
+                        'priceWithMargine' => round($this->setPrice($item->Price))
+                    ]);
+                    
+                    array_push($this->finalArr['crosses_on_stock'], [
+                        'brand' => $item->Brand,
+                        'article' => $item->Article,
+                        'name' => $item->Name,
+                        'price' => $item->Presence,
+                        'priceWithMargine' => round($this->setPrice($item->Price)),
+                        'stocks' => $stocks,
+                        'supplier_name' => 'tss',
+                        'stock_legend' => $item->warehouse_offers[0]->warehouse_name,
+                        'delivery_time' => '1.5-2 часа',
+                    ]);
+                }
+            }
+        }
         dd($result);
     }
     public function searchTreid (String $brand, String $partnumber) 
@@ -925,7 +965,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        //dd($result);
+        
         foreach ($result as $key => $item) {
             if (strtolower($item->brand) == strtolower($this->finalArr['originNumber']) ) {
                 array_push($this->finalArr['searchedNumber'], [
@@ -933,7 +973,7 @@ class SparePartController extends Controller
                     'article' => $item->article,
                     'name' => $item->article_name,
                     'price' => $item->min_price,
-                    'priceWithMargine' => $this->setPrice($item->min_price),
+                    'priceWithMargine' => round($this->setPrice($item->min_price)),
                     'stocks' => $item->warehouse_offers[0]->quantity,
                     'supplier_name' => 'tss',
                     'deliveryStart' => '1.5-2 часа',
@@ -944,7 +984,7 @@ class SparePartController extends Controller
                     array_push($stocks, [
                         'qty' => $offer->quantity,
                         'price' => $offer->price,
-                        'priceWithMargine' => $this->setPrice($offer->price)
+                        'priceWithMargine' => round($this->setPrice($offer->price))
                     ]);
                 }
                 array_push($this->finalArr['crosses_on_stock'], [
