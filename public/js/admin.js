@@ -222,3 +222,38 @@ $('#order-filter-btn-drop').on('click', function () {
         }
      });
 });
+
+$('#add_parts_list_item').on('click', function (params) {
+    $('#manually-order-parts-list').append(
+        `
+        <div class="manually-order-parts-list-item">
+                            <div class="manually-order-parts-list-item-header">
+                                <label class="form-label parts-list-item">Артикул</label>
+                                <label class="form-label">Бренд</label>
+                                <label class="form-label">Наименование</label>
+                                <label class="form-label">Кол-во</label>
+                                <label class="form-label">С/С</label>
+                                <label class="form-label">Розница</label>
+                                <label class="form-label">Поставщик</label>
+                                <label class="form-label">Доставка</label>
+                            </div>
+                            <div class="manually-order-parts-list-item-content">
+                                <input type="text" class="form-control" name="article" required>
+                                <input type="text" class="form-control" name="brand" required>
+                                <input type="text" class="form-control" name="name" required>
+                                <input type="number" class="form-control" name="qty" required>
+                                <input type="number" class="form-control" name="price" required>
+                                <input type="number" class="form-control" name="priceWithMargine" required>
+                                <select name="from_stock" id="">
+                                    <option disabled selected>Выбери поставщика</option>
+                                    @foreach ($suppliers as $key => $supplier)
+                                        <option value="{{ $key }}">{{ $supplier }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="date" class="form-control" name="deliveryTime" value="" required>
+                            </div>
+                        </div>
+                            
+        `
+    );
+});

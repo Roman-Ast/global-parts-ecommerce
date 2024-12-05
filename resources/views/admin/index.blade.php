@@ -17,6 +17,14 @@
                     Заказы
                 </div>
             </div>
+            <div class="menu-item-container" target="manually-order">
+                <div class="menu-item-img">
+
+                </div>
+                <div class="menu-item-name" >
+                    Создать заказ
+                </div>
+            </div>
             <div class="menu-item-container" target="settlements">
                 <div class="menu-item-img">
 
@@ -77,28 +85,28 @@
         <div id="content">
             <div id="orders" class="admin-content-item">
                 <div id="orders-filter">
-                        <div id="orders-filter-date" class="order-filter-item">
-                            <input type="date" name="filter_date_from" class="input-group input-group-sm"value="{{ Carbon::now()->subDays(14)->format('Y-m-d') }}" >
-                            <input type="date" name="filter_date_to" class="input-group input-group-sm" value="{{ date('Y-m-d') }}">
-                        </div>
-                        <div id="orders-filter-user" class="order-filter-item">
-                            <select name="user">
-                                <option selected disabled value="null">Выбери пользователя</option>
-                                @foreach ($users as $user)
-                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div id="orders-filter-customer" class="order-filter-item">
-                            <select name="customer">
-                                <option selected disabled value="null">Выбери клиента</option>
-                                @foreach ($customers as $customer)
-                                    <option value="{{ $customer }}">{{ $customer }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <button id="order-filter-btn-submit" class="btn btn-sm btn-primary">применить</button>
-                        <button id="order-filter-btn-drop" class="btn btn-sm btn-warning">сбросить</button>
+                    <div id="orders-filter-date" class="order-filter-item">
+                        <input type="date" name="filter_date_from" class="input-group input-group-sm"value="{{ Carbon::now()->subDays(14)->format('Y-m-d') }}" >
+                        <input type="date" name="filter_date_to" class="input-group input-group-sm" value="{{ date('Y-m-d') }}">
+                    </div>
+                    <div id="orders-filter-user" class="order-filter-item">
+                        <select name="user">
+                            <option selected disabled value="null">Выбери пользователя</option>
+                            @foreach ($users as $user)
+                                <option value="{{ $user->id }}">{{ $user->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div id="orders-filter-customer" class="order-filter-item">
+                        <select name="customer">
+                            <option selected disabled value="null">Выбери клиента</option>
+                            @foreach ($customers as $customer)
+                                <option value="{{ $customer }}">{{ $customer }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button id="order-filter-btn-submit" class="btn btn-sm btn-primary">применить</button>
+                    <button id="order-filter-btn-drop" class="btn btn-sm btn-warning">сбросить</button>
                 </div>
                 @foreach ($orders as $orderItem)
                 <div class="admin-order-item-wrapper">
@@ -496,6 +504,56 @@
                         </div>
                     </div>
                     <input type="submit" class="btn btn-success" value="Провести оплату">
+                </form>
+            </div>
+            <div id="manually-order" class="container admin-content-item">
+                <form id="manually-order-wrapper">
+                    <div id="manually-order-main">
+                        <input type="hidden" name="user_id" value="{{ Auth()->user()->id }}">
+                        <label for="basic-url" class="form-label">Дата</label>
+                        <div class="input-group mb-2 manually-order-main">
+                            <input type="date" class="form-control" name="date" value="{{ date('Y-m-d') }}" required>
+                        </div>
+                        <label for="basic-url" class="form-label">Телефон клиента</label>
+                        <div class="input-group mb-2 manually-order-main">
+                            <input type="telephone" class="form-control" name="customer_phone" required>
+                        </div>
+                        <label for="basic-url" class="form-label" id="manually-order-list-open">Товар</label>
+                    </div>
+                    
+                    <div id="manually-order-parts-list">
+                        <div id="manually-order-bar">
+                            <a href="###" id="add_parts_list_item">Добавить еще товар</a>
+                            <input type="submit" value="Оформить заказ" class="btn btn-sm btn-success">
+                        </div>
+                        <div class="manually-order-parts-list-item">
+                            <div class="manually-order-parts-list-item-header">
+                                <label class="form-label parts-list-item">Артикул</label>
+                                <label class="form-label">Бренд</label>
+                                <label class="form-label">Наименование</label>
+                                <label class="form-label">Кол-во</label>
+                                <label class="form-label">С/С</label>
+                                <label class="form-label">Розница</label>
+                                <label class="form-label">Поставщик</label>
+                                <label class="form-label">Доставка</label>
+                            </div>
+                            <div class="manually-order-parts-list-item-content">
+                                <input type="text" class="form-control" name="article" required>
+                                <input type="text" class="form-control" name="brand" required>
+                                <input type="text" class="form-control" name="name" required>
+                                <input type="number" class="form-control" name="qty" required> 
+                                <input type="number" class="form-control" name="price" required>
+                                <input type="number" class="form-control" name="priceWithMargine" required>
+                                <select name="from_stock">
+                                    <option disabled selected>Выбери поставщика</option>
+                                    @foreach ($suppliers as $key => $supplier)
+                                        <option value="{{ $key }}">{{ $supplier }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="date" class="form-control" name="deliveryTime" value="{{ date('Y-m-d') }}" required>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
