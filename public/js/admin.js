@@ -9,3 +9,216 @@ $('.menu-item-container').on('click', function () {
 
     $(`#${$(this).attr('target')}`).css({'display': 'block'});
 });
+
+$('#orders-filter-user').on('change', function () {
+    $('#orders-filter-customer option[value="null"]').prop('selected', 'true');
+});
+$('#orders-filter-customer').on('change', function () {
+    $('#orders-filter-user option[value="null"]').prop('selected', 'true');
+});
+
+$('#order-filter-btn-submit').on('click', function () {
+    data = {
+        'customer_phone': $(this).prev().children().first().val(),
+        'user_id': $(this).prev().prev().children().first().val(),
+        'date_from': $(this).prev().prev().prev().children().first().val(),
+        'date_to': $(this).prev().prev().prev().children().first().next().val()
+    };
+
+    $.ajax({
+        data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
+        url: "/orders/filter",
+        type: "POST",
+        dataType: 'json',
+        success: function (data) {
+            $('.admin-order-item-wrapper').remove();
+
+            const statuses = {
+                'payment_waiting':'ожидание оплаты', 'processing': 'принято в работу', 'supplier_refusal': 'отказ поставщика',
+                'arrived_at_the_point_of_delivery': "поступило в ПВЗ", 'issued': "выдано", 'returned': 'возвращено'
+            };
+
+           data.filtered_orders.forEach(elem => {
+                $('#orders').append(
+                    `
+                    <div class="admin-order-item-wrapper" aria-target="${elem['id']}">
+                        <div class="order-item-header">
+                            <div class="order-item-id">0000${elem['id']}</div>
+                            <div class="order-item-user-name">
+                                <span>${elem['user_name']}</span> 
+                                <span style="font-size: 0.7em">${elem['customer_phone'] ? elem['customer_phone']: ''}</span> 
+                            </div>
+                            <div class="order-item-status">${elem['status']} <img src="/images/clock-wait-16.png"></div>
+                            <div class="order-item-date">${elem['date']}</div>
+                            <div class="order-item-time">${elem['time']}</div>
+                            <div class="admin-order-item-sum">
+                                <span style="font-weight: 600;color:green">${elem['sum_with_margine']}</span>
+                                <span style="font-style: italic;color:red;font-size: 0.7em">
+                                    ${elem['sum']}
+                                    %${Math.round((elem['sum_with_margine'] - elem['sum']) * 100 / elem['sum_with_margine'])}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    `
+                );
+
+                elem.products.forEach(element => {
+                    $(`.admin-order-item-wrapper[aria-target="${elem['id']}"]`).append(
+                        `
+                        <div class="admin-order-item-products-content">
+                            <div class="order-products-searched_number">
+                                <div class="order-products-searched_number">${element['searched_number']}</div>
+                            </div>
+                            <div class="order-products-article">
+                                ${element['article']}
+                            </div>
+                            <div class="order-products-brand">
+                                ${element['brand']}
+                            </div>
+                            <div class="order-products-name">
+                                ${element['name']}
+                            </div>
+                            <div class="order-products-qty">
+                                ${element['qty']}
+                            </div>
+                            <div class="order-products-price">
+                                ${element['priceWithMargine']}
+                            </div>
+                            <div class="order-products-item_sum">
+                                ${element['itemSumWithMargine']}
+                            </div>
+                            <div class="order-products-fromStock">
+                                ${element['fromStock']}
+                            </div>
+                            <div class="order-products-deliveryTime">
+                                ${element['deliveryTime']}
+                            </div>
+                            <div class="order-products-status">
+                                <select name="order_product_status" class="order_product_status form-select">
+                                    
+                                </select>
+                            </div>
+                            <div class="change_status">
+                                <input type="hidden" value=" ${element['id']}">
+                                <button class="btn btn-sm btn-info change_status_submit">Сменить</button>
+                            </div>
+                        </div>
+                        `
+                    );
+               });
+               $.each(statuses, function (i, item) {
+                $('.order_product_status').append($('<option>', {
+                  value: i, 
+                  text: item
+                }));
+            });
+               
+           });
+        },
+        error: function (error) {
+           console.log(error);
+        }
+     });
+});
+
+$('#order-filter-btn-drop').on('click', function () {
+    
+    $.ajax({
+        data: {'_token': $('meta[name="csrf-token"]').attr('content')},
+        url: "/orders/filter/drop",
+        type: "POST",
+        dataType: 'json',
+        success: function (data) {
+            $('.admin-order-item-wrapper').remove();
+
+            const statuses = {
+                'payment_waiting':'ожидание оплаты', 'processing': 'принято в работу', 'supplier_refusal': 'отказ поставщика',
+                'arrived_at_the_point_of_delivery': "поступило в ПВЗ", 'issued': "выдано", 'returned': 'возвращено'
+            };
+
+           data.orders.forEach(elem => {
+                $('#orders').append(
+                    `
+                    <div class="admin-order-item-wrapper" aria-target="${elem['id']}">
+                        <div class="order-item-header">
+                            <div class="order-item-id">0000${elem['id']}</div>
+                            <div class="order-item-user-name">
+                                <span>${elem['user_name']}</span> 
+                                <span style="font-size: 0.7em">${elem['customer_phone'] ? elem['customer_phone']: ''}</span> 
+                            </div>
+                            <div class="order-item-status">${elem['status']} <img src="/images/clock-wait-16.png"></div>
+                            <div class="order-item-date">${elem['date']}</div>
+                            <div class="order-item-time">${elem['time']}</div>
+                            <div class="admin-order-item-sum">
+                                <span style="font-weight: 600;color:green">${elem['sum_with_margine']}</span>
+                                <span style="font-style: italic;color:red;font-size: 0.7em">
+                                    ${elem['sum']}
+                                    %${Math.round((elem['sum_with_margine'] - elem['sum']) * 100 / elem['sum_with_margine'])}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    `
+                );
+
+                elem.products.forEach(element => {
+                    $(`.admin-order-item-wrapper[aria-target="${elem['id']}"]`).append(
+                        `
+                        <div class="admin-order-item-products-content">
+                            <div class="order-products-searched_number">
+                                <div class="order-products-searched_number">${element['searched_number']}</div>
+                            </div>
+                            <div class="order-products-article">
+                                ${element['article']}
+                            </div>
+                            <div class="order-products-brand">
+                                ${element['brand']}
+                            </div>
+                            <div class="order-products-name">
+                                ${element['name']}
+                            </div>
+                            <div class="order-products-qty">
+                                ${element['qty']}
+                            </div>
+                            <div class="order-products-price">
+                                ${element['priceWithMargine']}
+                            </div>
+                            <div class="order-products-item_sum">
+                                ${element['itemSumWithMargine']}
+                            </div>
+                            <div class="order-products-fromStock">
+                                ${element['fromStock']}
+                            </div>
+                            <div class="order-products-deliveryTime">
+                                ${element['deliveryTime']}
+                            </div>
+                            <div class="order-products-status">
+                                <select name="order_product_status" class="order_product_status form-select">
+                                    
+                                </select>
+                            </div>
+                            <div class="change_status">
+                                <input type="hidden" value=" ${element['id']}">
+                                <button class="btn btn-sm btn-info change_status_submit">Сменить</button>
+                            </div>
+                        </div>
+                        `
+                    );
+               });
+               $.each(statuses, function (i, item) {
+                $('.order_product_status').append($('<option>', {
+                  value: i, 
+                  text: item
+                }));
+            });
+               
+           });
+
+           
+        },
+        error: function (error) {
+           console.log(error);
+        }
+     });
+});

@@ -13,9 +13,9 @@ class SettlementController extends Controller
         
         $settlements = Setlement::where('user_id', $user->id)->orderBy('date', 'desc')->get();
         $orders = $user->orders;
-        $sumReleased = $settlements->where('released', 1)->sum('sum');
-        $sumPaid = $settlements->where('paid', 1)->sum('sum');
-
+        $sumReleased = $settlements->where('released', 1)->sum('sumWithMargine');
+        $sumPaid = $settlements->where('paid', 1)->sum('sumWithMargine');
+        
         return view('settlements', [
             'settlements' => $settlements,
             'sumReleased' => $sumReleased,

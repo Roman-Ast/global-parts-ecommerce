@@ -20,7 +20,8 @@ class Setlement extends Model
         'date',
         'sum',
         'released',
-        'paid'
+        'paid',
+        'sumWithMargine'
     ];
 
     public function user(): BelongsTo

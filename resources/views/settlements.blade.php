@@ -74,11 +74,7 @@
                     @endif
                 </div>
                 <div class="settlement-item-sum">
-                    @if ($settlementItem->operation == 'realization')
-                    {{ number_format($settlementItem->sum, 2, '.', ' ') }} 
-                    @else
-                    {{ number_format($settlementItem->sum, 2, '.', ' ') }}
-                    @endif
+                    {{ number_format($settlementItem->sumWithMargine, 2, '.', ' ') }}
                 </div>
             </div>
             <div class="settlement-item-content">

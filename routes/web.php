@@ -62,7 +62,6 @@ Route::middleware(['auth', 'verified'])->group(function() {
     Route::get('/garage/create', [GarageController::class, 'create']);
     Route::post('/garage/store', [GarageController::class, 'store'])->name('garage.store');
     Route::post('/garage/destroy', [GarageController::class, 'destroy']);
-    Route::post('/orders/filter', [AdminPanelController::class, 'filter']);
 });
 
 Route::middleware('auth')->group(function() {
@@ -94,6 +93,8 @@ Route::middleware('auth')->group(function() {
     Route::post('/garage/store', [GarageController::class, 'store'])->name('garage.store');
     Route::get('logout', [UserController::class, 'logout'])->name('logout');
     Route::post('/supplier/payment', [AdminPanelController::class, 'supplierPayment'])->name('supplier.payment');
+    Route::post('/orders/filter', [AdminPanelController::class, 'filter']);
+    Route::post('/orders/filter/drop', [AdminPanelController::class, 'filterDrop']);
 });
 
 

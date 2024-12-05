@@ -17,10 +17,7 @@ class OrderController extends Controller
      */
     public function index()
     {
-        /*$user = auth()->user();
-        $orders = $user->orders;*/
-
-        $orders = Order::where('user_id', auth()->user()->id)->orderBy('created_at', 'desc')->get();
+        $orders = Order::where('user_id', auth()->user()->id)->latest()->get();
         
         return view('orders', [
             'orders' => $orders
@@ -55,6 +52,7 @@ class OrderController extends Controller
             'date' => date('d.m.y'),
             'time' => date('H:i:s'),
             'sum' => $cart->total(),
+            'sum_with_margine' => $cart->totalWithMargine(),
             'status' => 'заказано',
             'customer_phone' => $request->customer_phone
         ]);
@@ -66,8 +64,10 @@ class OrderController extends Controller
                 'brand' => $cartItem['brand'],
                 'name' => $cartItem['name'],
                 'price' => $cartItem['price'],
+                'priceWithMargine' => $cartItem['priceWithMargine'],
                 'qty' => $cartItem['qty'],
                 'item_sum' => $cartItem['price'] * $cartItem['qty'],
+                'itemSumWithMargine' => $cartItem['priceWithMargine'] * $cartItem['qty'],
                 'searched_number' => $cartItem['originNumber'],
                 'fromStock' => $cartItem['stockFrom'],
                 'deliveryTime' => $cartItem['deliveryTime'],
@@ -77,6 +77,7 @@ class OrderController extends Controller
                 'order_id' => $order->id,
                 'product_id' => $orderProduct->id,
                 'supplier' => $cartItem['stockFrom'],
+                'sumWithMargine' => -($cartItem['priceWithMargine'] * $cartItem['qty']),
                 'sum' => -($cartItem['price'] * $cartItem['qty']),
                 'date' => date('d.m.y'),
                 'operation' => 'realization'
@@ -89,6 +90,7 @@ class OrderController extends Controller
             'operation' => 'realization',
             'date' => date('d.m.y'),
             'sum' => -$cart->total(),
+            'sumWithMargine' => -$cart->totalWithMargine(),
             'released' => true,
             'paid' => false
         ]);

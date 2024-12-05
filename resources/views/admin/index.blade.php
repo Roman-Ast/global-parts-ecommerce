@@ -75,35 +75,33 @@
             </div>
         </div>
         <div id="content">
-            <div id="orders" class="container admin-content-item">
+            <div id="orders" class="admin-content-item">
                 <div id="orders-filter">
-                    <form action="/orders/filter" method="POST" id="orders-filter-bar">
-                        @csrf
                         <div id="orders-filter-date" class="order-filter-item">
-                            <input type="date" name="filter_date_from" class="input-group input-group-sm">
-                            <input type="date" name="filter_date_to" class="input-group input-group-sm">
+                            <input type="date" name="filter_date_from" class="input-group input-group-sm"value="{{ Carbon::now()->subDays(14)->format('Y-m-d') }}" >
+                            <input type="date" name="filter_date_to" class="input-group input-group-sm" value="{{ date('Y-m-d') }}">
                         </div>
                         <div id="orders-filter-user" class="order-filter-item">
                             <select name="user">
-                                <option selected disabled>Выбери пользователя</option>
+                                <option selected disabled value="null">Выбери пользователя</option>
                                 @foreach ($users as $user)
                                     <option value="{{ $user->id }}">{{ $user->name }}</option>
                                 @endforeach
-                        </select>
+                            </select>
                         </div>
                         <div id="orders-filter-customer" class="order-filter-item">
                             <select name="customer">
-                                <option selected disabled>Выбери клиента</option>
+                                <option selected disabled value="null">Выбери клиента</option>
                                 @foreach ($customers as $customer)
                                     <option value="{{ $customer }}">{{ $customer }}</option>
                                 @endforeach
-                        </select>
+                            </select>
                         </div>
-                        <input type="submit" name="" id="" value="применить">
-                    </form>
+                        <button id="order-filter-btn-submit" class="btn btn-sm btn-primary">применить</button>
+                        <button id="order-filter-btn-drop" class="btn btn-sm btn-warning">сбросить</button>
                 </div>
                 @foreach ($orders as $orderItem)
-                <div class="order-item-wrapper">
+                <div class="admin-order-item-wrapper">
                     <div class="order-item-header">
                        <div class="order-item-id">
                             0000{{ $orderItem->id }}
@@ -121,24 +119,15 @@
                        <div class="order-item-time">
                             {{ $orderItem->time }}
                        </div>
-                       <div class="order-item-sum">
-                        {{ number_format($orderItem->sum, 2, ',', ' ') }}
-                   </div>
+                       <div class="admin-order-item-sum">
+                            <span style="font-weight: 600;color:green">{{ number_format($orderItem->sum_with_margine, 2, ',', ' ') }}</span>
+                            <span style="font-style: italic;color:red;font-size: 0.7em">
+                                {{ number_format($orderItem->sum, 2, ',', ' ') }}
+                                %{{ number_format(($orderItem->sum_with_margine - $orderItem->sum) * 100 / $orderItem->sum_with_margine, 2, ',', ' ') }}
+                            </span>
+                        </div>
                     </div>
                     <div class="order-item-products-wrapper">
-                        <div class="admin-order-item-products-content-header">
-                            <div class="products-content-header-item">Партномер</div>
-                            <div class="products-content-header-item">Артикул</div>
-                            <div class="products-content-header-item">Брэнд</div>
-                            <div class="products-content-header-item">Наименование</div>
-                            <div class="products-content-header-item">Кол-во</div>
-                            <div class="products-content-header-item">Цена</div>
-                            <div class="products-content-header-item">Сумма</div>
-                            <div class="products-content-header-item">Склад</div>
-                            <div class="products-content-header-item">Доставка</div>
-                            <div class="products-content-header-item">Статус</div>
-                            
-                        </div>
                         @foreach ($orderItem->products as $product)
                         <div class="admin-order-item-products-content">
                             <div class="order-products-searched_number">
@@ -157,10 +146,10 @@
                                 {{ $product->qty }}
                             </div>
                             <div class="order-products-price">
-                                {{ number_format($product->price, 0, ',', ' ') }}
+                                {{ number_format($product->priceWithMargine, 0, ',', ' ') }}
                             </div>
                             <div class="order-products-item_sum">
-                                {{ number_format($product->item_sum, 0, ',', ' ') }}
+                                {{ number_format($product->itemSumWithMargine, 0, ',', ' ') }}
                             </div>
                             <div class="order-products-fromStock">
                                 {{ $product->fromStock }}
@@ -234,7 +223,7 @@
                                 @endif
                             </div>
                             <div class="settlement-item-sum">
-                                {{ number_format($settlementItem->sum, 2, '.', ' ') }}
+                                {{ number_format($settlementItem->sumWithMargine, 2, '.', ' ') }}
                             </div>
                         </div>
                         <div class="settlement-item-content">

@@ -94,7 +94,6 @@ class AdminPanelController extends Controller
             ],
         ];
 
-
         return view('admin/index', [
             'orders' => $orders,
             'settlements' => $settlements,
@@ -152,32 +151,78 @@ class AdminPanelController extends Controller
      */
     public function filter(Request $request)
     {
-        //dd(date('d.m.y', strtotime($request->filter_date_from)));
-        $filteredOrders = [];
-        if ($request->user) {
-            $filteredOrders = Order::whereBetween('date', [
-                date('d.m.y', strtotime($request->filter_date_from)),
-                date('d.m.y', strtotime($request->filter_date_from))
-            ])->where('user_id', 'user')->get();
-        } else if ($request->customer) {
-            $filteredOrders = Order::whereBetween('date', [
-                date('d.m.y', strtotime($request->filter_date_from)),
-                date('d.m.y', strtotime($request->filter_date_from))
-            ])->where('customer_phone', 'customer')->get();
-        } else {
-            $filteredOrders = Order::whereBetween('date', [
-                date('d.m.y', strtotime($request->filter_date_from)),
-                date('d.m.y', strtotime($request->filter_date_from))
-            ])->get();
-                
-            //dd($filteredOrders);
+        $dateFrom = $request->data['date_from'];
+        $dateTo = $request->data['date_to'];
+        
+        foreach ($request->data as $key => $value) {
+            if ($value && $key != 'date_from' && $key != 'date_to') {
+                $needThirdParametr = true;
+                $thirdParametrKey = $key;
+                $thirdParametrValue = $value;
+            }
         }
         
-        return view('admin.index', [
-            'orders' => $filteredOrders
+        $filteredOrders = [];
+        
+        if (isset($needThirdParametr)) {
+            $filteredOrders = Order::where($thirdParametrKey, $thirdParametrValue)
+                ->whereDate('created_at', '>=', $dateFrom)
+                ->whereDate('created_at', '<=', $dateTo)
+                ->latest()
+                ->get();
+            
+            foreach ($filteredOrders as $order) {
+                $products = [];
+                    
+                foreach ($order->products as $product) {
+                    array_push($products, $product);
+                }
+                $order->products = $products;
+            }
+        } else {
+            $filteredOrders = Order::whereDate('created_at', '>=', $dateFrom)
+                ->whereDate('created_at', '<=', $dateTo)
+                ->latest()
+                ->get();
+            
+            foreach ($filteredOrders as $order) {
+                $products = [];
+                        
+                foreach ($order->products as $product) {
+                    array_push($products, $product);
+                }
+                $order->products = $products;
+            }
+        }
+        foreach ($filteredOrders as $order) {
+            $order['user_name'] = $order->user->name;
+        }
+        
+        return json_encode([
+            'filtered_orders' => $filteredOrders
         ]);
     }
 
+    public function filterDrop(Request $request)
+    {
+        $orders = Order::latest()->get();
+
+        foreach ($orders as $order) {
+            $products = [];
+                
+            foreach ($order->products as $product) {
+                array_push($products, $product);
+            }
+        }
+
+        foreach ($orders as $order) {
+            $order['user_name'] = $order->user->name;
+        }
+
+        return [
+            'orders' => $orders
+        ];
+    }
     /**
      * Display the specified resource.
      */

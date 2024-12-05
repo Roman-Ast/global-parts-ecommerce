@@ -11,12 +11,13 @@ class Cart
 
     public function add(
         string $article, string $brand, string $name, string $originNumber,
-        string $deliveryTime, string $price, int $qty, string $stockFrom
+        string $deliveryTime, string $price, int $qty, string $stockFrom, int $priceWithMargine
     )
     {
         return $this->items[] = [
             'article' => $article, 'name' => $name, 'price' => $price, 'originNumber' => $originNumber,
-            'qty' => $qty, 'brand' => $brand, 'deliveryTime' => $deliveryTime, 'stockFrom' => $stockFrom
+            'qty' => $qty, 'brand' => $brand, 'deliveryTime' => $deliveryTime, 'stockFrom' => $stockFrom,
+            'priceWithMargine' => $priceWithMargine
         ];
     }
 
@@ -54,6 +55,15 @@ class Cart
         }
         
         return null;
+    }
+
+    public function totalWithMargine()
+    {
+        $total = 0;
+        foreach ($this->items as $item) {
+            $total += ((int)$item['priceWithMargine'] * (int)$item['qty']);
+        }
+        return $total;
     }
 
     public function total()

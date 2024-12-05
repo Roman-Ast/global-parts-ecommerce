@@ -96,7 +96,6 @@ $('.page-link').on('click', function () {
          } else if (choosedBrand.includes($('.requestPartNumber-brand').text().replace(/\s+/g, ''))) {
             $(elem).css({'display': 'grid'});
          }
-         console.log(elem);
       } else {
          if (!choosedBrand.length) {
             $(elem).css({'display': 'none'});
@@ -124,17 +123,19 @@ $('.stock-item-cart-btn').on('click', function () {
        'qty': +$(this).next().children().first().val(),
        'deliveryTime': '',
        'stockFrom': '',
-       'searchedNumber': ''
+       'searchedNumber': '',
+       'priceWithMargine': ''
    };
    params.brand = $(this).parent().parent().prev().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
    params.article = $(this).parent().parent().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');;
    params.name = $(this).parent().parent().prev().prev().prev().prev().prev().text().replaceAll(regExp, '');;
-   params.price = $(this).parent().parent().prev().text().replaceAll(' ', '').replaceAll(regExp, '');;
+   params.priceWithMargine = $(this).parent().parent().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
    params.deliveryTime = $(this).parent().parent().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');;
    params.stockFrom = $(this).parent().parent().prev().prev().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
    params.originNumber = $('#originNumber').val();
    params.qty = +$(this).next().children().first().val();
-
+   params.price = $(this).next().next().val();
+   
    $.ajax({
       data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: params},
       reqData: params,
@@ -144,7 +145,7 @@ $('.stock-item-cart-btn').on('click', function () {
       success: function (data) {
          $('#header-cart-qty').html(new Intl.NumberFormat('ru-RU').format(data.qty) + 'шт');
          $('#header-cart-sum').html(new Intl.NumberFormat('ru-RU').format(data.total) + 'T');
-         console.log([data.count, data.total]);
+         
          if(data.duplicates) {
             $("#search-part-main-container").prepend(`
                <div class="alert alert-warning alert-cart" style="align-text:center;">
@@ -275,7 +276,7 @@ $('.settlement-item-id').on('click', function (e) {
                      <td>${item.name}</td>
                      <td class="${item.status}">${statuses[item.status]}</td>
                      <td>${item.qty}шт</td>
-                     <td>${item.price * item.qty}</td>
+                     <td>${item.priceWithMargine * item.qty}</td>
                      <td>${item.fromStock}</td>
                   </tr>
                   `

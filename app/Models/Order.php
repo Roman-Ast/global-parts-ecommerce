@@ -17,6 +17,7 @@ class Order extends Model
         'date',
         'time',
         'sum',
+        'sum_with_margine',
         'status',
         'customer_phone'
     ];

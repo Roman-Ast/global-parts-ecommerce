@@ -54,14 +54,14 @@ class CartController extends Controller
         if ($duplicates == 'bingo') {
             return json_encode([
                 'items' => $cart->content(),
-                'total' => $cart->total(),
+                'total' => $cart->totalWithMargine(),
                 'count' => $cart->count(),
                 'duplicates' => true
             ]);
         } else {
             $cart->add(
                 $request->data['article'], $request->data['brand'], $request->data['name'], $request->data['originNumber'],
-                $request->data['deliveryTime'],  $request->data['price'],  $request->data['qty'],  $request->data['stockFrom']
+                $request->data['deliveryTime'],  $request->data['price'],  $request->data['qty'],  $request->data['stockFrom'], $request->data['priceWithMargine']
             );
         }
         
@@ -69,7 +69,7 @@ class CartController extends Controller
         
         return json_encode([
             'items' => $cart->content(),
-            'total' => $cart->total(),
+            'total' => $cart->totalWithMargine(),
             'count' => $cart->count(),
             'duplicates' => false
         ]);
@@ -94,7 +94,7 @@ class CartController extends Controller
 
         return json_encode([
             'items' => $cart->content(),
-            'total' => $cart->total(),
+            'total' => $cart->totalWitnMargine(),
             'count' => $cart->count()
         ]);
     }
@@ -112,7 +112,7 @@ class CartController extends Controller
 
         return json_encode([
             'items' => $cart->content(),
-            'total' => $cart->total(),
+            'total' => $cart->totalWithMargine(),
             'count' => $cart->count()
         ]);
     }

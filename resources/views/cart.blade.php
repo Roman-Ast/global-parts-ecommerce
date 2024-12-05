@@ -42,7 +42,7 @@
                 </div>
                 <div class="cart-header-item" id="cart-header-sum">
                     @if (session()->has('cart'))
-                        <div>{{ number_format(session()->get('cart')->total(), 0, '.', ' ') }} Т</div>
+                        <div>{{ number_format(session()->get('cart')->totalWithMargine(), 0, '.', ' ') }} Т</div>
                     @endif
                 </div>
             </div>
@@ -86,9 +86,9 @@
                                       <td>{{ $cartItem['article'] }}</td>
                                       <td>{{ $cartItem['name'] }}</td>
                                       <td>{{ $cartItem['deliveryTime'] }}</td>
-                                      <td>{{ $cartItem['price'] }}</td>
+                                      <td>{{ $cartItem['priceWithMargine'] }}</td>
                                       <td><input type="number" class="form-control cart-qty-change" value="{{ $cartItem['qty'] }}" name="qty"></td>
-                                      <td>{{ (int)$cartItem['qty'] * (int)$cartItem['price'] }}</td>
+                                      <td>{{ (int)$cartItem['qty'] * (int)$cartItem['priceWithMargine'] }}</td>
                                       <td class="cart-item-delete">&times;</td>
                                   </tr>
                               @endforeach

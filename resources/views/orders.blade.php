@@ -35,7 +35,7 @@
                 {{ $orderItem->time }}
            </div>
            <div class="order-item-sum">
-            {{ number_format($orderItem->sum, 2, ',', ' ') }}
+            {{ number_format($orderItem->sum_with_margine, 2, ',', ' ') }}
        </div>
         </div>
         <div class="order-item-products-wrapper">
@@ -69,10 +69,10 @@
                     {{ $product->qty }}
                 </div>
                 <div class="order-products-price">
-                    {{ number_format($product->price, 0, ',', ' ') }}
+                    {{ number_format($product->priceWithMargine, 0, ',', ' ') }}
                 </div>
                 <div class="order-products-item_sum">
-                    {{ number_format($product->item_sum, 0, ',', ' ') }}
+                    {{ number_format($product->itemSumWithMargine, 0, ',', ' ') }}
                 </div>
                 <div class="order-products-fromStock">
                     {{ $product->fromStock }}

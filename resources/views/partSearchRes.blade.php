@@ -92,6 +92,7 @@
                                     <div class="stock-item-cart-qty">
                                         <input type='number' value="1" class="form-control">
                                     </div>
+                                    <input type="hidden" value="{{ $searchItem['price'] }}">
                                 </div>
                             </div>
                         </div>
@@ -142,16 +143,15 @@
                         </div>
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
-                       
-                            <div class="stock-item-cart">
-                                <div class="stock-item-cart-btn">
-                                    <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
-                                </div>
-                                <div class="stock-item-cart-qty">
-                                    <input type='number' value="1" class="form-control">
-                                </div>
+                        <div class="stock-item-cart">
+                            <div class="stock-item-cart-btn">
+                                <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
                             </div>
-                        
+                            <div class="stock-item-cart-qty">
+                                <input type='number' value="1" class="form-control">
+                            </div>
+                            <input type="hidden" value="{{ $crossItem['price'] }}">
+                        </div>
                     </div>
                 </div>
                 @endforeach
@@ -211,6 +211,7 @@
                                 <div class="stock-item-cart-qty">
                                     <input type='number' value="1" class="form-control">
                                 </div>
+                                <input type="hidden" value="{{ $crossItem['price'] }}">
                             </div>
                         @endforeach
                     </div>
