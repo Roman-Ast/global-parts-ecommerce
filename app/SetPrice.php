@@ -22,6 +22,8 @@ class SetPrice
             $priceWithMargin = $price * 1.34;
         } else if ($price > 30000 && $price <= 40000) {
             $priceWithMargin = $price * 1.33;
+        } else if ($price > 40000 && $price <= 50000) {
+            $priceWithMargin = $price * 1.32;
         } else if ($price > 50000 && $price <= 60000) {
             $priceWithMargin = $price * 1.30;
         } else if ($price > 60000 && $price <= 70000) {
