@@ -29,6 +29,9 @@
             @if (session()->has('cart') && session()->get('cart')->count() != 0)
                 <div id="header-cart-qty">{{ session()->get('cart')->count() }} шт</div>
                 <div id="header-cart-sum">{{ number_format(session()->get('cart')->totalWithMargine(), 0, '.', ' ') }} T</div>
+            @else
+                <div id="header-cart-qty"></div>
+                <div id="header-cart-sum"></div>
             @endif
         </div>
         <div id="auth-buttons-container" class="header-item">

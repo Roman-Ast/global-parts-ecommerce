@@ -129,6 +129,9 @@ ul{
 .close-flash{
     cursor: pointer;
 }
-
+#cart-wrapper{
+    display: flex;
+    justify-content: flex-start;
+}
 
 

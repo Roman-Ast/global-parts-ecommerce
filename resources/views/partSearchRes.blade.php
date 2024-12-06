@@ -76,7 +76,11 @@
                                 <img src="/images/info_pic.png" alt="info">
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-delivery">
-                                {{ date('d.m.y',strtotime($searchItem['deliveryStart']))  }}
+                                @if (date('d.m.y',strtotime($searchItem['deliveryStart'])) == date('d.m.y'))
+                                    <div class="parts-on-stock">1.5-2 часа</div>
+                                @else
+                                    {{ date('d.m.y',strtotime($searchItem['deliveryStart'])) }}
+                                @endif
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-count">
                                 {{ $searchItem['stocks']  }}

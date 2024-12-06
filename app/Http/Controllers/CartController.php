@@ -50,8 +50,8 @@ class CartController extends Controller
         }
 
         $duplicates = $cart->search($request->data['article']);
-        //return json_encode($duplicates);
-        if ($duplicates == 'bingo') {
+        
+        /*Wif ($duplicates == 'bingo') {
             return json_encode([
                 'items' => $cart->content(),
                 'total' => $cart->totalWithMargine(),
@@ -63,8 +63,11 @@ class CartController extends Controller
                 $request->data['article'], $request->data['brand'], $request->data['name'], $request->data['originNumber'],
                 $request->data['deliveryTime'],  $request->data['price'],  $request->data['qty'],  $request->data['stockFrom'], $request->data['priceWithMargine']
             );
-        }
-        
+        }*/
+        $cart->add(
+            $request->data['article'], $request->data['brand'], $request->data['name'], $request->data['originNumber'],
+            $request->data['deliveryTime'],  $request->data['price'],  $request->data['qty'],  $request->data['stockFrom'], $request->data['priceWithMargine']
+        );
         $request->session()->put('cart', $cart);
         
         return json_encode([

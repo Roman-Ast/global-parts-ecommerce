@@ -143,8 +143,8 @@ $('.stock-item-cart-btn').on('click', function () {
       type: "POST",
       dataType: 'json',
       success: function (data) {
-         $('#header-cart-qty').html(new Intl.NumberFormat('ru-RU').format(data.qty) + 'шт');
-         $('#header-cart-sum').html(new Intl.NumberFormat('ru-RU').format(data.total) + 'T');
+         $('#header-cart-qty').html(data.count + 'шт');
+         $('#header-cart-sum').html(data.total + 'T');
          
          if(data.duplicates) {
             $("#search-part-main-container").prepend(`
@@ -252,7 +252,6 @@ $('.settlement-item-id').on('click', function (e) {
       dataType: 'json',
       success: function (data) {
          let searchedElem = $(`input[class~=order_${data.orderId}]`);
-         console.log(searchedElem);
          let table = $(searchedElem).parent().parent().next().children().first();
          let changedBorder = $(searchedElem).parent().parent();
          let changedBackground = $(searchedElem).parent().parent().parent();

@@ -17,6 +17,8 @@
 }
 #search-res-filter{
     width: 16%;
+    max-height: 60vh;
+    overflow: scroll;
 }
 #search-part-main-container{
     width: 82%;

@@ -10,6 +10,7 @@ use ArmtekRestClient\Http\Config\Config as ArmtekRestClientConfig;
 use ArmtekRestClient\Http\ArmtekRestClient as ArmtekRestClient; 
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\SetPrice as SetPrice;
+use Collator;
 
 class SparePartController extends Controller
 {
@@ -42,7 +43,7 @@ class SparePartController extends Controller
     public function catalogSearch(Request $request) 
     {
         $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber)); 
-        //dd($request);
+
         //поиск брэндлиста по каталогам
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
@@ -144,32 +145,36 @@ class SparePartController extends Controller
     public function getSearchedPartAndCrosses (Request $request)
     {
         $this->finalArr['originNumber'] = $request->partnumber;
-        //dd($request);
-        if($request->rossko_need_to_search) {
-            $this->searchRossko($request->brand, $request->partnumber, $request->guid);
-        }
-        $this->searchArmtek($request->brand, $request->partnumber);
-        //$this->searchPhaeton($request->brand, $request->partnumber);
-        $this->searchTreid($request->brand, $request->partnumber);
-        $this->searchTiss($request->brand, $request->partnumber);
-        $this->searchShatem($request->brand, $request->partnumber);
+        $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
 
+        if($request->rossko_need_to_search) {
+            $this->searchRossko($request->brand,  $partNumber, $request->guid);
+        }
+        $this->searchArmtek($request->brand,  $partNumber);
+        //$this->searchPhaeton($request->brand,  $partNumber);
+        $this->searchTreid($request->brand,  $partNumber);
+        $this->searchTiss($request->brand,  $partNumber);
+        $this->searchShatem($request->brand,  $partNumber);
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
         }
+        $arr = array_unique($this->finalArr['brands']);
+        usort($arr, function($a, $b) {
+            if ($a == $b) {
+                return 0;
+            }
+            return ($a < $b) ? -1 : 1;
+        });
 
-        //dd($this->finalArr);
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
-            'brands' => array_unique($this->finalArr['brands'])
+            'brands' => $arr
         ]);
     }
 
     public function searchPhaeton(String $brand, String $partnumber)
     {
-        $partnumber = str_replace(' ', '', $partnumber);
-        
         $ch = curl_init();
         $resUrl = 'https://api.phaeton.kz/api/Search?';
         $params = [
@@ -236,8 +241,6 @@ class SparePartController extends Controller
     }
     public function searchTreid (String $brand, String $partnumber) 
     {
-        $this->partNumber = $partnumber;
-        //dd([$brand, $partnumber]);
         if ($brand == 'Hyundai/Kia') {
             $brand = 'Hyundai';
         } else if ($brand == 'Peugeot/Citroen') {
@@ -272,11 +275,13 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_POSTFIELDS, $request_data_searched_number);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded; charset=UTF-8'));
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         $html = curl_exec($ch);
         curl_close($ch);
         
         try {
             $result = json_decode($html, true);
+            array_push($this->finalArr, $result);
         } catch (\Throwable $th) {
             return;
         }
@@ -335,9 +340,19 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_POSTFIELDS, $request_data_search_crosses);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded; charset=UTF-8'));
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         $html = curl_exec($ch);
         curl_close($ch);
-        $result = json_decode($html, true);
+
+        try {
+            $result = json_decode($html, true);
+        } catch (\Throwable $th) {
+            return;
+        }
+        
+        if (empty($result)) {
+            return;
+        }
         
         //проверка остатков кросс-номеров на складе 
         $crossArr = [];
@@ -424,12 +439,13 @@ class SparePartController extends Controller
         $query  = new SoapClient($connect['wsdl'], $connect['options']);
         try {
             $result = $query->GetSearch($param);
+            
         } catch (\Throwable $th) {
             return view('components.hostError');
         }
         
         $result = (json_decode(json_encode($result), true));
-
+        
         if (!$result['SearchResult']['success']) {
             return;
         }
@@ -786,9 +802,7 @@ class SparePartController extends Controller
                 }
             }
         } catch (ArmtekException $e) {
-
             $json_responce_data = $e -> getMessage(); 
-
         }
 
         return;
@@ -816,6 +830,7 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($request_params));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
             $response = curl_exec($ch);
@@ -844,6 +859,7 @@ class SparePartController extends Controller
             'Authorization:Bearer ' . $access_token,
         ];
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
             $html = json_decode(curl_exec($ch1));
@@ -875,6 +891,7 @@ class SparePartController extends Controller
         curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($request_params2));
         curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers1);
+        curl_setopt($ch2, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         $response = json_decode(curl_exec($ch2));
         
@@ -977,9 +994,11 @@ class SparePartController extends Controller
         curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/StockByArticle?". http_build_query($fields));
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
-            $result = json_decode(curl_exec($ch1));   
+            $result = json_decode(curl_exec($ch1));  
+            
         } catch (\Throwable $th) {
             return;
         }
@@ -1069,11 +1088,13 @@ class SparePartController extends Controller
             //получаем цены оригинального артикула
             try {
                 $result = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 0, "DetailUid"=>null));
+                
                 if (empty($result)) {
                     return 'error';
                 } else {
                     $result2 = (json_decode(json_encode($result), true));
-            
+                    
+                    
                     if (!empty($result2) && is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
                         foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
                             array_push($this->finalArr['searchedNumber'], [
@@ -1120,8 +1141,8 @@ class SparePartController extends Controller
         }
         //получаем цены аналогов
         try {
-            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "SearchCross"=> 12));
-           
+            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "SearchCross"=> 2));
+
             if (empty($resultWithAnalogs)) {
                 return 'error';
             } else {
