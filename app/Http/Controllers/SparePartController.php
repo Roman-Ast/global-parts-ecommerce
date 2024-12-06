@@ -147,13 +147,13 @@ class SparePartController extends Controller
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
 
-        if($request->rossko_need_to_search) {
+        /*if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
-        }
-        $this->searchArmtek($request->brand,  $partNumber);
+        }*/
+        //$this->searchArmtek($request->brand,  $partNumber);
         //$this->searchPhaeton($request->brand,  $partNumber);
-        $this->searchTreid($request->brand,  $partNumber);
-        $this->searchTiss($request->brand,  $partNumber);
+        //$this->searchTreid($request->brand,  $partNumber);
+        //$this->searchTiss($request->brand,  $partNumber);
         $this->searchShatem($request->brand,  $partNumber);
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -810,11 +810,9 @@ class SparePartController extends Controller
 
     public function searchShatem(String $brand, String $partnumber)
     {
-        $partnumber = str_replace(' ', '', $partnumber);
-        
         if ($brand == 'Citroen/Peugeot') {
             $brand = 'PSA';
-        } else if ($brand == 'Hyundai/Kia') {
+        } else if ($brand == 'HYUNDAI/KIA' || $brand == 'Hyndai/Kia') {
             $brand = 'HYUNDAI-KIA';
         } else if ($brand == 'GM') {
             $brand = 'General Motors';
