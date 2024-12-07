@@ -257,3 +257,27 @@ $('#add_parts_list_item').on('click', function (params) {
         `
     );
 });
+
+$('#manually-order-submit').on('click', function () {
+    let data = {
+        orderInfo: [],
+        products: []
+    };
+    
+    $('.manually-order-main-info').each(function (key, elem) {
+        data.orderInfo.push($(elem).val());
+    });
+    
+
+    $('.manually-order-parts-list-item-content').each(function (productId, elem) {
+        data.products[productId] = [];
+        console.log(data);
+        let arr = $(elem).children();
+        $.each(arr, function (key, elem) {
+            //console.log(productId);
+            data.products[productId].push($(elem).val());
+        });
+    });
+
+    console.log(data);
+});

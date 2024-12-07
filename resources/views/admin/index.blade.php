@@ -507,16 +507,17 @@
                 </form>
             </div>
             <div id="manually-order" class="container admin-content-item">
-                <form id="manually-order-wrapper">
+                <div id="manually-order-wrapper">
+                    @csrf
                     <div id="manually-order-main">
-                        <input type="hidden" name="user_id" value="{{ Auth()->user()->id }}">
+                        <input type="hidden" name="user_id" value="{{ Auth()->user()->id }}" class="manually-order-main-info">
                         <label for="basic-url" class="form-label">Дата</label>
                         <div class="input-group mb-2 manually-order-main">
-                            <input type="date" class="form-control" name="date" value="{{ date('Y-m-d') }}" required>
+                            <input type="date" class="form-control manually-order-main-info" name="date" value="{{ date('Y-m-d') }}" required>
                         </div>
                         <label for="basic-url" class="form-label">Телефон клиента</label>
                         <div class="input-group mb-2 manually-order-main">
-                            <input type="telephone" class="form-control" name="customer_phone" required>
+                            <input type="telephone" class="form-control manually-order-main-info" name="customer_phone" required>
                         </div>
                         <label for="basic-url" class="form-label" id="manually-order-list-open">Товар</label>
                     </div>
@@ -524,7 +525,7 @@
                     <div id="manually-order-parts-list">
                         <div id="manually-order-bar">
                             <a href="###" id="add_parts_list_item">Добавить еще товар</a>
-                            <input type="submit" value="Оформить заказ" class="btn btn-sm btn-success">
+                            <input type="submit" value="Оформить заказ" class="btn btn-sm btn-success" id="manually-order-submit">
                         </div>
                         <div class="manually-order-parts-list-item">
                             <div class="manually-order-parts-list-item-header">
@@ -554,7 +555,7 @@
                             </div>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>

@@ -234,12 +234,15 @@ class AdminPanelController extends Controller
         if($data['new_status'] == 'returned') {
             $product->status = $data['new_status'];
             $product->item_sum = 0;
+            $product->itemSumWithMargine = 0;
             $product->save();
 
             $order_id = $product->order_id;
             $new_order_sum = OrderProduct::where('order_id', $order_id)->sum('item_sum');
+            $newItemSumWithMargine = OrderProduct::where('order_id', $order_id)->sum('itemSumWithMargine');
             $order = Order::find($order_id); 
             $order->sum = $new_order_sum;
+            $order->sum_with_margine = $newItemSumWithMargine;
             $order->save();
 
             $settlement = Setlement::where('order_id', $order_id)->first();
@@ -263,9 +266,46 @@ class AdminPanelController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, AdminPanel $adminPanel)
+    public function manuallyMakeOrder(Request $request)
     {
-        //
+        //dd($request);
+        /*$order = Order::create([
+            'user_id' => $request->user_id,
+            'date' => date('d.m.y', strtotime($request->date)),
+            'time' => date('H:i:s'),
+            'sum' => $cart->total(),
+            'sum_with_margine' => $cart->totalWithMargine(),
+            'status' => 'заказано',
+            'customer_phone' => $request->customer_phone
+        ]);
+        
+        foreach ($cart->content() as $cartItem) {
+            $orderProduct = OrderProduct::create([
+                'order_id' => $order->id,
+                'article' => $cartItem['article'],
+                'brand' => $cartItem['brand'],
+                'name' => $cartItem['name'],
+                'price' => $cartItem['price'],
+                'priceWithMargine' => $cartItem['priceWithMargine'],
+                'qty' => $cartItem['qty'],
+                'item_sum' => $cartItem['price'] * $cartItem['qty'],
+                'itemSumWithMargine' => $cartItem['priceWithMargine'] * $cartItem['qty'],
+                'searched_number' => $cartItem['originNumber'],
+                'fromStock' => $cartItem['stockFrom'],
+                'deliveryTime' => $cartItem['deliveryTime'],
+                'status' => 'payment_waiting'
+            ]);
+            $supplier_settlement = SupplierSettlement::create([
+                'order_id' => $order->id,
+                'product_id' => $orderProduct->id,
+                'supplier' => $cartItem['stockFrom'],
+                'sumWithMargine' => -($cartItem['priceWithMargine'] * $cartItem['qty']),
+                'sum' => -($cartItem['price'] * $cartItem['qty']),
+                'date' => date('d.m.y'),
+                'operation' => 'realization'
+            ]);
+        }
+        dd($request);*/
     }
 
     /**
