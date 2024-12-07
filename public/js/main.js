@@ -203,8 +203,12 @@ $('.cart-qty-change').on('input', function () {
       'article': $(this).parent().prev().prev().prev().prev().text(),
       'qty': $(this).val()
    };
-   
-   $(this).parent().next().text($(this).val() * $(this).parent().prev().text());
+   console.log($(this).parent().prev().children().first().hasClass('newPriceWithMargine'));
+   if ($(this).parent().prev().children().first().hasClass('newPriceWithMargine')) {
+      $(this).parent().next().text($(this).val() * $(this).parent().prev().children().first().val());
+   } else {
+      $(this).parent().next().text($(this).val() * $(this).parent().prev().children().first().text());
+   }
 
    $.ajax({
       data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
@@ -212,7 +216,31 @@ $('.cart-qty-change').on('input', function () {
       type: "POST",
       dataType: 'json',
       success: function (data) {
-         console.log(data);
+         $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + ' шт');
+         $('#header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
+         $('#cart-header-sum').text(new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 2}).format(data.total,) + ' T');
+      },
+      error: function (error) {
+         console.log(error);
+      }
+   });
+});
+
+//изменение цены товара в корзине
+$('.newPriceWithMargine').on('input', function () {
+   let data = {
+      'article': $(this).parent().prev().prev().prev().val(),
+      'newPriceWithMargine': $(this).val()
+   };
+   
+   $(this).parent().next().next().text($(this).val() * $(this).parent().next().children().first().val());
+
+   $.ajax({
+      data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
+      url: "/cart/update",
+      type: "POST",
+      dataType: 'json',
+      success: function (data) {
          $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + ' шт');
          $('#header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
          $('#cart-header-sum').text(new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 2}).format(data.total,) + ' T');

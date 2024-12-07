@@ -86,11 +86,21 @@
                                       <td>{{ $cartItem['article'] }}</td>
                                       <td>{{ $cartItem['name'] }}</td>
                                       <td>{{ $cartItem['deliveryTime'] }}</td>
-                                      <td>{{ $cartItem['priceWithMargine'] }}</td>
-                                      <td><input type="number" class="form-control cart-qty-change" value="{{ $cartItem['qty'] }}" name="qty"></td>
+                                        @if (auth()->user())
+                                          @if (auth()->user()->user_role == 'admin' || auth()->user()->user_role == 'pre_admin')
+                                            <td><input type="number" value="{{ $cartItem['priceWithMargine'] }}" min="0" class="form-control newPriceWithMargine" value="newPriceWithMargine"></td>
+                                            
+                                            @else
+                                            <td><span>{{ $cartItem['priceWithMargine'] }}</span></td>
+                                          @endif
+                                        @else
+                                          <td><span>{{ $cartItem['priceWithMargine'] }}</span></td>
+                                        @endif
+                                      <td><input type="number" class="form-control cart-qty-change" value="{{ $cartItem['qty'] }}" name="qty" min="0"></td>
                                       <td>{{ (int)$cartItem['qty'] * (int)$cartItem['priceWithMargine'] }}</td>
                                       <td class="cart-item-delete">&times;</td>
                                   </tr>
+                                  
                               @endforeach
                               <input type="submit" id="order-btn-submit">
                           </form>

@@ -97,7 +97,7 @@ class CartController extends Controller
 
         return json_encode([
             'items' => $cart->content(),
-            'total' => $cart->totalWitnMargine(),
+            'total' => $cart->totalWithMargine(),
             'count' => $cart->count()
         ]);
     }
