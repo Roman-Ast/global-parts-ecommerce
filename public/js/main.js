@@ -203,7 +203,7 @@ $('.cart-qty-change').on('input', function () {
       'article': $(this).parent().prev().prev().prev().prev().text(),
       'qty': $(this).val()
    };
-   console.log($(this).parent().prev().children().first().hasClass('newPriceWithMargine'));
+   
    if ($(this).parent().prev().children().first().hasClass('newPriceWithMargine')) {
       $(this).parent().next().text($(this).val() * $(this).parent().prev().children().first().val());
    } else {
@@ -229,21 +229,22 @@ $('.cart-qty-change').on('input', function () {
 //изменение цены товара в корзине
 $('.newPriceWithMargine').on('input', function () {
    let data = {
-      'article': $(this).parent().prev().prev().prev().val(),
-      'newPriceWithMargine': $(this).val()
+      'article': $(this).parent().prev().prev().prev().text(),
+      'priceWithMargine': $(this).val()
    };
    
    $(this).parent().next().next().text($(this).val() * $(this).parent().next().children().first().val());
 
    $.ajax({
       data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
-      url: "/cart/update",
+      url: "/cart/updatePrice",
       type: "POST",
       dataType: 'json',
       success: function (data) {
          $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + ' шт');
          $('#header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
          $('#cart-header-sum').text(new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 2}).format(data.total,) + ' T');
+         console.log(data);
       },
       error: function (error) {
          console.log(error);

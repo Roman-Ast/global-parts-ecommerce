@@ -81,19 +81,15 @@ class CartController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Cart $cart)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function deleteItem(Request $request)
+    
+    public function updatePrice(Request $request)
     {
         $cart = $request->session()->get('cart');
+        //return json_encode($cart->content());
+        $article = $request->data['article'];
+        $priceWithMargine = $request->data['priceWithMargine'];
 
-        $ost = $cart->remove($request->data['article']);
+        $cart->update($article, ['priceWithMargine' => $priceWithMargine]);
 
         return json_encode([
             'items' => $cart->content(),
@@ -101,8 +97,7 @@ class CartController extends Controller
             'count' => $cart->count()
         ]);
     }
-
-    /**
+/**
      * Update the specified resource in storage.
      */
     public function update(Request $request)
@@ -111,7 +106,22 @@ class CartController extends Controller
         $article = $request->data['article'];
         $qty = $request->data['qty'];
 
-        $cart->update($article, $qty);
+        $cart->update($article, ['qty' => $qty]);
+
+        return json_encode([
+            'items' => $cart->content(),
+            'total' => $cart->totalWithMargine(),
+            'count' => $cart->count()
+        ]);
+    }
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function deleteItem(Request $request)
+    {
+        $cart = $request->session()->get('cart');
+
+        $ost = $cart->remove($request->data['article']);
 
         return json_encode([
             'items' => $cart->content(),

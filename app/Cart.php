@@ -30,13 +30,16 @@ class Cart
         return $count;
     }
 
-    public function update(string $article, string $qty)
+    public function update(string $article, array $changingItems)
     {    
-        foreach ($this->items as $key => $item) {
-            if ($article == $item['article']) {
-                $this->items[$key]['qty'] = $qty;
+        foreach ($changingItems as $changingItemsKey => $changingItemsKeyValue) {
+            foreach ($this->items as $key => $item) {
+                if ($article == $item['article']) {
+                    $this->items[$key][$changingItemsKey] = $changingItemsKeyValue;
+                }
             }
         }
+        
 
         return $this->items;
     }

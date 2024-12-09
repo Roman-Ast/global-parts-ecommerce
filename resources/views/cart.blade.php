@@ -88,8 +88,9 @@
                                       <td>{{ $cartItem['deliveryTime'] }}</td>
                                         @if (auth()->user())
                                           @if (auth()->user()->user_role == 'admin' || auth()->user()->user_role == 'pre_admin')
-                                            <td><input type="number" value="{{ $cartItem['priceWithMargine'] }}" min="0" class="form-control newPriceWithMargine" value="newPriceWithMargine"></td>
-                                            
+                                            <td>
+                                              <input type="number" value="{{ $cartItem['priceWithMargine'] }}" min="0" class="form-control newPriceWithMargine" value="newPriceWithMargine">
+                                            </td>
                                             @else
                                             <td><span>{{ $cartItem['priceWithMargine'] }}</span></td>
                                           @endif

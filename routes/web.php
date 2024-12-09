@@ -96,6 +96,7 @@ Route::middleware('auth')->group(function() {
     Route::post('/orders/filter', [AdminPanelController::class, 'filter']);
     Route::post('/orders/filter/drop', [AdminPanelController::class, 'filterDrop']);
     Route::post('/manually_make_order', [AdminPanelController::class, 'manuallyMakeOrder']);
+    Route::post('/cart/updatePrice', [CartController::class, 'updatePrice']);
 });
 
 
