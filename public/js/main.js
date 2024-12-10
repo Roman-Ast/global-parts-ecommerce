@@ -50,7 +50,7 @@ $(window).on('load', function () {
    };
 
    if ($(window).width() <= '580') {
-      $('#whatsapp-container').attr('href', 'https://wa.me/87087172549')
+      $('#whatsapp-container').attr('href', 'https://wa.me/+77087172549')
    }
 });
 
