@@ -13,7 +13,7 @@
         justify-content: space-between;
         align-items: center;
         width: 90%;
-        height: 200px;
+        height: 24vh;
         margin-bottom: 10px;
     }
     #steering-wrapper{
@@ -58,7 +58,7 @@
         justify-content: space-between;
         align-items: center;
         width: 90%;
-        height: 200px;
+        height: 24vh;
         border: 1px solid #eee;
         margin-bottom: 10px;
     }
@@ -85,7 +85,7 @@
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
-        height: 200px;
+        height:  24vh;
         width: 90%;
         border: 1px solid #eee;
     }
@@ -138,5 +138,10 @@
     #cart-wrapper{
         display: flex;
         justify-content: flex-start;
+    }
+    #whatsapp-container{
+        position: absolute;
+        right: 10px;
+        bottom: 80px;
     }
 }

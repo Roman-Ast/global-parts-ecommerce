@@ -48,6 +48,10 @@ $(window).on('load', function () {
    } else if ($(location).attr('href').includes('getCatalog') ) {
       $('#stock_or_order').attr('disabled', 'disabled');
    };
+
+   if ($(window).width() <= '580') {
+      $('#whatsapp-container').attr('href', 'https://wa.me/87087172549')
+   }
 });
 
 //показывать еще товар когда список большой
@@ -401,8 +405,10 @@ setInterval(function () {
 
 //показ wa-qr
 $('#whatsapp-container img').on('click', function () {
-   $('#shadow-main').fadeIn();
-   $('#shadow-main').css({'background-color': 'rgba(0, 0, 0, .8)'});
+   if ($(window).width() > '580') {
+      $('#shadow-main').fadeIn();
+      $('#shadow-main').css({'background-color': 'rgba(0, 0, 0, .8)'});
+   }
 });
 $('#footer-wa').on('click', function () {
    $('#shadow-main').fadeIn();

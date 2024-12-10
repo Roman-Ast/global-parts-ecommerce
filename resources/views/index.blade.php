@@ -34,9 +34,9 @@
             </div>
             <span id="all-cars-text">Запчасти на все авто</span>
         </div>
-        <div id="whatsapp-container">
+        <a id="whatsapp-container">
             <img src="images/whatsapp72.png" alt="wa-big">
-        </div>
+        </a>
     </div>
 
     @include('components.footer-bar-mini')
