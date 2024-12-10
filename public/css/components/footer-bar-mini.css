@@ -9,9 +9,31 @@
         justify-content: space-between;
         align-items: center;
         flex-wrap: nowrap;
+        padding-top: 10px;
+        padding-bottom: 10px;
     }
     #footer-wrapper{
         display: none;
+    }
+    #logo-container{
+        display: flex;
+        justify-content: flex-start;
+    }
+    #logo-img{
+        height: 60px;
+    }
+    #cart-wrapper{
+        display: flex;
+        flex-wrap: nowrap;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+    }
+    #auth-buttons-container{
+        display: flex;
+        justify-content: flex-start;
+        align-items: center ;
+        height: 60px;
     }
 }
 

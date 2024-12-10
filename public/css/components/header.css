@@ -1,4 +1,7 @@
-
+@media (min-width: 581px) {
+#main-header-mini{
+    display: none;
+}
 #main-header{
     width: 100%;
     display: flex;
@@ -76,4 +79,4 @@
 #header-cart-sum{
     margin-left: 5px;
 }
-
+}

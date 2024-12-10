@@ -3,14 +3,38 @@
         display: none;
     }
     #main-header-mini{
+        padding-top: 10px;
         position: sticky;
         top: 0;
         left: 0;
-        background-color: rgba(128, 128, 128, .5);
+        background-color: white;
         z-index: 1;
+        border-bottom: 1px solid #aaa;
     }
     #search-btn{
         background-color: #fff;
     }
-
+    #search-btn{
+        border: 1px solid #aaa;
+    }
+    #search-bar-container{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 80px;
+        width: 100%;
+    }
+    #input-searchbtn-wrapper{
+        display: flex;
+        flex-direction: row;
+        width: 90%;
+        margin-bottom: 5px;
+    }
+    #search-button-container{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 10px;
+    }
 }

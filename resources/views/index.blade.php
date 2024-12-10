@@ -24,13 +24,15 @@
         </div>
         <div id="mobis">
             <div id="mobis-wrapper">
-                <span id="mobis-text">Оригинальные запчасти Hyundai/Kia напрямую из Кореи</span>
+                
             </div>
+            <span id="mobis-text">Оригинальные запчасти Hyundai/Kia напрямую из Кореи</span>
         </div>
         <div id="all-parts">
             <div id="all-parts-wrapper">
-                <span id="all-cars-text">Запчасти на все авто</span>
+                
             </div>
+            <span id="all-cars-text">Запчасти на все авто</span>
         </div>
         <div id="whatsapp-container">
             <img src="images/whatsapp72.png" alt="wa-big">

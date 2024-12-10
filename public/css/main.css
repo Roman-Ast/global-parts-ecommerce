@@ -14,10 +14,10 @@ ul{
     font-style: italic;
  }
 
-
+@media (min-width: 580px) {
     #main-container{
-        min-height: 50vh;
-        margin-top: 100px;
+        min-height: 55vh;
+        margin-top: 120px;
         display: grid;
         grid-template-columns: 50% 50%;
         grid-template-rows: 50% 50%;
@@ -30,8 +30,8 @@ ul{
         align-items: center;
     }
     #steering-wrapper{
-        width: 90%;
-        height: 95%;
+        width: 100%;
+        height: 100%;
         position: relative;
         display: flex;
         justify-content: center;
@@ -64,7 +64,8 @@ ul{
     }
     #mobis{
         display: flex;
-        justify-content: flex-end;
+        flex-direction: column;
+        justify-content: space-between;
         align-items: center;
     }
     #mobis-wrapper{
@@ -75,18 +76,16 @@ ul{
         width: 80%;
         height: 90%;
         border: 1px solid #eee;
-        display: flex;
-        justify-content: center;
-        align-items: flex-end;
     }
     #mobis-text{
-        align-self: flex-end;
+        text-align: center;
         margin-bottom: 5px;
         font-weight: 600;
     }
     #all-parts{
         display: flex;
-        justify-content: flex-end;
+        flex-direction: column;
+        justify-content: space-between;
         align-items: center;
     }
     #all-parts-wrapper{
@@ -101,7 +100,7 @@ ul{
         justify-content: center;
     }
     #all-cars-text{
-        align-self: flex-end;
+        text-align: center;
         margin-bottom: 5px;
         font-weight: 600;
     }
@@ -137,5 +136,5 @@ ul{
         display: flex;
         justify-content: flex-start;
     }
-
+}
 
