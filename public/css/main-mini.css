@@ -140,7 +140,7 @@
         justify-content: flex-start;
     }
     #whatsapp-container{
-        position: absolute;
+        position: fixed;
         right: 5px;
         bottom: 80px;
     }
