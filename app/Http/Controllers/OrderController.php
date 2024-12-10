@@ -77,7 +77,6 @@ class OrderController extends Controller
                 'order_id' => $order->id,
                 'product_id' => $orderProduct->id,
                 'supplier' => $cartItem['stockFrom'],
-                'sumWithMargine' => -($cartItem['priceWithMargine'] * $cartItem['qty']),
                 'sum' => -($cartItem['price'] * $cartItem['qty']),
                 'date' => date('d.m.y'),
                 'operation' => 'realization'

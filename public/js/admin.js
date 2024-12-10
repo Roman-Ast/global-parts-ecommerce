@@ -224,38 +224,53 @@ $('#order-filter-btn-drop').on('click', function () {
 });
 
 $('#add_parts_list_item').on('click', function (params) {
+    const suppliers = {
+        'shtm': 'Шатэ-М',
+        'rssk': 'Росско',
+        'trd': 'Автотрейд',
+        'tss': 'Тисс',
+        'rmtk': 'Армтек',
+        'phtn': 'Фаэтон',
+        'atptr': 'Автопитер',
+        'rlm': 'Рулим',
+        'leopart': 'Леопарт', 
+        'fbst': 'Фебест',
+        'Krn': 'Корея',
+        'thr':  'Сторонние'
+    };
+
     $('#manually-order-parts-list').append(
         `
         <div class="manually-order-parts-list-item">
-                            <div class="manually-order-parts-list-item-header">
-                                <label class="form-label parts-list-item">Артикул</label>
-                                <label class="form-label">Бренд</label>
-                                <label class="form-label">Наименование</label>
-                                <label class="form-label">Кол-во</label>
-                                <label class="form-label">С/С</label>
-                                <label class="form-label">Розница</label>
-                                <label class="form-label">Поставщик</label>
-                                <label class="form-label">Доставка</label>
-                            </div>
-                            <div class="manually-order-parts-list-item-content">
-                                <input type="text" class="form-control" name="article" required>
-                                <input type="text" class="form-control" name="brand" required>
-                                <input type="text" class="form-control" name="name" required>
-                                <input type="number" class="form-control" name="qty" required>
-                                <input type="number" class="form-control" name="price" required>
-                                <input type="number" class="form-control" name="priceWithMargine" required>
-                                <select name="from_stock" id="">
-                                    <option disabled selected>Выбери поставщика</option>
-                                    @foreach ($suppliers as $key => $supplier)
-                                        <option value="{{ $key }}">{{ $supplier }}</option>
-                                    @endforeach
-                                </select>
-                                <input type="date" class="form-control" name="deliveryTime" value="" required>
-                            </div>
-                        </div>
-                            
+            <div class="manually-order-parts-list-item-header">
+                <label class="form-label parts-list-item">Артикул</label>
+                <label class="form-label">Бренд</label>
+                <label class="form-label">Наименование</label>
+                <label class="form-label">Кол-во</label>
+                <label class="form-label">С/С</label>
+                <label class="form-label">Розница</label>
+                <label class="form-label">Поставщик</label>
+                <label class="form-label">Доставка</label>
+            </div>
+            <div class="manually-order-parts-list-item-content">
+                <input type="text" class="form-control" name="article" required>
+                <input type="text" class="form-control" name="brand" required>
+                <input type="text" class="form-control" name="name" required>
+                <input type="number" class="form-control" name="qty" required>
+                <input type="number" class="form-control" name="price" required>
+                <input type="number" class="form-control" name="priceWithMargine" required>
+                    <select name="from_stock" class="order_product_item_supplier">
+                        <option disabled selected>Выбери поставщика</option>
+                    </select>
+                <input type="date" class="form-control" name="deliveryTime" required>
+            </div>
+         </div>               
         `
     );
+
+    $.each(suppliers, function (val, elem) {
+        $('.order_product_item_supplier').append($('<option>', { value: val, text: elem }));
+    });
 });
 
 $('#manually-order-submit').on('click', function () {
@@ -271,13 +286,23 @@ $('#manually-order-submit').on('click', function () {
 
     $('.manually-order-parts-list-item-content').each(function (productId, elem) {
         data.products[productId] = [];
-        console.log(data);
+        
         let arr = $(elem).children();
         $.each(arr, function (key, elem) {
-            //console.log(productId);
             data.products[productId].push($(elem).val());
         });
     });
 
-    console.log(data);
+    $.ajax({
+        data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
+        url: "/manually_make_order",
+        type: "POST",
+        dataType: 'json',
+        success: function (data) {
+           console.log(data);
+        },
+        error: function (data) {
+            console.log(data);
+        }
+     });    
 });

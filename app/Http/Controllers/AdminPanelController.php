@@ -269,44 +269,66 @@ class AdminPanelController extends Controller
      */
     public function manuallyMakeOrder(Request $request)
     {
-        //dd($request);
-        /*$order = Order::create([
-            'user_id' => $request->user_id,
-            'date' => date('d.m.y', strtotime($request->date)),
+        //return json_encode($request->data);
+        $orderSumWithMargine = 0;
+        $orderSum = 0;
+
+        foreach ($request->data['products'] as $product) {
+            $orderSumWithMargine += ($product[3] * $product[5]);
+            $orderSum += ($product[3] * $product[4]);
+        }
+        
+        $order = Order::create([
+            'user_id' => $request->data['orderInfo'][0],
+            'date' => $request->data['orderInfo'][1],
             'time' => date('H:i:s'),
-            'sum' => $cart->total(),
-            'sum_with_margine' => $cart->totalWithMargine(),
+            'sum' => $orderSum,
+            'sum_with_margine' => $orderSumWithMargine,
             'status' => 'заказано',
-            'customer_phone' => $request->customer_phone
+            'customer_phone' => $request->data['orderInfo'][2]
         ]);
         
-        foreach ($cart->content() as $cartItem) {
+        foreach ($request->data['products'] as $product) {
             $orderProduct = OrderProduct::create([
                 'order_id' => $order->id,
-                'article' => $cartItem['article'],
-                'brand' => $cartItem['brand'],
-                'name' => $cartItem['name'],
-                'price' => $cartItem['price'],
-                'priceWithMargine' => $cartItem['priceWithMargine'],
-                'qty' => $cartItem['qty'],
-                'item_sum' => $cartItem['price'] * $cartItem['qty'],
-                'itemSumWithMargine' => $cartItem['priceWithMargine'] * $cartItem['qty'],
-                'searched_number' => $cartItem['originNumber'],
-                'fromStock' => $cartItem['stockFrom'],
-                'deliveryTime' => $cartItem['deliveryTime'],
+                'article' => $product[0],
+                'brand' => $product[1],
+                'name' => $product[2],
+                'price' => $product[4],
+                'priceWithMargine' => $product[5],
+                'qty' => $product[3],
+                'item_sum' => $product[4] * $product[3],
+                'itemSumWithMargine' => $product[5] * $product[3],
+                'searched_number' => '',
+                'fromStock' => $product[6],
+                'deliveryTime' => $product[7],
                 'status' => 'payment_waiting'
             ]);
             $supplier_settlement = SupplierSettlement::create([
                 'order_id' => $order->id,
                 'product_id' => $orderProduct->id,
-                'supplier' => $cartItem['stockFrom'],
-                'sumWithMargine' => -($cartItem['priceWithMargine'] * $cartItem['qty']),
-                'sum' => -($cartItem['price'] * $cartItem['qty']),
-                'date' => date('d.m.y'),
+                'supplier' => $product[6],
+                'sum' => -($product[4] * $product[3]),
+                'date' => $request->data['orderInfo'][1],
                 'operation' => 'realization'
             ]);
         }
-        dd($request);*/
+        $settlement = Setlement::create([
+            'order_id' => $order->id,
+            'user_id' => $request->data['orderInfo'][0],
+            'operation' => 'realization',
+            'date' => $request->data['orderInfo'][1],
+            'sum' => -$orderSum,
+            'sumWithMargine' => -$orderSumWithMargine,
+            'released' => true,
+            'paid' => false
+        ]);
+
+        $order->setlement_id = $settlement->id;
+
+        return [
+            'message' => 'Заказ успешно создан!'
+        ];
     }
 
     /**

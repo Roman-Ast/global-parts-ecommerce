@@ -545,7 +545,7 @@
                                 <input type="number" class="form-control" name="qty" required> 
                                 <input type="number" class="form-control" name="price" required>
                                 <input type="number" class="form-control" name="priceWithMargine" required>
-                                <select name="from_stock">
+                                <select name="from_stock" class="order_product_item_supplier">
                                     <option disabled selected>Выбери поставщика</option>
                                     @foreach ($suppliers as $key => $supplier)
                                         <option value="{{ $key }}">{{ $supplier }}</option>
