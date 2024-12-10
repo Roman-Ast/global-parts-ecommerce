@@ -1,28 +1,8 @@
-<div id="main-header" class="">
-    <div id="main-header-wrapper" class="container">
-
-        <a id="logo-container" href="/" class="header-item">
-            <img src="/images/logo1.png" alt="main-logo" id="logo-img">
-        </a>
-        <div id="search-bar-wrapper" class="header-item">
-            <form action="/getCatalog" method="GET " enctype="multipart/form-data" id="search-bar-container">
-                <div id="input-searchbtn-wrapper">
-                    <div id="search-button-container">
-                        <button type="submit" class="btn btn-lg" id="search-btn"><img src="/images/lupa-24.png"></button>
-                    </div>
-                    <div class="input-group input-group-lg">
-                        <input type="text" name="partNumber" id="searchBarInput" class="form-control" placeholder="введите номер детали" required>
-                    </div>
-                </div>
-                <div id="searchOptions">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="stock_or_order" name="only_on_stock">
-                        <label class="form-check-label" for="flexSwitchCheckDefault">Только в наличии</label>
-                    </div>
-                </div>
-            </form>
-        </div>
-
+<div id="footer-bar-mini">
+    <div id="footer-bar-logo">
+        <img src="/images/logo1.png" alt="main-logo" id="logo-img">
+    </div>
+    <div id="footer-bar-cart-container">
         <div id="cart-wrapper" class="header-item">
             <a href="/cart"><img src="/images/cart-36.png" alt="корзина" id="cart-big-img"></a>
                     
@@ -34,7 +14,9 @@
                 <div id="header-cart-sum"></div>
             @endif
         </div>
-        <div id="auth-buttons-container" class="header-item">
+    </div>
+    
+    <div id="auth-buttons-container" class="header-item">
             @if (Route::has('login'))
             @auth
             <div class="dropdown">
@@ -62,10 +44,6 @@
                     </a>
                 @endif
             @endif
-        </div>
     </div>
+    
 </div>
-
-
-
-               

@@ -122,7 +122,7 @@
                             {{ $orderItem->status }} <img src="/images/clock-wait-16.png">
                        </div>
                        <div class="order-item-date">
-                            {{ $orderItem->date }}
+                            {{ date('d.m.y', strtoTime($orderItem->date)) }}
                        </div>
                        <div class="order-item-time">
                             {{ $orderItem->time }}

@@ -1,0 +1,16 @@
+@media (max-width: 580px) {
+    #main-header{
+        display: none;
+    }
+    #main-header-mini{
+        position: sticky;
+        top: 0;
+        left: 0;
+        background-color: rgba(128, 128, 128, .5);
+        z-index: 1;
+    }
+    #search-btn{
+        background-color: #fff;
+    }
+
+}

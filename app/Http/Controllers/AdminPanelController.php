@@ -26,7 +26,7 @@ class AdminPanelController extends Controller
         $payments = Payment::all();
         $sumOrders = $user->orders->sum('sum');
         $qtyOrders = $user->orders->count();
-        $customers = Order::all()->where('customer_phone', !null)->pluck('customer_phone');
+        $customers = Order::all()->where('customer_phone', !null)->pluck('customer_phone')->toArray();
         $supplerSettlements = SupplierSettlement::orderBy('created_at', 'desc')->get();
         
         $usersCalculating = [];
@@ -101,7 +101,7 @@ class AdminPanelController extends Controller
             'payments' => $payments,
             'statuses' => $statuses,
             'usersCalculating' => $usersCalculating,
-            'customers' => $customers,
+            'customers' => array_unique($customers),
             'supplerSettlements' => $supplerSettlements,
             'suppliers' => $suppliers,
             'suppliers_debt' => $suppliers_debt

@@ -4,6 +4,7 @@
     
 @section('content')
     @include('components.header')
+    @include('components.header-mini')
     
     @if (session()->has('message'))
     <div class="alert {{ Session::get('class') }}" style="align-text:center;">
@@ -36,6 +37,7 @@
         </div>
     </div>
 
+    @include('components.footer-bar-mini')
     @include('components.footer')
 @endsection
 

@@ -1,0 +1,18 @@
+@media (max-width: 580px) {
+    #footer-bar-mini{
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #d8e6eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+    #footer-wrapper{
+        display: none;
+    }
+}
+
+
