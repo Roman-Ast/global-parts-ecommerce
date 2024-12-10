@@ -507,6 +507,9 @@
                 </form>
             </div>
             <div id="manually-order" class="container admin-content-item">
+                <div class="alert" style="align-text:center;" id="alert-admin">
+                    <div style="display:flex;justify-content:flex-end;" class="close-flash"></div>
+                </div>
                 <div id="manually-order-wrapper">
                     @csrf
                     <div id="manually-order-main">

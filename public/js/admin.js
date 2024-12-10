@@ -1,3 +1,8 @@
+
+
+$('.close-flash').on('click', function () {
+    $(this).parent().slideUp();
+});
 $('.menu-item-container').on('click', function () {
     let id = $(this).attr('target');
    
@@ -292,14 +297,40 @@ $('#manually-order-submit').on('click', function () {
             data.products[productId].push($(elem).val());
         });
     });
-
+    let allowToOrder = true;
+    $('.manually-order-parts-list-item-content').children().each(function (productId, elem) {
+        if (!$(elem).val()) {
+            allowToOrder = false;
+            return;
+        }
+    });
+    if (!allowToOrder) {
+        $('#alert-admin').addClass('alert-warning');
+        $('#alert-admin').html('Не все поля заполнены!');
+        $('#alert-admin').slideDown();
+        setTimeout(() => {
+            $('#alert-admin').slideUp()
+        }, 3000);
+        return;
+    }
     $.ajax({
         data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
         url: "/manually_make_order",
         type: "POST",
         dataType: 'json',
         success: function (data) {
-           console.log(data);
+            $('#alert-admin').removeAttr('class');
+            $('#alert-admin').addClass('alert alert-success');
+            $('#alert-admin').html(data.message + ' страница будет перезагружена...');
+            $('#alert-admin').slideDown();
+            setTimeout(() => {
+                $('#alert-admin').slideUp();
+                
+            }, 3000);
+
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         },
         error: function (data) {
             console.log(data);

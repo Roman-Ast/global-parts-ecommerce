@@ -907,7 +907,7 @@ class SparePartController extends Controller
         foreach ($response as $key => $item) {
             if ($item->article->code == $partnumber) {
                 foreach ($item->prices as $key => $price) {
-                    if ($price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || $price->addInfo->city == 'Подольск') {
+                    if ($price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || $price->addInfo->city == 'Подольск' || $price->addInfo->city == 'Костанай') {
                         array_push($this->finalArr['brands'], $item->article->tradeMarkName);
                         
                         array_push($this->finalArr['searchedNumber'], [

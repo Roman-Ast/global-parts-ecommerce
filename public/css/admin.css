@@ -168,6 +168,13 @@
 }
 .admin-order-item-wrapper{
     width: 100%;
+    border: 1px solid #bbb;
+    margin-bottom: 10px;
+}
+.order-item-header{
+    background-color: #ddd;
+    border: none;
+    padding: 5px;
 }
 #order-filter-btn-drop{
     margin-left: 5px;
@@ -212,6 +219,9 @@
 }
 #manually-order-main{
     width: 50%;
+}
+.alert{
+    display: none;
 }
 
 
