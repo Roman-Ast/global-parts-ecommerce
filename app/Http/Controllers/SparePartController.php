@@ -21,7 +21,7 @@ class SparePartController extends Controller
         168102, 247102, 262102,
     ];
     const ARMTEK_LOGIN = 'ROMAN_PLANETA@MAIL.RU';
-    const ARMTEK_PASSWORD = 'rimma240609';
+    const ARMTEK_PASSWORD = 'Rimma240609';
     const ARMTEK_SBIT_ORG = '8000';
     const ARMTEK_CUSTOMER = '43387356'; 
     const ARMTEK_STOCK_ASTANA = 'MOV0005505';

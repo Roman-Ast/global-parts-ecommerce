@@ -98,9 +98,13 @@
                                         @else
                                           <td><span>{{ $cartItem['priceWithMargine'] }}</span></td>
                                         @endif
-                                      <td><input type="number" class="form-control cart-qty-change" value="{{ $cartItem['qty'] }}" name="qty" min="0"></td>
+                                      <td class="cart-qty-change-container">
+                                        <input type="number" class="form-control cart-qty-change" value="{{ $cartItem['qty'] }}" name="qty" min="0" step="1">
+                                      </td>
                                       <td>{{ (int)$cartItem['qty'] * (int)$cartItem['priceWithMargine'] }}</td>
-                                      <td class="cart-item-delete">&times;</td>
+                                      <td class="cart-item-delete">
+                                        <img src="images/dump-red-24.png" alt="cart-garbage">
+                                      </td>
                                   </tr>
                                   
                               @endforeach
