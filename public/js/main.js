@@ -148,7 +148,7 @@ $('.stock-item-cart-btn').on('click', function () {
       dataType: 'json',
       success: function (data) {
          $('#header-cart-qty').html(data.count + 'шт');
-         $('#header-cart-sum').html(data.total + 'T');
+         $('.header-cart-sum').html(data.total + 'T');
          
          if(data.duplicates) {
             $("#search-part-main-container").prepend(`
@@ -328,7 +328,6 @@ $('.settlement-item-id').on('click', function (e) {
       }
    });
 });
-
 
 //смена статуса продукта
 $('.change_status_submit').on('click', function () {
