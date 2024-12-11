@@ -11,15 +11,18 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
         <link href="{{ URL::asset('css/components/header.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/header-mini.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/main-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/cart.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/cart-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/orders.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/admin.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/garage.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/settlements.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/components/searchCatalog-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/registerForm.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/footer-bar-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">

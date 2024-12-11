@@ -1,7 +1,6 @@
 
-@media (min-width: 581px) {
+@media (max-width: 580px) {
     #search-res-main-container{
-        margin-top: 120px;
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
@@ -9,6 +8,7 @@
         min-height: 55vh;
         background-color: #eeeeee;
         padding-bottom: 20px;
+        margin-bottom: 80px;
     }
     #search-res-main-wrapper{
         display: flex;
@@ -21,9 +21,10 @@
         width: 16%;
         max-height: 60vh;
         overflow: scroll;
+        display: none;
     }
     #search-part-main-container{
-        width: 82%;
+        width: 100%;
     }
     #search-res-header{
         font-size: 1.3em;
@@ -36,9 +37,7 @@
         height: 80px;
     }
     #search-res-part-header{
-        display: grid;
-        grid-template-columns: 65% 10% 8% 22%;
-        background-color: #d8e6eb;
+        display: none;
     }
     .search-res-part-header-item{
         padding: 10px;
@@ -64,10 +63,12 @@
     }
     .requestPartNumberContainer-item{
         display: grid;
-        grid-template-columns: 7% 13% 12% 26% 10% 5% 7% 10% 10%;
-        grid-template-rows: minmax(80px, flex);
+        grid-template-columns: 11% 27% 32% 30%;
+        grid-template-rows: minmax(80px, flex) minmax(80px, flex);
         background-color: #fff;
         padding-left: 5px;
+        margin-bottom: 7px;
+        padding-bottom: 5px;
     }
     .requestPartNumberContainer-item-entity {
         margin-top: 9px;
@@ -101,7 +102,7 @@
         font-size: 14px;
     }
     .requestPartNumber-info{
-        text-align: center;
+        display: none;
     }
     .requestPartNumber-delivery{
         text-align: center;

@@ -6,6 +6,7 @@
 
 <div id="search-res-main-container" class="container">
     @include('components.header')
+    @include('components.header-mini')
 
     <div id="search-res-main-wrapper">
         <div id="search-res-filter">
@@ -34,6 +35,7 @@
             <div id="search-res-header">
                 Предложения для "{{ $finalArr['originNumber'] }}" 
             </div>
+            
             <div id="search-res-part-header">
                 <div class="search-res-part-header-item">
                     Наименование
@@ -106,11 +108,13 @@
                     <a href="###">Показать еще 10</a>
                 </div>
             </div>
+            @if (!empty($finalArr['crosses_on_stock']))
             <div class="searchResForRequestPartNumber">
                 <div class="searchResForRequestPartNumberHeader">
                     Аналоги в наличии на складе
                 </div>
             </div>
+            @endif
             <div id="crossesContainer-on-stock">
                 @foreach ($finalArr['crosses_on_stock'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
@@ -305,6 +309,6 @@
     </div>
 </div>
 
-
+@include('components.footer-bar-mini')
 @include('components.footer')
 @endsection

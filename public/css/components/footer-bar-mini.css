@@ -1,4 +1,7 @@
 @media (max-width: 580px) {
+    #footer-wrapper{
+        display: none;
+    }
     #footer-bar-mini{
         position: fixed;
         bottom: 0;
@@ -12,8 +15,9 @@
         padding-top: 10px;
         padding-bottom: 10px;
     }
-    #footer-wrapper{
+    #header-cart-qty{
         display: none;
+        font-size: 0.8em;
     }
     #logo-container{
         display: flex;

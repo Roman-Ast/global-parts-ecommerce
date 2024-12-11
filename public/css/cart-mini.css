@@ -1,13 +1,14 @@
-@media (min-width: 581px) {
+@media (max-width: 580px) {
     #cart-content-wrapper{
         display: flex;
         justify-content: center;
         align-items: stretch;
     }
     #cart-content-inner-wrapper{
-        width: 80%;
-        
+        width: 100%;
+        border: 1px solid red;
     }
+    
     #cart-header{
         width: 100;
         display: flex;
@@ -69,6 +70,3 @@
         display: none;
     }
 }
-
-
-

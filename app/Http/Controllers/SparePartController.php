@@ -760,12 +760,12 @@ class SparePartController extends Controller
 
             // send data
             $response = $armtek_client->post($request_params);
-
+            
             // in case of json
             $json_responce_data = $response->json();
-            
+            //dd($json_responce_data);
             if(gettype($json_responce_data->RESP) == 'object') {
-                if(property_exists($json_responce_data->RESP, 'MSG')) {
+                if(property_exists($json_responce_data->RESP, 'MSG') || property_exists($json_responce_data->RESP, 'ERROR')) {
                     return;
                 }
             }
@@ -774,6 +774,7 @@ class SparePartController extends Controller
                     return;
                 }
             }
+            
             
             foreach ($json_responce_data->RESP as $key => $crossItem) {
                 if ($crossItem->KEYZAK == 'MOV0005505' || $crossItem->KEYZAK == 'MOV0009026') {

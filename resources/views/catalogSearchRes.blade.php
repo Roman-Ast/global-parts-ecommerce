@@ -17,7 +17,7 @@
         </div>
     </div>
     @include('components.header')
-    
+    @include('components.header-mini')
     <div id="search-result-container-header">
         Результаты поиска
     </div>
@@ -47,6 +47,6 @@
         @endforeach
     </div>
 </div>
-
+@include('components.footer-bar-mini')
 @include('components.footer')
 @endsection

@@ -28,6 +28,7 @@
     </div>
 
     @include('components.header')
+    @include('components.header-mini')
     @auth
     @else
     <div class="alert alert-warning" role="alert">
@@ -57,7 +58,7 @@
               </div>
               <div id="cart-content">
                   @if (session()->has('cart'))
-                  <table class="table" id="cart-content">
+                  <table class="table" id="cart-content-table">
                       <thead>
                         <tr>
                           <th scope="col">Склад</th>
@@ -117,5 +118,6 @@
         </div>
     </div>
 </div>
-    @include('components.footer')
+  @include('components.footer-bar-mini')
+  @include('components.footer')
 @endsection
