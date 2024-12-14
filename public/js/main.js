@@ -177,13 +177,13 @@ $('.stock-item-cart-btn').on('click', function () {
 });
 
 //удаление товара из корзины
-$('.cart-item-delete').on('click', function () {
+$('.cart-item-delete img').on('click', function () {
    $(this).css({'transform': 'scale(0.7)'});
 
    let data = {
-      'article': $(this).prev().prev().prev().prev().prev().prev().text()
+      'article': $(this).parent().prev().prev().prev().prev().prev().prev().text()
    };
-   $(this).parent().remove();
+   $(this).parent().parent().remove();
 
    $.ajax({
       data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
@@ -193,7 +193,7 @@ $('.cart-item-delete').on('click', function () {
       success: function (data) {
          console.log(data);
          $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + "шт");
-         $('#header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + 'T');
+         $('.header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + 'T');
          $('#cart-header-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
       },
       error: function (error) {

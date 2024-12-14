@@ -6,6 +6,7 @@
 
 @section('content')
     @include('components.header')
+    @include('components.header-mini')
 
     <div id="settlements-container" class="container">
         <div id="settlement-container-header">
@@ -89,6 +90,6 @@
         @endforeach
     </div>
     
-    
+    @include('components.footer-bar-mini')
     @include('components.footer')
 @endsection

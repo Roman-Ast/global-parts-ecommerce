@@ -1,0 +1,15 @@
+
+@media (max-width: 580px) {
+    #main-header{
+        display: none;
+    }
+    #login-wrapper{
+        position: absolute !important;
+        left: 5% !important;
+        width: 90% !important;
+        margin-top: 50px !important;
+    }
+    #footer-wrapper{
+        display: none;
+    }
+}

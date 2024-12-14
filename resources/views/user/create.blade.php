@@ -3,7 +3,19 @@
 @section('title', 'Регистрация')
    
 @section('content')
-<div id="register-wrapper">
+  @if (Session::has('message'))
+    <div class="alert {{ Session::get('class') }}" style="align-text:center;" id>
+      <div style="display:flex;justify-content:flex-end;" class="close-flash">
+          &times;
+      </div>
+      {{ Session::get('message') }}
+    </div>
+  @endif
+    
+  @include('components.header')
+  @include('components.header-mini')
+
+  <div id="register-wrapper">
     <form action="{{ route('user.store') }}" method="POST">
 
       @csrf <!-- {{ csrf_field() }} -->
@@ -49,5 +61,6 @@
     </form>
 </div>
 
-
+  @include('components.footer')
+  @include('components.footer-bar-mini')
 @endsection

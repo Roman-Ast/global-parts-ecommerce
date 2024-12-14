@@ -13,8 +13,12 @@
         </div>
     
     @endif
+    
+    @include('components.header')
+    @include('components.header-mini')
+
     <div id="login-wrapper" class="container">
-        <form action="{{ route('login.auth') }}" method="POST">
+        <form action="{{ route('login.auth') }}" method="POST" id="login-form">
 
             @csrf <!-- {{ csrf_field() }} -->
 
@@ -41,9 +45,9 @@
               <button type="submit" class="btn btn-primary">Войти</button>
               <a href="/" class="ms-2">Забыли пароль?</a>
               <a href="{{ route('home') }}">На главную</a>
-          </form>
+        </form>
     </div>
     
-
-
+    @include('components.footer')
+    @include('components.footer-bar-mini')
 @endsection
