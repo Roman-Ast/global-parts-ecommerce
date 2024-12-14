@@ -165,7 +165,7 @@ class SparePartController extends Controller
             }
             return ($a < $b) ? -1 : 1;
         });
-
+        
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
@@ -316,7 +316,8 @@ class SparePartController extends Controller
                                     'description' => 'trd',
                                     'deliveryStart' => '1.5-2 часа',
                                     'deliveryEnd' => '1.5-2 часа',
-                                    'supplier_name' => 'trd'
+                                    'supplier_name' => 'trd',
+                                    'supplier_city' => 'ast'
                                 ]);
                             }
                         }
@@ -409,7 +410,8 @@ class SparePartController extends Controller
                             'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
                             'supplier_name' => 'trd',
                             'delivery_date' => '',
-                            'delivery_time' => '1.5-2 часа'
+                            'delivery_time' => '1.5-2 часа',
+                            'supplier_city' => 'ast'
                         ]);   
                     } 
                 }
@@ -472,6 +474,7 @@ class SparePartController extends Controller
                             'deliveryStart' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['deliveryStart'],
                             'deliveryEnd' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['deliveryEnd'],
                             'supplier_name' => 'rssk',
+                            'supplier_city' => 'ast'
                         ]);
                 } else {
                     foreach ($result['SearchResult']['PartsList']['Part']['stocks']['stock'] as $stockItem) {
@@ -492,7 +495,8 @@ class SparePartController extends Controller
                             'description' => $stockItem['description'],
                             'deliveryStart' => $stockItem['deliveryStart'],
                             'deliveryEnd' => $stockItem['deliveryEnd'],
-                            'supplier_name' => 'rssk'
+                            'supplier_name' => 'rssk',
+                            'supplier_city' => 'ast'
                         ]);
                     }
                 }
@@ -531,6 +535,7 @@ class SparePartController extends Controller
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => '1.5-2 часа',
                                     'supplier_name' => 'rssk',
+                                    'supplier_city' => 'ast'
                                 ]);
                             } elseif (str_contains($innerArr['description'], 'Павлодар') || str_contains($innerArr['description'], 'Караганда') ) {
                                 $crosses_stocks[] = [
@@ -554,6 +559,7 @@ class SparePartController extends Controller
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                     'supplier_name' => 'rssk',
+                                    'supplier_city' => 'ast'
                                 ]);
                             }
                         } else {
@@ -580,6 +586,7 @@ class SparePartController extends Controller
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => '1.5-2 часа',
                                         'supplier_name' => 'rssk',
+                                        'supplier_city' => 'ast'
                                     ]);
                                 } elseif (str_contains($item['description'], 'Павлодар') || str_contains($item['description'], 'Караганда') ) {
                                     $crosses_stocks[] = [
@@ -602,7 +609,8 @@ class SparePartController extends Controller
                                         'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => $item['deliveryEnd'],
-                                        'supplier_name' => 'rssk'
+                                        'supplier_name' => 'rssk',
+                                        'supplier_city' => 'ast'
                                     ]);
                                 }
                             }
@@ -635,6 +643,7 @@ class SparePartController extends Controller
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => '1.5-2 часа',
                                     'supplier_name' => 'rssk',
+                                    'supplier_city' => 'ast'
                                 ]);
                             } elseif (str_contains($innerArr['description'], 'Павлодар') || str_contains($innerArr['description'], 'Караганда') ) {
                                 $crosses_stocks[] = [
@@ -658,6 +667,7 @@ class SparePartController extends Controller
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                     'supplier_name' => 'rssk',
+                                    'supplier_city' => 'ast'
                                 ]);
                             }
                         } else {
@@ -684,6 +694,7 @@ class SparePartController extends Controller
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => '1.5-2 часа',
                                         'supplier_name' => 'rssk',
+                                        'supplier_city' => 'ast'
                                     ]);
                                 } elseif (str_contains($item['description'], 'Павлодар') || str_contains($item['description'], 'Караганда') ) {
                                     $crosses_stocks[] = [
@@ -707,6 +718,7 @@ class SparePartController extends Controller
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => $item['deliveryEnd'],
                                         'supplier_name' => 'rssk',
+                                        'supplier_city' => 'ast'
                                     ]);
                                 }
                             }
@@ -797,6 +809,7 @@ class SparePartController extends Controller
                             ]
                         ],
                         'supplier_name' => 'rmtk',
+                        'supplier_city' => 'ast'
                     ]);
                 } else {
                     break;
@@ -904,11 +917,14 @@ class SparePartController extends Controller
         }
         
         curl_close($ch2);
-
+        //dd($response);
         foreach ($response as $key => $item) {
             if ($item->article->code == $partnumber) {
                 foreach ($item->prices as $key => $price) {
-                    if ($price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || $price->addInfo->city == 'Подольск' || $price->addInfo->city == 'Костанай') {
+                    if (
+                        $price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || 
+                        $price->addInfo->city == 'Подольск' || $price->addInfo->city == 'Костанай' || $price->addInfo->city == 'Караганда'
+                    ) {
                         array_push($this->finalArr['brands'], $item->article->tradeMarkName);
                         
                         array_push($this->finalArr['searchedNumber'], [
@@ -918,15 +934,9 @@ class SparePartController extends Controller
                             'price' => $price->price->value,
                             'priceWithMargine' => round($this->setPrice($price->price->value), self::ROUND_LIMIT),
                             'stocks' => $price->quantity->available,
-                            'multiplicity' => '',
-                            'deliveryStart' => '',
-                            'type' =>'',
-                            'delivery' => '',
-                            'extra' => '',
-                            'description' => '',
-                            'deliveryStart' => '',
-                            'deliveryEnd' => '',
-                            'supplier_name' => 'shtm'
+                            'supplier_city' => 'ast',
+                            'supplier_name' => 'shtm',
+                            'deliveryStart' => date('d.m.Y', strtotime(stristr($price->shippingDateTime, 'T', true))),
                         ]);
                     }
                 }
@@ -951,9 +961,13 @@ class SparePartController extends Controller
                                     'priceWithMargine' => round($this->setPrice($price->price->value), self::ROUND_LIMIT),
                                 ]
                             ],
-                            'supplier_name' => 'shtm'
+                            'supplier_name' => 'shtm',
+                            'supplier_city' => 'ast'
                         ]);
-                    } else if ($price->addInfo->city == 'Екатеринбург' || $price->addInfo->city == 'Подольск') {
+                    } else if (
+                        $price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || 
+                        $price->addInfo->city == 'Подольск' || $price->addInfo->city == 'Костанай' || $price->addInfo->city == 'Караганда'
+                    ) {
                         array_push($this->finalArr['brands'], $item->article->tradeMarkName);
                         
                         array_push($this->finalArr['crosses_to_order'], [
@@ -971,7 +985,8 @@ class SparePartController extends Controller
                                     'priceWithMargine' => round($this->setPrice($price->price->value), self::ROUND_LIMIT),
                                 ]
                             ],
-                            'supplier_name' => 'shtm'
+                            'supplier_name' => 'shtm',
+                            'supplier_city' => 'ast'
                         ]);
                     }
                 }
@@ -1033,6 +1048,7 @@ class SparePartController extends Controller
                     'supplier_name' => 'tss',
                     'stock_legend' => $item->warehouse_offers[0]->warehouse_name,
                     'delivery_time' => '1.5-2 часа',
+                    'supplier_city' => 'ast'
                 ]);
             }
         }
@@ -1112,6 +1128,7 @@ class SparePartController extends Controller
                                 'deliveryStart' => $item['DeliveryDate'],
                                 'deliveryEnd' => '',
                                 'supplier_name' => 'atptr',
+                                "supplier_city" => $item['Region']
                             ]);
                         }
                     } else if(!empty($result2)) {
@@ -1131,6 +1148,7 @@ class SparePartController extends Controller
                             'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                             'deliveryEnd' => '',
                             'supplier_name' => 'atptr',
+                            "supplier_city" => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate']['Region']
                         ]);
                     }
                 }
@@ -1146,7 +1164,7 @@ class SparePartController extends Controller
                 return 'error';
             } else {
                 $result3 = (json_decode(json_encode($resultWithAnalogs), true));
-                
+               
                 if(!empty($result2)) {
                     if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
                         foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
@@ -1171,11 +1189,12 @@ class SparePartController extends Controller
                                             'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
                                             "delivery_time" => $item['DeliveryDate'],
                                             "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
-                                            "city" => $item['Region']
+                                            "supplier_city" => $item['Region']
                                         ]
                                     ],
                                     "delivery_time" => $item['DeliveryDate'],
-                                    "supplier_name" => 'atptr'
+                                    "supplier_name" => 'atptr',
+                                    "supplier_city" => $item['Region']
                                 ]);
                             }
                         }
@@ -1199,7 +1218,7 @@ class SparePartController extends Controller
                                         'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
                                         "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                                         "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
-                                        "city" => 'atptr'
+                                        "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
                                     ]
                                 ],
                                 "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
@@ -1228,11 +1247,12 @@ class SparePartController extends Controller
                                             'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
                                             "delivery_time" => $item['DeliveryDate'],
                                             "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
-                                            "city" => 'atptr'
+                                            "supplier_city" => $item['Region']
                                         ]
                                     ],
                                     "delivery_time" => $item['DeliveryDate'],
-                                    "supplier_name" => 'atptr'
+                                    "supplier_name" => 'atptr',
+                                    "supplier_city" => $item['Region']
                                 ]);
                         }
                     } else {
@@ -1254,11 +1274,13 @@ class SparePartController extends Controller
                                     'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
                                     "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                                     "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
-                                    "city" => 'atptr'
+                                    "city" => 'atptr',
+                                    "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
                                 ]
                             ],
                             "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                            "supplier_name" => 'atptr'
+                            "supplier_name" => 'atptr',
+                            "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
                         ]);
                     }
                 }

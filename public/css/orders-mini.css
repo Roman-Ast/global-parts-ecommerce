@@ -41,12 +41,15 @@
         display: grid;
         margin-bottom: 10px;
         border-bottom: 1px solid #ccc;
-        grid-template-columns: 20% 20% 40% 10% 20%;
+        grid-template-columns: 22% 20% 38% 7% 18%;
         grid-template-rows: 1fr;
         font-size: 0.85em;
         font-style: italic;
         margin-bottom: 10px;
         font-size: 0.85em;
+    }
+    .order-products-item_sum{
+        font-weight: bold;
     }
     .order-products-qty{
         margin-left: 2px;

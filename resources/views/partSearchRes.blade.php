@@ -63,7 +63,7 @@
                     @foreach ($finalArr['searchedNumber'] as $searchItem)
                         <div class="requestPartNumberContainer-item">
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
-                                {{ $searchItem['supplier_name'] }}
+                                {{ $searchItem['supplier_city'] }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                                 {{ $searchItem['brand'] }}
@@ -119,7 +119,7 @@
                 @foreach ($finalArr['crosses_on_stock'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
-                        {{ $crossItem['supplier_name'] }}
+                        {{ $crossItem['supplier_city'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                         {{ $crossItem['brand'] }}
@@ -175,7 +175,7 @@
                 @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
-                        {{ $crossItem['supplier_name'] }}
+                        {{ $crossItem['supplier_city'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                         {{ $crossItem['brand'] }}
