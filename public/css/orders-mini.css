@@ -20,12 +20,13 @@
     }
     .order-item-header{
         display: grid;
-        grid-template-columns: 33% 33% 33%;
+        grid-template-columns: 33.3% 33.3% 33.4%;
         grid-template-rows: 1fr;
         padding: 25px;
         font-size: 20px;
         border-bottom: 1px solid #aaa;
         margin-bottom: 10px;
+        font-size: 1em;
     }
     .order-item-products-wrapper{
         display: flex;
@@ -40,24 +41,36 @@
         display: grid;
         margin-bottom: 10px;
         border-bottom: 1px solid #ccc;
-        grid-template-columns: 25% 18% 16% 30% 11%;
+        grid-template-columns: 20% 20% 40% 10% 20%;
         grid-template-rows: 1fr;
-        font-size: 15px;
+        font-size: 0.85em;
         font-style: italic;
         margin-bottom: 10px;
+        font-size: 0.85em;
+    }
+    .order-products-qty{
+        margin-left: 2px;
     }
     .order-item-sum{
-        font-size: 25px;
+        font-size: 1.3em;
         font-weight: bold;
+        text-align: right;
+    }
+    .order-item-status{
+        text-align: right;
     }
     .order-item-user-name{
-        padding: 5px;
+        text-align: left;
+    }
+    .order-item-time{
+        text-align: center;
     }
     .change_status{
         margin-left: 5px;
     }
     .order-products-status{
         font-size: 0.9em;
+        text-align: right;
     }
     .payment_waiting{
         color: #FF4F00;

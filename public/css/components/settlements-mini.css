@@ -19,11 +19,11 @@
         height: 80px;
     }
     #settlement-container-inner-header{
-        font-size: 20px;
+        font-size: 0.95em;
         font-weight: 600;
     }
     #settlement-container-balanse{
-        font-size: 30px;
+        font-size: 1.3em;
         font-weight: 600;
     }
     #settlement-container-pre-header{
@@ -53,6 +53,7 @@
         grid-template-columns: 19% 30% 15% 8% 8% 22%;
         padding-top: 10px;
         padding-left: 10px;
+        font-size: 0.85em;
     }
     .settlement-item-wrapper{
         display: flex;
