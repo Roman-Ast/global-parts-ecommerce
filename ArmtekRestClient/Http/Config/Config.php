@@ -56,7 +56,7 @@ class Config
     * 
     * @var string
     */
-    private $_user_password     = 'rimma240609';
+    private $_user_password     = 'Rimma240609';
     
     
     

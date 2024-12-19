@@ -150,7 +150,7 @@ class SparePartController extends Controller
         if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
-        $this->searchArmtek($request->brand,  $partNumber);
+        $this->searchArmtek($request->brand, $partNumber);
         //$this->searchPhaeton($request->brand,  $partNumber);
         $this->searchTreid($request->brand,  $partNumber);
         $this->searchTiss($request->brand,  $partNumber);
@@ -266,7 +266,7 @@ class SparePartController extends Controller
                 )
             )
         );
-
+        //dd($request_data_searched_number);
         $request_data_searched_number = 'data=' . json_encode($request_data_searched_number);
 
         $ch = curl_init();
@@ -285,7 +285,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-
+        //dd($result);
         //помещаем найденные позиции в итоговый массив
         if ($result && strlen($result['message']) <= 2 && !empty($result)) {
             foreach ($result['items'] as $key => $item) {
@@ -744,8 +744,8 @@ class SparePartController extends Controller
 
 
             $params = [
-                'VKORG'         => self::ARMTEK_SBIT_ORG       
-                ,'KUNNR_RG'     => self::ARMTEK_CUSTOMER
+                'VKORG'         => '8000'       
+                ,'KUNNR_RG'     => '43387356'
                 ,'PIN'          => $partnumber
                 ,'BRAND'        => $brand
                 ,'QUERY_TYPE'   => ''
@@ -962,7 +962,7 @@ class SparePartController extends Controller
                                 ]
                             ],
                             'supplier_name' => 'shtm',
-                            'supplier_city' => 'ast'
+                            'supplier_city' => $price->addInfo->city
                         ]);
                     } else if (
                         $price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || 
@@ -986,7 +986,7 @@ class SparePartController extends Controller
                                 ]
                             ],
                             'supplier_name' => 'shtm',
-                            'supplier_city' => 'ast'
+                            'supplier_city' => $price->addInfo->city
                         ]);
                     }
                 }
@@ -1353,6 +1353,8 @@ class SparePartController extends Controller
 
     function setPrice($price)
     {
+        $priceWithMargin = 0;
+        
         if ($price > 0 && $price <= 600) {
             $priceWithMargin = $price * 3; 
         } else if ($price > 600 && $price <= 2000) {

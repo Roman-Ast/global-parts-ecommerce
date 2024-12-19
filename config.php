@@ -7,7 +7,7 @@
 */
 $user_settings = array(
     'user_login'         => 'ROMAN_PLANETA@MAIL.RU'   // логин 
-    ,'user_password'     => 'rimma240609'  // пароль
+    ,'user_password'     => 'Rimma240609'  // пароль
 );
 
 
