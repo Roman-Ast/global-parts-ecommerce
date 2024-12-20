@@ -451,7 +451,7 @@ class SparePartController extends Controller
         if (!$result['SearchResult']['success']) {
             return;
         }
-
+        //dd($result);
         //добавляем данные по искомому номеру в итоговый массив
         if ($result['SearchResult']['success'] == true) {
             if (isset($result['SearchResult']['PartsList']['Part']['stocks'])) {
@@ -559,7 +559,7 @@ class SparePartController extends Controller
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                     'supplier_name' => 'rssk',
-                                    'supplier_city' => 'ast'
+                                    'supplier_city' => $innerArr['description']
                                 ]);
                             }
                         } else {
@@ -610,7 +610,7 @@ class SparePartController extends Controller
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => $item['deliveryEnd'],
                                         'supplier_name' => 'rssk',
-                                        'supplier_city' => 'ast'
+                                        'supplier_city' => $item['description']
                                     ]);
                                 }
                             }
@@ -667,7 +667,7 @@ class SparePartController extends Controller
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                     'supplier_name' => 'rssk',
-                                    'supplier_city' => 'ast'
+                                    'supplier_city' => $innerArr['description']
                                 ]);
                             }
                         } else {
@@ -718,7 +718,7 @@ class SparePartController extends Controller
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => $item['deliveryEnd'],
                                         'supplier_name' => 'rssk',
-                                        'supplier_city' => 'ast'
+                                        'supplier_city' => $item['description']
                                     ]);
                                 }
                             }

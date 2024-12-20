@@ -75,10 +75,10 @@
     .requestPartNumber-supplier{
         font-style: italic;
         color: #aaa;
-        font-size: 0.8em;
+        font-size: 0.7em;
     }
     .requestPartNumber-brand{
-        font-size: 14px;
+        font-size: 12px;
         text-align: left;
         font-weight: bold;
         color: #363636;
