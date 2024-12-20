@@ -12,17 +12,13 @@
     }
     
     .catalog-list-item{
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
+        display: grid;
+        grid-template-columns: 50% 50%;
+        grid-template-rows: 1fr 1fr;
         border-bottom: 2px solid #ccc;
     }
     .catalog-list-item-cell{
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        justify-content: flex-start;
-        align-items: center;
+       
         padding-left: 10px;
     }
     .catalog-list-item-brand{
@@ -30,19 +26,22 @@
         font-weight: 600;
         color: #0d6efd;
         text-align: left;
-        width: 25%;
     }
     .catalog-list-item-art{
+        display: flex;
+        flex-direction: row;
+        align-items: baseline;
         color: #0d6efd;
         font-size: 0.9em;
         text-align: left;
-        width: 25%;
     }
     .catalog-list-item-name{
         font-size: 0.9em;
         color: #666;
-        text-align: center;
-        width: 50%;
+        text-align: left;
+        display: grid;
+        grid-column: span 2;
+        text-align: left;
     }
     
     #shadow,

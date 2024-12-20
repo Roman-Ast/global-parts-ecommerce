@@ -12,8 +12,8 @@
         justify-content: space-between;
         align-items: center;
         flex-wrap: nowrap;
-        padding-top: 10px;
-        padding-bottom: 10px;
+        padding-top: 5px;
+        padding-bottom: 5px;
     }
     #header-cart-qty{
         display: none;
@@ -24,7 +24,7 @@
         justify-content: flex-start;
     }
     #logo-img{
-        height: 60px;
+        height: 40px;
     }
     #cart-wrapper{
         display: flex;
@@ -37,7 +37,6 @@
         display: flex;
         justify-content: flex-start;
         align-items: center ;
-        height: 60px;
     }
 }
 
