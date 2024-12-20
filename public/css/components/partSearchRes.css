@@ -106,7 +106,7 @@
     .requestPartNumber-delivery{
         text-align: center;
         color: #92b6c8;
-        font-size: 10px;
+        font-size: 0.9em;
     }
     .requestPartNumber-count{
         display: flex;
