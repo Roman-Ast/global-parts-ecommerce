@@ -43,7 +43,7 @@ class SparePartController extends Controller
     public function catalogSearch(Request $request) 
     {
         $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber)); 
-
+        $start = microtime(true);
         //поиск брэндлиста по каталогам
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
@@ -155,10 +155,13 @@ class SparePartController extends Controller
         $this->searchTreid($request->brand,  $partNumber);
         $this->searchTiss($request->brand,  $partNumber);
         $this->searchShatem($request->brand,  $partNumber);
+
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
         }
+
         $arr = array_unique($this->finalArr['brands']);
+
         usort($arr, function($a, $b) {
             if ($a == $b) {
                 return 0;
@@ -267,7 +270,7 @@ class SparePartController extends Controller
                 )
             )
         );
-        //dd($request_data_searched_number);
+        
         $request_data_searched_number = 'data=' . json_encode($request_data_searched_number);
 
         $ch = curl_init();
@@ -282,11 +285,12 @@ class SparePartController extends Controller
         
         try {
             $result = json_decode($html, true);
+    
             array_push($this->finalArr, $result);
         } catch (\Throwable $th) {
             return;
         }
-        //dd($result);
+        
         //помещаем найденные позиции в итоговый массив
         if ($result && strlen($result['message']) <= 2 && !empty($result)) {
             foreach ($result['items'] as $key => $item) {
@@ -360,67 +364,68 @@ class SparePartController extends Controller
         
         //проверка остатков кросс-номеров на складе 
         $crossArr = [];
-        dd($result);
-            foreach ($result['items'] as $resultItem) {
-                $crossArr[$resultItem['article']] = 1;
-            }
         
-            $request_data = array(
-                "auth_key" => self::API_KEY_TREID,
-                "method" => "getStocksAndPrices",
-                "params" => array(
-                    "storages" => self::TREID_STORAGE_IDs,
-                    "items" => $crossArr   
-                )
-            );
+        foreach ($result['items'] as $resultItem) {
+            $crossArr[$resultItem['article']] = 1;
+        }
+        
+        $request_data = array(
+            "auth_key" => self::API_KEY_TREID,
+            "method" => "getStocksAndPrices",
+            "params" => array(
+                "storages" => self::TREID_STORAGE_IDs,
+                "items" => $crossArr   
+            )
+        );
 
-            $request_data = 'data=' . json_encode($request_data);
+        $request_data = 'data=' . json_encode($request_data);
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $request_data);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded; charset=UTF-8'));
-            $html = curl_exec($ch);
-            curl_close($ch);
-            $result = json_decode($html, true);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $request_data);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded; charset=UTF-8'));
+        $html = curl_exec($ch);
+        curl_close($ch);
+        $result = json_decode($html, true);
 
-            if (empty($result['items'])) {
-                return;
-            }
-            //помещаем кроссы в наличии в итоговый массив
-            foreach ($result['items'] as $item) {
-                if (array_key_exists('price', $item)) {
-                    $crosses_stocks = 0;
-                    foreach ($item['stocks'] as $key => $stock) {
-                        if ($stock['quantity_unpacked'] > 0 ) {
-                            if ($key == 168102 || $key == 247102 || $key == 262102) {
-                                $crosses_stocks += $stock['quantity_unpacked'];
-                            }
+        if (empty($result['items'] || array_key_exists('message', $result))) {
+            return;
+        } 
+            
+        //помещаем кроссы в наличии в итоговый массив
+        foreach ($result['items'] as $item) {
+            if (array_key_exists('price', $item)) {
+                $crosses_stocks = 0;
+                foreach ($item['stocks'] as $key => $stock) {
+                    if ($stock['quantity_unpacked'] > 0 ) {
+                        if ($key == 168102 || $key == 247102 || $key == 262102) {
+                            $crosses_stocks += $stock['quantity_unpacked'];
                         }
                     }
-                    if (!empty($crosses_stocks)) {
-                        array_push( $this->finalArr['brands'], $item['brand']);
-                       
-                        array_push($this->finalArr['crosses_on_stock'], [
-                            'id' => $item['id'],
-                            'brand' => $item['brand'],
-                            'article' => $item['article'],
-                            'name' => substr($item['name'], 0, 60),
-                            'stocks' => $crosses_stocks,
-                            'price' => round($item['price']),
-                            'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                            'supplier_name' => 'trd',
-                            'delivery_date' => '',
-                            'delivery_time' => '1.5-2 часа',
-                            'supplier_city' => 'ast'
-                        ]);   
-                    } 
                 }
+                if (!empty($crosses_stocks)) {
+                    array_push( $this->finalArr['brands'], $item['brand']);
+                       
+                    array_push($this->finalArr['crosses_on_stock'], [
+                        'id' => $item['id'],
+                        'brand' => $item['brand'],
+                        'article' => $item['article'],
+                        'name' => substr($item['name'], 0, 60),
+                        'stocks' => $crosses_stocks,
+                        'price' => round($item['price']),
+                        'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                        'supplier_name' => 'trd',
+                        'delivery_date' => '',
+                        'delivery_time' => '1.5-2 часа',
+                        'supplier_city' => 'ast'
+                    ]);   
+                } 
             }
+        }
        
-        return;
+    return;
     }
 
     public function searchRossko(String $brand, String $partNumber, String $guid)

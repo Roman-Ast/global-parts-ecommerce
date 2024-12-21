@@ -2,13 +2,13 @@
     #main-header{
         display: none;
     }
+    #footer-wrapper{
+        display: none;
+    }
     #register-wrapper{
         position: absolute !important;
         left: 5% !important;
         width: 90% !important;
-        margin-top: 10px !important;
-    }
-    #footer-wrapper{
-        display: none;
+        margin-top: 50px !important;
     }
 }
