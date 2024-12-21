@@ -150,7 +150,7 @@ class SparePartController extends Controller
         if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
-        $this->searchArmtek($request->brand, $partNumber);
+        //$this->searchArmtek($request->brand, $partNumber);
         //$this->searchPhaeton($request->brand,  $partNumber);
         $this->searchTreid($request->brand,  $partNumber);
         $this->searchTiss($request->brand,  $partNumber);
@@ -352,13 +352,15 @@ class SparePartController extends Controller
             return;
         }
         
-        if (empty($result)) {
+        if (empty($result) ) {
+            return;
+        } else if (array_key_exists('message', $result)) {
             return;
         }
         
         //проверка остатков кросс-номеров на складе 
         $crossArr = [];
-            
+        dd($result);
             foreach ($result['items'] as $resultItem) {
                 $crossArr[$resultItem['article']] = 1;
             }

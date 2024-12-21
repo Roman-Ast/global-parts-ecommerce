@@ -8,6 +8,8 @@ use App\Models\Setlement;
 use App\Models\SupplierSettlement;
 use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OrderPlaced;
 use Laravel\Ui\Presets\React;
 
 class OrderController extends Controller
@@ -97,6 +99,12 @@ class OrderController extends Controller
         $order->setlement_id = $settlement->id;
         $cart->clear();
 
+        //sending the transactional email
+        if(auth()->user()->user_role != 'admin') {
+            var_dump('mail work');
+            Mail::send(new OrderPlaced($order));
+        }
+        
         return redirect('orders')
             ->with('message', 'Ваш заказ успешно создан!')
             ->with('class', 'alert-success');
