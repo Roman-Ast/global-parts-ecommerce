@@ -3,16 +3,22 @@
 @section('title', 'Войти')
    
 @section('content')
+    @include('components.header')
+    @include('components.header-mini')
 
-    <div class="alert alert-info" role="alert">
-        Спасибо за регистрацию! Мы отправили ссылка на указанный Вами почтовый ящик для завершения регистрации.
-    </div>
-    <div>
-        Не получили ссылку?
-        <form action="{{ route('verification.send') }}" method="POST">
-            @csrf
-            <button type="submit" class="btn btn-link ps-0">Отправить повторно ссылку</button>
-        </form>
-    </div>
+    <div id="verify-email-wrapper" class="container">
+        <h5>На адрес электронной почты, указанной при регистрации, было отправлено письмо с ссылкой для подтверждения вашего E-Mail</h5>
 
+        <div style="margin-top: 20px">
+            <div><i>Не получили ссылку?</i></div>
+            <form action="{{ route('verification.send') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-link ps-0">Отправить повторно ссылку</button>
+            </form>
+        </div>
+    </div>
+    
+
+    @include('components.footer')
+    @include('components.footer-bar-mini')
 @endsection

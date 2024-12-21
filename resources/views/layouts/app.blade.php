@@ -11,6 +11,7 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
         <link href="{{ URL::asset('css/user/login-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/user/registration-mini.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/user/verify-email.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/header.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/header-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}" rel="stylesheet">
