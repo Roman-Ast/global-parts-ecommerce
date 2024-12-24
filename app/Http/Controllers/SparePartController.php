@@ -352,13 +352,14 @@ class SparePartController extends Controller
 
         try {
             $result = json_decode($html, true);
+            
         } catch (\Throwable $th) {
             return;
         }
-        
+        //dd($result);
         if (empty($result) ) {
             return;
-        } else if (array_key_exists('message', $result)) {
+        } else if (array_key_exists('message', $result) && $result['message'] != 'Ok') {
             return;
         }
         
@@ -389,7 +390,7 @@ class SparePartController extends Controller
         $html = curl_exec($ch);
         curl_close($ch);
         $result = json_decode($html, true);
-
+        
         if (empty($result['items'] || array_key_exists('message', $result))) {
             return;
         } 
