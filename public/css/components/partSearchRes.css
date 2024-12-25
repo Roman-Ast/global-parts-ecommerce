@@ -9,6 +9,7 @@
         min-height: 55vh;
         background-color: #eeeeee;
         padding-bottom: 20px;
+        margin-top: 80px;
     }
     #search-res-main-wrapper{
         display: flex;
