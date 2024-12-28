@@ -1,0 +1,11 @@
+#main-header-mini{
+    display: none;
+}
+#footer-bar-mini{
+    display: none;
+}
+#register-wrapper{
+    min-height: 55vh;
+    margin-top: 120px;
+    margin-bottom: 18vh;
+}

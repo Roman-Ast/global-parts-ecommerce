@@ -1,0 +1,15 @@
+
+@media (min-width: 581px) {
+    #main-header-mini{
+        display: none;
+    }
+    #footer-bar-mini{
+        display: none;
+    }
+    #login-wrapper{
+        min-height: 55vh;
+        margin-top: 120px;
+        margin-bottom: 18vh;
+    }
+    
+}

@@ -48,6 +48,6 @@
         </form>
     </div>
     
-    @include('components.footer')
+    
     @include('components.footer-bar-mini')
 @endsection

@@ -1,8 +1,9 @@
 @media (min-width: 581px) {
 #settlements-container{
-    margin-top: 150px;
+    margin-top: 120px;
     padding: 0;
-    min-height: 50vh;
+    min-height: 55vh;
+    margin-bottom: 18vh;
 }
 #settlement-container-header{
     width: 100%;

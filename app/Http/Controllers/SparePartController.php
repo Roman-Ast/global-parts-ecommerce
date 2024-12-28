@@ -390,8 +390,8 @@ class SparePartController extends Controller
         $html = curl_exec($ch);
         curl_close($ch);
         $result = json_decode($html, true);
-        
-        if (empty($result['items'] || array_key_exists('message', $result))) {
+        //dd($result);
+        if (!array_key_exists('items', $result) || empty($result['items'] || array_key_exists('message', $result))) {
             return;
         } 
             
@@ -1074,7 +1074,7 @@ class SparePartController extends Controller
         }
 
         $noAnalogsResult = $client->FindCatalog (array("Number"=>$partnumber));
-        
+        //dd($noAnalogsResult);
         if($brand == 'hyundai-kia' || $brand == 'hyundai/kia') {
             $brand = 'hyundai';
         } else if($brand == 'kyb') {
@@ -1117,8 +1117,6 @@ class SparePartController extends Controller
                     return 'error';
                 } else {
                     $result2 = (json_decode(json_encode($result), true));
-                    
-                    
                     if (!empty($result2) && is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
                         foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
                             array_push($this->finalArr['searchedNumber'], [
@@ -1141,6 +1139,7 @@ class SparePartController extends Controller
                             ]);
                         }
                     } else if(!empty($result2)) {
+                        
                         array_push($this->finalArr['searchedNumber'], [
                             'guid' => '',
                             'brand' => $result2['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
@@ -1167,8 +1166,8 @@ class SparePartController extends Controller
         }
         //получаем цены аналогов
         try {
-            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "SearchCross"=> 2));
-
+            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 2, "DetailUid"=>null));
+            //dd($resultWithAnalogs);
             if (empty($resultWithAnalogs)) {
                 return 'error';
             } else {
