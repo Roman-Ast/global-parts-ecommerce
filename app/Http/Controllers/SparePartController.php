@@ -178,27 +178,30 @@ class SparePartController extends Controller
 
     public function searchPhaeton(String $brand, String $partnumber)
     {
-        $ch = curl_init();
+        
+        
         $resUrl = 'https://api.phaeton.kz/api/Search?';
         $params = [
+            'Article' => '92401N9100',
+            'Brand' => 'HYUNDAI-KIA',
+            'IncludeAnalogs' => '1',
+            'Sources[]=' => '2',
             'UserGuid' => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
             'ApiKey' => 'LnxrDfpQVZz1ncuoI14e',
-            'Article' => $partnumber,
-            'Brand' => $brand,
-            'Sources[]' => 2,
-            'includeAnalogs' => 1
         ];
-        $headers1 = [
-            'Content-Type: application/json',
+        
+        $ch1 = curl_init();
+        $resUrl = 'https://api.phaeton.kz/api/Search?UserGuid=9F6414C4-9683-11EF-BBBC-F8F21E092C7D&ApiKey=LnxrDfpQVZz1ncuoI14e';
+        curl_setopt($ch1, CURLOPT_URL, $resUrl);
+        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true); 
+        $headers = [
+            'ContentType: application/json',
         ];
+        curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
-        curl_setopt($ch, CURLOPT_URL, $resUrl . http_build_query($params));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers1);
-
-        $res = curl_exec($ch);
-        curl_close($ch);
-
+        $res = curl_exec($ch1);
+        dd($res);
         try {
             $result = json_decode($res, true);
         } catch (\Throwable $th) {
@@ -784,7 +787,10 @@ class SparePartController extends Controller
             
             // in case of json
             $json_responce_data = $response->json();
-            //dd($json_responce_data);
+            
+            if(property_exists($json_responce_data, 'MESSAGES')) {
+                return;
+            }
             if(gettype($json_responce_data->RESP) == 'object') {
                 if(property_exists($json_responce_data->RESP, 'MSG') || property_exists($json_responce_data->RESP, 'ERROR')) {
                     return;
