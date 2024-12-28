@@ -4,7 +4,7 @@ a{
 
 @media (min-width: 581px) {
     #search-catalog-main-container{
-        min-height: 47vh;
+        min-height: 65vh;
         margin-top: 150px;
         display: flex;
         flex-direction: column;
