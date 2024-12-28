@@ -176,6 +176,11 @@ $('.stock-item-cart-btn').on('click', function () {
    });
 });
 
+//изменение цвета корзины после добавления товара
+$('.stock-item-cart-btn').on('click', function () {
+   $(this).children().first().attr('src', '/images/checkmark-green-20.png');
+   $(this).css({'border': '1px solid #4bc828'});
+});
 //удаление товара из корзины
 $('.cart-item-delete img').on('click', function () {
    $(this).css({'transform': 'scale(0.7)'});
