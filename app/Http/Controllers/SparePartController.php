@@ -28,6 +28,8 @@ class SparePartController extends Controller
     const TISS_API_KEY = 'QXO7oqkH1_aifhVdi8W1GiMx4SEwzkPMTdwYjgcktOjW70aX_ve_xGDC7bTRBmQ37rH1k2ETsA3ZdCIfja0yHosRNNGwaYGGXuXFR6U4TADCRZF6lLvyjfKcg-zS5y4xQT4SNpi86vVPN5zOEFdhiZfRaKGh_U1MfHJz9IpAsyuc0ZHDHRaw0dO1tDHgQw2N4uPP0sq0kStch43q9zfZKhMsqTSNtgGVBnGRzaCkJzzuaXmfrL4Ot5ODBJ3x1tXnyVGW-p5IeZXOtIfeRWZMSnw3luiMztyY1m7p84r_qWJeVvr1J_3rR0R1EP7qAHjvX_QEnud83oqMCJppN4RCnD4sb5_fkylpyrEyuXRVvqviPx2-xiNhBwwLLkt67cNaZYBbtcaLcaZT5apXtVFW4B0IcwMHyqt_Oy3USMl3bkiBiJ7fGW6bOBidnoRCE6OqS1JTWKCkAZEoqY8rOX4A7p8YZTkamldmGbzf7sveBYhPSJvwmaUVWvzju6iEr7cB';
     const SHATEM_API_KEY = '{a9000264-381b-4c69-9af4-51fdd93b8eda}';
     const ROUND_LIMIT = -1;
+    const KULAN_API_KEY='UYWUVoxme116qJlmeSzl7uCsI7Mrlv0D4symnBbR0tyVjMdOMnzkhys5hOvvRoEhcOJYc8Ntcf9sM9tDpUvpz60HTFcMcnJ1mpVU5PNbxuDxJR4DyLhf10y317musSOo';
+    const KULAN_ASTSTORE_ID = '2198d63c-35f3-11eb-925f-00155d20f705';
 
     public $partNumber = '';
 
@@ -155,6 +157,7 @@ class SparePartController extends Controller
         $this->searchTreid($request->brand,  $partNumber);
         $this->searchTiss($request->brand,  $partNumber);
         $this->searchShatem($request->brand,  $partNumber);
+        $this->searchKulan($request->brand,  $partNumber);
 
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -1070,6 +1073,103 @@ class SparePartController extends Controller
 
     }
 
+    public function searchKulan(String $brand, String $partnumber)
+    {
+        //получение остатков искомого номера
+        $ch = curl_init();
+
+        $headers = [
+            'token: ' . self::KULAN_API_KEY,
+            'Content-Type: application/json'
+        ];
+
+        $params = [
+            'article' => $partnumber,
+            'brand' => $brand
+        ];
+        
+        curl_setopt($ch, CURLOPT_URL, 'https://connect.adkulan.kz/api/request/api/v2/catalog/article/productCart?' . http_build_query($params));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+
+        try {
+            $response = json_decode(curl_exec($ch));
+        } catch (\Throwable $th) {
+            return;
+        }
+        
+        if (!$response || property_exists($response, 'messages')) {
+            return;
+        }
+
+        foreach ($response->data as $key => $item) {
+            foreach ($item->remains as $store) {
+                if($store->store_id == self::KULAN_ASTSTORE_ID) {
+                    array_push($this->finalArr['brands'], $item->manufacturer);
+
+                    array_push($this->finalArr['searchedNumber'], [
+                        'brand' => $item->manufacturer,
+                        'article' => $item->article,
+                        'name' => $item->name,
+                        'price' => $store->price,
+                        'priceWithMargine' => round($this->setPrice($store->price), self::ROUND_LIMIT),
+                        'stocks' => $store->quantity,
+                        'supplier_city' => 'ast',
+                        'supplier_name' => 'kln',
+                        'deliveryStart' => date('d-m-Y'),
+                    ]);
+                }
+            }
+        }
+
+        //получение остатков аналогов
+        $ch1 = curl_init();
+        curl_setopt($ch1, CURLOPT_URL, 'https://connect.adkulan.kz/api/request/api/v2/catalog/article/analogues?' . http_build_query($params) . '&order_by=price_asc');
+        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        
+        try {
+            $response1 = json_decode(curl_exec($ch1));
+        } catch (\Throwable $th) {
+            return;
+        }
+        
+        if (gettype($response1) == 'object' && property_exists($response1, 'messages')) {
+            return;
+        }
+        
+        foreach ($response1 as $item) {
+            foreach ($item->remains as $store) {
+                if($store->id == self::KULAN_ASTSTORE_ID) {
+                    array_push($this->finalArr['brands'], $item->manufacturer);
+
+                    array_push($this->finalArr['crosses_on_stock'], [
+                        'brand' => $item->manufacturer,
+                        'article' => $item->article,
+                        'name' => $item->name,
+                        'stock_legend' => $store->store,
+                        'qty' => $store->quantity,
+                        'price' => $store->price,
+                        'priceWithMargine' => round($this->setPrice($store->price), self::ROUND_LIMIT),
+                        'delivery_time' => '1.5-2 часа',
+                        'stocks' => [
+                            [
+                                'qty' => $store->quantity,
+                                'price' => $store->price,
+                                'priceWithMargine' => round($this->setPrice($store->price), self::ROUND_LIMIT),
+                            ]
+                        ],
+                        'supplier_name' => 'kln',
+                        'supplier_city' => 'ast'
+                    ]);
+                }
+            }
+        }
+
+        return;
+    }
     public function searchAutopiter(String $brand, String $partnumber)
     {
         $brand = $this->removeAllUnnecessaries($brand);
