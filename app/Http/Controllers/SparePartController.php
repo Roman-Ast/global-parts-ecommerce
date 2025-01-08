@@ -1011,7 +1011,7 @@ class SparePartController extends Controller
         //dd($response);
         foreach ($response as $key => $item) {
             if ($item->article->code == $partnumber) {
-                foreach ($item->prices as $key => $price) {
+                foreach ($item->prices as $price) {
                     if (
                         $price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || 
                         $price->addInfo->city == 'Подольск' || $price->addInfo->city == 'Костанай' || $price->addInfo->city == 'Караганда'
@@ -1054,7 +1054,7 @@ class SparePartController extends Controller
                                 ]
                             ],
                             'supplier_name' => 'shtm',
-                            'supplier_city' => $price->addInfo->city,
+                            'supplier_city' => 'ast',
                             'supplier_color' => '#6b6b6b',
                         ]);
                     } else if (
