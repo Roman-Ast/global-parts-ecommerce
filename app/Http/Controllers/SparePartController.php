@@ -149,15 +149,15 @@ class SparePartController extends Controller
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
 
-        if($request->rossko_need_to_search) {
+        /*if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
-        }
+        }*/
         //$this->searchArmtek($request->brand, $partNumber);
-        //$this->searchPhaeton($request->brand,  $partNumber);
-        $this->searchTreid($request->brand,  $partNumber);
-        $this->searchTiss($request->brand,  $partNumber);
-        $this->searchShatem($request->brand,  $partNumber);
-        $this->searchKulan($request->brand,  $partNumber);
+        $this->searchPhaeton($request->brand,  $partNumber);
+        //$this->searchTreid($request->brand,  $partNumber);
+        //$this->searchTiss($request->brand,  $partNumber);
+        //$this->searchShatem($request->brand,  $partNumber);
+        //$this->searchKulan($request->brand,  $partNumber);
 
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -181,74 +181,131 @@ class SparePartController extends Controller
 
     public function searchPhaeton(String $brand, String $partnumber)
     {
-        
-        
-        $resUrl = 'https://api.phaeton.kz/api/Search?';
+        //поиск товара в наличии в астане
+        $ch = curl_init();
+
         $params = [
-            'Article' => '92401N9100',
-            'Brand' => 'HYUNDAI-KIA',
-            'IncludeAnalogs' => '1',
-            'Sources[]=' => '2',
+            'Article' => $partnumber,
+            'Brand' => $brand,
+            'Sources[]' => '1',
             'UserGuid' => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
             'ApiKey' => 'LnxrDfpQVZz1ncuoI14e',
+			'includeAnalogs' => 'true'
         ];
         
-        $ch1 = curl_init();
-        $resUrl = 'https://api.phaeton.kz/api/Search?UserGuid=9F6414C4-9683-11EF-BBBC-F8F21E092C7D&ApiKey=LnxrDfpQVZz1ncuoI14e';
-        curl_setopt($ch1, CURLOPT_URL, $resUrl);
-        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true); 
-        $headers = [
-            'ContentType: application/json',
-        ];
-        curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        curl_setopt($ch, CURLOPT_URL, 'https://api.phaeton.kz/api/Search?' . http_build_query($params));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
-        $res = curl_exec($ch1);
-        dd($res);
         try {
-            $result = json_decode($res, true);
+            $response = json_decode(curl_exec($ch));
         } catch (\Throwable $th) {
             return;
         }
-        //dd($result);
-        if (!$result['IsError']) {
-            foreach ($result['Items'] as $item) {
-                if (strtolower($item['Article']) == strtolower($partnumber)) {
-                    array_push($this->finalArr['searchedNumber'], [
-                        'brand' => $item['Brand'],
-                        'article' => $item['Article'],
-                        'name' => $item['Name'],
-                        'price' => $item['Presence'],
-                        'priceWithMargine' => round($this->setPrice($item['Price']), self::ROUND_LIMIT),
-                        'stocks' => $item['Presence'],
-                        'supplier_name' => 'phtn',
-                        'deliveryStart' => $item['GuaranteedShipmentDays'],
-                    ]);
-                } else {
-                    $stocks = [];
+        
+		if (!$response || $response->IsError) {
+            return;
+        }
+		
+        foreach ($response->Items as $item) {
+            if ($item->Warehouse == 'Астана') {
+                array_push($this->finalArr['brands'], $item->Brand);
 
-                    array_push($stocks, [
-                        'qty' => $item['Presence'],
-                        'price' => $item['Price'],
-                        'priceWithMargine' => round($this->setPrice($item['Price']), -2)
-                    ]);
-                    
-                    array_push($this->finalArr['crosses_on_stock'], [
-                        'brand' => $item['Brand'],
-                        'article' => $item['Article'],
-                        'name' => $item['Name'],
-                        'price' => $item['Presence'],
-                        'priceWithMargine' => round($this->setPrice($item['Price']), self::ROUND_LIMIT),
-                        'stocks' => $stocks,
-                        'supplier_name' => $item['Warehouse'],
-                        'stock_legend' => $item['Warehouse'],
-                        'delivery_time' => $item['GuaranteedShipmentDays'],
-                    ]);
-                }
+                array_push($this->finalArr['searchedNumber'], [
+                    'guid' => '',
+                    'brand' => $item->Brand,
+                    'article' => $item->Article,
+                    'name' => substr($item->Name, 0, 60),
+                    'price' => $item->Price,
+                    'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                    'stocks' => $item->AvailableCount,
+                    'multiplicity' => '',
+                    'type' => '',
+                    'delivery' => '',
+                    'extra' => '',
+                    'description' => 'phtn',
+                    'deliveryStart' => date('d.m.Y'),
+                    'deliveryEnd' => date('d.m.Y'),
+                    'supplier_name' => 'phtn',
+                    'supplier_city' => 'ast'
+                ]);               
+                                
+            } else {
+                array_push($this->finalArr['brands'], $item->Brand);
+
+                array_push($this->finalArr['crosses_to_order'], [
+                    'brand' => $item->Brand,
+                    'article' => $item->Article,
+                    'name' => substr($item->Name, 0, 60),
+                    'qty' => $item->AvailableCount,
+                    'price' => $item->Price,
+                    'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                    'delivery_time' => date('d.m.Y', strtotime('+' . $item->GuaranteedDelivery .'day')),
+                    'stocks' => [
+                        [
+                            'qty' => $item->AvailableCount,
+                            'price' => $item->Price,
+                            'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                        ]
+                    ],
+                    'supplier_name' => 'phtn',
+                    'supplier_city' => $item->Warehouse
+                ]); 
             }
         }
+        
+        //поиск товара у локальных поставщиков
+        $ch1 = curl_init();
+
+        $params1 = [
+            'Article' => $partnumber,
+            'Brand' => $brand,
+            'Sources[]' => '2',
+            'UserGuid' => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
+            'ApiKey' => 'LnxrDfpQVZz1ncuoI14e',
+			'includeAnalogs' => 'true'
+        ];
+        
+        curl_setopt($ch1, CURLOPT_URL, 'https://api.phaeton.kz/api/Search?' . http_build_query($params1));
+        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+
+        try {
+            $response1 = json_decode(curl_exec($ch1));
+        } catch (\Throwable $th) {
+            return;
+        }
+        
+		if (!$response1 || $response1->IsError) {
+            return;
+        }
+
+        foreach ($response1->Items as $item) {
+            array_push($this->finalArr['brands'], $item->Brand);
+
+            array_push($this->finalArr['crosses_to_order'], [
+                'brand' => $item->Brand,
+                'article' => $item->Article,
+                'name' => substr($item->Name, 0, 60),
+                'qty' => $item->AvailableCount,
+                'price' => $item->Price,
+                'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                'delivery_time' => date('d.m.Y', strtotime('+' . $item->GuaranteedDelivery .'day')),
+                'stocks' => [
+                    [
+                        'qty' => $item->AvailableCount,
+                        'price' => $item->Price,
+                        'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                    ]
+                ],
+                'supplier_name' => 'phtn',
+                'supplier_city' => $item->Warehouse
+            ]);
+        }
+
         return;
     }
+
     public function searchTreid (String $brand, String $partnumber) 
     {
         if ($brand == 'Hyundai/Kia') {
@@ -1170,6 +1227,7 @@ class SparePartController extends Controller
 
         return;
     }
+
     public function searchAutopiter(String $brand, String $partnumber)
     {
         $brand = $this->removeAllUnnecessaries($brand);
