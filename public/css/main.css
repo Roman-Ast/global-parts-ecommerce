@@ -14,10 +14,10 @@ ul{
     font-style: italic;
  }
 
-@media (min-width: 580px) {
+@media (min-width: 581px) {
     #main-container{
         min-height: 55vh;
-        margin-top: 120px;
+        margin-top: 140px;
         margin-bottom: 18vh;
         display: grid;
         grid-template-columns: 50% 50%;

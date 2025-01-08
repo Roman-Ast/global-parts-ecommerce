@@ -1,6 +1,5 @@
-<div id="main-header" class="">
+<div id="main-header">
     <div id="main-header-wrapper" class="container">
-
         <a id="logo-container" href="/" class="header-item">
             <img src="/images/logo1.png" alt="main-logo" id="logo-img">
         </a>
@@ -62,6 +61,17 @@
                     </a>
                 @endif
             @endif
+        </div>
+    </div>
+    <div id="kaspi-wrapper">
+        <div class="kaspi-item">
+            <img src="/images/kaspi1.png" alt="kaspi1" class="kaspi-item-img">
+        </div>
+        <div class="kaspi-item">
+            <img src="/images/kaspi-credit.webp" alt="kaspi-credit" class="kaspi-item-img">
+        </div>
+        <div class="kaspi-item">
+            <img src="/images/kaspi-red.png" alt="kaspi-red" class="kaspi-item-img">
         </div>
     </div>
 </div>
