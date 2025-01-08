@@ -158,6 +158,7 @@ class SparePartController extends Controller
         $this->searchTiss($request->brand,  $partNumber);
         $this->searchShatem($request->brand,  $partNumber);
         $this->searchKulan($request->brand,  $partNumber);
+        $this->searchFebest($request->brand,  $partNumber);
 
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -1210,6 +1211,7 @@ class SparePartController extends Controller
         
         try {
             $response1 = json_decode(curl_exec($ch1));
+            curl_close($ch1);
         } catch (\Throwable $th) {
             return;
         }
@@ -1248,6 +1250,38 @@ class SparePartController extends Controller
         }
 
         return;
+    }
+
+    public function searchFebest(String $brand, String $partnumber)
+    {
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL, 'https://febest.kz/api/v1/search/{pHgK46xXxD3pxbeyTtWJ}/' . $partnumber);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+
+        try {
+            $result = json_decode(curl_exec($ch));
+            curl_close($ch);
+        } catch (\Throwable $th) {
+            return;
+        }
+        
+        foreach ($result as $item) {
+            array_push($this->finalArr['crosses_on_stock'], [
+                'brand' => $item->manufacturer,
+                'article' => $item->code,
+                'name' => $item->name,
+                'price' => $item->price,
+                'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                'stocks' => $item->amount,
+                'supplier_name' => 'fbst',
+                'stock_legend' => 'Астана',
+                'delivery_time' => '2-2.5 часа',
+                'supplier_city' => 'ast',
+                'supplier_color' => '#a27745',
+            ]);
+        }
     }
 
     public function searchAutopiter(String $brand, String $partnumber)
