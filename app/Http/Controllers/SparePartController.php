@@ -1108,9 +1108,9 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        dd($result);
+        
         foreach ($result as $key => $item) {
-            if (strtolower($item->brand) == strtolower($this->finalArr['originNumber']) ) {
+            if (strtolower($item->article) == strtolower($this->finalArr['originNumber']) ) {
                 array_push($this->finalArr['searchedNumber'], [
                     'brand' => $item->brand,
                     'article' => $item->article,
@@ -1121,7 +1121,7 @@ class SparePartController extends Controller
                     'supplier_name' => 'tss',
                     'supplier_city' => 'ast',
                     'supplier_color' => '#7bafcf',
-                    'deliveryStart' => '1.5-2 часа',
+                    'deliveryStart' => date('d.m.Y'),
                 ]);
             } else {
                 $stocks = [];
