@@ -73,6 +73,9 @@
         <div class="kaspi-item">
             <img src="/images/kaspi-red.png" alt="kaspi-red" class="kaspi-item-img">
         </div>
+        <div id="close-kaspi-ads">
+            &times;
+        </div>
     </div>
 </div>
 

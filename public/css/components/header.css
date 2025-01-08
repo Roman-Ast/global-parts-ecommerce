@@ -28,12 +28,20 @@
     justify-content: space-around;
     align-items: center;
     height: 31px;
+    position: relative;
 }
 .kaspi-item{
     height: 100%;
 }
 .kaspi-item-img{
     height: 100%;
+}
+#close-kaspi-ads{
+    color: #fff;
+    position: absolute;
+    right: 10px;
+    top: 1px;
+    cursor: pointer;
 }
 #logo-container{
     display: flex;

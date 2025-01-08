@@ -468,5 +468,11 @@ $('.close-flash').on('click', function (params) {
    $(this).parent().slideUp();
 });
 
+//закрыть каспи рекламу
+$('#close-kaspi-ads').on('click', function () {
+   $(this).parent().slideUp(400, function () {
+      $('#main-header').css({'border-bottom': '3px solid #ccc'})
+   });
+})
 
 
