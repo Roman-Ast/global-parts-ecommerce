@@ -1058,8 +1058,8 @@ class SparePartController extends Controller
                             'supplier_color' => '#6b6b6b',
                         ]);
                     } else if (
-                        $price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || 
-                        $price->addInfo->city == 'Подольск' || $price->addInfo->city == 'Костанай' || $price->addInfo->city == 'Караганда'
+                        $price->addInfo->city == 'Екатеринбург' || $price->addInfo->city == 'Караганда' ||
+                        $price->addInfo->city == 'Подольск' || $price->addInfo->city == 'Костанай' || $price->addInfo->city == 'Шымкент'
                     ) {
                         array_push($this->finalArr['brands'], $item->article->tradeMarkName);
                         
