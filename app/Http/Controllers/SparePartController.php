@@ -149,15 +149,15 @@ class SparePartController extends Controller
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
 
-        /*if($request->rossko_need_to_search) {
+        if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
-        }*/
+        }
         //$this->searchArmtek($request->brand, $partNumber);
         $this->searchPhaeton($request->brand,  $partNumber);
-        //$this->searchTreid($request->brand,  $partNumber);
-        //$this->searchTiss($request->brand,  $partNumber);
-        //$this->searchShatem($request->brand,  $partNumber);
-        //$this->searchKulan($request->brand,  $partNumber);
+        $this->searchTreid($request->brand,  $partNumber);
+        $this->searchTiss($request->brand,  $partNumber);
+        $this->searchShatem($request->brand,  $partNumber);
+        $this->searchKulan($request->brand,  $partNumber);
 
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -388,7 +388,8 @@ class SparePartController extends Controller
                                     'deliveryStart' => '1.5-2 часа',
                                     'deliveryEnd' => '1.5-2 часа',
                                     'supplier_name' => 'trd',
-                                    'supplier_city' => 'ast'
+                                    'supplier_city' => 'ast',
+                                    'supplier_color' => '#34689e'
                                 ]);
                             }
                         }
@@ -486,7 +487,8 @@ class SparePartController extends Controller
                         'supplier_name' => 'trd',
                         'delivery_date' => '',
                         'delivery_time' => '1.5-2 часа',
-                        'supplier_city' => 'ast'
+                        'supplier_city' => 'ast',
+                        'supplier_color' => '#34689e'
                     ]);   
                 } 
             }
@@ -549,7 +551,8 @@ class SparePartController extends Controller
                             'deliveryStart' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['deliveryStart'],
                             'deliveryEnd' => $result['SearchResult']['PartsList']['Part']['stocks']['stock']['deliveryEnd'],
                             'supplier_name' => 'rssk',
-                            'supplier_city' => 'ast'
+                            'supplier_city' => 'ast',
+                            'supplier_color' => '#ed2d2f'
                         ]);
                 } else {
                     foreach ($result['SearchResult']['PartsList']['Part']['stocks']['stock'] as $stockItem) {
@@ -571,7 +574,8 @@ class SparePartController extends Controller
                             'deliveryStart' => $stockItem['deliveryStart'],
                             'deliveryEnd' => $stockItem['deliveryEnd'],
                             'supplier_name' => 'rssk',
-                            'supplier_city' => 'ast'
+                            'supplier_city' => 'ast',
+                            'supplier_color' => '#ed2d2f'
                         ]);
                     }
                 }
@@ -610,7 +614,8 @@ class SparePartController extends Controller
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => '1.5-2 часа',
                                     'supplier_name' => 'rssk',
-                                    'supplier_city' => 'ast'
+                                    'supplier_city' => 'ast',
+                                    'supplier_color' => '#ed2d2f'
                                 ]);
                             } elseif (str_contains($innerArr['description'], 'Павлодар') || str_contains($innerArr['description'], 'Караганда') ) {
                                 $crosses_stocks[] = [
@@ -634,7 +639,8 @@ class SparePartController extends Controller
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                     'supplier_name' => 'rssk',
-                                    'supplier_city' => $innerArr['description']
+                                    'supplier_city' => $innerArr['description'],
+                                    'supplier_color' => '#ed2d2f'
                                 ]);
                             }
                         } else {
@@ -661,7 +667,8 @@ class SparePartController extends Controller
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => '1.5-2 часа',
                                         'supplier_name' => 'rssk',
-                                        'supplier_city' => 'ast'
+                                        'supplier_city' => 'ast',
+                                        'supplier_color' => '#ed2d2f'
                                     ]);
                                 } elseif (str_contains($item['description'], 'Павлодар') || str_contains($item['description'], 'Караганда') ) {
                                     $crosses_stocks[] = [
@@ -685,7 +692,8 @@ class SparePartController extends Controller
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => $item['deliveryEnd'],
                                         'supplier_name' => 'rssk',
-                                        'supplier_city' => $item['description']
+                                        'supplier_city' => $item['description'],
+                                        'supplier_color' => '#ed2d2f'
                                     ]);
                                 }
                             }
@@ -718,7 +726,8 @@ class SparePartController extends Controller
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => '1.5-2 часа',
                                     'supplier_name' => 'rssk',
-                                    'supplier_city' => 'ast'
+                                    'supplier_city' => 'ast',
+                                    'supplier_color' => '#ed2d2f'
                                 ]);
                             } elseif (str_contains($innerArr['description'], 'Павлодар') || str_contains($innerArr['description'], 'Караганда') ) {
                                 $crosses_stocks[] = [
@@ -742,7 +751,8 @@ class SparePartController extends Controller
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => $innerArr['deliveryEnd'],
                                     'supplier_name' => 'rssk',
-                                    'supplier_city' => $innerArr['description']
+                                    'supplier_city' => $innerArr['description'],
+                                    'supplier_color' => '#ed2d2f'
                                 ]);
                             }
                         } else {
@@ -769,7 +779,8 @@ class SparePartController extends Controller
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => '1.5-2 часа',
                                         'supplier_name' => 'rssk',
-                                        'supplier_city' => 'ast'
+                                        'supplier_city' => 'ast',
+                                        'supplier_color' => '#ed2d2f'
                                     ]);
                                 } elseif (str_contains($item['description'], 'Павлодар') || str_contains($item['description'], 'Караганда') ) {
                                     $crosses_stocks[] = [
@@ -793,7 +804,8 @@ class SparePartController extends Controller
                                         'stocks' => $crosses_stocks,
                                         'delivery_time' => $item['deliveryEnd'],
                                         'supplier_name' => 'rssk',
-                                        'supplier_city' => $item['description']
+                                        'supplier_city' => $item['description'],
+                                        'supplier_color' => '#ed2d2f'
                                     ]);
                                 }
                             }
@@ -1014,6 +1026,7 @@ class SparePartController extends Controller
                             'stocks' => $price->quantity->available,
                             'supplier_city' => 'ast',
                             'supplier_name' => 'shtm',
+                            'supplier_color' => '#6b6b6b',
                             'deliveryStart' => date('d.m.Y', strtotime(stristr($price->shippingDateTime, 'T', true))),
                         ]);
                     }
@@ -1040,7 +1053,8 @@ class SparePartController extends Controller
                                 ]
                             ],
                             'supplier_name' => 'shtm',
-                            'supplier_city' => $price->addInfo->city
+                            'supplier_city' => $price->addInfo->city,
+                            'supplier_color' => '#6b6b6b',
                         ]);
                     } else if (
                         $price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || 
@@ -1064,7 +1078,8 @@ class SparePartController extends Controller
                                 ]
                             ],
                             'supplier_name' => 'shtm',
-                            'supplier_city' => $price->addInfo->city
+                            'supplier_city' => $price->addInfo->city,
+                            'supplier_color' => '#6b6b6b',
                         ]);
                     }
                 }
@@ -1105,6 +1120,8 @@ class SparePartController extends Controller
                     'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
                     'stocks' => $item->warehouse_offers[0]->quantity,
                     'supplier_name' => 'tss',
+                    'supplier_city' => 'ast',
+                    'supplier_color' => '#7bafcf',
                     'deliveryStart' => '1.5-2 часа',
                 ]);
             } else {
@@ -1126,7 +1143,8 @@ class SparePartController extends Controller
                     'supplier_name' => 'tss',
                     'stock_legend' => $item->warehouse_offers[0]->warehouse_name,
                     'delivery_time' => '1.5-2 часа',
-                    'supplier_city' => 'ast'
+                    'supplier_city' => 'ast',
+                    'supplier_color' => '#7bafcf',
                 ]);
             }
         }
@@ -1302,7 +1320,8 @@ class SparePartController extends Controller
                                 'deliveryStart' => $item['DeliveryDate'],
                                 'deliveryEnd' => '',
                                 'supplier_name' => 'atptr',
-                                "supplier_city" => $item['Region']
+                                "supplier_city" => $item['Region'],
+                                'supplier_color' => '#f2123b'
                             ]);
                         }
                     } else if(!empty($result2)) {
@@ -1319,7 +1338,7 @@ class SparePartController extends Controller
                             'type' => '',
                             'delivery' => '',
                             'extra' => '',
-                            'description' => '',
+                            'supplier_color' => '#f2123b',
                             'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                             'deliveryEnd' => '',
                             'supplier_name' => 'atptr',
@@ -1334,7 +1353,7 @@ class SparePartController extends Controller
         //получаем цены аналогов
         try {
             $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 2, "DetailUid"=>null));
-            //dd($resultWithAnalogs);
+            
             if (empty($resultWithAnalogs)) {
                 return 'error';
             } else {
@@ -1369,7 +1388,8 @@ class SparePartController extends Controller
                                     ],
                                     "delivery_time" => $item['DeliveryDate'],
                                     "supplier_name" => 'atptr',
-                                    "supplier_city" => $item['Region']
+                                    "supplier_city" => $item['Region'],
+                                    'supplier_color' => '#f2123b'
                                 ]);
                             }
                         }
@@ -1397,7 +1417,8 @@ class SparePartController extends Controller
                                     ]
                                 ],
                                 "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                                "supplier_name" => 'atptr'
+                                "supplier_name" => 'atptr',
+                                'supplier_color' => '#f2123b'
                             ]);
                         }
                     }
@@ -1422,12 +1443,14 @@ class SparePartController extends Controller
                                             'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
                                             "delivery_time" => $item['DeliveryDate'],
                                             "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
-                                            "supplier_city" => $item['Region']
+                                            "supplier_city" => $item['Region'],
+                                            'supplier_color' => '#f2123b'
                                         ]
                                     ],
                                     "delivery_time" => $item['DeliveryDate'],
                                     "supplier_name" => 'atptr',
-                                    "supplier_city" => $item['Region']
+                                    "supplier_city" => $item['Region'],
+                                    'supplier_color' => '#f2123b'
                                 ]);
                         }
                     } else {
@@ -1450,12 +1473,14 @@ class SparePartController extends Controller
                                     "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                                     "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
                                     "city" => 'atptr',
-                                    "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                                    "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
+                                    'supplier_color' => '#f2123b'
                                 ]
                             ],
                             "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                             "supplier_name" => 'atptr',
-                            "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                            "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
+                            'supplier_color' => '#f2123b'
                         ]);
                     }
                 }
