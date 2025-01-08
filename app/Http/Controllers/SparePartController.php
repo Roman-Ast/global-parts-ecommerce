@@ -1294,7 +1294,7 @@ class SparePartController extends Controller
         }
 
         $noAnalogsResult = $client->FindCatalog (array("Number"=>$partnumber));
-        //dd($noAnalogsResult);
+        
         if($brand == 'hyundai-kia' || $brand == 'hyundai/kia') {
             $brand = 'hyundai';
         } else if($brand == 'kyb') {
@@ -1356,7 +1356,7 @@ class SparePartController extends Controller
                                 'deliveryEnd' => '',
                                 'supplier_name' => 'atptr',
                                 "supplier_city" => $item['Region'],
-                                'supplier_color' => '#f2123b'
+                                'supplier_color' => '#111'
                             ]);
                         }
                     } else if(!empty($result2)) {
@@ -1373,7 +1373,7 @@ class SparePartController extends Controller
                             'type' => '',
                             'delivery' => '',
                             'extra' => '',
-                            'supplier_color' => '#f2123b',
+                            'supplier_color' => '#111',
                             'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                             'deliveryEnd' => '',
                             'supplier_name' => 'atptr',
@@ -1424,7 +1424,7 @@ class SparePartController extends Controller
                                     "delivery_time" => $item['DeliveryDate'],
                                     "supplier_name" => 'atptr',
                                     "supplier_city" => $item['Region'],
-                                    'supplier_color' => '#f2123b'
+                                    'supplier_color' => '#111'
                                 ]);
                             }
                         }
@@ -1453,7 +1453,7 @@ class SparePartController extends Controller
                                 ],
                                 "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                                 "supplier_name" => 'atptr',
-                                'supplier_color' => '#f2123b'
+                                'supplier_color' => '#111'
                             ]);
                         }
                     }
@@ -1479,13 +1479,13 @@ class SparePartController extends Controller
                                             "delivery_time" => $item['DeliveryDate'],
                                             "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
                                             "supplier_city" => $item['Region'],
-                                            'supplier_color' => '#f2123b'
+                                            'supplier_color' => '#111'
                                         ]
                                     ],
                                     "delivery_time" => $item['DeliveryDate'],
                                     "supplier_name" => 'atptr',
                                     "supplier_city" => $item['Region'],
-                                    'supplier_color' => '#f2123b'
+                                    'supplier_color' => '#111'
                                 ]);
                         }
                     } else {
@@ -1509,13 +1509,13 @@ class SparePartController extends Controller
                                     "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
                                     "city" => 'atptr',
                                     "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
-                                    'supplier_color' => '#f2123b'
+                                    'supplier_color' => '#111'
                                 ]
                             ],
                             "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                             "supplier_name" => 'atptr',
                             "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
-                            'supplier_color' => '#f2123b'
+                            'supplier_color' => '#111'
                         ]);
                     }
                 }
