@@ -1104,12 +1104,11 @@ class SparePartController extends Controller
         curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
-            $result = json_decode(curl_exec($ch1));  
-            
+            $result = json_decode(curl_exec($ch1)); 
         } catch (\Throwable $th) {
             return;
         }
-        
+        dd($result);
         foreach ($result as $key => $item) {
             if (strtolower($item->brand) == strtolower($this->finalArr['originNumber']) ) {
                 array_push($this->finalArr['searchedNumber'], [
