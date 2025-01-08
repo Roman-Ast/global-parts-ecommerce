@@ -62,7 +62,7 @@
                 @if (count($finalArr['searchedNumber']) > 0)
                     @foreach ($finalArr['searchedNumber'] as $searchItem)
                         <div class="requestPartNumberContainer-item">
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier" style="text-shadow:{{ $crossItem['supplier_color'] }} 1px 2px 2px">
+                            <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier" style="text-shadow:{{ $searchItem['supplier_color'] }} 1px 2px 2px">
                                 {{ $searchItem['supplier_city'] }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
