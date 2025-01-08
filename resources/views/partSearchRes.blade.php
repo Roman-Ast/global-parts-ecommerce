@@ -174,7 +174,7 @@
             <div id="crossesContainer-to-order">
                 @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier" style="text-shadow:{{ $crossItem['supplier_color'] }} 1px 0 10px">
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier" style="text-shadow:{{ $crossItem['supplier_color'] }} 1px 2px 2px">
                         {{ $crossItem['supplier_city'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
