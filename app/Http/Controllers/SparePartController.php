@@ -1266,7 +1266,10 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        
+        if (property_exists($result, 'error')) {
+            return;
+        }
+       
         foreach ($result as $item) {
             array_push($this->finalArr['crosses_on_stock'], [
                 'brand' => $item->manufacturer,

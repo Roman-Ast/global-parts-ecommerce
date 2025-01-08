@@ -17,7 +17,7 @@ ul{
 @media (min-width: 581px) {
     #main-container{
         min-height: 55vh;
-        margin-top: 140px;
+        margin-top: 150px;
         margin-bottom: 18vh;
         display: grid;
         grid-template-columns: 50% 50%;

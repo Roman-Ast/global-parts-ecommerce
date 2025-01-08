@@ -12,6 +12,7 @@
     top: 0;
     left: 0;
     background-color: rgba(255, 255, 255, .9);
+    z-index: 5;
 }
 #main-header-wrapper{
     display: grid;
