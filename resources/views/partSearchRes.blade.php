@@ -62,7 +62,7 @@
                 @if (count($finalArr['searchedNumber']) > 0)
                     @foreach ($finalArr['searchedNumber'] as $searchItem)
                         <div class="requestPartNumberContainer-item">
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
+                            <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier" style="text-shadow:{{ $searchItem['supplier_color'] }} 1px 0 10px">
                                 {{ $searchItem['supplier_city'] }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
@@ -118,7 +118,7 @@
             <div id="crossesContainer-on-stock">
                 @foreach ($finalArr['crosses_on_stock'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier" style="text-shadow:{{ $crossItem['supplier_color'] }} 1px 0 10px">
                         {{ $crossItem['supplier_city'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
@@ -174,7 +174,7 @@
             <div id="crossesContainer-to-order">
                 @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier" style="text-shadow:{{ $crossItem['supplier_color'] }} 1px 0 10px">
                         {{ $crossItem['supplier_city'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
