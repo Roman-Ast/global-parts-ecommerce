@@ -1195,6 +1195,7 @@ class SparePartController extends Controller
                         'stocks' => $store->quantity,
                         'supplier_city' => 'ast',
                         'supplier_name' => 'kln',
+                        'supplier_color' => 'green',
                         'deliveryStart' => date('d-m-Y'),
                     ]);
                 }
@@ -1240,7 +1241,8 @@ class SparePartController extends Controller
                             ]
                         ],
                         'supplier_name' => 'kln',
-                        'supplier_city' => 'ast'
+                        'supplier_city' => 'ast',
+                        'supplier_color' => 'green',
                     ]);
                 }
             }
