@@ -228,7 +228,7 @@ class SparePartController extends Controller
                     'deliveryEnd' => date('d.m.Y'),
                     'supplier_name' => 'phtn',
                     'supplier_city' => 'ast',
-                    'supplier_color' => '#FC0'
+                    'supplier_color' => '#feed00'
                 ]);               
                                 
             } else {
@@ -251,7 +251,7 @@ class SparePartController extends Controller
                     ],
                     'supplier_name' => 'phtn',
                     'supplier_city' => $item->Warehouse,
-                    'supplier_color' => '#FC0'
+                    'supplier_color' => '#feed00'
                 ]); 
             }
         }
@@ -302,7 +302,7 @@ class SparePartController extends Controller
                 ],
                 'supplier_name' => 'phtn',
                 'supplier_city' => $item->Warehouse,
-                'supplier_color' => '#FC0'
+                'supplier_color' => '#feed00'
             ]);
         }
 
