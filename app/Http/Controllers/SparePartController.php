@@ -457,7 +457,7 @@ class SparePartController extends Controller
         $html = curl_exec($ch);
         curl_close($ch);
         $result = json_decode($html, true);
-        //dd($result);
+        
         if (!array_key_exists('items', $result) || empty($result['items'] || array_key_exists('message', $result))) {
             return;
         } 
@@ -474,22 +474,24 @@ class SparePartController extends Controller
                     }
                 }
                 if (!empty($crosses_stocks)) {
-                    array_push( $this->finalArr['brands'], $item['brand']);
-                       
-                    array_push($this->finalArr['crosses_on_stock'], [
-                        'id' => $item['id'],
-                        'brand' => $item['brand'],
-                        'article' => $item['article'],
-                        'name' => substr($item['name'], 0, 60),
-                        'stocks' => $crosses_stocks,
-                        'price' => round($item['price']),
-                        'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                        'supplier_name' => 'trd',
-                        'delivery_date' => '',
-                        'delivery_time' => '1.5-2 часа',
-                        'supplier_city' => 'ast',
-                        'supplier_color' => '#34689e'
-                    ]);   
+                    if ($this->removeAllUnnecessaries($item['article']) != $partnumber) {
+                        array_push( $this->finalArr['brands'], $item['brand']);
+
+                        array_push($this->finalArr['crosses_on_stock'], [
+                            'id' => $item['id'],
+                            'brand' => $item['brand'],
+                            'article' => $item['article'],
+                            'name' => substr($item['name'], 0, 60),
+                            'stocks' => $crosses_stocks,
+                            'price' => round($item['price']),
+                            'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                            'supplier_name' => 'trd',
+                            'delivery_date' => '',
+                            'delivery_time' => '1.5-2 часа',
+                            'supplier_city' => 'ast',
+                            'supplier_color' => '#34689e'
+                        ]); 
+                    }
                 } 
             }
         }
