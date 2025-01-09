@@ -213,9 +213,16 @@
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
                         <img src="/images/info_pic.png" alt="info">
                     </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
-                        {{ date('d.m.y',strtotime($crossItem['delivery_time'])) }}
-                    </div>
+                    @if ($crossItem['supplier_name'] == 'grt')
+                        <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery" style="background-color: #a8e1fe;color:#111;font-style:italic;">
+                            {{ date('d.m.y',strtotime($crossItem['delivery_time'])) }}
+                        </div>
+                    @else
+                        <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
+                            {{ date('d.m.y',strtotime($crossItem['delivery_time'])) }}
+                        </div>
+                    @endif
+                    
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item stock-item-qty">
