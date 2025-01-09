@@ -131,7 +131,9 @@
                             <span style="font-weight: 600;color:green">{{ number_format($orderItem->sum_with_margine, 2, ',', ' ') }}</span>
                             <span style="font-style: italic;color:red;font-size: 0.7em">
                                 {{ number_format($orderItem->sum, 2, ',', ' ') }}
+                                @if ($orderItem->sum_with_margine != 0)
                                 %{{ number_format(($orderItem->sum_with_margine - $orderItem->sum) * 100 / $orderItem->sum_with_margine, 2, ',', ' ') }}
+                                @endif
                             </span>
                         </div>
                     </div>
