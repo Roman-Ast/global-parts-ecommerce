@@ -353,12 +353,10 @@ class SparePartController extends Controller
         
         try {
             $result = json_decode($html, true);
-    
-            array_push($this->finalArr, $result);
         } catch (\Throwable $th) {
             return;
         }
-        
+        //dd($result);
         //помещаем найденные позиции в итоговый массив
         if ($result && strlen($result['message']) <= 2 && !empty($result)) {
             foreach ($result['items'] as $key => $item) {
@@ -387,8 +385,8 @@ class SparePartController extends Controller
                                     'delivery' => '',
                                     'extra' => '',
                                     'description' => 'trd',
-                                    'deliveryStart' => '1.5-2 часа',
-                                    'deliveryEnd' => '1.5-2 часа',
+                                    'deliveryStart' => date('d.m.Y'),
+                                    'deliveryEnd' => date('d.m.Y'),
                                     'supplier_name' => 'trd',
                                     'supplier_city' => 'ast',
                                     'supplier_color' => '#34689e'
@@ -1014,7 +1012,7 @@ class SparePartController extends Controller
             if ($item->article->code == $partnumber) {
                 foreach ($item->prices as $price) {
                     if (
-                        $price->addInfo->city == 'Астана' || $price->addInfo->city == 'Екатеринбург' || 
+                        $price->addInfo->city == 'Шымкент' || $price->addInfo->city == 'Екатеринбург' || 
                         $price->addInfo->city == 'Подольск' || $price->addInfo->city == 'Костанай' || $price->addInfo->city == 'Караганда'
                     ) {
                         array_push($this->finalArr['brands'], $item->article->tradeMarkName);
