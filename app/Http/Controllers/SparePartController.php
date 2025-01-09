@@ -45,7 +45,7 @@ class SparePartController extends Controller
     public function catalogSearch(Request $request) 
     {
         $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber)); 
-        $start = microtime(true);
+        
         //поиск брэндлиста по каталогам
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
@@ -148,18 +148,19 @@ class SparePartController extends Controller
     {
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
-
+        
         if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
         //$this->searchArmtek($request->brand, $partNumber);
-        $this->searchPhaeton($request->brand,  $partNumber);
-        $this->searchTreid($request->brand,  $partNumber);
-        $this->searchTiss($request->brand,  $partNumber);
-        $this->searchShatem($request->brand,  $partNumber);
-        $this->searchKulan($request->brand,  $partNumber);
-        $this->searchFebest($request->brand,  $partNumber);
-
+        $this->searchGerat($request->brand, $partNumber);
+        $this->searchShatem($request->brand, $partNumber);
+        $this->searchPhaeton($request->brand, $partNumber);
+        $this->searchTreid($request->brand, $partNumber);
+        $this->searchTiss($request->brand, $partNumber);
+        $this->searchKulan($request->brand, $partNumber);
+        $this->searchFebest($request->brand, $partNumber);
+        
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
         }
@@ -941,7 +942,7 @@ class SparePartController extends Controller
             return;
         }
         
-        if(!$response) {
+        if(!$response || !property_exists($response, 'access_token')) {
             return;
         }
         curl_close($ch);
@@ -1266,6 +1267,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
+
         if (gettype($result) == 'object' && property_exists($result, 'error')) {
             return;
         }
@@ -1285,6 +1287,70 @@ class SparePartController extends Controller
                 'supplier_color' => '#a27745',
             ]);
         }
+    }
+
+    public function searchGerat(String $brand, String $partnumber)
+    {
+
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+
+        $result = curl_exec($ch);
+        $xml_snippet = simplexml_load_string( $result );
+        $json_convert = json_encode( $xml_snippet );
+        $json = json_decode( $json_convert );
+        
+        foreach ($json->shop->offers->offer as $item) {
+            $cross_numbers = explode(', ', $item->description);
+            
+            foreach ($cross_numbers as $cross_number) {
+                if (strtolower($cross_number) == strtolower($partnumber) || strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
+                    if (strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
+                        array_push($this->finalArr['brands'], $item->vendor);
+
+                        array_push($this->finalArr['searchedNumber'], [
+                            'brand' => $item->vendor,
+                            'article' => $item->vendorCode,
+                            'name' => substr($item->model, 0, 60),
+                            'price' => $item->price,
+                            'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                            'stocks' => $item->count,
+                            'supplier_name' => 'grt',
+                            'supplier_city' => 'Алмата',
+                            'supplier_color' => '#7bafcf',
+                            'deliveryStart' => date('d.m.Y', strtotime('+4day')),
+                        ]);
+                    } else {
+                        array_push($this->finalArr['brands'], $item->vendor);
+
+                        array_push($this->finalArr['crosses_to_order'], [
+                            'brand' => $item->vendor,
+                            'article' => $item->vendorCode,
+                            'name' => substr($item->model, 0, 60),
+                            'qty' => $item->count,
+                            'price' => $item->price,
+                            'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                            'delivery_time' => date('d.m.Y', strtotime('+4day')),
+                            'stocks' => [
+                                [
+                                    'qty' => $item->count,
+                                    'price' => $item->price,
+                                    'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                                ]
+                            ],
+                            'supplier_name' => 'grt',
+                            'supplier_city' => 'Алмата',
+                            'supplier_color' => '#feed00'
+                        ]); 
+                    }
+                }
+            }
+        }
+
+        return;
     }
 
     public function searchAutopiter(String $brand, String $partnumber)
@@ -1581,7 +1647,7 @@ class SparePartController extends Controller
         $arr = str_split($text);
 
         foreach($arr as $key => $sign) {
-            if($sign == ' ') {
+            if($sign == ' ' || $sign == '-' || $sign == '/') {
                 unset($arr[$key]);
             }
         }

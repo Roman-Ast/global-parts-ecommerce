@@ -63,11 +63,15 @@
                     @foreach ($finalArr['searchedNumber'] as $searchItem)
                         <div class="requestPartNumberContainer-item">
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
-                                @if (Route::has('login') && auth()->user()->user_role == "admin")
-                                    {{ $searchItem['supplier_name'] }}
+                                @auth
+                                    @if (auth()->user()->user_role == "admin")
+                                        {{ $searchItem['supplier_name'] }}
+                                    @else
+                                        {{ $searchItem['supplier_city'] }}
+                                    @endif
                                 @else
-                                    {{ $searchItem['supplier_city'] }}
-                                @endif
+                                {{ $searchItem['supplier_city'] }}
+                                @endauth
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                                 {{ $searchItem['brand'] }}
@@ -123,11 +127,15 @@
                 @foreach ($finalArr['crosses_on_stock'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
-                        @if (Route::has('login') && auth()->user()->user_role == "admin")
-                            {{ $crossItem['supplier_name'] }}
+                        @auth
+                            @if (auth()->user()->user_role == "admin")
+                                {{ $crossItem['supplier_name'] }}
+                            @else
+                                {{ $crossItem['supplier_city'] }}
+                            @endif
                         @else
-                            {{ $crossItem['supplier_city'] }}
-                        @endif
+                        {{ $crossItem['supplier_city'] }}
+                        @endauth
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                         {{ $crossItem['brand'] }}
@@ -183,11 +191,15 @@
                 @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
-                        @if (Route::has('login') && auth()->user()->user_role == "admin")
-                            {{ $crossItem['supplier_name'] }}
+                        @auth
+                            @if (auth()->user()->user_role == "admin")
+                                {{ $crossItem['supplier_name'] }}
+                            @else
+                                {{ $crossItem['supplier_city'] }}
+                            @endif
                         @else
-                            {{ $crossItem['supplier_city'] }}
-                        @endif
+                        {{ $crossItem['supplier_city'] }}
+                        @endauth
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                         {{ $crossItem['brand'] }}

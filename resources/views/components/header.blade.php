@@ -16,7 +16,7 @@
                 <div id="searchOptions">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="stock_or_order" name="only_on_stock">
-                        <label class="form-check-label" for="flexSwitchCheckDefault">Только в наличии</label>
+                        <label class="form-check-label" for="flexSwitchCheckDefault">Товары локальных поставщиков</label>
                     </div>
                 </div>
             </form>
