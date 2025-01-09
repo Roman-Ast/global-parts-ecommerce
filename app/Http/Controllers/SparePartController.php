@@ -1266,7 +1266,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        if (property_exists($result, 'error')) {
+        if (gettype($result) == 'object' && property_exists($result, 'error')) {
             return;
         }
        
