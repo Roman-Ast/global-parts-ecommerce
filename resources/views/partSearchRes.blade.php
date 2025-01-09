@@ -64,9 +64,9 @@
                         <div class="requestPartNumberContainer-item">
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
                                 @if (Route::has('login') && auth()->user()->user_role == "admin")
-                                    {{ $crossItem['supplier_name'] }}
+                                    {{ $searchItem['supplier_name'] }}
                                 @else
-                                    {{ $crossItem['supplier_city'] }}
+                                    {{ $searchItem['supplier_city'] }}
                                 @endif
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
