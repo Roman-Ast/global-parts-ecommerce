@@ -149,17 +149,17 @@ class SparePartController extends Controller
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
         
-        if($request->rossko_need_to_search) {
+        /*if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
         //$this->searchArmtek($request->brand, $partNumber);
-        $this->searchGerat($request->brand, $partNumber);
+        $this->searchGerat($request->brand, $partNumber);*/
         $this->searchShatem($request->brand, $partNumber);
-        $this->searchPhaeton($request->brand, $partNumber);
+        /*$this->searchPhaeton($request->brand, $partNumber);
         $this->searchTreid($request->brand, $partNumber);
         $this->searchTiss($request->brand, $partNumber);
         $this->searchKulan($request->brand, $partNumber);
-        $this->searchFebest($request->brand, $partNumber);
+        $this->searchFebest($request->brand, $partNumber);*/
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -937,7 +937,7 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
-            $response = curl_exec($ch);
+            $response = json_decode(curl_exec($ch));
         } catch (\Throwable $th) {
             return;
         }
@@ -945,16 +945,15 @@ class SparePartController extends Controller
         if(!$response || !property_exists($response, 'access_token')) {
             return;
         }
-        curl_close($ch);
         
-        $access_token = json_decode($response)->access_token;
-
+        $access_token = $response->access_token;
+        
         //получение внутреннего id товара
         $params = [
-            'searchString' => $partnumber,
+            'SearchString' => $partnumber,
             'TradeMarkNames' => $brand
         ];
-        
+        //dd($params);
         $ch1 = curl_init();
         $resUrl = 'https://api.shate-m.kz/api/v1/articles/search?' . http_build_query($params);
         curl_setopt($ch1, CURLOPT_URL, $resUrl);
@@ -970,8 +969,6 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        
-        curl_close($ch1);
 
         if (empty($html)) {
             return ;
@@ -1009,7 +1006,7 @@ class SparePartController extends Controller
         }
         
         curl_close($ch2);
-        //dd($response);
+        
         foreach ($response as $key => $item) {
             if ($item->article->code == $partnumber) {
                 foreach ($item->prices as $price) {
