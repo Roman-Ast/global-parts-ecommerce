@@ -146,20 +146,21 @@ class SparePartController extends Controller
 
     public function getSearchedPartAndCrosses (Request $request)
     {
+        $start = microtime(true);
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
         
-        /*if($request->rossko_need_to_search) {
+        if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
         //$this->searchArmtek($request->brand, $partNumber);
-        $this->searchGerat($request->brand, $partNumber);*/
+        $this->searchGerat($request->brand, $partNumber);
         $this->searchShatem($request->brand, $partNumber);
-        /*$this->searchPhaeton($request->brand, $partNumber);
+        $this->searchPhaeton($request->brand, $partNumber);
         $this->searchTreid($request->brand, $partNumber);
         $this->searchTiss($request->brand, $partNumber);
         $this->searchKulan($request->brand, $partNumber);
-        $this->searchFebest($request->brand, $partNumber);*/
+        $this->searchFebest($request->brand, $partNumber);
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -173,7 +174,7 @@ class SparePartController extends Controller
             }
             return ($a < $b) ? -1 : 1;
         });
-        
+        dd('Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек.');
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
@@ -307,7 +308,7 @@ class SparePartController extends Controller
                 'supplier_color' => '#feed00'
             ]);
         }
-
+        
         return;
     }
 
@@ -495,12 +496,14 @@ class SparePartController extends Controller
                 } 
             }
         }
-       
-    return;
+        if (set_time_limit(5)) {
+            return;
+        }
     }
 
     public function searchRossko(String $brand, String $partNumber, String $guid)
     {   
+        
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
             'options' => array(
@@ -916,6 +919,7 @@ class SparePartController extends Controller
 
     public function searchShatem(String $brand, String $partnumber)
     {
+        $start = microtime(true);
         if ($brand == 'Citroen/Peugeot') {
             $brand = 'PSA';
         } else if ($brand == 'HYUNDAI/KIA' || $brand == 'Hyndai/Kia') {
@@ -1084,12 +1088,12 @@ class SparePartController extends Controller
                 }
             }
         }
-        
         return;
     }
 
     public function searchTiss(String $brand, String $partnumber)
     {
+        
         $ch1 = curl_init(); 
         
         $fields = array("JSONparameter" => "{'Brand': '".$brand."', 'Article': '".$partnumber."', 'is_main_warehouse': ".'1'." }" );
@@ -1146,7 +1150,7 @@ class SparePartController extends Controller
                 ]);
             }
         }
-
+        
     }
 
     public function searchKulan(String $brand, String $partnumber)
@@ -1246,7 +1250,7 @@ class SparePartController extends Controller
                 }
             }
         }
-
+        
         return;
     }
 
@@ -1288,7 +1292,6 @@ class SparePartController extends Controller
 
     public function searchGerat(String $brand, String $partnumber)
     {
-
         $ch = curl_init();
 
         curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php');
@@ -1346,7 +1349,7 @@ class SparePartController extends Controller
                 }
             }
         }
-
+        
         return;
     }
 
