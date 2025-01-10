@@ -146,7 +146,8 @@ class SparePartController extends Controller
 
     public function getSearchedPartAndCrosses (Request $request)
     {
-        $start = microtime(true);
+        /*$start = microtime(true);
+        dd('Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек.');*/
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
         
@@ -174,7 +175,7 @@ class SparePartController extends Controller
             }
             return ($a < $b) ? -1 : 1;
         });
-        dd('Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек.');
+        
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
