@@ -175,7 +175,15 @@ class SparePartController extends Controller
             }
             return ($a < $b) ? -1 : 1;
         });
-        
+
+        usort($this->finalArr['crosses_on_stock'], function ($a, $b)
+        {
+            if ($a['priceWithMargine'] == $b['priceWithMargine']) {
+                return 0;
+            }
+            return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
+        });
+        //dd($this->finalArr);
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
