@@ -20,12 +20,14 @@
     padding-left: 10px;
     border-right: 1px solid #333;
 }
+
 #content{
     width: 100%;
     overflow: scroll;
     width: 100%;
     grid-column: span 2;
     position: relative;
+    background-color: #bababa;
 }
 .menu-item-container{
     display: flex;
