@@ -108,6 +108,14 @@
                     <button id="order-filter-btn-submit" class="btn btn-sm btn-primary">применить</button>
                     <button id="order-filter-btn-drop" class="btn btn-sm btn-warning">сбросить</button>
                 </div>
+                <div id="admin-panel-orders-total">
+                    <div class="admin-panel-orders-total-item">
+                        Общая сумма продаж: <span class="admin-panel-orders-total-digits">{{ $allorderSumWithMargine }}</span>
+                    </div>
+                    <div class="admin-panel-orders-total-item">
+                        Общая сумма продаж C/C: <span class="admin-panel-orders-total-digits">{{ $allorderPrimeCostSum }}</span>
+                    </div>
+                </div>
                 @foreach ($orders as $orderItem)
                 <div class="admin-order-item-wrapper">
                     <div class="order-item-header">

@@ -28,7 +28,8 @@ class AdminPanelController extends Controller
         $qtyOrders = $user->orders->count();
         $customers = Order::all()->where('customer_phone', !null)->pluck('customer_phone')->toArray();
         $supplerSettlements = SupplierSettlement::orderBy('created_at', 'desc')->get();
-        
+        $allorderSumWithMargine = Order::sum('sum_with_margine');
+        $allorderPrimeCostSum = Order::sum('sum');
         $usersCalculating = [];
 
         foreach ($users as $user) {
@@ -104,7 +105,9 @@ class AdminPanelController extends Controller
             'customers' => array_unique($customers),
             'supplerSettlements' => $supplerSettlements,
             'suppliers' => $suppliers,
-            'suppliers_debt' => $suppliers_debt
+            'suppliers_debt' => $suppliers_debt,
+            'allorderSumWithMargine' => $allorderSumWithMargine,
+            'allorderPrimeCostSum' => $allorderPrimeCostSum
         ]);
     }
 

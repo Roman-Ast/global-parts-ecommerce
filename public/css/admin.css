@@ -136,6 +136,18 @@
     border-bottom: 1px solid #333;
     padding-bottom: 10px;
 }
+#admin-panel-orders-total{
+    display: flex;
+    justify-content: flex-start;
+    align-items: baseline;
+}
+
+.admin-panel-orders-total-item:nth-child(2){
+    margin-left: 10px;
+}
+.admin-panel-orders-total-digits{
+    font-weight: bolder;
+}
 #manually-make-order{
     display: flex;
     justify-self: flex-end;
