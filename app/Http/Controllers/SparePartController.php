@@ -1469,7 +1469,7 @@ class SparePartController extends Controller
         if (!$result3 || empty($result3)) {
             return;
         }
-        dd($result3);
+        
         if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
             foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
                 if(
@@ -1533,7 +1533,6 @@ class SparePartController extends Controller
             }
         }       
 
-        //dd($this->finalArr);
         return;
     }
 
