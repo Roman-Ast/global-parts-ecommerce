@@ -146,12 +146,11 @@ class SparePartController extends Controller
 
     public function getSearchedPartAndCrosses (Request $request)
     {
-        /*$start = microtime(true);
-        dd('Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек.');*/
+        
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
         
-        /*if($request->rossko_need_to_search) {
+        if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
         //$this->searchArmtek($request->brand, $partNumber);
@@ -161,7 +160,7 @@ class SparePartController extends Controller
         $this->searchTreid($request->brand, $partNumber);
         $this->searchTiss($request->brand, $partNumber);
         $this->searchKulan($request->brand, $partNumber);
-        $this->searchFebest($request->brand, $partNumber);*/
+        $this->searchFebest($request->brand, $partNumber);
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
