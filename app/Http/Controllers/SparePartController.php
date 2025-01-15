@@ -151,7 +151,7 @@ class SparePartController extends Controller
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
         
-        if($request->rossko_need_to_search) {
+        /*if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
         //$this->searchArmtek($request->brand, $partNumber);
@@ -161,7 +161,7 @@ class SparePartController extends Controller
         $this->searchTreid($request->brand, $partNumber);
         $this->searchTiss($request->brand, $partNumber);
         $this->searchKulan($request->brand, $partNumber);
-        $this->searchFebest($request->brand, $partNumber);
+        $this->searchFebest($request->brand, $partNumber);*/
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -1364,17 +1364,20 @@ class SparePartController extends Controller
 
     public function searchAutopiter(String $brand, String $partnumber)
     {
-        $brand = $this->removeAllUnnecessaries($brand);
         $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL");
-        
+        $brand = strtolower($brand);
         if (!($client->IsAuthorization()->IsAuthorizationResult)) {
             $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
         }
-
-        $noAnalogsResult = $client->FindCatalog (array("Number"=>$partnumber));
         
+        $noAnalogsResult = $client->FindCatalog (array("Number"=>$partnumber));
+
+        if(!$noAnalogsResult || empty($noAnalogsResult)) {
+            return;
+        }
+        //dd([$noAnalogsResult, $brand]);
         if($brand == 'hyundai-kia' || $brand == 'hyundai/kia') {
-            $brand = 'hyundai';
+            $brand = 'Hyundai-Kia';
         } else if($brand == 'kyb') {
             $brand = 'kayaba';
         } else if ($brand == 'toyota/lexus') {
@@ -1387,221 +1390,150 @@ class SparePartController extends Controller
             $brand = 'nissan';
         }
 
+        //получаем внутренний артикул детали
         $articleId = '';
         
-        if ($noAnalogsResult && !empty($noAnalogsResult)) {
-            if (is_countable($noAnalogsResult->FindCatalogResult->SearchCatalogModel)) {
-                foreach ($noAnalogsResult->FindCatalogResult->SearchCatalogModel as $key => $item) {
-                    if(trim(strtolower($item->CatalogName)) == trim(strtolower($brand)) ||
-                    str_contains(trim(strtolower($item->CatalogName)), trim(strtolower($brand)))
-                    ) {
-                        $articleId = $item->ArticleId;
-                    }
-                }
-            } else {
-                if(
-                    trim(strtolower($noAnalogsResult->FindCatalogResult->SearchCatalogModel->CatalogName)) == $brand ||
-                    str_contains(trim(strtolower($noAnalogsResult->FindCatalogResult->SearchCatalogModel->CatalogName)), $brand)
+        if (is_countable($noAnalogsResult->FindCatalogResult->SearchCatalogModel)) {
+            foreach ($noAnalogsResult->FindCatalogResult->SearchCatalogModel as $key => $item) {
+                if(trim(strtolower($item->CatalogName)) == trim(strtolower($brand)) ||
+                str_contains(trim(strtolower($item->CatalogName)), trim(strtolower($brand)))
                 ) {
-                    $articleId = $noAnalogsResult->FindCatalogResult->SearchCatalogModel->ArticleId;
+                    $articleId = $item->ArticleId;
                 }
             }
-            
-            //получаем цены оригинального артикула
-            try {
-                $result = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 0, "DetailUid"=>null));
-                
-                if (empty($result)) {
-                    return 'error';
-                } else {
-                    $result2 = (json_decode(json_encode($result), true));
-                    if (!empty($result2) && is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
-                        foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
-                            array_push($this->finalArr['searchedNumber'], [
-                                'guid' => '',
-                                'brand' => $item['CatalogName'],
-                                'article' => $item['Number'],
-                                'name' => $item['Name'],
-                                'price' => round($item['SalePrice']),
-                                'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
-                                'stocks' => $item['NumberOfAvailable'],
-                                'multiplicity' => '',
-                                'type' => '',
-                                'delivery' => '',
-                                'extra' => '',
-                                'description' => '',
-                                'deliveryStart' => $item['DeliveryDate'],
-                                'deliveryEnd' => '',
-                                'supplier_name' => 'atptr',
-                                "supplier_city" => $item['Region'],
-                                'supplier_color' => '#111'
-                            ]);
-                        }
-                    } else if(!empty($result2)) {
-                        
-                        array_push($this->finalArr['searchedNumber'], [
-                            'guid' => '',
-                            'brand' => $result2['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
-                            'article' => $result2['GetPriceIdResult']['PriceSearchModel']['Number'],
-                            'name' => $result2['GetPriceIdResult']['PriceSearchModel']['Name'],
-                            'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
-                            'priceWithMargine' => round($this->setPrice($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
-                            'stocks' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
-                            'multiplicity' => '',
-                            'type' => '',
-                            'delivery' => '',
-                            'extra' => '',
-                            'supplier_color' => '#111',
-                            'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                            'deliveryEnd' => '',
-                            'supplier_name' => 'atptr',
-                            "supplier_city" => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate']['Region']
-                        ]);
-                    }
-                }
-            } catch (\Throwable $th) {
-                return 'error';
+        } else {
+            if(
+                trim(strtolower($noAnalogsResult->FindCatalogResult->SearchCatalogModel->CatalogName)) == trim(strtolower($brand)) ||
+                str_contains(trim(strtolower($noAnalogsResult->FindCatalogResult->SearchCatalogModel->CatalogName)), trim(strtolower($brand)))
+            ) {
+                $articleId = $noAnalogsResult->FindCatalogResult->SearchCatalogModel->ArticleId;
             }
-        }
-        //получаем цены аналогов
+        } 
+        //dd($articleId);
+        //получаем цены оригинального артикула
         try {
-            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 2, "DetailUid"=>null));
-            
-            if (empty($resultWithAnalogs)) {
-                return 'error';
-            } else {
-                $result3 = (json_decode(json_encode($resultWithAnalogs), true));
-               
-                if(!empty($result2)) {
-                    if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
-                        foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
-                            if(
-                               !str_contains(trim(strtolower($item['Number'])), trim(strtolower($partnumber)))
-                            ) {
-                                array_push($this->finalArr['brands'], $item['CatalogName']);
-                                
-                                array_push($this->finalArr['crosses_to_order'], [
-                                    'brand' => $item['CatalogName'],
-                                    'article' => $item['Number'],
-                                    'name' => $item['Name'],
-                                    'price' => $item['SalePrice'],
-                                    'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
-                                    'stocks' => [
-                                        [
-                                            "stock_id" => $item['SellerId'],
-                                            "stock_name" => $item['Region'],
-                                            "stock_legend" => "",
-                                            "qty" =>$item['NumberOfAvailable'],
-                                            "price" => $item['SalePrice'],
-                                            'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
-                                            "delivery_time" => $item['DeliveryDate'],
-                                            "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
-                                            "supplier_city" => $item['Region']
-                                        ]
-                                    ],
-                                    "delivery_time" => $item['DeliveryDate'],
-                                    "supplier_name" => 'atptr',
-                                    "supplier_city" => $item['Region'],
-                                    'supplier_color' => '#111'
-                                ]);
-                            }
-                        }
-                    } else {
-                        if(!str_contains(trim(strtolower($result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'])), $brand)) {
-                            array_push($this->finalArr['brands'], $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName']);
-                            
-                            array_push($this->finalArr['crosses_to_order'], [
-                                'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
-                                'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
-                                'name' => $result3['GetPriceIdResult']['PriceSearchModel']['Name'],
-                                'price' => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
-                                'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
-                                'stocks' => [
-                                    [
-                                        "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
-                                        "stock_name" => 'atptr',
-                                        "stock_legend" => "",
-                                        "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
-                                        "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
-                                        'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
-                                        "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                                        "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
-                                        "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
-                                    ]
-                                ],
-                                "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                                "supplier_name" => 'atptr',
-                                'supplier_color' => '#111'
-                            ]);
-                        }
-                    }
-                }else {
-                    if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
-                        foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
-                            array_push($this->finalArr['brands'], $item['CatalogName']);
-                            
-                                array_push($this->finalArr['crosses_to_order'], [
-                                    'brand' => $item['CatalogName'],
-                                    'article' => $item['Number'],
-                                    'name' => $item['Name'],
-                                    'price' => $item['SalePrice'],
-                                    'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
-                                    'stocks' => [
-                                        [
-                                            "stock_id" => $item['SellerId'],
-                                            "stock_name" => 'atptr',
-                                            "stock_legend" => "",
-                                            "qty" =>$item['NumberOfAvailable'],
-                                            "price" => $item['SalePrice'],
-                                            'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
-                                            "delivery_time" => $item['DeliveryDate'],
-                                            "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
-                                            "supplier_city" => $item['Region'],
-                                            'supplier_color' => '#111'
-                                        ]
-                                    ],
-                                    "delivery_time" => $item['DeliveryDate'],
-                                    "supplier_name" => 'atptr',
-                                    "supplier_city" => $item['Region'],
-                                    'supplier_color' => '#111'
-                                ]);
-                        }
-                    } else {
-                        array_push($this->finalArr['brands'], $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName']);
-                        
-                        array_push($this->finalArr['crosses_to_order'], [
-                            'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
-                            'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
-                            'name' => $result3['GetPriceIdResult']['PriceSearchModel']['Name'],
-                            'price' => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
-                            'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
-                            'stocks' => [
-                                [
-                                    "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
-                                    "stock_name" => 'atptr',
-                                    "stock_legend" => "",
-                                    "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
-                                    "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
-                                    'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
-                                    "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                                    "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
-                                    "city" => 'atptr',
-                                    "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
-                                    'supplier_color' => '#111'
-                                ]
-                            ],
-                            "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                            "supplier_name" => 'atptr',
-                            "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region'],
-                            'supplier_color' => '#111'
-                        ]);
-                    }
-                }
-            }
+            $result = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 0, "DetailUid"=>null));
         } catch (\Throwable $th) {
             return 'error';
         }
+
+        if (empty($result)) {
+                return;
+        }
+        $result2 = (json_decode(json_encode($result), true));
+        //dd($result);
+        if (is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
+            foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $item) {
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand' => $item['CatalogName'],
+                    'article' => $item['Number'],
+                    'name' => $item['Name'],
+                    'price' => round($item['SalePrice']),
+                    'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
+                    'stocks' => $item['NumberOfAvailable'],
+                    'deliveryStart' => $item['DeliveryDate'],
+                    'deliveryEnd' => '',
+                    'supplier_name' => 'atptr',
+                    "supplier_city" => $item['Region'],
+                    'supplier_color' => '#111'
+                ]);
+            }
+        } else {
+            array_push($this->finalArr['searchedNumber'], [
+                'brand' => $result2['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
+                'article' => $result2['GetPriceIdResult']['PriceSearchModel']['Number'],
+                'name' => $result2['GetPriceIdResult']['PriceSearchModel']['Name'],
+                'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
+                'priceWithMargine' => round($this->setPrice($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
+                'stocks' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
+                'supplier_color' => '#111',
+                'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
+                'deliveryEnd' => '',
+                'supplier_name' => 'atptr',
+                'supplier_city' => $result2['GetPriceIdResult']['PriceSearchModel']['Region']
+            ]);
+        }           
+
+        //получаем цены аналогов
+        try {
+            $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 2, "DetailUid"=>null));
+        } catch (\Throwable $th) {
+            return 'error';
+        }  
+
+        if (empty($resultWithAnalogs)) {
+            return 'error';
+        } 
+        $result3 = (json_decode(json_encode($resultWithAnalogs), true));
         
+        if (!$result3 || empty($result3)) {
+            return;
+        }
+        dd($result3);
+        if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
+            foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
+                if(
+                   !str_contains(trim(strtolower($item['Number'])), trim(strtolower($partnumber)))
+                ) {
+                    array_push($this->finalArr['brands'], $item['CatalogName']);
+                    
+                    array_push($this->finalArr['crosses_to_order'], [
+                        'brand' => $item['CatalogName'],
+                        'article' => $item['Number'],
+                        'name' => $item['Name'],
+                        'price' => $item['SalePrice'],
+                        'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
+                        'stocks' => [
+                            [
+                                "stock_id" => $item['SellerId'],
+                                "stock_name" => $item['Region'],
+                                "stock_legend" => "",
+                                "qty" =>$item['NumberOfAvailable'],
+                                "price" => $item['SalePrice'],
+                                'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
+                                "delivery_time" => $item['DeliveryDate'],
+                                "SuccessfulOrdersProcent" => $item['SuccessfulOrdersProcent'],
+                                "supplier_city" => $item['Region']
+                            ]
+                        ],
+                        "delivery_time" => $item['DeliveryDate'],
+                        "supplier_name" => 'atptr',
+                        "supplier_city" => $item['Region'],
+                        'supplier_color' => '#111'
+                    ]);
+                }
+            }
+        } else {
+            if(!str_contains(trim(strtolower($result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'])), $brand)) {
+                array_push($this->finalArr['brands'], $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName']);
+                
+                array_push($this->finalArr['crosses_to_order'], [
+                    'brand' => $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
+                    'article' => $result3['GetPriceIdResult']['PriceSearchModel']['Number'],
+                    'name' => $result3['GetPriceIdResult']['PriceSearchModel']['Name'],
+                    'price' => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
+                    'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
+                    'stocks' => [
+                        [
+                            "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
+                            "stock_name" => 'atptr',
+                            "stock_legend" => "",
+                            "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
+                            "price" => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
+                            'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
+                            "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
+                            "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
+                            "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                        ]
+                    ],
+                    "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
+                    "supplier_name" => 'atptr',
+                    'supplier_color' => '#111'
+                ]);
+            }
+        }       
+
+        //dd($this->finalArr);
         return;
     }
 

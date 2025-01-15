@@ -24,7 +24,7 @@ $(window).on('load', function () {
          }
       });
 
-      const pageCount = Math.floor($('#crossesContainer-to-order').children().length / perPage);
+      const pageCount = Math.ceil($('#crossesContainer-to-order').children().length / perPage);
       
       $('.pagination-nav').css({'display': 'flex'});
 
