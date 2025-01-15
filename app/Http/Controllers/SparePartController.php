@@ -1374,7 +1374,7 @@ class SparePartController extends Controller
         if(!$noAnalogsResult || empty($noAnalogsResult)) {
             return;
         }
-        //dd([$noAnalogsResult, $brand]);
+        
         if($brand == 'hyundai-kia' || $brand == 'hyundai/kia') {
             $brand = 'Hyundai-Kia';
         } else if($brand == 'kyb') {
@@ -1408,7 +1408,7 @@ class SparePartController extends Controller
                 $articleId = $noAnalogsResult->FindCatalogResult->SearchCatalogModel->ArticleId;
             }
         } 
-        //dd($articleId);
+        
         //получаем цены оригинального артикула
         try {
             $result = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 0, "DetailUid"=>null));
@@ -1420,7 +1420,7 @@ class SparePartController extends Controller
                 return;
         }
         $result2 = (json_decode(json_encode($result), true));
-        //dd($result);
+        
         if (is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
             foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $item) {
                 array_push($this->finalArr['searchedNumber'], [
@@ -1438,6 +1438,7 @@ class SparePartController extends Controller
                 ]);
             }
         } else {
+
             array_push($this->finalArr['searchedNumber'], [
                 'brand' => $result2['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
                 'article' => $result2['GetPriceIdResult']['PriceSearchModel']['Number'],
@@ -1464,15 +1465,15 @@ class SparePartController extends Controller
             return 'error';
         } 
         $result3 = (json_decode(json_encode($resultWithAnalogs), true));
-        
+        //dd($result3);
         if (!$result3 || empty($result3)) {
             return;
         }
         
         if (is_array(array_shift($result3['GetPriceIdResult']['PriceSearchModel']))) {
-            foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $key => $item) {
+            foreach ($result3['GetPriceIdResult']['PriceSearchModel'] as $item) {
                 if(
-                   !str_contains(trim(strtolower($item['Number'])), trim(strtolower($partnumber)))
+                    !str_contains(trim(strtolower($partnumber)), $this->removeAllUnnecessaries(trim(strtolower($item['Number']))))
                 ) {
                     array_push($this->finalArr['brands'], $item['CatalogName']);
                     
@@ -1503,7 +1504,9 @@ class SparePartController extends Controller
                 }
             }
         } else {
-            if(!str_contains(trim(strtolower($result3['GetPriceIdResult']['PriceSearchModel']['CatalogName'])), $brand)) {
+            if(
+                !str_contains(trim(strtolower($partnumber)), $this->removeAllUnnecessaries(trim(strtolower($result3['GetPriceIdResult']['PriceSearchModel']['Number']))))
+            ) {
                 array_push($this->finalArr['brands'], $result3['GetPriceIdResult']['PriceSearchModel']['CatalogName']);
                 
                 array_push($this->finalArr['crosses_to_order'], [
