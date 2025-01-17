@@ -1391,7 +1391,7 @@ class SparePartController extends Controller
         }
         
         $noAnalogsResult = $client->FindCatalog (array("Number"=>$partnumber));
-
+        
         if(!$noAnalogsResult || empty($noAnalogsResult)) {
             return;
         }
@@ -1439,43 +1439,40 @@ class SparePartController extends Controller
 
         $result2 = (json_decode(json_encode($result), true));
 		
-		if (empty($result2)) {
-                return;
-        }
-        
-        if (is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
-            foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $item) {
+		if (!empty($result2)) {
+            if (is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
+                foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $item) {
+                    array_push($this->finalArr['searchedNumber'], [
+                        'brand' => $item['CatalogName'],
+                        'article' => $item['Number'],
+                        'name' => $item['Name'],
+                        'price' => round($item['SalePrice']),
+                        'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
+                        'stocks' => $item['NumberOfAvailable'],
+                        'deliveryStart' => $item['DeliveryDate'],
+                        'deliveryEnd' => '',
+                        'supplier_name' => 'atptr',
+                        "supplier_city" => $item['Region'],
+                        'supplier_color' => '#111'
+                    ]);
+                }
+            } else {
                 array_push($this->finalArr['searchedNumber'], [
-                    'brand' => $item['CatalogName'],
-                    'article' => $item['Number'],
-                    'name' => $item['Name'],
-                    'price' => round($item['SalePrice']),
-                    'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
-                    'stocks' => $item['NumberOfAvailable'],
-                    'deliveryStart' => $item['DeliveryDate'],
+                    'brand' => $result2['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
+                    'article' => $result2['GetPriceIdResult']['PriceSearchModel']['Number'],
+                    'name' => $result2['GetPriceIdResult']['PriceSearchModel']['Name'],
+                    'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
+                    'priceWithMargine' => round($this->setPrice($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
+                    'stocks' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
+                    'supplier_color' => '#111',
+                    'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                     'deliveryEnd' => '',
                     'supplier_name' => 'atptr',
-                    "supplier_city" => $item['Region'],
-                    'supplier_color' => '#111'
+                    'supplier_city' => $result2['GetPriceIdResult']['PriceSearchModel']['Region']
                 ]);
-            }
-        } else {
-
-            array_push($this->finalArr['searchedNumber'], [
-                'brand' => $result2['GetPriceIdResult']['PriceSearchModel']['CatalogName'],
-                'article' => $result2['GetPriceIdResult']['PriceSearchModel']['Number'],
-                'name' => $result2['GetPriceIdResult']['PriceSearchModel']['Name'],
-                'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
-                'priceWithMargine' => round($this->setPrice($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
-                'stocks' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
-                'supplier_color' => '#111',
-                'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
-                'deliveryEnd' => '',
-                'supplier_name' => 'atptr',
-                'supplier_city' => $result2['GetPriceIdResult']['PriceSearchModel']['Region']
-            ]);
-        }           
-
+            } 
+        }
+        
         //получаем цены аналогов
         try {
             $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 2, "DetailUid"=>null));
@@ -1487,7 +1484,7 @@ class SparePartController extends Controller
             return 'error';
         } 
         $result3 = (json_decode(json_encode($resultWithAnalogs), true));
-        //dd($result3);
+    
         if (!$result3 || empty($result3)) {
             return;
         }
