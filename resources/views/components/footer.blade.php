@@ -1,7 +1,9 @@
 <div id="footer-wrapper">
     <div id="footer-container" class="container">
         <div class="footer-item" id="footer-logo">
-            <img src="images/logo1.png" alt="logo-footer">
+            <a href="/">
+                <img src="images/logo1.png" alt="logo-footer">
+            </a>
         </div>
         <div class="footer-item" id="footer-contacts">
             <div class="footer-contacts">

@@ -45,7 +45,7 @@
                     <td>{{ $car->model }}</td>
                     <td>{{ $car->year }}</td>
                     <td>{{ $car->vincode }}</td>
-                    <td>{{ $car->license }}</td>
+                    <td>{{ $car->licence }}</td>
                     <td>{{ $car->owner_name }}</td>
                     <td>{{ $car->owner_phone }}</td>
                     <td>{{ $car->note }}</td>

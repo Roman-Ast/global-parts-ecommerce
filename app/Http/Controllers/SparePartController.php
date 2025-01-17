@@ -182,7 +182,7 @@ class SparePartController extends Controller
             }
             return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
         });
-        //dd($this->finalArr);
+        
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
@@ -220,28 +220,49 @@ class SparePartController extends Controller
 		
         foreach ($response->Items as $item) {
             if ($item->Warehouse == 'Астана') {
-                array_push($this->finalArr['brands'], $item->Brand);
+                if ($item->Article == $partnumber) {
+                    array_push($this->finalArr['brands'], $item->Brand);
 
-                array_push($this->finalArr['searchedNumber'], [
-                    'guid' => '',
-                    'brand' => $item->Brand,
-                    'article' => $item->Article,
-                    'name' => substr($item->Name, 0, 60),
-                    'price' => $item->Price,
-                    'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
-                    'stocks' => $item->AvailableCount,
-                    'multiplicity' => '',
-                    'type' => '',
-                    'delivery' => '',
-                    'extra' => '',
-                    'description' => 'phtn',
-                    'deliveryStart' => date('d.m.Y'),
-                    'deliveryEnd' => date('d.m.Y'),
-                    'supplier_name' => 'phtn',
-                    'supplier_city' => 'ast',
-                    'supplier_color' => '#feed00'
-                ]);               
-                                
+                    array_push($this->finalArr['searchedNumber'], [
+                        'brand' => $item->Brand,
+                        'article' => $item->Article,
+                        'name' => substr($item->Name, 0, 60),
+                        'price' => $item->Price,
+                        'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                        'stocks' => $item->AvailableCount,
+                        'multiplicity' => '',
+                        'type' => '',
+                        'delivery' => '',
+                        'extra' => '',
+                        'description' => 'phtn',
+                        'deliveryStart' => date('d.m.Y'),
+                        'deliveryEnd' => date('d.m.Y'),
+                        'supplier_name' => 'phtn',
+                        'supplier_city' => 'ast',
+                        'supplier_color' => '#feed00'
+                    ]); 
+                } else {
+                    array_push( $this->finalArr['brands'], $item->Brand);
+
+                    array_push($this->finalArr['crosses_on_stock'], [
+                        'id' => $item['id'],
+                        'brand' => $item->Brand,
+                        'article' => $item->Article,
+                        'name' => substr($item->Name, 0, 60),
+                        'stocks' => [
+                            'qty' => $item->AvailableCount,
+                            'price' => $item->Price,
+                            'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                        ],
+                        'price' => $item->Price,
+                        'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                        'supplier_name' => 'phtn',
+                        'delivery_date' => '',
+                        'delivery_time' => '1.5-2 часа',
+                        'supplier_city' => $item->Warehouse,
+                        'supplier_color' => '#34689e'
+                    ]);
+                }           
             } else {
                 array_push($this->finalArr['brands'], $item->Brand);
 
@@ -1416,10 +1437,11 @@ class SparePartController extends Controller
             return 'error';
         }
 
-        if (empty($result)) {
+        $result2 = (json_decode(json_encode($result), true));
+		
+		if (empty($result2)) {
                 return;
         }
-        $result2 = (json_decode(json_encode($result), true));
         
         if (is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
             foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $item) {

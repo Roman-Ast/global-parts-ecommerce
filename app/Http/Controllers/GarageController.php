@@ -32,6 +32,11 @@ class GarageController extends Controller
      */
     public function store(Request $request)
     {
+        $request->validate([
+            'vincode' => ['required', 'max:17', 'unique:garage'],
+            'licence' => ['required', 'unique:garage'],
+        ]);
+
         $car_in_garage = GaraGE::create([
             'user_id' => $request->user_id,
             'model' => $request->model,
@@ -45,7 +50,7 @@ class GarageController extends Controller
 
         $cars_in_garage = GaraGE::where('user_id', auth()->user()->id)->orderBy('id', 'desc')->get();
 
-        return view('garage.index')
+        return redirect()->to('/garage')
             ->with('cars_in_garage', $cars_in_garage)
             ->with('message', 'Авто успешно добавлен в гараж')
             ->with('class', 'alert-success');
