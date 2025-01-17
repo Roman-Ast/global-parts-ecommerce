@@ -53,6 +53,19 @@ $(window).on('load', function () {
       $('#whatsapp-container').attr('href', 'https://wa.me/+77087172549')
    }
 });
+//показывать кнопку удаления текста при вводе в инпут поиска запчастей
+$('#searchBarInput').on('input', function () {
+   $('#search-input-text-delete').fadeIn(200);
+   
+   if ($(this).val().length == 0) {
+      $('#search-input-text-delete').fadeOut(200);
+   }
+});
+
+$('#search-input-text-delete').on('click', function () {
+   $('#searchBarInput').val('');
+   $(this).fadeOut(100);
+});
 
 //показывать еще товар когда список большой
 $('#show-other-items').on('click', function () {

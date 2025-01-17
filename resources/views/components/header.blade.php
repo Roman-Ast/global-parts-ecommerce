@@ -11,6 +11,7 @@
                     </div>
                     <div class="input-group input-group-lg">
                         <input type="text" name="partNumber" id="searchBarInput" class="form-control" placeholder="введите номер детали" required>
+                        <div id="search-input-text-delete">&times;</div>
                     </div>
                 </div>
                 <div id="searchOptions">
