@@ -50,13 +50,16 @@
                     Цена
                 </div>
             </div>
+
+            
             @if (count($finalArr['searchedNumber']) > 0)
+
             <div class="searchResForRequestPartNumber">
                 <div class="searchResForRequestPartNumberHeader">
                     Запрошенный артикул
                 </div>
             </div>
-            @endif
+            
             <div id="requestPartNumberContainer">
                 <input type="hidden" value="{{ $finalArr['originNumber'] }}" id="originNumber">
                 @if (count($finalArr['searchedNumber']) > 0)
@@ -88,6 +91,8 @@
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-delivery">
                                 @if (date('d.m.y',strtotime($searchItem['deliveryStart'])) == date('d.m.y'))
                                     <div class="parts-on-stock">1.5-2 часа</div>
+                                @elseif($searchItem['deliveryStart'] == 'в офисе')
+                                    <div style="background-color:{{ $searchItem['supplier_color']}};color:#111">{{ $searchItem['deliveryStart'] }}</div>
                                 @else
                                     {{ date('d.m.y',strtotime($searchItem['deliveryStart'])) }}
                                 @endif
@@ -116,13 +121,87 @@
                     <a href="###">Показать еще 10</a>
                 </div>
             </div>
+
+            @endif
+
+            
+            @if (!empty($finalArr['crosses_in_office']))
+
+            <div class="searchResForRequestPartNumber">
+                <div class="searchResForRequestPartNumberHeader">
+                    Аналоги в наличии в офисе
+                </div>
+            </div>
+
+            <div id="crossesContainer-on-stock">
+                @foreach ($finalArr['crosses_in_office'] as $index => $crossItem)
+                <div class="requestPartNumberContainer-item">
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
+                        @auth
+                            @if (auth()->user()->user_role == "admin")
+                                {{ $crossItem['supplier_name'] }}
+                            @else
+                                {{ $crossItem['supplier_city'] }}
+                            @endif
+                        @else
+                        {{ $crossItem['supplier_city'] }}
+                        @endauth
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
+                        {{ $crossItem['brand'] }}
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-partnumber">
+                        {{ $crossItem['article'] }}
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-name">
+                        {{ $crossItem['name'] }}
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
+                        <img src="/images/info_pic.png" alt="info">
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery" style="background-color:{{ $crossItem['supplier_color']}};color:#111">
+                        {{ $crossItem['delivery_time'] }}
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
+                        <div class="stock-item stock-item-qty">
+                            @if ($crossItem['qty'] > 10)
+                                >10
+                            @else
+                                {{ $crossItem['qty'] }}
+                            @endif
+                        </div>
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
+                        <div class="stock-item stock-item-price">
+                            {{ $crossItem['priceWithMargine'] }}
+                        </div>
+                    </div>
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
+                        <div class="stock-item-cart">
+                            <div class="stock-item-cart-btn">
+                                <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
+                            </div>
+                            <div class="stock-item-cart-qty">
+                                <input type='number' value="1" class="form-control">
+                            </div>
+                            <input type="hidden" value="{{ $crossItem['price'] }}">
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+
+            @endif
+
+            
             @if (!empty($finalArr['crosses_on_stock']))
+
             <div class="searchResForRequestPartNumber">
                 <div class="searchResForRequestPartNumberHeader">
                     Аналоги в наличии на складе
                 </div>
             </div>
-            @endif
+
             <div id="crossesContainer-on-stock">
                 @foreach ($finalArr['crosses_on_stock'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
@@ -180,13 +259,18 @@
                 </div>
                 @endforeach
             </div>
+
+            @endif
+
+            
             @if (count($finalArr['crosses_to_order']) > 0)
+            
             <div class="searchResForRequestPartNumber">
                 <div class="searchResForRequestPartNumberHeader">
                     Аналоги на заказ
                 </div>
             </div>
-            @endif
+            
             <div id="crossesContainer-to-order">
                 @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
@@ -257,6 +341,8 @@
                 </div>
                 @endforeach
             </div>
+
+            @endif
             <nav aria-label="..." class="pagination-nav">
                 <ul class="pagination pagination-sm">
                     <li class="page-item active">

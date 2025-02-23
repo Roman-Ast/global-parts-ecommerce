@@ -11,6 +11,16 @@ use App\Http\Controllers\GarageController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SettlementController;
+use App\Http\Controllers\GmPricelistFromAdilController;
+use App\Http\Controllers\OfficePriceController;
+use App\Models\gm_pricelist_from_adil;
+use App\Models\OfficePrice;
+
+
+/*Route::get('/home', function() {
+    (new OfficePrice())->importToDb();
+    dd('done');
+});*/
 
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);
@@ -25,6 +35,7 @@ Route::post('/cart/add', [CartController::class, 'store']);
 Route::post('/cart/delete', [CartController::class, 'deleteItem']);
 Route::post('/cart/update', [CartController::class, 'update']);
 Route::get('cart/clear', [CartController::class, 'clear']);
+
 
 Route::middleware('guest')->group(function() {
     Route::get('/', function () {
@@ -62,6 +73,9 @@ Route::middleware(['auth', 'verified'])->group(function() {
     Route::get('/garage/create', [GarageController::class, 'create']);
     Route::post('/garage/store', [GarageController::class, 'store'])->name('garage.store');
     Route::post('/garage/destroy', [GarageController::class, 'destroy']);
+
+    Route::post('import', [GmPricelistFromAdilController::class, 'store']);
+    Route::post('import-in-office', [OfficePriceController::class, 'store']);
 });
 
 Route::middleware('auth')->group(function() {

@@ -81,6 +81,14 @@
                     Оплата поставщикам
                 </div>
             </div>
+            <div class="menu-item-container" target="excel_upload">
+                <div class="menu-item-img">
+                    
+                </div>
+                <div class="menu-item-name">
+                    Загрузить файл
+                </div>
+            </div>
         </div>
         <div id="content">
             <div id="orders" class="admin-content-item">
@@ -569,6 +577,51 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            <div id="excel_upload" class="container admin-content-item">
+                <form action="{{ url('import') }}" method="post" enctype="multipart/form-data">
+                    {{ csrf_field() }}
+
+                    <div class="form-group{{ $errors->has('file') ? 'has-error' : '' }}">
+                        <label for="file" class="control-label">Файл для импорта от Адиля</label>
+
+                        <input id="file" type="file" class="form-controll" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
+
+                        @if ($errors->has('file'))
+                            <span class="help-block">
+                                <strong>{{ $errors->first('file') }}</stromg>
+                            </span>
+                        @endif
+                    </div>
+
+                    <p>
+                        <button type="submit" class="btn btn-success" name="submit">
+                            <i class="fa fa-check"></i>Загрузить
+                        </button>
+                    </p>
+                </form>
+
+                <form action="{{ url('import-in-office') }}" method="post" enctype="multipart/form-data">
+                    {{ csrf_field() }}
+
+                    <div class="form-group{{ $errors->has('file') ? 'has-error' : '' }}">
+                        <label for="file" class="control-label">Файл для импорта товара в офисе</label>
+
+                        <input id="file" type="file" class="form-controll" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
+
+                        @if ($errors->has('file'))
+                            <span class="help-block">
+                                <strong>{{ $errors->first('file') }}</stromg>
+                            </span>
+                        @endif
+                    </div>
+
+                    <p>
+                        <button type="submit" class="btn btn-success" name="submit">
+                            <i class="fa fa-check"></i>Загрузить
+                        </button>
+                    </p>
+                </form>
             </div>
         </div>
     </div>

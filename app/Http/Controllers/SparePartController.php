@@ -10,6 +10,8 @@ use ArmtekRestClient\Http\Config\Config as ArmtekRestClientConfig;
 use ArmtekRestClient\Http\ArmtekRestClient as ArmtekRestClient; 
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\SetPrice as SetPrice;
+use App\Models\OfficePrice;
+use App\Models\gm_pricelist_from_adil;
 use Collator;
 
 class SparePartController extends Controller
@@ -36,6 +38,7 @@ class SparePartController extends Controller
     public $finalArr = [
         'originNumber' => '',
         'searchedNumber' => [],
+        'crosses_in_office' => [],
         'crosses_on_stock' => [],
         'crosses_to_order' => [],
         'brands' => []
@@ -154,6 +157,8 @@ class SparePartController extends Controller
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
         //$this->searchArmtek($request->brand, $partNumber);
+        $this->searchAdilsGM($request->brand, $partNumber);
+        $this->searchStockInOffice($request->brand, $partNumber);
         $this->searchGerat($request->brand, $partNumber);
         $this->searchShatem($request->brand, $partNumber);
         $this->searchPhaeton($request->brand, $partNumber);
@@ -165,6 +170,8 @@ class SparePartController extends Controller
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
         }
+
+        
 
         $arr = array_unique($this->finalArr['brands']);
 
@@ -1557,6 +1564,123 @@ class SparePartController extends Controller
         return;
     }
 
+    public function searchAdilsGM(String $brand, String $partnumber)
+    {
+        $searchedPart = gm_pricelist_from_adil::where('oem', $partnumber)
+            ->orWhere('article', $partnumber)
+            ->get()
+            ->toArray();
+        
+        if (empty($searchedPart)) {
+            return;
+        }
+        //dd($searchedPart);
+        foreach ($searchedPart as $item) {
+            array_push($this->finalArr['brands'], $item['brand']);
+
+            array_push($this->finalArr['searchedNumber'], [
+                'brand' => $item['brand'],
+                'article' => $item['article'],
+                'name' => $item['name'],
+                'price' => $item['price'],
+                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                'stocks' => $item['qty'],
+                'supplier_city' => 'Алматы',
+                'supplier_name' => 'Adil`s GM',
+                'supplier_color' => 'green',
+                'deliveryStart' => date('d.m.Y', strtotime('+10 day', strtotime(date('d.m.y')))),
+            ]);    
+        }
+        
+        return;
+    }
+
+    public function searchStockInOffice(String $brand, String $partnumber)
+    {
+        //поиск по ОЕМ номеру
+        $oemNumbers = OfficePrice::pluck('oem');
+
+        $searchedNumberId = '';
+
+        foreach ($oemNumbers as $id => $oems) {
+            $oemsArr = explode('|', $oems);
+            
+            foreach ($oemsArr as $uniqueOem) {
+                if (strToLower($uniqueOem) == $partnumber) {
+                    $searchedNumberId = ++$id;
+                }
+            }
+        }
+        
+        if ($searchedNumberId) {
+            $searchedPart = OfficePrice::find($searchedNumberId);
+            
+            if ($searchedPart->article == $partnumber) {
+                array_push($this->finalArr['brands'], $searchedPart->brand);
+
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand' => $searchedPart->brand,
+                    'article' => $searchedPart->article,
+                    'name' => $searchedPart->name,
+                    'price' => $searchedPart->price,
+                    'priceWithMargine' => round($this->setPrice($searchedPart->price), self::ROUND_LIMIT),
+                    'stocks' => $searchedPart->qty,
+                    'supplier_city' => 'Астана',
+                    'supplier_name' => 'в офисе',
+                    'supplier_color' => 'lightgreen',
+                    'deliveryStart' => 'в офисе'
+                ]);
+            } else {
+                array_push($this->finalArr['brands'], $searchedPart->brand);
+
+                array_push($this->finalArr['crosses_in_office'], [
+                    'brand' => $searchedPart->brand,
+                    'article' => $searchedPart->article,
+                    'name' => $searchedPart->name,
+                    'stock_legend' => 'в офисе',
+                    'qty' => $searchedPart->qty,
+                    'price' => $searchedPart->price,
+                    'priceWithMargine' => round($this->setPrice($searchedPart->price), self::ROUND_LIMIT),
+                    'delivery_time' => 'в офисе',
+                    'supplier_name' => 'в офисе',
+                    'supplier_city' => 'Астана',
+                    'supplier_color' => 'lightgreen',
+                ]);
+                    
+            }
+
+            return;
+        }
+
+        //поиск по артикулу аналога
+        $searchedArticle = OfficePrice::where('article', strToLower($partnumber))
+            ->orWhere('article', strToUpper($partnumber))
+            ->get();
+
+
+        foreach ($searchedArticle as $item) {
+            array_push($this->finalArr['brands'], $item->brand);
+
+            array_push($this->finalArr['searchedNumber'], [
+                'brand' => $item->brand,
+                'article' => $item->article,
+                'name' => $item->name,
+                'price' => $item->price,
+                'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                'stocks' => $item->qty,
+                'supplier_city' => 'Астана',
+                'supplier_name' => 'в офисе',
+                'supplier_color' => 'lightgreen',
+                'deliveryStart' => 'в офисе'
+            ]);
+        }
+        
+            
+        
+
+        return;
+    }
+
     public function getCheckoutDetails () {
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetDeliveryDetails',
@@ -1580,8 +1704,6 @@ class SparePartController extends Controller
 
     public function getStoragesList()
     {
-        
-
         $url = "https://api2.autotrade.su/?json";
 
         $data = array(
