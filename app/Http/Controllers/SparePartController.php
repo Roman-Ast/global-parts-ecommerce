@@ -252,7 +252,6 @@ class SparePartController extends Controller
                     array_push( $this->finalArr['brands'], $item->Brand);
 
                     array_push($this->finalArr['crosses_on_stock'], [
-                        'id' => $item->id,
                         'brand' => $item->Brand,
                         'article' => $item->Article,
                         'name' => substr($item->Name, 0, 60),
