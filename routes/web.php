@@ -13,12 +13,13 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\GmPricelistFromAdilController;
 use App\Http\Controllers\OfficePriceController;
+use App\Http\Controllers\XuiPoimiPriceController;
 use App\Models\gm_pricelist_from_adil;
 use App\Models\OfficePrice;
-
-
-/*Route::get('/home', function() {
-    (new OfficePrice())->importToDb();
+use App\Models\XuiPoimiPrice;
+/*
+Route::get('/home', function() {
+    (new XuiPoimiPrice())->importToDb();
     dd('done');
 });*/
 
@@ -76,6 +77,7 @@ Route::middleware(['auth', 'verified'])->group(function() {
 
     Route::post('import', [GmPricelistFromAdilController::class, 'store']);
     Route::post('import-in-office', [OfficePriceController::class, 'store']);
+    Route::post('import-xui-poimi', [XuiPoimiPriceController::class, 'store']);
 });
 
 Route::middleware('auth')->group(function() {

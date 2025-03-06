@@ -12,6 +12,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use App\SetPrice as SetPrice;
 use App\Models\OfficePrice;
 use App\Models\gm_pricelist_from_adil;
+use App\Models\XuiPoimiPrice;
 use Collator;
 
 class SparePartController extends Controller
@@ -166,12 +167,11 @@ class SparePartController extends Controller
         $this->searchTiss($request->brand, $partNumber);
         $this->searchKulan($request->brand, $partNumber);
         $this->searchFebest($request->brand, $partNumber);
+        $this->searchXuiPoimi($request->brand, $partNumber);
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
         }
-
-        
 
         $arr = array_unique($this->finalArr['brands']);
 
@@ -1590,6 +1590,45 @@ class SparePartController extends Controller
                 'supplier_color' => 'green',
                 'deliveryStart' => date('d.m.Y', strtotime('+10 day', strtotime(date('d.m.y')))),
             ]);    
+        }
+        
+        return;
+    }
+
+    public function searchXuiPoimi(String $brand, String $partnumber)
+    {
+        //dd($partnumber);
+        $searchedPart = XuiPoimiPrice::where('oem', $partnumber)
+            ->get()
+            ->toArray();
+        
+        if (empty($searchedPart)) {
+            return;
+        }
+        //dd($searchedPart);
+        foreach ($searchedPart as $item) {
+            array_push($this->finalArr['brands'], $item['brand']);
+
+            array_push($this->finalArr['crosses_on_stock'], [
+                'brand' => $item['brand'],
+                'article' => $item['oem'],
+                'name' => $item['article'] . ' ' . $item['name'],
+                'stock_legend' => '',
+                'qty' => $item['qty'],
+                'price' => $item['price'],
+                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                'delivery_time' => '1 день',
+                'stocks' => [
+                    [
+                        'qty' => $item['qty'],
+                        'price' =>$item['price'],
+                        'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    ]
+                ],
+                'supplier_name' => 'Хуйпойми',
+                'supplier_city' => 'Астана',
+                'supplier_color' => 'yellow',
+            ]);  
         }
         
         return;

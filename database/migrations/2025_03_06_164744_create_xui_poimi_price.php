@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('gm_pricelist_from_adils', function (Blueprint $table) {
-            $table->bigIncrements('id');
+        Schema::create('xui_poimi_price', function (Blueprint $table) {
+            $table->id();
             $table->string('oem');
             $table->string('article');
             $table->string('brand');
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('gm_pricelist_from_adils');
+        Schema::dropIfExists('xui_poimi_price');
     }
 };
