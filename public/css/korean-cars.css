@@ -1,0 +1,45 @@
+#korean-cars-wrapper{
+    min-height: 69vh;
+    margin-top: 150px;
+}
+#korean-cars-wrapper-header{
+    margin-top: 50px;
+    margin-bottom: 50px;
+}
+
+#korean-cars-container{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+.korean-cars-item{
+    border:1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    height: 250px;
+    text-decoration: none;
+    color: black;
+    transition: all 0.3s ease-in-out;
+}
+.korean-cars-item:hover{
+    color: black;
+    transform: scale(1.1);
+    
+}
+.korean-cars-img-container{
+    width: 300px;
+    height: 70%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.korean-cars-img-container img{
+    max-width: 100%;
+    max-height: 100%;
+}
+.korean-cars-item-header{
+    
+    font-weight: bolder;
+    text-align: center;
+}

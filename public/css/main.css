@@ -4,7 +4,7 @@ body{
     margin: 0;
 }
 
-a {
+a{
     text-decoration: none;
 }
 ul{
@@ -43,7 +43,7 @@ ul{
         position: absolute;
         width: 80%;
         height: 80%;
-        background-image: url('/images/reika.png');
+        background-image: url('/images/hyundai/kia.svg');
         background-size: contain;
         background-repeat: no-repeat;
         background-position: 50% 50%;
@@ -53,9 +53,10 @@ ul{
         position: absolute;
         width: 80%;
         height: 80%;
-        background-image: url('/images/gur.png');
+        background-image: url('/images/hyundai/hyundai.svg');
         background-size: contain;
         background-repeat: no-repeat;
+        background-position: 50% 50%;
     }
     #steering-text{
         align-self: flex-end;
@@ -70,8 +71,8 @@ ul{
         align-items: center;
     }
     #mobis-wrapper{
-        background-image: url('/images/mobis3.png');
-        background-size: 70%;
+        background-image: url('/images/chinacars/chinese-logos.png');
+        background-size: 54%;
         background-repeat: no-repeat;
         background-position: 50% 60%;
         width: 80%;
