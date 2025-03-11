@@ -15,7 +15,7 @@
     </div>    
     @endif
     <div id="main-container" class="container">
-        <a href="/korean-cars" id="steering" style="text-decoration: none;color:#111">
+        <a href="#" id="steering" style="text-decoration: none;color:#111">
             <div id="steering-wrapper">
                 <div id="steering-reika"> </div>
                 <div id="steering-gur"></div>

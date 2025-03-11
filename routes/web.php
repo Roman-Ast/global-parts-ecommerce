@@ -37,7 +37,10 @@ Route::post('/cart/delete', [CartController::class, 'deleteItem']);
 Route::post('/cart/update', [CartController::class, 'update']);
 Route::get('cart/clear', [CartController::class, 'clear']);
 Route::get('/korean-cars', function() {
-    return view('korean-cars');
+    return view('korean-cars.index');
+});
+Route::get('/santafe18-21', function() {
+    return view('korean-cars.santafe18-21');
 });
 
 

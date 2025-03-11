@@ -168,6 +168,7 @@ class SparePartController extends Controller
         $this->searchKulan($request->brand, $partNumber);
         $this->searchFebest($request->brand, $partNumber);
         $this->searchXuiPoimi($request->brand, $partNumber);
+        $this->searchForumAuto($request->brand, $partNumber);
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -197,9 +198,7 @@ class SparePartController extends Controller
         ]);
     }
 
-    public function searchPhaeton(String $brand, String $partnumber)
-    {
-        //поиск товара в наличии в астане
+    public function searchPhaeton(String $brand, String $partnumber) {
         $ch = curl_init();
 
         $params = [
@@ -214,62 +213,81 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_URL, 'https://api.phaeton.kz/api/Search?' . http_build_query($params));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+    }
+
+    public function searchForumAuto(String $brand, String $partnumber)
+    {
+        //поиск товара в наличии в астане
+        $ch = curl_init();
+
+        $params = [
+            'login' => '432537_popadinets_roman',
+            'pass' => '0xJcsnuE69xI',
+            'art' => $partnumber,
+            'cross' => 1,
+            'br' => $brand,
+        ];
+        
+        curl_setopt($ch, CURLOPT_URL, 'https://api.forum-auto.kz/v2/listGoods?login=432537_popadinets_roman&pass=0xJcsnuE69xI' . http_build_query($params));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
             $response = json_decode(curl_exec($ch));
+            
         } catch (\Throwable $th) {
             return;
         }
         
-		if (!$response || $response->IsError) {
+		if (!$response || gettype($response) == 'object' && property_exists($response, 'errors')) {
             return;
         }
-		
-        foreach ($response->Items as $item) {
-            if ($item->Warehouse == 'Астана') {
-                if ($item->Article == $partnumber) {
-                    array_push($this->finalArr['brands'], $item->Brand);
+		//dd($response);
+        foreach ($response as $item) {
+            if ($item->whse == 'AST') {
+                if ($item->art == $partnumber) {
+                    array_push($this->finalArr['brands'], $item->brand);
 
                     array_push($this->finalArr['searchedNumber'], [
-                        'brand' => $item->Brand,
-                        'article' => $item->Article,
-                        'name' => substr($item->Name, 0, 60),
-                        'price' => $item->Price,
-                        'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
-                        'stocks' => $item->AvailableCount,
+                        'brand' => $item->brand,
+                        'article' => $item->art,
+                        'name' => substr($item->name, 0, 60),
+                        'price' => $item->price,
+                        'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                        'stocks' => $item->num,
                         'multiplicity' => '',
                         'type' => '',
                         'delivery' => '',
                         'extra' => '',
-                        'description' => 'phtn',
+                        'description' => 'frmt',
                         'deliveryStart' => date('d.m.Y'),
                         'deliveryEnd' => date('d.m.Y'),
-                        'supplier_name' => 'phtn',
-                        'supplier_city' => 'ast',
+                        'supplier_name' => 'frmt',
+                        'supplier_city' => 'Астана',
                         'supplier_color' => '#feed00'
                     ]); 
                 } else {
-                    array_push( $this->finalArr['brands'], $item->Brand);
+                    array_push($this->finalArr['brands'], $item->brand);
 
                     array_push($this->finalArr['crosses_on_stock'], [
-                        'brand' => $item->Brand,
-                        'article' => $item->Article,
-                        'name' => substr($item->Name, 0, 60),
+                        'brand' => $item->brand,
+                        'article' => $item->art,
+                        'name' => substr($item->name, 0, 60),
                         'stocks' => [
-                            'qty' => $item->AvailableCount,
-                            'price' => $item->Price,
-                            'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                            'qty' => $item->num,
+                            'price' => $item->price,
+                            'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
                         ],
-                        'price' => $item->Price,
-                        'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
-                        'supplier_name' => 'phtn',
+                        'price' => $item->price,
+                        'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                        'supplier_name' => 'frmt',
                         'delivery_date' => '',
-                        'delivery_time' => '1.5-2 часа',
-                        'supplier_city' => $item->Warehouse,
+                        'delivery_time' => '2-2.5 часа',
+                        'supplier_city' => 'Астана',
                         'supplier_color' => '#34689e'
                     ]);
                 }           
-            } else {
+            } /*else {
                 array_push($this->finalArr['brands'], $item->Brand);
 
                 array_push($this->finalArr['crosses_to_order'], [
@@ -291,57 +309,7 @@ class SparePartController extends Controller
                     'supplier_city' => $item->Warehouse,
                     'supplier_color' => '#feed00'
                 ]); 
-            }
-        }
-        
-        //поиск товара у локальных поставщиков
-        $ch1 = curl_init();
-
-        $params1 = [
-            'Article' => $partnumber,
-            'Brand' => $brand,
-            'Sources[]' => '2',
-            'UserGuid' => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
-            'ApiKey' => 'LnxrDfpQVZz1ncuoI14e',
-			'includeAnalogs' => 'true'
-        ];
-        
-        curl_setopt($ch1, CURLOPT_URL, 'https://api.phaeton.kz/api/Search?' . http_build_query($params1));
-        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-
-        try {
-            $response1 = json_decode(curl_exec($ch1));
-        } catch (\Throwable $th) {
-            return;
-        }
-        
-		if (!$response1 || $response1->IsError) {
-            return;
-        }
-
-        foreach ($response1->Items as $item) {
-            array_push($this->finalArr['brands'], $item->Brand);
-
-            array_push($this->finalArr['crosses_to_order'], [
-                'brand' => $item->Brand,
-                'article' => $item->Article,
-                'name' => substr($item->Name, 0, 60),
-                'qty' => $item->AvailableCount,
-                'price' => $item->Price,
-                'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
-                'delivery_time' => date('d.m.Y', strtotime('+' . $item->GuaranteedDelivery .'day')),
-                'stocks' => [
-                    [
-                        'qty' => $item->AvailableCount,
-                        'price' => $item->Price,
-                        'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
-                    ]
-                ],
-                'supplier_name' => 'phtn',
-                'supplier_city' => $item->Warehouse,
-                'supplier_color' => '#feed00'
-            ]);
+            }*/
         }
         
         return;

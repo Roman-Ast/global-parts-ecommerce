@@ -11,7 +11,7 @@
     <h3 id="korean-cars-wrapper-header">Автозапчасти Hyundai</h3>
 
     <div id="korean-cars-container">
-        <a href="" class="korean-cars-item">
+        <a href="santafe18-21" class="korean-cars-item">
             <div class="korean-cars-img-container">
                 <img src="/images/hyundai/santafe2023-red.png" alt="korean-car">
             </div>
