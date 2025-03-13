@@ -157,7 +157,7 @@ class SparePartController extends Controller
         if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
-        //$this->searchArmtek($request->brand, $partNumber);
+        $this->searchArmtek($request->brand, $partNumber);
         $this->searchAdilsGM($request->brand, $partNumber);
         $this->searchStockInOffice($request->brand, $partNumber);
         $this->searchGerat($request->brand, $partNumber);
@@ -839,7 +839,7 @@ class SparePartController extends Controller
 
 
             $params = [
-                'VKORG'         => '8000'       
+                'VKORG'         => '8800'       
                 ,'KUNNR_RG'     => '43387356'
                 ,'PIN'          => $partnumber
                 ,'BRAND'        => $brand
@@ -871,7 +871,7 @@ class SparePartController extends Controller
             // in case of json
             $json_responce_data = $response->json();
             
-            if(property_exists($json_responce_data, 'MESSAGES')) {
+            if(property_exists($json_responce_data, 'MESSAGES') && !empty($json_responce_data->MESSAGES)) {
                 return;
             }
             if(gettype($json_responce_data->RESP) == 'object') {
@@ -881,13 +881,14 @@ class SparePartController extends Controller
             }
             if(gettype($json_responce_data->RESP) == 'array'){
                 if(array_key_exists('MSG', $json_responce_data->RESP)) {
+                    dd('opa');
                     return;
                 }
             }
             
             
             foreach ($json_responce_data->RESP as $key => $crossItem) {
-                if ($crossItem->KEYZAK == 'MOV0005505' || $crossItem->KEYZAK == 'MOV0009026') {
+                if ($crossItem->KEYZAK == 'MOV0071371' || $crossItem->KEYZAK == 'MOV0009026') {
                     array_push($this->finalArr['brands'], $crossItem->BRAND);
                     
                     array_push($this->finalArr['crosses_on_stock'], [
@@ -1791,4 +1792,4 @@ class SparePartController extends Controller
             return $priceWithMargin;
         }
     }
-}
+} 
