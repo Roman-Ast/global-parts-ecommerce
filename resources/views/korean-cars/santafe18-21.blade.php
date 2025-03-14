@@ -14,7 +14,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Передний бампер</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="86510S1510">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -27,7 +27,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Фонарь зад (наружн, lh)</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="92401S1500">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -37,7 +37,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Тормозной диск</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="51712P2700">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -47,7 +47,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>LED Фара</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="92101p6110">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -57,7 +57,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Фонарь зад (внутр. lh)</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="92403S1500">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -67,7 +67,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Колодки торм. перед</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="58101P2A70">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -77,7 +77,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Решетка радиатора</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="86350S1600">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -87,7 +87,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Ступица перед. колеса в сборе</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="51750S1000">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -97,7 +97,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Амортизатор передний</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="54650S1BB0">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -107,7 +107,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Решетка бампера</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="86531S1600">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -117,7 +117,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Задний бампер (верх. часть)</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="86611S1500">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -127,7 +127,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Задний бампер (нижн. часть)</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="86650S1600">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -137,7 +137,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Рычаг перед левый</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="54500S1AA0">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
@@ -147,7 +147,7 @@
                 <div class="santafe18-21-item-desc">
                     <i>Муфта VVTi (впуск)</i>
                 </div>
-                <input type="hidden" name="brand" value="Hyundai">
+                <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="243502m800">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
