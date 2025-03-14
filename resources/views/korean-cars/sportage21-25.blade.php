@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Santafe18-21')
+@section('title', 'Kia Sportage (21-25)')
 
 @section('content')
     @include('components.header')
@@ -10,25 +10,25 @@
         <div id="santafe18-21container">
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
                 @csrf
-                <img src="/images/hyundai/santafe18-21fr-bumper.png" alt="santafe18-21fr-bumper" class='santafe18-21-item-img'>
+                <img src="/images/hyundai/sportage23-fr-bumper.png" alt="sportage23-fr-bumper" class='santafe18-21-item-img'>
                 <div class="santafe18-21-item-desc">
                     <i>Передний бампер</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="86510S1510">
+                <input type="hidden" name="partnumber" value="86510P1010">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <div class="" id="main-img-container">
-                <img src="/images/hyundai/santafe2023-red.png" alt="korean-car">
+                <img src="/images/hyundai/sportage23.png" alt="korean-car">
             </div>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
                 @csrf
-                <img src="/images/hyundai/santafe18-21-rearlight-outer-lh.png" alt="santafe18-21-rearlight-outer-lh" class='santafe18-21-item-img'>
+                <img src="/images/hyundai/sportage23-rr-lamp-outer-lh.png" alt="sportage23-rr-lamp-outer-lh" class='santafe18-21-item-img'>
                 <div class="santafe18-21-item-desc">
                     <i>Фонарь зад (наружн, lh)</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="92401S1500">
+                <input type="hidden" name="partnumber" value="92401P1110">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -38,24 +38,24 @@
                     <i>Тормозной диск</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="51712P2700">
+                <input type="hidden" name="partnumber" value="51712-L1000">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
                 @csrf
-                <img src="/images/hyundai/santafe18-21-headlight.png" alt="santafe18-21-headlight" class='santafe18-21-item-img'>
+                <img src="/images/hyundai/sportage23-headlamp-lh.png" alt="sportage23-headlamp-lh" class='santafe18-21-item-img'>
                 <div class="santafe18-21-item-desc">
-                    <i>LED Фара</i>
+                    <i>Фара LED (lh)</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="92101p6110">
+                <input type="hidden" name="partnumber" value="92101P1101">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
                 @csrf
-                <img src="/images/hyundai/santafe18-21-rearlight-inner-lh.png" alt="santafe18-21-rearlight-inner-lh" class='santafe18-21-item-img'>
+                <img src="/images/hyundai/sportage23-rr-lamp-inner-lh.png" alt="sportage23-rr-lamp-inner-lh" class='santafe18-21-item-img'>
                 <div class="santafe18-21-item-desc">
-                    <i>Фонарь зад (внутр. lh)</i>
+                    <i>Фонарь зад внутренний (lh)</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
                 <input type="hidden" name="partnumber" value="92403S1500">
@@ -68,17 +68,17 @@
                     <i>Колодки торм. перед</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="58101P2A70">
+                <input type="hidden" name="partnumber" value="58101P0A11">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
                 @csrf
-                <img src="/images/hyundai/santafe18-21-radiatorgrill.png" alt="santafe18-21-radiatorgrill" class='santafe18-21-item-img'>
+                <img src="/images/hyundai/sportage23-radiator-grill.png" alt="sportage23-radiator-grill" class='santafe18-21-item-img'>
                 <div class="santafe18-21-item-desc">
                     <i>Решетка радиатора</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="86350S1600">
+                <input type="hidden" name="partnumber" value="86350P1050">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -88,7 +88,7 @@
                     <i>Ступица перед. колеса в сборе</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="51750S1000">
+                <input type="hidden" name="partnumber" value="51712L1100">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -98,61 +98,60 @@
                     <i>Амортизатор передний</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="54650S1BB0">
+                <input type="hidden" name="partnumber" value="54650P1050">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
                 @csrf
-                <img src="/images/hyundai/santafe18-21-bumper-grill.png" alt="santafe18-21bumpergrill" class='santafe18-21-item-img'>
+                <img src="/images/hyundai/sportage23-fr-bumper-bot.png" alt="sportage23-fr-bumper-bot" class='santafe18-21-item-img'>
                 <div class="santafe18-21-item-desc">
-                    <i>Решетка бампера</i>
+                    <i>Нижняя часть пер. бампера</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="86531S1600">
+                <input type="hidden" name="partnumber" value="86512P1000">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
                 @csrf
-                <img src="/images/hyundai/santafe18-21-bumper-rr.png" alt="santafe18-21bumper-rr" class='santafe18-21-item-img'>
+                <img src="/images/hyundai/sportage23-rr-bumper.png" alt="sportage23-rr-bumper" class='santafe18-21-item-img'>
                 <div class="santafe18-21-item-desc">
                     <i>Задний бампер (верх. часть)</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="86611S1500">
+                <input type="hidden" name="partnumber" value="86612P1100">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
                 @csrf
-                <img src="/images/hyundai/santafe18-21-bumper-rr-low.png" alt="santafe18-21bumper-rr-low" class='santafe18-21-item-img'>
+                <img src="/images/hyundai/sonata19-23-radiator.png" alt="sonata19-23-radiator" class='santafe18-21-item-img'>
                 <div class="santafe18-21-item-desc">
-                    <i>Задний бампер (нижн. часть)</i>
+                    <i>Радиатор</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="86650S1600">
+                <input type="hidden" name="partnumber" value="25310P0000">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
                 @csrf
-                <img src="/images/hyundai/santafe18-21-fr-arm-lh.png" alt="santafe18-21-fr-arm-lh" class='santafe18-21-item-img'>
+                <img src="/images/hyundai/santafe18-21-fr-arm-lh.png" alt="sonata19-23-fr-arm-lh" class='santafe18-21-item-img'>
                 <div class="santafe18-21-item-desc">
                     <i>Рычаг перед левый</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="54500S1AA0">
+                <input type="hidden" name="partnumber" value="54500N9000">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
                 @csrf
-                <img src="/images/111.png" alt="santafe18-21-camshaft-sprocket-int" class='santafe18-21-item-img'>
+                <img src="/images/hyundai/sportage23-rr-bumper-grill.png" alt="sportage23-rr-bumper-grill" class='santafe18-21-item-img' style="width: 70px">
                 <div class="santafe18-21-item-desc">
-                    <i>Муфта VVTi (впуск)</i>
+                    <i>Решетка зад. бампера</i>
                 </div>
                 <input type="hidden" name="brand" value="Hyundai">
-                <input type="hidden" name="partnumber" value="243502m800">
+                <input type="hidden" name="partnumber" value="86696P1100">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
         </div>
-
         <div id="cant-search-part-wrapper">
             <div id="cant-search-part">
                 Не нашли то, что искали? Не беда, напишите или позвоните нашим менеджерам прямо сейчас, подберем и найдем в кратчайшие сроки!
@@ -160,6 +159,7 @@
                     <img src="/images/finger-down-38-red.png">
                 </div>
             </div>
+            
         </div>
     </div>
 

@@ -36,11 +36,21 @@ Route::post('/cart/add', [CartController::class, 'store']);
 Route::post('/cart/delete', [CartController::class, 'deleteItem']);
 Route::post('/cart/update', [CartController::class, 'update']);
 Route::get('cart/clear', [CartController::class, 'clear']);
-Route::get('/korean-cars', function() {
+
+Route::get('/hyundai', function() {
     return view('korean-cars.index');
 });
-Route::get('/santafe18-21', function() {
+Route::get('/hyundai/santafe20-24', function() {
     return view('korean-cars.santafe18-21');
+});
+Route::get('hyundai/sonata19-23', function() {
+    return view('korean-cars.sonata19-23');
+});
+Route::get('hyundai/k520-23', function() {
+    return view('korean-cars.k520-23');
+});
+Route::get('hyundai/sportage21-25', function() {
+    return view('korean-cars.sportage21-25');
 });
 
 
