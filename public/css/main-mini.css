@@ -196,5 +196,6 @@
     }
     .accordion-body{
         font-size: 0.9em;
+        overflow: scroll;
     }
 }
