@@ -6,7 +6,8 @@
         align-items: center;
         margin-top: 10px;
         width: 85%;
-        height: 77vh;
+        height: 90vh;
+        margin-bottom: 100px;
     }
     #steering{
         display: flex;
@@ -14,7 +15,7 @@
         justify-content: space-between;
         align-items: center;
         width: 90%;
-        height: 24vh;
+        height: 30vh;
         margin-bottom: 10px;
     }
     #steering-wrapper{
@@ -59,7 +60,7 @@
         justify-content: space-between;
         align-items: center;
         width: 90%;
-        height: 22vh;
+        height: 30vh;
         border: 1px solid #eee;
         margin-bottom: 10px;
     }
@@ -85,7 +86,7 @@
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
-        height:  22vh;
+        height:  30vh;
         width: 90%;
         border: 1px solid #eee;
     }
