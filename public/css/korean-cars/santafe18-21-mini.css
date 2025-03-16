@@ -1,24 +1,21 @@
-@media (min-width: 581px) {
+@media (max-width: 580px) {
     #santafe1821-wrapper{
-        border-top-left-radius: 10px;
-        border-top-right-radius: 10px;
-        margin-top: 150px;
+        margin-top: 0;
         margin-bottom: 10px;
-        min-height: 65vh;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: space-between;
         align-items: stretch;
-        background: linear-gradient(180deg, #e3e3e3, #f9f9f9);
-        padding: 10px;
+        padding-top: 20px;
+        margin-bottom: 90px;
     }
     #santafe18-21container{
         width: 100%;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-        grid-template-rows: 24% 24% 24% 24%;
-        grid-gap: 10px;
-        
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: stretch;
+       
     }
     #cant-search-part-wrapper{
         width: 100%;
@@ -47,7 +44,9 @@
         position: relative;
         text-decoration: none;
         color: #111;
+        margin-bottom: 10px;
     }
+   
     .santafe18-21container-item button{
         color: #111 !important;
     }

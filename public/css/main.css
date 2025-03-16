@@ -138,5 +138,8 @@ ul{
         display: flex;
         justify-content: flex-start;
     }
+    #side-bar-right-mini{
+        display: none;
+    }
 }
 

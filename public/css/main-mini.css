@@ -5,7 +5,7 @@
         justify-content: space-between;
         align-items: center;
         margin-top: 10px;
-        width: 80%;
+        width: 85%;
     }
     #steering{
         display: flex;
@@ -30,7 +30,7 @@
         position: absolute;
         width: 100%;
         height: 70%;
-        background-image: url('/images/reika.png');
+        background-image: url('/images/hyundai/kia.svg');
         background-size: contain;
         background-position: 50% 50%;
         background-repeat: no-repeat;
@@ -40,7 +40,7 @@
         position: absolute;
         width: 100%;
         height: 70%;
-        background-image: url('/images/gur.png');
+        background-image: url('/images/hyundai/hyundai.svg');
         background-size: contain;
         background-repeat: no-repeat;
         background-position: 50% 50%;
@@ -63,7 +63,7 @@
         margin-bottom: 10px;
     }
     #mobis-wrapper{
-        background-image: url('/images/mobis3.png');
+        background-image: url('/images/chinacars/chinese-logos.png');
         background-size: 70%;
         background-repeat: no-repeat;
         background-position: 50% 50%;
@@ -143,5 +143,58 @@
         position: fixed;
         right: 5px;
         bottom: 80px;
+    }
+
+    #side-bar-right-mini{
+        width: 70%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: flex-start;
+        position: absolute;
+        right: 0;
+        top: 0;
+        border-top-left-radius: 20px;
+        border-bottom-left-radius: 20px;
+        border: 1px solid #ccc;
+        z-index: 10;
+        background-color: #fff;
+        display: none;
+    }
+    #main-mini-shadow{
+        width: 100%;
+        height: 100vh;
+        background-color: rgba(001, 001, 001, 0.4);
+        z-index: 9;
+        position: absolute;
+        display: none;
+    }
+    #side-bar-right-mini-close-wrapper{
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        width: 100%;
+        padding-right: 10px;
+        padding-top: 10px;
+    }
+    #side-bar-right-mini-close-container{
+        border-radius: 50%;
+        background-color: #ddd;
+        margin-bottom: 10px;
+    }
+    .side-bar-right-min-contacts-item{
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        width: 100%;
+        padding-right: 10px;
+        margin-bottom: 10px;
+    }
+    #accordionExample{
+        width: 100% !important;
+    }
+    .accordion-body{
+        font-size: 0.9em;
     }
 }

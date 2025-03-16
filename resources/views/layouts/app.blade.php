@@ -35,7 +35,9 @@
         <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/notfound.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/korean-cars/index.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/korean-cars/index.mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
         
         <!--<script src="{{ URL::asset('js/actions/getSearch.js') }}" type="text/javascript"></script>-->
@@ -64,6 +66,79 @@
                 Для перехода в Whatsapp отсканируйте QR-код с камеры мобильного телефона
             </div>
         </div>
+        <div id="main-mini-shadow" style="position: fixed;width:100%;height:100vh;top:0;left:0;"></div>
+
+    <div id="side-bar-right-mini" style="position:fixed;">
+        <div id="side-bar-right-mini-close-wrapper">
+            <div id="side-bar-right-mini-close-container">
+                <img src="/images/close-x-24.png" alt="close-x">
+            </div>
+        </div>
+        <div class="accordion" id="accordionExample">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                    Контакты
+                </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                <div class="accordion-body">
+                    <div id="side-bar-right-min-contacts">
+                <div class="side-bar-right-min-contacts-item">
+                    <img src="/images/phone24.png" alt="phone">
+                    <a href="tel:+77087172549" style="text-decoration: none; color:#111; font-size: 0.8em; margin-left: 10px;">+77087172549</a>
+                </div>
+                <div class="side-bar-right-min-contacts-item">
+                    <img src="/images/whatsapp24.png" alt="wa">
+                    <a href="https://wa.me/+77087172549?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+7058443458</a>
+                </div>
+                <div class="side-bar-right-min-contacts-item">
+                    <img src="/images/phone24.png" alt="phone">
+                    <a href="tel:+77087172549" style="text-decoration: none; color:#111; font-size: 0.8em; margin-left: 10px;">+77087172549</a>
+                </div>
+                <div class="side-bar-right-min-contacts-item">
+                    <img src="/images/whatsapp24.png" alt="wa">
+                    <a href="https://wa.me/+77087172549?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+7058443458</a>
+                </div>
+                <div class="side-bar-right-min-contacts-item">
+                    <img src="/images/adress.png" alt="address">
+                    <a href="https://go.2gis.com/8z5h5" target="_blank" style="text-decoration: none;color:#111; font-size: 0.8em; margin-left: 10px;">
+                        Астана, мкрн Целинный 5/1 <i>(2gis)</i>
+                    </a>
+                </div>
+
+            </div>
+                </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingTwo">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    Оформление заказов
+                </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                <div class="accordion-body">
+                    После оформления заказа с Вами свяжется наш менеджер и уточнит детали. Если товар в наличии в г.Астана, то доставка со склада в пункт выдачи заказов (ПВЗ) занимает <strong>от 1 до 2,5 часов</strong>. По городу можем отправить запчасти через яндекс/индрайвер за отдельную плату по их тарифу. Если же позиция(-ии) заказные, время поставки в ПВЗ указано на сайте при поиске на каждую позицию отдельно, после поступления запчастей в ПВЗ в г.Астана, запчасти можно забрать как самовывозом так и отправкой через агрегаторы такси, если же Вы с другого города, после поступления в ПВЗ в г. Астана также можем отправить через такси (Indrive), можете вызвать курьера любой траспортной компании.
+                </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingThree">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                    Возврат/обмен запчастей
+                </button>
+                </h2>
+                <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                <div class="accordion-body">
+                    Возврат товара надлежащего качества возможен в течение <strong>14 дней</strong> с момента поступления в пункт выдачи заказов (ПВЗ) в г. Астана, при условии сохранения товарного вида, упаковки и полной комплектности, а так же без следов установки (при условии, что не было оговорено заранее, что позиция является невозвратной). Возврат товара по гарантии возможен при наличии заказ-наряда с автосервиса, где происходила установка, и акта дефектовки с печатью автосервиса и подписью мастера и директора.
+                </div>
+                </div>
+            </div>
+        </div>
+
+        
+    </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
         
         <script src="{{ URL::asset('js/jquery.min.js') }}"></script>

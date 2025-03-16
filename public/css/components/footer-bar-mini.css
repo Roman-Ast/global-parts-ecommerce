@@ -19,12 +19,13 @@
         display: none;
         font-size: 0.8em;
     }
-    #logo-container{
+    #footer-bar-logo{
         display: flex;
         justify-content: flex-start;
+        max-width: 33%;
     }
     #logo-img{
-        height: 40px;
+        width: 70%;
     }
     #cart-wrapper{
         display: flex;
@@ -37,6 +38,10 @@
         display: flex;
         justify-content: flex-start;
         align-items: center ;
+    }
+    .dropdown-item{
+        font-size: 0.9em !important;
+        border-bottom: 1px solid #ccc !important;
     }
 }
 

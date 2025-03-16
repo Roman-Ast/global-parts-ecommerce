@@ -14,6 +14,9 @@
         {{ Session::get('message') }}
     </div>    
     @endif
+
+    
+
     <div id="main-container" class="container">
         <a href="/hyundai" id="steering" style="text-decoration: none;color:#111">
             <div id="steering-wrapper">

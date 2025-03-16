@@ -488,4 +488,16 @@ $('#close-kaspi-ads').on('click', function () {
    });
 })
 
+//открыть side-bar на телефоне
+$('#three-dots-wrapper').on('click', function () {
+   $('#main-mini-shadow').fadeIn();
+   $('#side-bar-right-mini').slideDown(500);
+});
+
+//закрыть side-bar на телефоне
+$('#side-bar-right-mini-close-container').on('click', function () {
+   $('#main-mini-shadow').fadeOut(400);
+   $('#side-bar-right-mini').slideUp(500);
+});
+
 

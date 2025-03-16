@@ -13,6 +13,7 @@
     }
     #search-btn{
         background-color: #fff;
+        border: none !important;
     }
     #search-btn{
         border: 1px solid #aaa;
@@ -28,13 +29,20 @@
     #input-searchbtn-wrapper{
         display: flex;
         flex-direction: row;
-        width: 90%;
+        width: 96%;
         margin-bottom: 5px;
     }
     #search-button-container{
         display: flex;
         justify-content: center;
         align-items: center;
-        margin-right: 10px;
+        margin-right: 5px;
+    }
+    #three-dots-wrapper{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding-left: 15px;
+        padding-right: 15px;
     }
 }

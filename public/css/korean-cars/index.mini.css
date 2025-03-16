@@ -1,18 +1,20 @@
-@media (min-width: 581px) {
+@media (max-width: 580px) {
     #korean-cars-wrapper{
-        min-height: 69vh;
-        margin-top: 150px;
+        width: 100%;
+        margin-bottom: 100px;
     }
     #korean-cars-wrapper-header{
-        margin-top: 50px;
-        margin-bottom: 50px;
+        padding-top: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+        font-weight: 600;
     }
 
     #korean-cars-container{
         display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
+        flex-direction: column;
         justify-content: space-between;
+        align-items: center;
     }
     .korean-cars-item{
         border:1px solid #ccc;
@@ -43,5 +45,11 @@
         font-weight: bolder;
         text-align: center;
     }
-    
+    #cant-search-part-wrapper{
+        height: 200px;
+        text-align: center;
+    }
+    #finger-down{
+        display: none;
+    }
 }
