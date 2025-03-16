@@ -6,6 +6,7 @@
         align-items: center;
         margin-top: 10px;
         width: 85%;
+        height: 80vh;
     }
     #steering{
         display: flex;
