@@ -89,6 +89,7 @@
         height:  30vh;
         width: 90%;
         border: 1px solid #eee;
+        margin-bottom: 10px;
     }
     #all-parts-wrapper{
         background-image: url('/images/car-from-parts.jpg');
