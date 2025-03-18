@@ -15,6 +15,9 @@ ul{
  }
 
 @media (min-width: 581px) {
+    #main-mini-shadow{
+        display: none;
+    }
     #main-container{
         min-height: 50vh;
         margin-top: 150px;

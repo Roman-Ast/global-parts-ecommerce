@@ -1243,14 +1243,15 @@ class SparePartController extends Controller
 
         try {
             $result = json_decode(curl_exec($ch1)); 
+            
         } catch (\Throwable $th) {
             return;
         }
-
-        if (empty($response)) {
+        
+        if (empty($result)) {
             return;
         }
-
+        
         foreach ($result as $key => $item) {
             if (strtolower($item->article) == strtolower($this->finalArr['originNumber']) ) {
                 array_push($this->finalArr['searchedNumber'], [
@@ -1290,6 +1291,7 @@ class SparePartController extends Controller
             }
         }
         
+        return;
     }
 
     public function searchKulan(String $brand, String $partnumber)
