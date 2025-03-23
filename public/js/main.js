@@ -50,7 +50,7 @@ $(window).on('load', function () {
    };
 
    if ($(window).width() <= '580') {
-      $('#whatsapp-container').attr('href', 'https://wa.me/+77087172549')
+      $('#whatsapp-container').attr('href', 'https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта.')
    }
 });
 //показывать кнопку удаления текста при вводе в инпут поиска запчастей
