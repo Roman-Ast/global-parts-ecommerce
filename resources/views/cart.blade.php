@@ -99,7 +99,7 @@
                                           <td><span>{{ $cartItem['priceWithMargine'] }}</span></td>
                                         @endif
                                       <td class="cart-qty-change-container">
-                                        <input type="number" class="form-control cart-qty-change" value="{{ $cartItem['qty'] }}" name="qty" min="0" step="1">
+                                        <input type="number" class="form-control cart-qty-change" value="{{ $cartItem['qty'] }}" name="qty" min="1" step="1">
                                       </td>
                                       <td>{{ (int)$cartItem['qty'] * (int)$cartItem['priceWithMargine'] }}</td>
                                       <td class="cart-item-delete">

@@ -152,7 +152,7 @@ $('.stock-item-cart-btn').on('click', function () {
    params.originNumber = $('#originNumber').val();
    params.qty = +$(this).next().children().first().val();
    params.price = $(this).next().next().val();
-   console.log(params);
+   
    $.ajax({
       data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: params},
       reqData: params,
@@ -209,7 +209,6 @@ $('.cart-item-delete img').on('click', function () {
       type: "POST",
       dataType: 'json',
       success: function (data) {
-         console.log(data);
          $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + "шт");
          $('.header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + 'T');
          $('#cart-header-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
@@ -221,6 +220,11 @@ $('.cart-item-delete img').on('click', function () {
 });
 //изменение кол-ва в корзине
 $('.cart-qty-change').on('input', function () {
+   if ($(this).val() < 1) {
+      $(this).css({'border': '1px solid red'});
+      return;
+   }
+   $(this).css({'border': '1px solid #ccc'})
    let data = {
       'article': $(this).parent().prev().prev().prev().prev().text(),
       'qty': $(this).val()

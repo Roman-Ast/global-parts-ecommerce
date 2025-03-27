@@ -124,6 +124,7 @@ class CartController extends Controller
         $ost = $cart->remove($request->data['article']);
 
         return json_encode([
+            'ost' => $ost,
             'items' => $cart->content(),
             'total' => $cart->totalWithMargine(),
             'count' => $cart->count()

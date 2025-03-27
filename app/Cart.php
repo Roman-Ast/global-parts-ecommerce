@@ -36,6 +36,7 @@ class Cart
             foreach ($this->items as $key => $item) {
                 if ($article == $item['article']) {
                     $this->items[$key][$changingItemsKey] = $changingItemsKeyValue;
+                    break;
                 }
             }
         }
@@ -80,12 +81,14 @@ class Cart
 
     public function remove(string $article)
     {
+        
         foreach ($this->items as $key => $cartItem) {
             if($cartItem['article'] == $article) {
                 unset($this->items[$key]);
+                break;
             }
         }
-        return $this->items;
+        return;
     }
 
     public function clear()
