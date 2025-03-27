@@ -152,7 +152,7 @@ $('.stock-item-cart-btn').on('click', function () {
    params.originNumber = $('#originNumber').val();
    params.qty = +$(this).next().children().first().val();
    params.price = $(this).next().next().val();
-   
+   console.log(params);
    $.ajax({
       data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: params},
       reqData: params,
