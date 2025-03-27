@@ -58,7 +58,7 @@ $('#searchBarInput').on('input', function () {
    $('#search-input-text-delete').fadeIn(200);
    
    if ($(this).val().length == 0) {
-      $('#search-input-text-delete').fadeOut(200);
+      $('#search-input-text-delete').fadeOut(300);
    }
 });
 
