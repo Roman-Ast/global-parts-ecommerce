@@ -97,7 +97,7 @@
                 </div>
                 <div class="side-bar-right-min-contacts-item">
                     <img src="/images/whatsapp24.png" alt="wa">
-                    <a href="https://wa.me/+77058443458?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+7058443458</a>
+                    <a href="https://wa.me/+77058443458?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+77058443458</a>
                 </div>
                 <div class="side-bar-right-min-contacts-item">
                     <img src="/images/adress.png" alt="address">
