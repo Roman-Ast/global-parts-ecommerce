@@ -76,8 +76,20 @@
                             @csrf
                               @auth
                                 <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+                                
                                 @if (auth()->user()->user_role == 'admin' || auth()->user()->user_role == 'pre_admin')
                                   <input type="tel" placeholder="телефон клиента" name="customer_phone" required>
+                                  <div class="input-group mb-2 manually-order-main">
+                                    <select name="sales_channel" class="form-control manually-order-main-info" required>
+                                        <option selected disabled>выбери канал продаж</option>
+                                        <option value="2gis">2gis</option>
+                                        <option value="olx">olx</option>
+                                        <option value="site">Сайт</option>
+                                        <option value="friends">Свои</option>
+                                    </select>
+                                </div>
+                                @else
+                                  <input type="hidden" name="sales_channel" value="site">
                                 @endif
                                @endauth
                               @foreach (session()->get('cart')->content() as $cartItem)

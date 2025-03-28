@@ -288,7 +288,8 @@ class AdminPanelController extends Controller
             'sum' => $orderSum,
             'sum_with_margine' => $orderSumWithMargine,
             'status' => 'заказано',
-            'customer_phone' => $request->data['orderInfo'][2]
+            'customer_phone' => $request->data['orderInfo'][2],
+            'sales_channel' => $request->data['orderInfo'][3]
         ]);
         
         foreach ($request->data['products'] as $product) {

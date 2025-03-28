@@ -288,7 +288,6 @@ $('#manually-order-submit').on('click', function () {
         data.orderInfo.push($(elem).val());
     });
     
-
     $('.manually-order-parts-list-item-content').each(function (productId, elem) {
         data.products[productId] = [];
         
@@ -313,6 +312,7 @@ $('#manually-order-submit').on('click', function () {
         }, 3000);
         return;
     }
+    
     $.ajax({
         data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
         url: "/manually_make_order",

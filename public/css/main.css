@@ -27,6 +27,9 @@ ul{
         grid-template-rows: 50% 50%;
         padding: 0;
     }
+    #feedback-form-wrapper{
+        display:none;
+    }
     #steering{
         grid-row: span 2;
         display: flex;
@@ -119,8 +122,39 @@ ul{
         border: 1px solid #8fcae6;
     }
     #whatsapp-container{
+        width: 60%;
         margin-left: 20px;
         cursor: pointer;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        box-shadow: 5px 5px 5px #fff;
+    }
+    #whatsapp-offer-wrapper{
+        text-decoration: none;
+        color: #111;
+        position: relative;
+        width: 80%;
+        background-color: rgba(255, 255, 255, 0.9);
+    }
+    .whatsapp-offer{
+        font-weight: 600;
+        position: absolute;
+        left: 10px;
+        top: 0;
+        text-align: left;
+        height: 100%;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        line-height: 30px;
+    }
+    #whatsapp-offer-2{
+        color: #222;
+        display: none;
+    }
+    #whatsapp-offer-1{
+        color: #042d4d;
     }
     #modal-qr{
         width: 300px;

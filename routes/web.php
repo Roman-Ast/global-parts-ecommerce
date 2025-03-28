@@ -17,6 +17,7 @@ use App\Http\Controllers\XuiPoimiPriceController;
 use App\Models\gm_pricelist_from_adil;
 use App\Models\OfficePrice;
 use App\Models\XuiPoimiPrice;
+use App\Http\Controllers\SparePartRequestController;
 /*
 Route::get('/home', function() {
     (new XuiPoimiPrice())->importToDb();
@@ -36,6 +37,7 @@ Route::post('/cart/add', [CartController::class, 'store']);
 Route::post('/cart/delete', [CartController::class, 'deleteItem']);
 Route::post('/cart/update', [CartController::class, 'update']);
 Route::get('cart/clear', [CartController::class, 'clear']);
+Route::post('/sparepart-request', [SparePartRequestController::class, 'store']);
 
 Route::get('/hyundai', function() {
     return view('korean-cars.index');

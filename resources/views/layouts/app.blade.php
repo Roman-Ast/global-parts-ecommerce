@@ -37,7 +37,7 @@
         <link href="{{ URL::asset('css/korean-cars/index.mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
         
         <!--<script src="{{ URL::asset('js/actions/getSearch.js') }}" type="text/javascript"></script>-->
         <!-- Styles -->
@@ -89,15 +89,15 @@
                 </div>
                 <div class="side-bar-right-min-contacts-item">
                     <img src="/images/whatsapp24.png" alt="wa">
-                    <a href="https://wa.me/+77087172549?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+7058443458</a>
+                    <a href="https://wa.me/+77087172549?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+77087172549</a>
                 </div>
                 <div class="side-bar-right-min-contacts-item">
                     <img src="/images/phone24.png" alt="phone">
-                    <a href="tel:+77087172549" style="text-decoration: none; color:#111; font-size: 0.8em; margin-left: 10px;">+77087172549</a>
+                    <a href="tel:+77058443458" style="text-decoration: none; color:#111; font-size: 0.8em; margin-left: 10px;">+77058443458</a>
                 </div>
                 <div class="side-bar-right-min-contacts-item">
                     <img src="/images/whatsapp24.png" alt="wa">
-                    <a href="https://wa.me/+77087172549?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+7058443458</a>
+                    <a href="https://wa.me/+77058443458?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+7058443458</a>
                 </div>
                 <div class="side-bar-right-min-contacts-item">
                     <img src="/images/adress.png" alt="address">
@@ -105,7 +105,6 @@
                         Астана, мкрн Целинный 5/1 <i>(2gis)</i>
                     </a>
                 </div>
-
             </div>
                 </div>
                 </div>
@@ -135,10 +134,8 @@
                 </div>
             </div>
         </div>
-
-        
     </div>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
         
         <script src="{{ URL::asset('js/jquery.min.js') }}"></script>
         <script src="{{ URL::asset('js/main.js') }}"></script>

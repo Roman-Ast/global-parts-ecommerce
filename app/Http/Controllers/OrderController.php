@@ -56,7 +56,8 @@ class OrderController extends Controller
             'sum' => $cart->total(),
             'sum_with_margine' => $cart->totalWithMargine(),
             'status' => 'заказано',
-            'customer_phone' => $request->customer_phone
+            'customer_phone' => $request->customer_phone,
+            'sales_channel' => $request->sales_channel
         ]);
         
         foreach ($cart->content() as $cartItem) {
@@ -101,7 +102,6 @@ class OrderController extends Controller
 
         //sending the transactional email
         if(auth()->user()->user_role != 'admin') {
-            var_dump('mail work');
             Mail::send(new OrderPlaced($order));
         }
         

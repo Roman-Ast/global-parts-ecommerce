@@ -421,7 +421,11 @@ setInterval(function () {
    $('#steering-reika').toggle('slow');
    $('#steering-gur').toggle('slow');
 }, 5000)
-
+//смена призыва к действию возле кнопки ватсап
+setInterval(function () {
+   $('#whatsapp-offer-1').toggle(200);
+   $('#whatsapp-offer-2').toggle(200);
+}, 4500)
 //показ wa-qr
 $('#whatsapp-container img').on('click', function () {
    if ($(window).width() > '580') {
@@ -500,6 +504,23 @@ $('#three-dots-wrapper').on('click', function () {
 $('#side-bar-right-mini-close-container').on('click', function () {
    $('#main-mini-shadow').fadeOut(400);
    $('#side-bar-right-mini').slideUp(500);
+});
+
+//скрыть форму отправки запроса по вин
+$('#feedback-form-close-container').on('click', function () {
+   
+   if ($(this).attr('status') == 'open') {
+      $(this).next().slideUp('400', function () {
+         $('#feedback-form-close-container').children().first().next().attr('src', '/images/plus-24.png');
+      });
+      $(this).attr('status', 'close');
+   } else {
+      $(this).next().slideDown('400', function () {
+         $('#feedback-form-close-container').children().first().next().attr('src', '/images/minus-24.png')
+      });
+      $(this).attr('status', 'open');
+   }
+   
 });
 
 

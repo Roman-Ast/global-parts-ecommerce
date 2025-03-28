@@ -141,8 +141,9 @@
                             {{ date('d.m.y', strtoTime($orderItem->date)) }}
                        </div>
                        <div class="order-item-time">
-                            {{ $orderItem->time }}
+                            {{ $orderItem->sales_channel }}
                        </div>
+                       
                        <div class="admin-order-item-sum">
                             <span style="font-weight: 600;color:green">{{ number_format($orderItem->sum_with_margine, 2, ',', ' ') }}</span>
                             <span style="font-style: italic;color:red;font-size: 0.7em">
@@ -539,6 +540,16 @@
                         <label for="basic-url" class="form-label">Телефон клиента</label>
                         <div class="input-group mb-2 manually-order-main">
                             <input type="telephone" class="form-control manually-order-main-info" name="customer_phone" required>
+                        </div>
+                        <label for="basic-url" class="form-label">Канал продаж</label>
+                        <div class="input-group mb-2 manually-order-main">
+                            <select name="sales_channel" class="form-control manually-order-main-info" required>
+                                <option selected disabled>выбери канал продаж</option>
+                                <option value="2gis">2gis</option>
+                                <option value="olx">olx</option>
+                                <option value="site">Сайт</option>
+                                <option value="friends">Свои</option>
+                            </select>
                         </div>
                         <label for="basic-url" class="form-label" id="manually-order-list-open">Товар</label>
                     </div>
