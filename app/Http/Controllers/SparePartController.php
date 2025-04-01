@@ -1413,7 +1413,9 @@ class SparePartController extends Controller
         if (gettype($result) == 'object' && property_exists($result, 'error')) {
             return;
         }
-       
+        if (!$result) {
+            return;
+        }
         foreach ($result as $item) {
             array_push($this->finalArr['crosses_on_stock'], [
                 'brand' => $item->manufacturer,
