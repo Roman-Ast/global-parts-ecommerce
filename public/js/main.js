@@ -149,10 +149,10 @@ $('.stock-item-cart-btn').on('click', function () {
    params.priceWithMargine = $(this).parent().parent().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
    params.deliveryTime = $(this).parent().parent().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');;
    params.stockFrom = $(this).parent().parent().prev().prev().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
-   params.originNumber = $('#originNumber').val();
+   params.searchedNumber = $('#search-res-header-val').html();
    params.qty = +$(this).next().children().first().val();
    params.price = $(this).next().next().val();
-   
+
    $.ajax({
       data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: params},
       reqData: params,

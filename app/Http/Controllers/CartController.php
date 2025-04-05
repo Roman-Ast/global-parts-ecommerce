@@ -65,7 +65,7 @@ class CartController extends Controller
             );
         }*/
         $cart->add(
-            $request->data['article'], $request->data['brand'], $request->data['name'], $request->data['originNumber'],
+            $request->data['article'], $request->data['brand'], $request->data['name'], $request->data['searchedNumber'],
             $request->data['deliveryTime'],  $request->data['price'],  $request->data['qty'],  $request->data['stockFrom'], $request->data['priceWithMargine']
         );
         $request->session()->put('cart', $cart);

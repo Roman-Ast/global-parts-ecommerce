@@ -33,7 +33,7 @@
     
         <div id="search-part-main-container">
             <div id="search-res-header">
-                Предложения для "{{ $finalArr['originNumber'] }}" 
+                Предложения для <span id="search-res-header-val">"{{ $finalArr['originNumber'] }}"</span> 
             </div>
             
             <div id="search-res-part-header">
@@ -51,7 +51,6 @@
                 </div>
             </div>
 
-            
             @if (count($finalArr['searchedNumber']) > 0)
 
             <div class="searchResForRequestPartNumber">
