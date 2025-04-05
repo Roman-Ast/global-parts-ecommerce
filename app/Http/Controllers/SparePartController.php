@@ -190,7 +190,7 @@ class SparePartController extends Controller
             }
             return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
         });
-        
+        //dd($this->finalArr);
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
@@ -1658,12 +1658,13 @@ class SparePartController extends Controller
                             'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
                             "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                             "SuccessfulOrdersProcent" => $result3['GetPriceIdResult']['PriceSearchModel']['SuccessfulOrdersProcent'],
-                            "city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
+                            "supplier_city" => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
                         ]
                     ],
                     "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                     "supplier_name" => 'atptr',
-                    'supplier_color' => '#111'
+                    'supplier_color' => '#111',
+                    'supplier_city' => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
                 ]);
             }
         }       
