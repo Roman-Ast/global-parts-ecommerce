@@ -128,7 +128,7 @@
                 <div class="admin-order-item-wrapper">
                     <div class="order-item-header">
                        <div class="order-item-id">
-                            0000{{ $orderItem->id }}
+                            {{ $orderItem->id }}
                        </div>
                        <div class="order-item-user-name">
                             <span>{{ $orderItem->user->name }}</span> 
@@ -138,10 +138,10 @@
                             {{ $orderItem->status }} <img src="/images/clock-wait-16.png">
                        </div>
                        <div class="order-item-date">
-                            {{ date('d.m.y', strtoTime($orderItem->date)) }}
+                            {{ $orderItem->date }}
                        </div>
                        <div class="order-item-time">
-                            {{ $orderItem->sales_channel }}
+                            {{ $orderItem->sale_channel }}
                        </div>
                        
                        <div class="admin-order-item-sum">
@@ -543,12 +543,13 @@
                         </div>
                         <label for="basic-url" class="form-label">Канал продаж</label>
                         <div class="input-group mb-2 manually-order-main">
-                            <select name="sales_channel" class="form-control manually-order-main-info" required>
+                            <select name="sale_channel" class="form-control manually-order-main-info" required>
                                 <option selected disabled>выбери канал продаж</option>
                                 <option value="2gis">2gis</option>
-                                <option value="olx">olx</option>
+                                <option value="olx">Olx</option>
                                 <option value="site">Сайт</option>
                                 <option value="friends">Свои</option>
+                                <option value="kaspi">Каспи</option>
                             </select>
                         </div>
                         <label for="basic-url" class="form-label" id="manually-order-list-open">Товар</label>
@@ -639,6 +640,28 @@
 
                     <div class="form-group{{ $errors->has('file') ? 'has-error' : '' }}">
                         <label for="file" class="control-label">Файл для импорта хуй пойми склад</label>
+
+                        <input id="file" type="file" class="form-controll" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
+
+                        @if ($errors->has('file'))
+                            <span class="help-block">
+                                <strong>{{ $errors->first('file') }}</stromg>
+                            </span>
+                        @endif
+                    </div>
+
+                    <p>
+                        <button type="submit" class="btn btn-success" name="submit">
+                            <i class="fa fa-check"></i>Загрузить
+                        </button>
+                    </p>
+                </form>
+
+                <form action="{{ url('import-ingvar') }}" method="post" enctype="multipart/form-data">
+                    {{ csrf_field() }}
+
+                    <div class="form-group{{ $errors->has('file') ? 'has-error' : '' }}">
+                        <label for="file" class="control-label">Файл для импорта Форсунки Ингвар</label>
 
                         <input id="file" type="file" class="form-controll" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
 

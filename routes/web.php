@@ -14,16 +14,18 @@ use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\GmPricelistFromAdilController;
 use App\Http\Controllers\OfficePriceController;
 use App\Http\Controllers\XuiPoimiPriceController;
+use App\Http\Controllers\IngvarPriceController;
 use App\Models\gm_pricelist_from_adil;
 use App\Models\OfficePrice;
 use App\Models\XuiPoimiPrice;
+use App\Models\IngvarPrice;
 use App\Http\Controllers\SparePartRequestController;
 /*
 Route::get('/home', function() {
-    (new XuiPoimiPrice())->importToDb();
+    (new IngvarPrice())->importToDb();
     dd('done');
-});*/
-
+});
+*/
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);
 Route::post('/getPart/', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
@@ -96,6 +98,7 @@ Route::middleware(['auth', 'verified'])->group(function() {
     Route::post('import', [GmPricelistFromAdilController::class, 'store']);
     Route::post('import-in-office', [OfficePriceController::class, 'store']);
     Route::post('import-xui-poimi', [XuiPoimiPriceController::class, 'store']);
+    Route::post('import-ingvar', [IngvarPriceController::class, 'store']);
 });
 
 Route::middleware('auth')->group(function() {

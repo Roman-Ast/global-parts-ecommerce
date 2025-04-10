@@ -22,7 +22,7 @@ class SparePartRequestController extends Controller
         Mail::send(new SparePartRequest($requestData));
 
         return redirect('/home')
-            ->with('message', 'Ваш запрос успешно отправлен, наш менеджер ответит вам выбранным вами способом, спасибо за обращение в Global Parts!')
+            ->with('message', 'Cпасибо за обращение в Global Parts! Ваш запрос успешно отправлен, наш менеджер ответит вам в ближайшее время.')
             ->with('class', 'alert-success');
     }
 }

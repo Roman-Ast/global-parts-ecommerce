@@ -51,13 +51,13 @@ class OrderController extends Controller
         
         $order = Order::create([
             'user_id' => $request->user_id,
-            'date' => date('d.m.y'),
+            'date' => date('d.m.Y'),
             'time' => date('H:i:s'),
             'sum' => $cart->total(),
             'sum_with_margine' => $cart->totalWithMargine(),
             'status' => 'заказано',
             'customer_phone' => $request->customer_phone,
-            'sales_channel' => $request->sales_channel
+            'sale_channel' => 'site'
         ]);
         
         foreach ($cart->content() as $cartItem) {

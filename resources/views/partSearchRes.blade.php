@@ -33,7 +33,14 @@
     
         <div id="search-part-main-container">
             <div id="search-res-header">
-                Предложения для <span id="search-res-header-val">"{{ $finalArr['originNumber'] }}"</span> 
+                <div>Предложения для <span id="search-res-header-val">"{{ $finalArr['originNumber'] }}"</span></div>
+                @auth
+                @if(auth()->user()->user_role == "admin")
+                    <div id="articles-hide-wrapper">
+                        <i>скрыть артикула</i> <input type="checkbox" id="articles-hide">
+                    </div>
+                @endif
+                @endauth
             </div>
             
             <div id="search-res-part-header">
@@ -92,6 +99,10 @@
                                     <div class="parts-on-stock">1.5-2 часа</div>
                                 @elseif($searchItem['deliveryStart'] == 'в офисе')
                                     <div style="background-color:{{ $searchItem['supplier_color']}};color:#111">{{ $searchItem['deliveryStart'] }}</div>
+                                @elseif($searchItem['deliveryStart'] == '1 день')
+                                    <div style="background-color:{{ $searchItem['supplier_color'] }};color:#fff">
+                                    {{ $searchItem['deliveryStart'] }}
+                                    </div>
                                 @else
                                     {{ date('d.m.y',strtotime($searchItem['deliveryStart'])) }}
                                 @endif

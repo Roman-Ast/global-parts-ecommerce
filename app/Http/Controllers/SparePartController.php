@@ -13,6 +13,7 @@ use App\SetPrice as SetPrice;
 use App\Models\OfficePrice;
 use App\Models\gm_pricelist_from_adil;
 use App\Models\XuiPoimiPrice;
+use App\Models\IngvarPrice;
 use Collator;
 
 class SparePartController extends Controller
@@ -169,6 +170,7 @@ class SparePartController extends Controller
         $this->searchFebest($request->brand, $partNumber);
         $this->searchXuiPoimi($request->brand, $partNumber);
         $this->searchForumAuto($request->brand, $partNumber);
+        $this->searchIngvar($request->brand, $partNumber);
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -404,11 +406,7 @@ class SparePartController extends Controller
                         'brand' => $item->brand,
                         'article' => $item->art,
                         'name' => substr($item->name, 0, 60),
-                        'stocks' => [
-                            'qty' => $item->num,
-                            'price' => $item->price,
-                            'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                        ],
+                        'stocks' => $item->num,
                         'price' => $item->price,
                         'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
                         'supplier_name' => 'frmt',
@@ -418,29 +416,7 @@ class SparePartController extends Controller
                         'supplier_color' => '#34689e'
                     ]);
                 }           
-            } /*else {
-                array_push($this->finalArr['brands'], $item->Brand);
-
-                array_push($this->finalArr['crosses_to_order'], [
-                    'brand' => $item->Brand,
-                    'article' => $item->Article,
-                    'name' => substr($item->Name, 0, 60),
-                    'qty' => $item->AvailableCount,
-                    'price' => $item->Price,
-                    'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
-                    'delivery_time' => date('d.m.Y', strtotime('+' . $item->GuaranteedDelivery .'day')),
-                    'stocks' => [
-                        [
-                            'qty' => $item->AvailableCount,
-                            'price' => $item->Price,
-                            'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
-                        ]
-                    ],
-                    'supplier_name' => 'phtn',
-                    'supplier_city' => $item->Warehouse,
-                    'supplier_color' => '#feed00'
-                ]); 
-            }*/
+            }
         }
         
         return;
@@ -1705,7 +1681,6 @@ class SparePartController extends Controller
 
     public function searchXuiPoimi(String $brand, String $partnumber)
     {
-        //dd($partnumber);
         $searchedPart = XuiPoimiPrice::where('oem', $partnumber)
             ->get()
             ->toArray();
@@ -1713,7 +1688,7 @@ class SparePartController extends Controller
         if (empty($searchedPart)) {
             return;
         }
-        //dd($searchedPart);
+        
         foreach ($searchedPart as $item) {
             array_push($this->finalArr['brands'], $item['brand']);
 
@@ -1824,6 +1799,38 @@ class SparePartController extends Controller
         
             
         
+
+        return;
+    }
+
+    public function searchIngvar(String $brand, String $partnumber)
+    {
+        $searchedPart = IngvarPrice::where('oem', '=', $partnumber)
+            ->orWhere('article', '=', $partnumber)
+            ->get()
+            ->toArray();
+    
+            
+        if (empty($searchedPart)) {
+            return;
+        }
+        
+        foreach ($searchedPart as $item) {
+            array_push($this->finalArr['brands'], $item['brand']);
+
+            array_push($this->finalArr['searchedNumber'], [
+                'brand' => $item['brand'],
+                'article' => $item['article'],
+                'name' => $item['name'],
+                'price' => $item['price'],
+                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                'stocks' => $item['qty'],
+                'supplier_city' => 'Астана',
+                'supplier_name' => 'Ingvar',
+                'supplier_color' => '#77942e',
+                'deliveryStart' => '1 день',
+            ]);    
+        }
 
         return;
     }

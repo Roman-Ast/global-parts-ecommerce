@@ -520,7 +520,15 @@ $('#feedback-form-close-container').on('click', function () {
       });
       $(this).attr('status', 'open');
    }
-   
+});
+
+//скрыть/показать артикула в результатах поиска
+$('#articles-hide').on('change', function () {
+   if($(this).prop('checked')) {
+      $('.requestPartNumber-partnumber').css({'visibility': 'hidden'});
+   } else {
+      $('.requestPartNumber-partnumber').css({'visibility': 'visible'});
+   }
 });
 
 

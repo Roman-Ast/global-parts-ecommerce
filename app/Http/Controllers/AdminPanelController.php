@@ -283,13 +283,13 @@ class AdminPanelController extends Controller
         
         $order = Order::create([
             'user_id' => $request->data['orderInfo'][0],
-            'date' => $request->data['orderInfo'][1],
+            'date' => date("d.m.Y", strtotime($request->data['orderInfo'][1])),
             'time' => date('H:i:s'),
             'sum' => $orderSum,
             'sum_with_margine' => $orderSumWithMargine,
             'status' => 'заказано',
             'customer_phone' => $request->data['orderInfo'][2],
-            'sales_channel' => $request->data['orderInfo'][3]
+            'sale_channel' => $request->data['orderInfo'][3]
         ]);
         
         foreach ($request->data['products'] as $product) {

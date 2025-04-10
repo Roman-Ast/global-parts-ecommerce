@@ -20,7 +20,7 @@ class Order extends Model
         'sum_with_margine',
         'status',
         'customer_phone',
-        'sales_channel'
+        'sale_channel'
     ];
 
     public function products(): HasMany

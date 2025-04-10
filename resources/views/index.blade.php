@@ -7,17 +7,22 @@
     @include('components.header-mini')
     
     @if (session()->has('message'))
-    
-        <div class="alert {{ Session::get('class') }}" role="alert">
-            <div style="display:flex;justify-content:flex-end;" class="close-flash">
-                &times;
+
+        @if(Session::get('class') == 'alert-success')
+            <div class="alertion-success">
+                <div style="display:flex;justify-content:flex-end;" class="close-flash">
+                        &times;
+                </div>
+                {{ Session::get('message') }}
             </div>
-            {{ Session::get('message') }}
-        </div>  
-      
+         @endif      
+            
     @endif
-    
+
     <div id="main-container" class="container">
+
+        
+
         <form id="feedback-form-wrapper" action="/sparepart-request" method="POST" class="form-control">
             @csrf
             <div class="mb-3" id="feedback-form-close-container" status="close">
@@ -27,19 +32,15 @@
             <div id="feedback-form-inner-wrapper">
                 <div class="mb-2">
                     <label class="form-label">Винкод авто (VIN)</label>
-                    <input type="text" class="form-control" name="vincode">
+                    <input type="text" class="form-control" name="vincode" required minlength="7">
                 </div>
                 <div class="mb-2">
                     <label class="form-label">Запчасти, которые ищете</label>
-                    <textarea class="form-control" name="spareparts" placeholder="введите список запчастей..."></textarea>
-                </div>
-                <div class="mb-2">
-                    <label class="form-label">Email</label>
-                    <input class="form-control" name="email" type="email">
+                    <textarea class="form-control" name="spareparts" placeholder="введите список запчастей..." required  minlength="4"></textarea>
                 </div>
                 <div class="mb-2">
                     <label class="form-label">Телефон</label>
-                    <input class="form-control" name="phone" type="text">
+                    <input class="form-control" name="phone" type="text" minlength="11" required>
                 </div>
                 <div class="mb-2">
                     <label class="form-label">Примечание</label>
