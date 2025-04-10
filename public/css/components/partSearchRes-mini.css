@@ -99,6 +99,8 @@
     }
     .requestPartNumber-name{
         text-align: left;
+        word-wrap: break-word; 
+        font-size: 0.7em;
     }
     .requestPartNumber-info{
         display: none;
