@@ -337,3 +337,18 @@ $('#manually-order-submit').on('click', function () {
         }
      });    
 });
+
+//скрыть/ показать статистику по каналам продаж
+$('#show-close-admin-panel-statistic-wrapper').on('click', function () {
+    if ($(this).parent().next().attr('status') == 'closed') {
+       $(this).parent().next().slideDown('400', function () {
+        $('#admin-panel-orders-by-channel-header').children().first().next().attr('src', '/images/minus-24.png')
+     });
+       $(this).parent().next().attr('status', 'opened');
+    } else {
+       $(this).parent().next().slideUp('400', function () {
+        $('#admin-panel-orders-by-channel-header').children().first().next().attr('src', '/images/plus-24.png')
+     });
+       $(this).parent().next().attr('status', 'closed');
+    }
+ });

@@ -32,6 +32,33 @@ class AdminPanelController extends Controller
         $allorderPrimeCostSum = Order::sum('sum');
         $usersCalculating = [];
 
+        //статистика продаж сайта
+        $siteTotalSalesPrimeCostSum = Order::where('sale_channel', 'site')->sum('sum');
+        $siteTotalSalesSum = Order::where('sale_channel', 'site')->sum('sum_with_margine');
+        $siteCountOfSales = Order::where('sale_channel', 'site')->count();
+        $siteTotalMargin = round(100 - (($siteTotalSalesPrimeCostSum * 100) / $siteTotalSalesSum), 2);
+        $siteStatistics = [
+            'saleChannel' => 'Сайт',
+            'totalSalesPrimeCostSum' => $siteTotalSalesPrimeCostSum,
+            'totalSalesSum' => $siteTotalSalesSum,
+            'countOfSales' => $siteCountOfSales,
+            'totalMargin' => $siteTotalMargin
+        ];
+        
+        //статистика 2gis
+        $twoGisTotalSalesPrimeCostSum = Order::where('sale_channel', '2gis')->sum('sum');
+        $twoGisTotalSalesSum = Order::where('sale_channel', '2gis')->sum('sum_with_margine');
+        $twoGisCountOfSales = Order::where('sale_channel', '2gis')->count();
+        $twoGisTotalMargin = round(100 - (($twoGisTotalSalesPrimeCostSum * 100) / $twoGisTotalSalesSum), 2);
+        $twoGisStatistics = [
+            'saleChannel' => '2gis',
+            'totalSalesPrimeCostSum' => $twoGisTotalSalesPrimeCostSum,
+            'totalSalesSum' => $twoGisTotalSalesSum,
+            'countOfSales' => $twoGisCountOfSales,
+            'totalMargin' => $twoGisTotalMargin
+        ];
+        
+
         foreach ($users as $user) {
             $usersCalculating[$user->id] = [
                 'id' => $user->id,
@@ -61,6 +88,8 @@ class AdminPanelController extends Controller
             'leopart' => 'Леопарт', 
             'fbst' => 'Фебест',
             'Krn' => 'Корея',
+            'kln' => 'Кулан',
+            'frmt' => 'Форумавто',
             'thr' => 'Сторонние'
         ];
 
@@ -107,7 +136,9 @@ class AdminPanelController extends Controller
             'suppliers' => $suppliers,
             'suppliers_debt' => $suppliers_debt,
             'allorderSumWithMargine' => $allorderSumWithMargine,
-            'allorderPrimeCostSum' => $allorderPrimeCostSum
+            'allorderPrimeCostSum' => $allorderPrimeCostSum,
+            'siteStatistics' => $siteStatistics,
+            'twoGisStatistics' => $twoGisStatistics
         ]);
     }
 

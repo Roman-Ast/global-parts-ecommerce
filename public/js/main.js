@@ -508,7 +508,6 @@ $('#side-bar-right-mini-close-container').on('click', function () {
 
 //скрыть форму отправки запроса по вин
 $('#feedback-form-close-container').on('click', function () {
-   
    if ($(this).attr('status') == 'open') {
       $(this).next().slideUp('400', function () {
          $('#feedback-form-close-container').children().first().next().attr('src', '/images/plus-24.png');
@@ -530,5 +529,7 @@ $('#articles-hide').on('change', function () {
       $('.requestPartNumber-partnumber').css({'visibility': 'visible'});
    }
 });
+
+
 
 

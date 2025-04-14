@@ -116,12 +116,44 @@
                     <button id="order-filter-btn-submit" class="btn btn-sm btn-primary">применить</button>
                     <button id="order-filter-btn-drop" class="btn btn-sm btn-warning">сбросить</button>
                 </div>
-                <div id="admin-panel-orders-total">
-                    <div class="admin-panel-orders-total-item">
-                        Общая сумма продаж: <span class="admin-panel-orders-total-digits">{{ $allorderSumWithMargine }}</span>
+                <div id="admin-panel-orders-total-wrapper">
+                    <div id="admin-panel-orders-by-channel-header">
+                        <div>Показать статистику</div>
+                        <img src="/images/plus-24.png" alt="open/close table" id="show-close-admin-panel-statistic-wrapper">
                     </div>
-                    <div class="admin-panel-orders-total-item">
-                        Общая сумма продаж C/C: <span class="admin-panel-orders-total-digits">{{ $allorderPrimeCostSum }}</span>
+                    <div id="admin-panel-orders-by-channel" status="closed">
+                        <table class="table table-striped">
+                            <thead>
+                                <th>Канал продаж</th>
+                                <th>Сумма</th>
+                                <th>С/С</th>
+                                <th>Маржа</th>
+                                <th>Маржа %</th>
+                                <th>Кол-во реализаций</th>
+                                <th>Средний чек</th>
+                            </thead>
+                            <tr>
+                                <td>{{ $siteStatistics['saleChannel'] }}</td>
+                                <td>{{ $siteStatistics['totalSalesSum'] }}</td>
+                                <td>{{ $siteStatistics['totalSalesPrimeCostSum'] }}</td>
+                                <td>{{ $siteStatistics['totalSalesSum'] - $siteStatistics['totalSalesPrimeCostSum'] }}</td>
+                                <td>{{ $siteStatistics['totalMargin'] }}%</td>
+                                <td>{{ $siteStatistics['countOfSales'] }}</td>
+                                <td>{{ round($siteStatistics['totalSalesSum'] / $siteStatistics['countOfSales']) }}</td>
+                            </tr>
+                            <tr>
+                                <td>{{ $twoGisStatistics['saleChannel'] }}</td>
+                                <td>{{ $twoGisStatistics['totalSalesSum'] }}</td>
+                                <td>{{ $twoGisStatistics['totalSalesPrimeCostSum'] }}</td>
+                                <td>{{ $twoGisStatistics['totalSalesSum'] - $twoGisStatistics['totalSalesPrimeCostSum'] }}</td>
+                                <td>{{ $twoGisStatistics['totalMargin'] }}%</td>
+                                <td>{{ $twoGisStatistics['countOfSales'] }}</td>
+                                <td>{{ round($twoGisStatistics['totalSalesSum'] / $twoGisStatistics['countOfSales']) }}</td>
+                            </tr>
+                        </table>
+                        <div id="admin-panel-orders-total">
+
+                        </div>
                     </div>
                 </div>
                 @foreach ($orders as $orderItem)
