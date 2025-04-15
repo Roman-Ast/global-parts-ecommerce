@@ -132,23 +132,58 @@
                                 <th>Кол-во реализаций</th>
                                 <th>Средний чек</th>
                             </thead>
+                            @foreach ($sales_statistics as $sale_channel => $data)
                             <tr>
-                                <td>{{ $siteStatistics['saleChannel'] }}</td>
-                                <td>{{ $siteStatistics['totalSalesSum'] }}</td>
-                                <td>{{ $siteStatistics['totalSalesPrimeCostSum'] }}</td>
-                                <td>{{ $siteStatistics['totalSalesSum'] - $siteStatistics['totalSalesPrimeCostSum'] }}</td>
-                                <td>{{ $siteStatistics['totalMargin'] }}%</td>
-                                <td>{{ $siteStatistics['countOfSales'] }}</td>
-                                <td>{{ round($siteStatistics['totalSalesSum'] / $siteStatistics['countOfSales']) }}</td>
+                                <td>{{ $sale_channel }}</td>
+                                <td>{{ $data['totalSalesSum'] }}</td>
+                                <td>{{ $data['totalSalesPrimeCostSum'] }}</td>
+                                <td>{{ $data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] }}</td>
+                                <td>{{ round(100 - (($data['totalSalesPrimeCostSum'] * 100) / $data['totalSalesSum']), 2) }}%</td>
+                                <td>{{ $data['countOfSales'] }}</td>
+                                <td>{{ round($data['totalSalesSum'] / $data['countOfSales']) }}</td>
+                            </tr>
+                            @endforeach
+                            <tr>
+                                <td></td>
+                                <td colspan="2">
+                                    <strong>Общий оборот</strong>
+                                </td>
+                                <td>{{ $totalSalesSum }}</td>
                             </tr>
                             <tr>
-                                <td>{{ $twoGisStatistics['saleChannel'] }}</td>
-                                <td>{{ $twoGisStatistics['totalSalesSum'] }}</td>
-                                <td>{{ $twoGisStatistics['totalSalesPrimeCostSum'] }}</td>
-                                <td>{{ $twoGisStatistics['totalSalesSum'] - $twoGisStatistics['totalSalesPrimeCostSum'] }}</td>
-                                <td>{{ $twoGisStatistics['totalMargin'] }}%</td>
-                                <td>{{ $twoGisStatistics['countOfSales'] }}</td>
-                                <td>{{ round($twoGisStatistics['totalSalesSum'] / $twoGisStatistics['countOfSales']) }}</td>
+                                <td></td>
+                                <td colspan="2">
+                                    <strong>С/С</strong>
+                                </td>
+                                <td>{{ $totalPrimeCostSum }}</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="2">
+                                    <strong>Кол-во продаж</strong>
+                                </td>
+                                <td>{{ $totalCountOfSales }}</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="2">
+                                    <strong>Маржа</strong>
+                                </td>
+                                <td>{{ $totalSalesSum - $totalPrimeCostSum }}</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="2">
+                                    <strong>Маржа %</strong>
+                                </td>
+                                <td>{{ round(100 - (($totalPrimeCostSum * 100) / $totalSalesSum), 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="2">
+                                    <strong>Средний чек</strong>
+                                </td>
+                                <td>{{ round($totalSalesSum / $totalCountOfSales) }}</td>
                             </tr>
                         </table>
                         <div id="admin-panel-orders-total">
@@ -575,7 +610,7 @@
                         </div>
                         <label for="basic-url" class="form-label">Канал продаж</label>
                         <div class="input-group mb-2 manually-order-main">
-                            <select name="sale_channel" class="form-control manually-order-main-info" required>
+                            <select name="sale_channel" class="form-control manually-order-main-info" required id="manualy_order_sale_channel">
                                 <option selected disabled>выбери канал продаж</option>
                                 <option value="2gis">2gis</option>
                                 <option value="olx">Olx</option>

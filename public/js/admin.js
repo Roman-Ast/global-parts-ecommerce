@@ -300,12 +300,18 @@ $('#manually-order-submit').on('click', function () {
     $('.manually-order-parts-list-item-content').children().each(function (productId, elem) {
         if (!$(elem).val()) {
             allowToOrder = false;
+            warning_msg = 'Не все поля заполнены!'
+            return;
+        }
+        if (!$('#manualy_order_sale_channel').val()) {
+            allowToOrder = false;
+            warning_msg = 'Не заполнен канал продаж!'
             return;
         }
     });
     if (!allowToOrder) {
         $('#alert-admin').addClass('alert-warning');
-        $('#alert-admin').html('Не все поля заполнены!');
+        $('#alert-admin').html(warning_msg);
         $('#alert-admin').slideDown();
         setTimeout(() => {
             $('#alert-admin').slideUp()

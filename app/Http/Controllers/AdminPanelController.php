@@ -28,36 +28,27 @@ class AdminPanelController extends Controller
         $qtyOrders = $user->orders->count();
         $customers = Order::all()->where('customer_phone', !null)->pluck('customer_phone')->toArray();
         $supplerSettlements = SupplierSettlement::orderBy('created_at', 'desc')->get();
-        $allorderSumWithMargine = Order::sum('sum_with_margine');
-        $allorderPrimeCostSum = Order::sum('sum');
         $usersCalculating = [];
 
-        //статистика продаж сайта
-        $siteTotalSalesPrimeCostSum = Order::where('sale_channel', 'site')->sum('sum');
-        $siteTotalSalesSum = Order::where('sale_channel', 'site')->sum('sum_with_margine');
-        $siteCountOfSales = Order::where('sale_channel', 'site')->count();
-        $siteTotalMargin = round(100 - (($siteTotalSalesPrimeCostSum * 100) / $siteTotalSalesSum), 2);
-        $siteStatistics = [
-            'saleChannel' => 'Сайт',
-            'totalSalesPrimeCostSum' => $siteTotalSalesPrimeCostSum,
-            'totalSalesSum' => $siteTotalSalesSum,
-            'countOfSales' => $siteCountOfSales,
-            'totalMargin' => $siteTotalMargin
+        //сбор статистики продаж
+        $sales_statistics = [
+            'kaspi' => [],
+            '2gis' => [],
+            'olx' => [],
+            'friends' => [],
+            'site' => []
         ];
-        
-        //статистика 2gis
-        $twoGisTotalSalesPrimeCostSum = Order::where('sale_channel', '2gis')->sum('sum');
-        $twoGisTotalSalesSum = Order::where('sale_channel', '2gis')->sum('sum_with_margine');
-        $twoGisCountOfSales = Order::where('sale_channel', '2gis')->count();
-        $twoGisTotalMargin = round(100 - (($twoGisTotalSalesPrimeCostSum * 100) / $twoGisTotalSalesSum), 2);
-        $twoGisStatistics = [
-            'saleChannel' => '2gis',
-            'totalSalesPrimeCostSum' => $twoGisTotalSalesPrimeCostSum,
-            'totalSalesSum' => $twoGisTotalSalesSum,
-            'countOfSales' => $twoGisCountOfSales,
-            'totalMargin' => $twoGisTotalMargin
-        ];
-        
+
+        foreach ($sales_statistics as $sale_channel => $data) {
+            $sales_statistics[$sale_channel]['totalSalesPrimeCostSum'] = Order::where('sale_channel', $sale_channel)->sum('sum');
+            $sales_statistics[$sale_channel]['totalSalesSum'] = Order::where('sale_channel', $sale_channel)->sum('sum_with_margine');
+            $sales_statistics[$sale_channel]['countOfSales'] = Order::where('sale_channel', $sale_channel)->count();
+        }
+
+        $totalSalesSum = Order::sum('sum_with_margine');
+        $totalPrimeCostSum = Order::sum('sum');
+        $totalCountOfSales = Order::count();
+
 
         foreach ($users as $user) {
             $usersCalculating[$user->id] = [
@@ -135,10 +126,10 @@ class AdminPanelController extends Controller
             'supplerSettlements' => $supplerSettlements,
             'suppliers' => $suppliers,
             'suppliers_debt' => $suppliers_debt,
-            'allorderSumWithMargine' => $allorderSumWithMargine,
-            'allorderPrimeCostSum' => $allorderPrimeCostSum,
-            'siteStatistics' => $siteStatistics,
-            'twoGisStatistics' => $twoGisStatistics
+            'sales_statistics' => $sales_statistics,
+            'totalSalesSum' => $totalSalesSum,
+            'totalPrimeCostSum' => $totalPrimeCostSum,
+            'totalCountOfSales' => $totalCountOfSales
         ]);
     }
 
