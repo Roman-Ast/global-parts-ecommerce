@@ -243,10 +243,18 @@
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
                         <div class="stock-item stock-item-qty">
-                            @if ($crossItem['stocks'] > 10)
-                                >10
+                            @if(is_array($crossItem['stocks']))
+                                 @if ($crossItem['stocks'][0]['qty'] > 10)
+                                    >10
+                                @else
+                                    {{ $crossItem['stocks'][0]['qty'] }}
+                                @endif
                             @else
-                                {{ $crossItem['stocks'] }}
+                                @if ($crossItem['stocks'] > 10)
+                                    >10
+                                @else
+                                    {{ $crossItem['stocks'] }}
+                                @endif
                             @endif
                         </div>
                     </div>
