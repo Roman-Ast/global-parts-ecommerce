@@ -246,20 +246,11 @@
                             @if(is_array($crossItem['stocks']))
                                 @foreach ($crossItem['stocks'] as $stockItem)
                                     <div class="stock-item stock-item-qty">
-                                        @if ($stockItem['qty'] > 10)
-                                            >10
-                                        @else
-                                            {{ $stockItem['qty'] }}
-                                        @endif
+                                        {{ $stockItem['qty'] }}
                                     </div>
                                 @endforeach
-                                
                             @else
-                                @if ($crossItem['stocks'] > 10)
-                                    >10
-                                @else
-                                    {{ $crossItem['stocks'] }}
-                                @endif
+                                {{ $crossItem['stocks'] }}
                             @endif
                         </div>
                     </div>
@@ -333,11 +324,7 @@
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item stock-item-qty">
-                                @if ($stockItem['qty'] > 10)
-                                    >10
-                                @else
-                                    {{ $stockItem['qty'] }}
-                                @endif
+                                {{ $stockItem['qty'] }}
                             </div>
                         @endforeach
                     </div>
