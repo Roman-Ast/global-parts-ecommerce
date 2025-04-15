@@ -108,7 +108,7 @@
                                 @endif
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-count">
-                                {{ $searchItem['stocks']  }}
+                                {{ $searchItem['qty']  }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-price stock-item-price">
                                 {{ $searchItem['priceWithMargine'] }}
@@ -243,15 +243,7 @@
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
                         <div class="stock-item stock-item-qty">
-                            @if(is_array($crossItem['stocks']))
-                                @foreach ($crossItem['stocks'] as $stockItem)
-                                    <div class="stock-item stock-item-qty">
-                                        {{ $stockItem['qty'] }}
-                                    </div>
-                                @endforeach
-                            @else
-                                {{ $crossItem['stocks'] }}
-                            @endif
+                            {{ $crossItem['qty'] }}
                         </div>
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">

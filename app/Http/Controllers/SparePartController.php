@@ -237,7 +237,7 @@ class SparePartController extends Controller
                         'name' => substr($item->Name, 0, 60),
                         'price' => $item->Price,
                         'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
-                        'stocks' => $item->AvailableCount,
+                        'qty' => $item->AvailableCount,
                         'multiplicity' => '',
                         'type' => '',
                         'delivery' => '',
@@ -256,6 +256,7 @@ class SparePartController extends Controller
                         'brand' => $item->Brand,
                         'article' => $item->Article,
                         'name' => substr($item->Name, 0, 60),
+                        'qty' => $item->AvailableCount,
                         'stocks' => [
                             'qty' => $item->AvailableCount,
                             'price' => $item->Price,
@@ -387,7 +388,7 @@ class SparePartController extends Controller
                         'name' => substr($item->name, 0, 60),
                         'price' => $item->price,
                         'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                        'stocks' => $item->num,
+                        'qty' => $item->num,
                         'multiplicity' => '',
                         'type' => '',
                         'delivery' => '',
@@ -406,7 +407,7 @@ class SparePartController extends Controller
                         'brand' => $item->brand,
                         'article' => $item->art,
                         'name' => substr($item->name, 0, 60),
-                        'stocks' => $item->num,
+                        'qty' => $item->num,
                         'price' => $item->price,
                         'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
                         'supplier_name' => 'frmt',
@@ -490,7 +491,7 @@ class SparePartController extends Controller
                                     'item_id' => $item['id'],
                                     'price' => $item['price'],
                                     'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                                    'stocks' => $searched_number_stocks,
+                                    'qty' => $searched_number_stocks,
                                     'multiplicity' => '',
                                     'type' => '',
                                     'delivery' => '',
@@ -593,7 +594,7 @@ class SparePartController extends Controller
                             'brand' => $item['brand'],
                             'article' => $item['article'],
                             'name' => substr($item['name'], 0, 60),
-                            'stocks' => $crosses_stocks,
+                            'qty' => $crosses_stocks,
                             'price' => round($item['price']),
                             'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
                             'supplier_name' => 'trd',
@@ -725,6 +726,7 @@ class SparePartController extends Controller
                                     'article' => $part_stock['partnumber'],
                                     'name' => $part_stock['name'],
                                     'price' => round($innerArr['price']),
+                                    'qty' => $innerArr['count'],
                                     'priceWithMargine' => round($this->setPrice($innerArr['price']), self::ROUND_LIMIT),
                                     'stocks' => $crosses_stocks,
                                     'delivery_time' => '1.5-2 часа',
@@ -749,6 +751,7 @@ class SparePartController extends Controller
                                     'brand' => $part_stock['brand'],
                                     'article' => $part_stock['partnumber'],
                                     'name' => $part_stock['name'],
+                                    'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
                                     'priceWithMargine' => round($this->setPrice($innerArr['price']), self::ROUND_LIMIT),
                                     'stocks' => $crosses_stocks,
@@ -777,6 +780,7 @@ class SparePartController extends Controller
                                         'brand' => $part_stock['brand'],
                                         'article' => $part_stock['partnumber'],
                                         'name' => $part_stock['name'],
+                                        'qty' => $item['count'],
                                         'price' => round($item['price']),
                                         'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
                                         'stocks' => $crosses_stocks,
@@ -802,6 +806,7 @@ class SparePartController extends Controller
                                         'brand' => $part_stock['brand'],
                                         'article' => $part_stock['partnumber'],
                                         'name' => $part_stock['name'],
+                                        'qty' => $item['count'],
                                         'price' => round($item['price']),
                                         'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
                                         'stocks' => $crosses_stocks,
@@ -836,6 +841,7 @@ class SparePartController extends Controller
                                     'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
                                     'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
                                     'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
+                                    'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
                                     'priceWithMargine' => round($this->setPrice($innerArr['price']), self::ROUND_LIMIT),
                                     'stocks' => $crosses_stocks,
@@ -861,6 +867,7 @@ class SparePartController extends Controller
                                     'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
                                     'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
                                     'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
+                                    'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
                                     'priceWithMargine' => round($this->setPrice($innerArr['price']), self::ROUND_LIMIT),
                                     'stocks' => $crosses_stocks,
@@ -889,6 +896,7 @@ class SparePartController extends Controller
                                         'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
                                         'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
                                         'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
+                                        'qty' => $item['count'],
                                         'price' => round($item['price']),
                                         'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
                                         'stocks' => $crosses_stocks,
@@ -914,6 +922,7 @@ class SparePartController extends Controller
                                         'brand' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand'],
                                         'article' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['partnumber'],
                                         'name' => $result['SearchResult']['PartsList']['Part']['crosses']['Part']['name'],
+                                        'qty' => $item['count'],
                                         'price' => round($item['price']),
                                         'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
                                         'stocks' => $crosses_stocks,
@@ -1137,7 +1146,7 @@ class SparePartController extends Controller
                             'name' => $item->article->name,
                             'price' => $price->price->value,
                             'priceWithMargine' => round($this->setPrice($price->price->value), self::ROUND_LIMIT),
-                            'stocks' => $price->quantity->available,
+                            'qty' => $price->quantity->available,
                             'supplier_city' => 'ast',
                             'supplier_name' => 'shtm',
                             'supplier_color' => '#6b6b6b',
@@ -1236,7 +1245,7 @@ class SparePartController extends Controller
                     'name' => $item->article_name,
                     'price' => $item->min_price,
                     'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
-                    'stocks' => $item->warehouse_offers[0]->quantity,
+                    'qty' => $item->warehouse_offers[0]->quantity,
                     'supplier_name' => 'tss',
                     'supplier_city' => 'ast',
                     'supplier_color' => '#7bafcf',
@@ -1255,6 +1264,7 @@ class SparePartController extends Controller
                     'brand' => $item->brand,
                     'article' => $item->article,
                     'name' => $item->article_name,
+                    'qty' => $item->warehouse_offers[0]->quantity,
                     'price' => $item->min_price,
                     'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
                     'stocks' => $stocks,
@@ -1311,7 +1321,7 @@ class SparePartController extends Controller
                         'name' => $item->name,
                         'price' => $store->price,
                         'priceWithMargine' => round($this->setPrice($store->price), self::ROUND_LIMIT),
-                        'stocks' => $store->quantity,
+                        'qty' => $store->quantity,
                         'supplier_city' => 'ast',
                         'supplier_name' => 'kln',
                         'supplier_color' => 'green',
@@ -1399,7 +1409,7 @@ class SparePartController extends Controller
                 'name' => $item->name,
                 'price' => $item->price,
                 'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                'stocks' => $item->amount,
+                'qty' => $item->amount,
                 'supplier_name' => 'fbst',
                 'stock_legend' => 'Астана',
                 'delivery_time' => '2-2.5 часа',
@@ -1436,7 +1446,7 @@ class SparePartController extends Controller
                             'name' => substr($item->model, 0, 60),
                             'price' => $item->price,
                             'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                            'stocks' => $item->count,
+                            'qty' => $item->count,
                             'supplier_name' => 'grt',
                             'supplier_city' => 'Алмата',
                             'supplier_color' => '#7bafcf',
@@ -1538,7 +1548,7 @@ class SparePartController extends Controller
                         'name' => $item['Name'],
                         'price' => round($item['SalePrice']),
                         'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
-                        'stocks' => $item['NumberOfAvailable'],
+                        'qty' => $item['NumberOfAvailable'],
                         'deliveryStart' => $item['DeliveryDate'],
                         'deliveryEnd' => '',
                         'supplier_name' => 'atptr',
@@ -1553,7 +1563,7 @@ class SparePartController extends Controller
                     'name' => $result2['GetPriceIdResult']['PriceSearchModel']['Name'],
                     'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
                     'priceWithMargine' => round($this->setPrice($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
-                    'stocks' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
+                    'qty' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
                     'supplier_color' => '#111',
                     'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                     'deliveryEnd' => '',
@@ -1592,6 +1602,7 @@ class SparePartController extends Controller
                         'name' => $item['Name'],
                         'price' => $item['SalePrice'],
                         'priceWithMargine' => round($this->setPrice($item['SalePrice']), self::ROUND_LIMIT),
+                        "qty" =>$item['NumberOfAvailable'],
                         'stocks' => [
                             [
                                 "stock_id" => $item['SellerId'],
@@ -1624,6 +1635,7 @@ class SparePartController extends Controller
                     'name' => $result3['GetPriceIdResult']['PriceSearchModel']['Name'],
                     'price' => $result3['GetPriceIdResult']['PriceSearchModel']['SalePrice'],
                     'priceWithMargine' => round($this->setPrice($result3['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
+                    "qty" =>$result3['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
                     'stocks' => [
                         [
                             "stock_id" => $result3['GetPriceIdResult']['PriceSearchModel']['SellerId'],
@@ -1668,7 +1680,7 @@ class SparePartController extends Controller
                 'name' => $item['name'],
                 'price' => $item['price'],
                 'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                'stocks' => $item['qty'],
+                'qty' => $item['qty'],
                 'supplier_city' => 'Алматы',
                 'supplier_name' => 'Adil`s GM',
                 'supplier_color' => 'green',
@@ -1746,7 +1758,7 @@ class SparePartController extends Controller
                     'name' => $searchedPart->name,
                     'price' => $searchedPart->price,
                     'priceWithMargine' => round($this->setPrice($searchedPart->price), self::ROUND_LIMIT),
-                    'stocks' => $searchedPart->qty,
+                    'qty' => $searchedPart->qty,
                     'supplier_city' => 'Астана',
                     'supplier_name' => 'в офисе',
                     'supplier_color' => 'lightgreen',
@@ -1768,9 +1780,8 @@ class SparePartController extends Controller
                     'supplier_city' => 'Астана',
                     'supplier_color' => 'lightgreen',
                 ]);
-                    
             }
-
+            
             return;
         }
 
@@ -1789,7 +1800,7 @@ class SparePartController extends Controller
                 'name' => $item->name,
                 'price' => $item->price,
                 'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                'stocks' => $item->qty,
+                'qty' => $item->qty,
                 'supplier_city' => 'Астана',
                 'supplier_name' => 'в офисе',
                 'supplier_color' => 'lightgreen',
@@ -1797,9 +1808,6 @@ class SparePartController extends Controller
             ]);
         }
         
-            
-        
-
         return;
     }
 
@@ -1824,7 +1832,7 @@ class SparePartController extends Controller
                 'name' => $item['name'],
                 'price' => $item['price'],
                 'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                'stocks' => $item['qty'],
+                'qty' => $item['qty'],
                 'supplier_city' => 'Астана',
                 'supplier_name' => 'Ingvar',
                 'supplier_color' => '#77942e',
