@@ -155,13 +155,13 @@ class SparePartController extends Controller
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
         
-        /*if($request->rossko_need_to_search) {
+        if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
         $this->searchArmtek($request->brand, $partNumber);
-        $this->searchAdilsGM($request->brand, $partNumber);*/
+        $this->searchAdilsGM($request->brand, $partNumber);
         $this->searchStockInOffice($request->brand, $partNumber);
-        /*$this->searchGerat($request->brand, $partNumber);
+        $this->searchGerat($request->brand, $partNumber);
         $this->searchShatem($request->brand, $partNumber);
         $this->searchPhaeton($request->brand, $partNumber);
         $this->searchTreid($request->brand, $partNumber);
@@ -174,7 +174,7 @@ class SparePartController extends Controller
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
-        }*/
+        }
 
         $arr = array_unique($this->finalArr['brands']);
 
