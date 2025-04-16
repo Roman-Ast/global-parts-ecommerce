@@ -134,6 +134,8 @@ Route::middleware('auth')->group(function() {
     Route::post('/orders/filter/drop', [AdminPanelController::class, 'filterDrop']);
     Route::post('/manually_make_order', [AdminPanelController::class, 'manuallyMakeOrder']);
     Route::post('/cart/updatePrice', [CartController::class, 'updatePrice']);
+    Route::post('/add_new_good_in_office', [AdminPanelController::class, 'addNewGoodInOffice']);
+    Route::post('/delete_good_in_office', [AdminPanelController::class, 'destroy']);
 });
 
 

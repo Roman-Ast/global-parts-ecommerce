@@ -32,4 +32,6 @@ class OfficePriceController extends Controller
             return redirect('admin_panel');
         }
     }
+
+    
 }

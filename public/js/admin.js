@@ -241,7 +241,8 @@ $('#add_parts_list_item').on('click', function (params) {
         'leopart': 'Леопарт', 
         'fbst': 'Фебест',
         'Krn': 'Корея',
-        'thr':  'Сторонние'
+        'thr':  'Сторонние',
+        'china_ata': 'Китайцы Алматы'
     };
 
     $('#manually-order-parts-list').append(
@@ -358,3 +359,35 @@ $('#show-close-admin-panel-statistic-wrapper').on('click', function () {
        $(this).parent().next().attr('status', 'closed');
     }
  });
+
+ //изменить кол-во и/или цену в товарах в офисе
+ $('.good_in_office_delete').on('click', function () {
+    let deletingItemId = $(this).parent().parent().children().first().val();
+    data = {
+        deletingItemId: deletingItemId
+    }
+    
+    $.ajax({
+        data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
+        url: "/delete_good_in_office",
+        type: "POST",
+        dataType: 'json',
+        success: function (data) {
+            $('#alert-admin-goods-in-office').removeAttr('class');
+            $('#alert-admin-goods-in-office').addClass('alert alert-success');
+            $('#alert-admin-goods-in-office').html(' товар успешно удален...');
+            $('#alert-admin-goods-in-office').slideDown();
+            setTimeout(() => {
+                $('#alert-admin-goods-in-office').slideUp();
+                
+            }, 3000);
+
+            setTimeout(() => {
+                location.reload();
+            }, 2500);
+        },
+        error: function (data) {
+            console.log(data);
+        }
+     });    
+});

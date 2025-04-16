@@ -3,7 +3,6 @@
 @section('title', 'Панель администратора')
     
 @section('content')
-    
     <div id="admin-main-container">
         <div id="container-header">
             <a href="/"> Global Parts</a> админ панель вы вошли как: {{ auth()->user()->name }}
@@ -57,12 +56,20 @@
                     Все оплаты
                 </div>
             </div>
-            <div class="menu-item-container" target="products_in_office">
+            <div class="menu-item-container" target="goods_in_office">
                 <div class="menu-item-img">
                     
                 </div>
-                <div class="menu-item-name">
+                <div class="menu-item-name" >
                     Товар в наличии в офисе
+                </div>
+            </div>
+            <div class="menu-item-container" target="add_new_good_in_office_card">
+                <div class="menu-item-img">
+                    
+                </div>
+                <div class="menu-item-name" >
+                    Добавить новый товар в офис
                 </div>
             </div>
             <div class="menu-item-container" target="supplier_settlements">
@@ -745,6 +752,78 @@
                         </button>
                     </p>
                 </form>
+            </div>
+            <div id="goods_in_office" class="container admin-content-item">
+                <div class="alert" style="align-text:center;" id="alert-admin-goods-in-office">
+                    <div style="display:flex;justify-content:flex-end;" class="close-flash"></div>
+                </div>
+                <div id="add_new_good_in_office_form_header">
+                    Товаров в офисе: {{ $goods_in_office_count }} на сумму: {{ $goods_in_office_sum }}
+                </div>
+                <div id="goods_in_office_add_table_wrapper">
+                    <table class="table table-hover">
+                        <thead>
+                            <th>OEM</th>
+                            <th>Артикул</th>
+                            <th>Бренд</th>
+                            <th>Наименование</th>
+                            <th>Цена</th>
+                            <th>Кол-во</th>
+                            <th></th>
+                            <th></th>
+                        </thead>
+                        <tbody>
+                            @foreach ($goods_in_office as $good)
+                                <tr>
+                                    <input type="hidden" value="{{ $good['id'] }}" name="good_id">
+                                    <td style="max-width:25%;">{{ mb_strimwidth($good['oem'], 0, 30, '...') }}</td>
+                                    <td>{{ $good['article'] }}</td>
+                                    <td>{{ $good['brand'] }}</td>
+                                    <td>{{ $good['name'] }}</td>
+                                    <td class="col-md-12"><input type="number" value="{{ $good['price'] }}" class="good_in_office_price form-control"></td>
+                                    <td><input type="number" value="{{ $good['qty'] }}" class="good_in_office_qty form-control" min="1" style="width: 50px !important"></td>
+                                    <td><button class="btn btn-sm btn-primary"class="good_in_office_change">Изменить</button></td>
+                                    <td><img src="/images/dump-red-24.png" class="good_in_office_delete"></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="add_new_good_in_office_card" class="container admin-content-item">
+                <div class="alert" style="align-text:center;" id="alert-admin">
+                    <div style="display:flex;justify-content:flex-end;" class="close-flash"></div>
+                </div>
+                <div id="add_new_good_in_office_form_wrapper">
+                    <form action="/add_new_good_in_office" method="POST">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="exampleFormControlTextarea1" class="form-label">OEM номера, через ";"</label>
+                            <textarea class="form-control" rows="3" name="oem"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Артикул</label>
+                            <input type="text" class="form-control" require name="article">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Бренд</label>
+                            <input type="text" class="form-control" require name="brand">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Наименование</label>
+                            <input type="text" class="form-control"require name="name">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Цена</label>
+                            <input type="number" class="form-control"require min="100" step="1" name="price">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Кол-во</label>
+                            <input type="number" class="form-control"require min="1" step="1" name="qty">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

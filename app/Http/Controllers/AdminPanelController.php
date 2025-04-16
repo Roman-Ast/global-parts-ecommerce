@@ -10,6 +10,7 @@ use App\Models\Setlement;
 use App\Models\SupplierSettlement;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\OfficePrice;
 
 class AdminPanelController extends Controller
 {
@@ -29,7 +30,14 @@ class AdminPanelController extends Controller
         $customers = Order::all()->where('customer_phone', !null)->pluck('customer_phone')->toArray();
         $supplerSettlements = SupplierSettlement::orderBy('created_at', 'desc')->get();
         $usersCalculating = [];
+        $goods_in_office = OfficePrice::orderBy('id', 'desc')->get()->toArray();
+        $goods_in_office_count = OfficePrice::sum('qty');
+        $goods_in_office_sum = 0;
 
+        foreach ($goods_in_office as $good) {
+            $goods_in_office_sum += ($good['price'] * $good['qty']);
+        }
+        
         //сбор статистики продаж
         $sales_statistics = [
             'kaspi' => [],
@@ -130,7 +138,10 @@ class AdminPanelController extends Controller
             'sales_statistics' => $sales_statistics,
             'totalSalesSum' => $totalSalesSum,
             'totalPrimeCostSum' => $totalPrimeCostSum,
-            'totalCountOfSales' => $totalCountOfSales
+            'totalCountOfSales' => $totalCountOfSales,
+            'goods_in_office' => $goods_in_office,
+            'goods_in_office_count' => $goods_in_office_count,
+            'goods_in_office_sum' => $goods_in_office_sum
         ]);
     }
 
@@ -295,7 +306,6 @@ class AdminPanelController extends Controller
      */
     public function manuallyMakeOrder(Request $request)
     {
-        //return json_encode($request->data);
         $orderSumWithMargine = 0;
         $orderSum = 0;
 
@@ -358,11 +368,33 @@ class AdminPanelController extends Controller
         ];
     }
 
+    public function addNewGoodInOffice(Request $request)
+    {
+        $officePrice = OfficePrice::create([
+            'oem' => $request->oem,
+            'article' => $request->article,
+            'brand' => $request->brand,
+            'name' => $request->name,
+            'price' => $request->price,
+            'qty' => $request->qty
+        ]);
+        
+        return back()->with('message', 'Товар успешно добавлен!')
+            ->with('class', 'alert-succes');
+    }
+
+    public function change(Request $request)
+    {
+        
+    }
+
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(AdminPanel $adminPanel)
+    public function destroy(Request $request)
     {
-        //
+        $deletingItem = OfficePrice::where('id', $request->data['deletingItemId'])->delete();
+        
+        return json_encode('success');
     }
 }

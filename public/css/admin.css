@@ -252,5 +252,15 @@
 .alert{
     display: none;
 }
-
+#goods_in_office_add{
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: flex-end;
+}
+#add_new_good_in_office_form_wrapper{
+    width:50%;
+}
+.good_in_office_delete{
+    cursor: pointer;
+}
 

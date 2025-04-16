@@ -10,6 +10,15 @@ class OfficePrice extends Model
 
     protected $table = 'office_price';
 
+    protected $fillable = [
+        'oem',
+        'article',
+        'brand',
+        'name',
+        'price',
+        'qty'       
+    ];
+
     public function importToDb()
     {
         $path = resource_path('pending-files/in-office/*.csv');
