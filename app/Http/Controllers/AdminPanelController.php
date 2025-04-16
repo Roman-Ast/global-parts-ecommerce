@@ -81,6 +81,7 @@ class AdminPanelController extends Controller
             'Krn' => 'Корея',
             'kln' => 'Кулан',
             'frmt' => 'Форумавто',
+            'china_ata' => 'Китайцы Алматы',
             'thr' => 'Сторонние'
         ];
 

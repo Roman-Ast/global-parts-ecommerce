@@ -535,7 +535,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        //dd($result);
+        
         if (empty($result) ) {
             return;
         } else if (array_key_exists('message', $result) && $result['message'] != 'Ok') {
@@ -573,7 +573,7 @@ class SparePartController extends Controller
         if (!array_key_exists('items', $result) || empty($result['items'] || array_key_exists('message', $result))) {
             return;
         } 
-            
+       
         //помещаем кроссы в наличии в итоговый массив
         foreach ($result['items'] as $item) {
             if (array_key_exists('price', $item)) {
@@ -598,6 +598,9 @@ class SparePartController extends Controller
                             'price' => round($item['price']),
                             'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
                             'supplier_name' => 'trd',
+                            'extra' => [
+                                'photo' => ''
+                            ],
                             'delivery_date' => '',
                             'delivery_time' => '1.5-2 часа',
                             'supplier_city' => 'ast',
@@ -606,9 +609,6 @@ class SparePartController extends Controller
                     }
                 } 
             }
-        }
-        if (set_time_limit(5)) {
-            return;
         }
     }
 
@@ -1781,7 +1781,7 @@ class SparePartController extends Controller
                     'supplier_color' => 'lightgreen',
                 ]);
             }
-            
+
             return;
         }
 
