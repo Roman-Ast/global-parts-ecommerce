@@ -56,7 +56,9 @@ class AdminPanelController extends Controller
         $totalSalesSum = Order::sum('sum_with_margine');
         $totalPrimeCostSum = Order::sum('sum');
         $totalCountOfSales = Order::count();
-
+        $totalTax = round($totalSalesSum * 3 / 100);
+        $kaspiComission = Order::where('sale_channel', 'kaspi')->sum('sum_with_margine') * 12 / 100;
+        $marginClear = round($totalSalesSum - $totalPrimeCostSum - $totalTax - $kaspiComission);
 
         foreach ($users as $user) {
             $usersCalculating[$user->id] = [
@@ -141,7 +143,10 @@ class AdminPanelController extends Controller
             'totalCountOfSales' => $totalCountOfSales,
             'goods_in_office' => $goods_in_office,
             'goods_in_office_count' => $goods_in_office_count,
-            'goods_in_office_sum' => $goods_in_office_sum
+            'goods_in_office_sum' => $goods_in_office_sum,
+            'totalTax' => $totalTax,
+            'kaspiComission' => $kaspiComission,
+            'marginClear' => $marginClear
         ]);
     }
 

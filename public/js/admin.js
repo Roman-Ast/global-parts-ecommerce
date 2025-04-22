@@ -396,24 +396,19 @@ $('#show-close-admin-panel-statistic-wrapper').on('click', function () {
 });
 
 //подсчет итогов в админке при создании заказа в ручную
-$('.manually-order-parts-list-item-qty, .manually-order-parts-list-price, .manually-order-parts-list-price-with-margine').on('input', function () {
-        let sumWithMargine = 0;
-        let primeCostSum = 0;
-        let totalQty = 0;
-        let arr = [];
+$(document).on('input', '.manually-order-parts-list-item-qty, .manually-order-parts-list-price, .manually-order-parts-list-price-with-margine',function () {
+    let sumWithMargine = 0;
+    let primeCostSum = 0;
+    let totalQty = 0;
+    let arr = [];
 
-        $('.manually-order-parts-list-item-qty').each(function () {
-            sumWithMargine += $(this).val() * $(this).next().next().val();
-            console.log(sumWithMargine);
-        });
-    $('.manually-order-parts-list-item-content').each(function (productId, elem) {
-        
-
-        
-        sumWithMargine += $(elem).children().first().next().next().next().val() * $(elem).children().first().next().next().next().next().next().val();
-        
-        console.log(sumWithMargine);
+    $('.manually-order-parts-list-item-qty').each(function () {
+        sumWithMargine += $(this).val() * $(this).next().next().val();
+        primeCostSum += $(this).val() * $(this).next().val();
+        totalQty += +$(this).val();
     });
 
-    
+    $('#manualy-order-total-sum-with-margine-num').html(sumWithMargine);
+    $('#manualy-order-total-prime-cost-sum-inner').html(primeCostSum);
+    $('#manualy-order-total-qty-inner').html(totalQty);
 });

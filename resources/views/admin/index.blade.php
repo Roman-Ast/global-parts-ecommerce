@@ -134,10 +134,15 @@
                                 <th>Канал продаж</th>
                                 <th>Сумма</th>
                                 <th>С/С</th>
-                                <th>Маржа</th>
-                                <th>Маржа %</th>
-                                <th>Кол-во реализаций</th>
+                                <th>Маржа грязная</th>
+                                <th>Маржа грязная, %</th>
+                                <th>Кол-во продаж</th>
                                 <th>Средний чек</th>
+                                <th>% от общих продаж</th>
+                                <th>налог, 3%</th>
+                                <th>Комиссия</th>
+                                <th>Маржа чистая</th>.
+                                <th>Маржа чистая, %</th>
                             </thead>
                             @foreach ($sales_statistics as $sale_channel => $data)
                             <tr>
@@ -148,50 +153,100 @@
                                 <td>{{ round(100 - (($data['totalSalesPrimeCostSum'] * 100) / $data['totalSalesSum']), 2) }}%</td>
                                 <td>{{ $data['countOfSales'] }}</td>
                                 <td>{{ round($data['totalSalesSum'] / $data['countOfSales']) }}</td>
+                                <td>{{ round(($data['totalSalesSum'] * 100) /  $totalSalesSum, 2) }}</td>
+                                <td>{{ round(($data['totalSalesSum'] * 3) /  100) }}</td>
+                                <td>
+                                    @if($sale_channel == 'kaspi')
+                                    {{ ($data['totalSalesSum'] * 12) /  100 }}
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($sale_channel == 'kaspi')
+                                    {{ round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100) - ($data['totalSalesSum'] * 12) /  100) }}
+                                    @else
+                                    {{ round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100)) }}
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($sale_channel == 'kaspi')
+                                    {{ 100 - round(100 - ((round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100) - ($data['totalSalesSum'] * 12) /  100)* 100) / $data['totalSalesSum']), 2) }}%
+                                    @else
+                                    {{ 100 - round(100 - ((round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100))* 100) / $data['totalSalesSum']), 2) }}%
+                                    @endif
+                                </td>
                             </tr>
                             @endforeach
                             <tr>
                                 <td></td>
-                                <td colspan="2">
+                                <td colspan="3">
                                     <strong>Общий оборот</strong>
                                 </td>
-                                <td>{{ $totalSalesSum }}</td>
+                                <td>{{ number_format($totalSalesSum, 0, '.', ' ') }}</td>
                             </tr>
                             <tr>
                                 <td></td>
-                                <td colspan="2">
+                                <td colspan="3">
                                     <strong>С/С</strong>
                                 </td>
-                                <td>{{ $totalPrimeCostSum }}</td>
+                                <td>{{ number_format($totalPrimeCostSum, 0, '.', ' ') }}</td>
                             </tr>
                             <tr>
                                 <td></td>
-                                <td colspan="2">
+                                <td colspan="3">
                                     <strong>Кол-во продаж</strong>
                                 </td>
-                                <td>{{ $totalCountOfSales }}</td>
+                                <td>{{ number_format($totalCountOfSales, 0, '.', ' ') }}</td>
                             </tr>
                             <tr>
                                 <td></td>
-                                <td colspan="2">
-                                    <strong>Маржа</strong>
-                                </td>
-                                <td>{{ $totalSalesSum - $totalPrimeCostSum }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="2">
-                                    <strong>Маржа %</strong>
-                                </td>
-                                <td>{{ round(100 - (($totalPrimeCostSum * 100) / $totalSalesSum), 2) }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="2">
+                                <td colspan="3">
                                     <strong>Средний чек</strong>
                                 </td>
-                                <td>{{ round($totalSalesSum / $totalCountOfSales) }}</td>
+                                <td>{{ number_format(round($totalSalesSum / $totalCountOfSales), 0, '.', ' ') }}</td>
                             </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="3">
+                                    <strong>Маржа грязная</strong>
+                                </td>
+                                <td>{{ number_format($totalSalesSum - $totalPrimeCostSum, 0, '.', ' ') }}</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="3">
+                                    <strong>Маржа грязная, %</strong>
+                                </td>
+                                <td>{{ number_format(round(100 - (($totalPrimeCostSum * 100) / $totalSalesSum), 2), 2, '.', ' ') }}</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="3">
+                                    <strong>Налог</strong>
+                                </td>
+                                <td>{{ number_format($totalTax, 0, '.', ' ') }}</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="3">
+                                    <strong>Комиссии</strong>
+                                </td>
+                                <td>{{ number_format($kaspiComission, 0, '.', ' ') }}</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="3">
+                                    <strong>Маржа чистая</strong>
+                                </td>
+                                <td>{{ number_format($marginClear, 0, '.', ' ') }}</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td colspan="3">
+                                    <strong>Маржа чистая, %</strong>
+                                </td>
+                                <td>{{ round((($marginClear * 100) / $totalSalesSum), 2) }}</td>
+                            </tr>
+                            
                         </table>
                         <div id="admin-panel-orders-total">
 
@@ -667,10 +722,10 @@
                             Итого розница: <span id="manualy-order-total-sum-with-margine-num" class="manualy-order-total-item-num">0</span>
                         </div>
                         <div id="manualy-order-total-prime-cost-sum" class="manualy-order-total-item">
-                            Итого С/С: <span id="manualy-order-total-prime-cost-sum" class="manualy-order-total-item-num">0</span>
+                            Итого С/С: <span id="manualy-order-total-prime-cost-sum-inner" class="manualy-order-total-item-num">0</span>
                         </div>
                         <div id="manualy-order-total-qty" class="manualy-order-total-item">
-                            Итого кол-во: <span id="manualy-order-total-qty" class="manualy-order-total-item-num">0</span>
+                            Итого кол-во: <span id="manualy-order-total-qty-inner" class="manualy-order-total-item-num">0</span>
                         </div>
                     </div>
                 </div>
