@@ -240,6 +240,7 @@ $('#add_parts_list_item').on('click', function (params) {
         'rlm': 'Рулим',
         'leopart': 'Леопарт', 
         'fbst': 'Фебест',
+        'frmt': 'Форумавто',
         'Krn': 'Корея',
         'thr':  'Сторонние',
         'china_ata': 'Китайцы Алматы'
@@ -262,9 +263,9 @@ $('#add_parts_list_item').on('click', function (params) {
                 <input type="text" class="form-control" name="article" required>
                 <input type="text" class="form-control" name="brand" required>
                 <input type="text" class="form-control" name="name" required>
-                <input type="number" class="form-control" name="qty" required>
-                <input type="number" class="form-control" name="price" required>
-                <input type="number" class="form-control" name="priceWithMargine" required>
+                <input type="number" class="form-control manually-order-parts-list-item-qty" name="qty" required>
+                <input type="number" class="form-control manually-order-parts-list-price" name="price" required>
+                <input type="number" class="form-control manually-order-parts-list-price-with-margine" name="priceWithMargine" required>
                     <select name="from_stock" class="order_product_item_supplier">
                         <option disabled selected>Выбери поставщика</option>
                     </select>
@@ -297,7 +298,9 @@ $('#manually-order-submit').on('click', function () {
             data.products[productId].push($(elem).val());
         });
     });
+
     let allowToOrder = true;
+
     $('.manually-order-parts-list-item-content').children().each(function (productId, elem) {
         if (!$(elem).val()) {
             allowToOrder = false;
@@ -390,4 +393,27 @@ $('#show-close-admin-panel-statistic-wrapper').on('click', function () {
             console.log(data);
         }
      });    
+});
+
+//подсчет итогов в админке при создании заказа в ручную
+$('.manually-order-parts-list-item-qty, .manually-order-parts-list-price, .manually-order-parts-list-price-with-margine').on('input', function () {
+        let sumWithMargine = 0;
+        let primeCostSum = 0;
+        let totalQty = 0;
+        let arr = [];
+
+        $('.manually-order-parts-list-item-qty').each(function () {
+            sumWithMargine += $(this).val() * $(this).next().next().val();
+            console.log(sumWithMargine);
+        });
+    $('.manually-order-parts-list-item-content').each(function (productId, elem) {
+        
+
+        
+        sumWithMargine += $(elem).children().first().next().next().next().val() * $(elem).children().first().next().next().next().next().next().val();
+        
+        console.log(sumWithMargine);
+    });
+
+    
 });

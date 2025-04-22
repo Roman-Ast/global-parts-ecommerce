@@ -649,9 +649,9 @@
                                 <input type="text" class="form-control" name="article" required>
                                 <input type="text" class="form-control" name="brand" required>
                                 <input type="text" class="form-control" name="name" required>
-                                <input type="number" class="form-control" name="qty" required> 
-                                <input type="number" class="form-control" name="price" required>
-                                <input type="number" class="form-control" name="priceWithMargine" required>
+                                <input type="number" class="form-control manually-order-parts-list-item-qty" name="qty" required> 
+                                <input type="number" class="form-control manually-order-parts-list-price" name="price" required>
+                                <input type="number" class="form-control manually-order-parts-list-price-with-margine" name="priceWithMargine" required>
                                 <select name="from_stock" class="order_product_item_supplier">
                                     <option disabled selected>Выбери поставщика</option>
                                     @foreach ($suppliers as $key => $supplier)
@@ -660,6 +660,17 @@
                                 </select>
                                 <input type="date" class="form-control" name="deliveryTime" value="{{ date('Y-m-d') }}" required>
                             </div>
+                        </div>
+                    </div>
+                    <div id="manually-order-total">
+                        <div id="manualy-order-total-sum-with-margine" class="manualy-order-total-item">
+                            Итого розница: <span id="manualy-order-total-sum-with-margine-num" class="manualy-order-total-item-num">0</span>
+                        </div>
+                        <div id="manualy-order-total-prime-cost-sum" class="manualy-order-total-item">
+                            Итого С/С: <span id="manualy-order-total-prime-cost-sum" class="manualy-order-total-item-num">0</span>
+                        </div>
+                        <div id="manualy-order-total-qty" class="manualy-order-total-item">
+                            Итого кол-во: <span id="manualy-order-total-qty" class="manualy-order-total-item-num">0</span>
                         </div>
                     </div>
                 </div>
