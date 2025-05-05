@@ -9,7 +9,6 @@
 <body>
     <p>VINCODE: {{ $requestData['vincode'] }}</p>
     <p>Список запчастей: {{ $requestData['spareparts'] }}</p>
-    <p>Email: {{ $requestData['email'] }}</p>
     <p>Телефон: {{ $requestData['phone'] }}</p>
     <p>Примечание: {{ $requestData['note'] }}</p>
     <h3 style="color: red;">Подбирай быстро и с энтузиазмом!!!</h3>

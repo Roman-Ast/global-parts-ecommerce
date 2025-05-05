@@ -15,7 +15,6 @@ class SparePartRequestController extends Controller
         $requestData = [
             'vincode' => $request->vincode,
             'spareparts' => $request->spareparts,
-            'email' => $request->email,
             'phone' => $request->phone,
             'note' => $request->note
         ];

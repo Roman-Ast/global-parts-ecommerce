@@ -50,7 +50,8 @@ $(window).on('load', function () {
    };
 
    if ($(window).width() <= '580') {
-      $('#whatsapp-container').attr('href', 'https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта.')
+      $('.whatsapp-fixed-btn').attr('href', 'https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта.');
+      $('.wa-top-container').attr('href', 'https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта.')
    }
 });
 //показывать кнопку удаления текста при вводе в инпут поиска запчастей
@@ -65,6 +66,12 @@ $('#searchBarInput').on('input', function () {
 $('#search-input-text-delete').on('click', function () {
    $('#searchBarInput').val('');
    $(this).fadeOut(100);
+});
+
+//прокручивать до формы подбора
+$('#scroll-to-form').on('click', function () {
+   const el = document.getElementById('vin-form');
+   el.scrollIntoView({behavior: "smooth", 'block': 'start'}); 
 });
 
 //показывать еще товар когда список большой
@@ -289,7 +296,13 @@ $('.modal-close').on('click', function () {
 
 //подтверждение отправки формы
 $('#order-confirm').on('click', function () {
-   $('#order-btn-submit').click();
+   alert();
+   //$('#order-btn-submit').click();
+   $(this).attr('disabled', true);
+});
+$('#order-cancel').on('click', function () {
+   $('#order-confirmation-form').fadeOut(300);
+   $('#cart-shadow').fadeOut(400);
 });
 
 //загрузка данных заказа
@@ -422,12 +435,9 @@ setInterval(function () {
    $('#steering-gur').toggle('slow');
 }, 5000)
 //смена призыва к действию возле кнопки ватсап
-setInterval(function () {
-   $('#whatsapp-offer-1').toggle(200);
-   $('#whatsapp-offer-2').toggle(200);
-}, 4500)
+
 //показ wa-qr
-$('#whatsapp-container img').on('click', function () {
+$('.whatsapp-fixed-btn, .wa-top-container').on('click', function () {
    if ($(window).width() > '580') {
       $('#shadow-main').fadeIn();
       $('#shadow-main').css({'background-color': 'rgba(0, 0, 0, .8)'});
@@ -530,6 +540,41 @@ $('#articles-hide').on('change', function () {
    }
 });
 
+//проверка ввода номера телефона
+const phoneInput = document.getElementById("phone");
 
+    phoneInput.addEventListener("input", function () {
+      let input = phoneInput.value.replace(/\D/g, ""); // Убираем все нецифры
+
+      if (input.startsWith("8")) {
+        input = "7" + input.slice(1); // Заменяем 8 на 7
+      }
+
+      if (input.length > 11) input = input.slice(0, 11); // Ограничение по длине
+
+      let formatted = "+7";
+      if (input.length > 1) formatted += " (" + input.slice(1, 4);
+      if (input.length >= 4) formatted += ") " + input.slice(4, 7);
+      if (input.length >= 7) formatted += "-" + input.slice(7, 9);
+      if (input.length >= 9) formatted += "-" + input.slice(9, 11);
+
+      phoneInput.value = formatted;
+    });
+
+    function validatePhone() {
+      const raw = phoneInput.value.replace(/\D/g, "");
+      const error = document.getElementById("error");
+    
+      // Проверка: номер начинается с 7, затем разрешённый код оператора, затем 7 цифр
+      const valid = /^7(00|01|02|05|07|08|47|71|76|77|78)\d{7}$/.test(raw);
+    
+      if (!valid) {
+        error.textContent = "Введите номер с допустимым кодом оператора (700, 701, 702, 705, 707 и т.д.).";
+        return false;
+      }
+    
+      error.textContent = "";
+      return true;
+    }
 
 
