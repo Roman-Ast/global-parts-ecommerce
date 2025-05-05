@@ -49,7 +49,7 @@ class CartController extends Controller
             $cart = new Cart();
         }
 
-        $duplicates = $cart->search($request->data['article']);
+        //$duplicates = $cart->search($request->data['article']);
         
         /*Wif ($duplicates == 'bingo') {
             return json_encode([

@@ -160,6 +160,9 @@ $('.stock-item-cart-btn').on('click', function () {
    params.qty = +$(this).next().children().first().val();
    params.price = $(this).next().next().val();
 
+   $(this).children().first().attr('src', '/images/checkmark-green-20.png');
+   $(this).css({'border': '1px solid #4bc828'});
+
    $.ajax({
       data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: params},
       reqData: params,
@@ -188,9 +191,6 @@ $('.stock-item-cart-btn').on('click', function () {
                $(this).parent().slideUp(400);
             })
          }
-
-         $(this).children().first().attr('src', '/images/checkmark-green-20.png');
-         $(this).css({'border': '1px solid #4bc828'});
       },
       error: function (error) {
          console.log(error);

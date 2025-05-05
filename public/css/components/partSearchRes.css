@@ -149,6 +149,7 @@
         flex-direction: row;
         justify-content: space-between;
         align-items: flex-start;
+        cursor: pointer;
     }
     .stock-item-cart-qty input{
         max-width: 70%;
