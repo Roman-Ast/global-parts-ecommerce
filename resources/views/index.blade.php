@@ -110,17 +110,17 @@
         </div>
       </section>
 
-      <section style="padding: 40px 20px; background-color: #f9f9f9; margin-top: 40px;">
-        <div style="max-width: 1200px; margin: 0 auto;">
+      <section class="cta-form-section py-5 bg-light mt-5">
+        <div class="text-center mb-4">
           
           <!-- Заголовок -->
-          <h2 style="font-size: 28px; margin-bottom: 10px;">Хиты продаж по моделям авто</h2>
-          <p style="font-size: 16px; color: #666; margin-bottom: 30px;">
-            Переходите сразу к спискам популярных моделей и находите нужное быстрее.
+          <h2 class="fw-bold">Хиты продаж по моделям авто</h2>
+          <p class="text-muted lead mb-0">Переходите сразу к спискам популярных моделей и находите нужное быстрее.</p>
+            
           </p>
 
           <!-- Карточки -->
-          <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+          <div class="row text-center gy-4">
             
             <!-- Hyundai / Kia -->
             <a href="/hyundai" class="category-card">
@@ -220,23 +220,23 @@
           <h2 class="text-center fw-bold mb-4">Что говорят наши клиенты</h2>
 
           <div class="row g-4">
-            <div class="col-sm-6 col-lg-4">
-              <img src="/images/reviews/review1.jpeg" class="img-fluid rounded-4 shadow-sm" alt="Отзыв 1">
+            <div class="col-sm-6 col-lg-4 review-item">
+              <img src="/images/reviews/review1.jpeg" class="img-fluid rounded-4 shadow-sm review-img" alt="Отзыв 1">
             </div>
-            <div class="col-sm-6 col-lg-4">
-              <img src="/images/reviews/review2.jpeg" class="img-fluid rounded-4 shadow-sm" alt="Отзыв 2">
+            <div class="col-sm-6 col-lg-4 review-item">
+              <img src="/images/reviews/review2.jpeg" class="img-fluid rounded-4 shadow-sm review-img" alt="Отзыв 2">
             </div>
-            <div class="col-sm-6 col-lg-4">
-              <img src="/images/reviews/review3.jpeg" class="img-fluid rounded-4 shadow-sm" alt="Отзыв 3">
+            <div class="col-sm-6 col-lg-4 review-item">
+              <img src="/images/reviews/review3.jpeg" class="img-fluid rounded-4 shadow-sm review-img" alt="Отзыв 3">
             </div>
-            <div class="col-sm-6 col-lg-4">
-              <img src="/images/reviews/review4.jpeg" class="img-fluid rounded-4 shadow-sm" alt="Отзыв 3">
+            <div class="col-sm-6 col-lg-4 review-item">
+              <img src="/images/reviews/review4.jpeg" class="img-fluid rounded-4 shadow-sm review-img" alt="Отзыв 3">
             </div>
-            <div class="col-sm-6 col-lg-4">
-              <img src="/images/reviews/review5.jpeg" class="img-fluid rounded-4 shadow-sm" alt="Отзыв 3">
+            <div class="col-sm-6 col-lg-4 review-item">
+              <img src="/images/reviews/review5.jpeg" class="img-fluid rounded-4 shadow-sm review-img" alt="Отзыв 3">
             </div>
-            <div class="col-sm-6 col-lg-4">
-              <img src="/images/reviews/review6.jpeg" class="img-fluid rounded-4 shadow-sm" alt="Отзыв 3">
+            <div class="col-sm-6 col-lg-4 review-item">
+              <img src="/images/reviews/review6.jpeg" class="img-fluid rounded-4 shadow-sm review-img" alt="Отзыв 3">
             </div>
             <!-- остальные 6 отзывов -->
           </div>
@@ -407,12 +407,23 @@
     </a>-->
 
     <a href="#"
-   class="whatsapp-fixed-btn"
-   aria-label="Написать в WhatsApp">
-  <div class="pulse-ring"></div>
-  <i class="bi bi-whatsapp"></i>
-</a>
+      class="whatsapp-fixed-btn"
+      aria-label="Написать в WhatsApp">
+      <div class="pulse-ring"></div>
+      <i class="bi bi-whatsapp"></i>
+    </a>
 
+    <div id="review-modal" style="display: none;">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <span class="modal-close">&times;</span>
+        <img src="" alt="Просмотр отзыва" id="modal-img">
+        <div class="modal-nav">
+          <span class="prev">&larr;</span>
+          <span class="next">&rarr;</span>
+        </div>
+      </div>
+    </div>
 
     @include('components.footer-bar-mini')
     @include('components.footer')

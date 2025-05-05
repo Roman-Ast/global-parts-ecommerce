@@ -1,3 +1,4 @@
+//модальное окно для показа и пролистывания отзывов
 
 $(window).on('load', function () {
    //показываем кнопку "показать еще", если список оригинальных номеров больше 10
@@ -540,41 +541,98 @@ $('#articles-hide').on('change', function () {
    }
 });
 
+//увеличение отзыва при наведении
+$('.review-item').on('mouseenter', function () {
+   $(this).css({'transform': 'scale(1.1)', 'transition': 'all 0.5s'});
+});
+$('.review-item').on('mouseleave', function () {
+   $(this).css({'transform': 'scale(1)'});
+});
+
 //проверка ввода номера телефона
 const phoneInput = document.getElementById("phone");
 
-    phoneInput.addEventListener("input", function () {
-      let input = phoneInput.value.replace(/\D/g, ""); // Убираем все нецифры
+phoneInput.addEventListener("input", function () {
+let input = phoneInput.value.replace(/\D/g, ""); // Убираем все нецифры
 
-      if (input.startsWith("8")) {
-        input = "7" + input.slice(1); // Заменяем 8 на 7
+if (input.startsWith("8")) {
+   input = "7" + input.slice(1); // Заменяем 8 на 7
+}
+
+if (input.length > 11) input = input.slice(0, 11); // Ограничение по длине
+
+let formatted = "+7";
+if (input.length > 1) formatted += " (" + input.slice(1, 4);
+if (input.length >= 4) formatted += ") " + input.slice(4, 7);
+if (input.length >= 7) formatted += "-" + input.slice(7, 9);
+if (input.length >= 9) formatted += "-" + input.slice(9, 11);
+   phoneInput.value = formatted;
+});
+
+function validatePhone() {
+const raw = phoneInput.value.replace(/\D/g, "");
+const error = document.getElementById("error");
+    
+// Проверка: номер начинается с 7, затем разрешённый код оператора, затем 7 цифр
+const valid = /^7(00|01|02|05|07|08|47|71|76|77|78)\d{7}$/.test(raw);
+    
+if (!valid) {
+   error.textContent = "Введите номер с допустимым кодом оператора (700, 701, 702, 705, 707 и т.д.).";
+   return false;
+}
+    
+error.textContent = "";
+   return true;
+}
+
+    //увеличение и пролистывание отзывов
+$(document).ready(function() {
+      const $modal = $('#review-modal');
+      const $modalImg = $('#modal-img');
+      const $imgs = $('.review-img');
+      let currentIndex = -1;
+  
+      function openModal(index) {
+        currentIndex = index;
+        $modalImg.attr('src', $imgs.eq(currentIndex).attr('src'));
+        $modal.fadeIn(200);
       }
-
-      if (input.length > 11) input = input.slice(0, 11); // Ограничение по длине
-
-      let formatted = "+7";
-      if (input.length > 1) formatted += " (" + input.slice(1, 4);
-      if (input.length >= 4) formatted += ") " + input.slice(4, 7);
-      if (input.length >= 7) formatted += "-" + input.slice(7, 9);
-      if (input.length >= 9) formatted += "-" + input.slice(9, 11);
-
-      phoneInput.value = formatted;
-    });
-
-    function validatePhone() {
-      const raw = phoneInput.value.replace(/\D/g, "");
-      const error = document.getElementById("error");
-    
-      // Проверка: номер начинается с 7, затем разрешённый код оператора, затем 7 цифр
-      const valid = /^7(00|01|02|05|07|08|47|71|76|77|78)\d{7}$/.test(raw);
-    
-      if (!valid) {
-        error.textContent = "Введите номер с допустимым кодом оператора (700, 701, 702, 705, 707 и т.д.).";
-        return false;
+  
+      function closeModal() {
+        $modal.fadeOut(200);
       }
-    
-      error.textContent = "";
-      return true;
-    }
+  
+      function showNext() {
+        currentIndex = (currentIndex + 1) % $imgs.length;
+        $modalImg.attr('src', $imgs.eq(currentIndex).attr('src'));
+      }
+  
+      function showPrev() {
+        currentIndex = (currentIndex - 1 + $imgs.length) % $imgs.length;
+        $modalImg.attr('src', $imgs.eq(currentIndex).attr('src'));
+      }
+  
+      $imgs.on('click', function() {
+        openModal($imgs.index(this));
+      });
+  
+      $('.modal-close, .modal-overlay').on('click', closeModal);
+      $('.modal-nav .next').on('click', showNext);
+      $('.modal-nav .prev').on('click', showPrev);
+  
+      $(document).on('keydown', function(e) {
+        if ($modal.is(':visible')) {
+          if (e.key === 'ArrowRight') showNext();
+          if (e.key === 'ArrowLeft') showPrev();
+          if (e.key === 'Escape') closeModal();
+        }
+      });
+  
+      // свайпы
+      var hammer = new Hammer(document.getElementById('review-modal'));
+      hammer.on('swipeleft', showNext);
+      hammer.on('swiperight', showPrev);
+});
+
 
 
