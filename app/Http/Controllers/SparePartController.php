@@ -587,7 +587,7 @@ class SparePartController extends Controller
         $html = curl_exec($ch);
         curl_close($ch);
         $result = json_decode($html, true);
-        dd($result);
+        
         if (!array_key_exists('items', $result) || empty($result['items'] || array_key_exists('message', $result))) {
             return;
         } 
@@ -1019,7 +1019,6 @@ class SparePartController extends Controller
             }
             if(gettype($json_responce_data->RESP) == 'array'){
                 if(array_key_exists('MSG', $json_responce_data->RESP)) {
-                    dd('opa');
                     return;
                 }
             }
