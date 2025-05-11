@@ -34,8 +34,8 @@ class SparePartController extends Controller
     const ROUND_LIMIT = -1;
     const KULAN_API_KEY='UYWUVoxme116qJlmeSzl7uCsI7Mrlv0D4symnBbR0tyVjMdOMnzkhys5hOvvRoEhcOJYc8Ntcf9sM9tDpUvpz60HTFcMcnJ1mpVU5PNbxuDxJR4DyLhf10y317musSOo';
     const KULAN_ASTSTORE_ID = '2198d63c-35f3-11eb-925f-00155d20f705';
-    const CONNECTION_TIMEOUT = 1;
-    const TIMEOUT = 2;
+    const CONNECTION_TIMEOUT = 2;
+    const TIMEOUT = 3;
 
     public $partNumber = '';
 
