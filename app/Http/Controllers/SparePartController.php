@@ -34,6 +34,8 @@ class SparePartController extends Controller
     const ROUND_LIMIT = -1;
     const KULAN_API_KEY='UYWUVoxme116qJlmeSzl7uCsI7Mrlv0D4symnBbR0tyVjMdOMnzkhys5hOvvRoEhcOJYc8Ntcf9sM9tDpUvpz60HTFcMcnJ1mpVU5PNbxuDxJR4DyLhf10y317musSOo';
     const KULAN_ASTSTORE_ID = '2198d63c-35f3-11eb-925f-00155d20f705';
+    const CONNECTION_TIMEOUT = 1;
+    const TIMEOUT = 2;
 
     public $partNumber = '';
 
@@ -201,6 +203,8 @@ class SparePartController extends Controller
     }
 
     public function searchPhaeton(String $brand, String $partnumber) {
+        //$start = microtime(true);
+
         $ch = curl_init();
  
         $params = [
@@ -214,6 +218,8 @@ class SparePartController extends Controller
 
         curl_setopt($ch, CURLOPT_URL, 'https://api.phaeton.kz/api/Search?' . http_build_query($params));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
@@ -310,6 +316,8 @@ class SparePartController extends Controller
 
         curl_setopt($ch1, CURLOPT_URL, 'https://api.phaeton.kz/api/Search?' . http_build_query($params1));
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
@@ -345,12 +353,13 @@ class SparePartController extends Controller
                 'supplier_color' => '#feed00'
             ]);
         }
-
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. phtn';
         return;
     }
 
     public function searchForumAuto(String $brand, String $partnumber)
     {
+        //$start = microtime(true);
         //поиск товара в наличии в астане
         $ch = curl_init();
 
@@ -364,6 +373,8 @@ class SparePartController extends Controller
         
         curl_setopt($ch, CURLOPT_URL, 'https://api.forum-auto.kz/v2/listGoods?login=432537_popadinets_roman&pass=0xJcsnuE69xI' . http_build_query($params));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
@@ -419,12 +430,13 @@ class SparePartController extends Controller
                 }           
             }
         }
-        
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. frmt';
         return;
     }
 
     public function searchTreid (String $brand, String $partnumber) 
     {
+        //$start = microtime(true);
         if ($brand == 'Hyundai/Kia') {
             $brand = 'Hyundai';
         } else if ($brand == 'Peugeot/Citroen') {
@@ -459,6 +471,8 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_POSTFIELDS, $request_data_searched_number);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded; charset=UTF-8'));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         $html = curl_exec($ch);
         curl_close($ch);
@@ -524,6 +538,8 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_POSTFIELDS, $request_data_search_crosses);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded; charset=UTF-8'));
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         $html = curl_exec($ch);
@@ -565,6 +581,8 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_POSTFIELDS, $request_data);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded; charset=UTF-8'));
         $html = curl_exec($ch);
         curl_close($ch);
@@ -610,11 +628,14 @@ class SparePartController extends Controller
                 } 
             }
         }
+
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. trd';
+        return;
     }
 
     public function searchRossko(String $brand, String $partNumber, String $guid)
     {   
-        
+        //$start = microtime(true);
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
             'options' => array(
@@ -937,12 +958,13 @@ class SparePartController extends Controller
                     }
             }
         }
-        
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. rossko';
         return;
     }
 
     public function searchArmtek(String $brand, String $partnumber)
     {
+        //$start = microtime(true);
         require_once '../config.php';
         require_once '../autoloader.php';
 
@@ -1033,13 +1055,13 @@ class SparePartController extends Controller
         } catch (ArmtekException $e) {
             $json_responce_data = $e -> getMessage(); 
         }
-
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. armtek';
         return;
     }
 
     public function searchShatem(String $brand, String $partnumber)
     {
-        $start = microtime(true);
+        //$start = microtime(true);
         if ($brand == 'Citroen/Peugeot') {
             $brand = 'PSA';
         } else if ($brand == 'HYUNDAI/KIA' || $brand == 'Hyndai/Kia') {
@@ -1058,6 +1080,8 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($request_params));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
@@ -1086,6 +1110,8 @@ class SparePartController extends Controller
             'Authorization:Bearer ' . $access_token,
         ];
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch1, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch1, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
@@ -1116,6 +1142,8 @@ class SparePartController extends Controller
         curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($request_params2));
         curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers1);
+        curl_setopt($ch2, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch2, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch2, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         $response = json_decode(curl_exec($ch2));
@@ -1208,12 +1236,13 @@ class SparePartController extends Controller
                 }
             }
         }
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. shtm';
         return;
     }
 
     public function searchTiss(String $brand, String $partnumber)
     {
-        
+        //$start = microtime(true);
         $ch1 = curl_init(); 
         
         $fields = array("JSONparameter" => "{'Brand': '".$brand."', 'Article': '".$partnumber."', 'is_main_warehouse': ".'1'." }" );
@@ -1224,6 +1253,8 @@ class SparePartController extends Controller
         curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/StockByArticle?". http_build_query($fields));
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
@@ -1276,12 +1307,13 @@ class SparePartController extends Controller
                 ]);
             }
         }
-        
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. tiss';
         return;
     }
 
     public function searchKulan(String $brand, String $partnumber)
     {
+        $start = microtime(true);
         //получение остатков искомого номера
         $ch = curl_init();
 
@@ -1298,6 +1330,8 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_URL, 'https://connect.adkulan.kz/api/request/api/v2/catalog/article/productCart?' . http_build_query($params));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
@@ -1335,6 +1369,8 @@ class SparePartController extends Controller
         $ch1 = curl_init();
         curl_setopt($ch1, CURLOPT_URL, 'https://connect.adkulan.kz/api/request/api/v2/catalog/article/analogues?' . http_build_query($params) . '&order_by=price_asc');
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         
@@ -1377,16 +1413,19 @@ class SparePartController extends Controller
                 }
             }
         }
-        
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. kulan';
         return;
     }
 
     public function searchFebest(String $brand, String $partnumber)
     {
+        //$start = microtime(true);
         $ch = curl_init();
 
         curl_setopt($ch, CURLOPT_URL, 'https://febest.kz/api/v1/search/{pHgK46xXxD3pxbeyTtWJ}/' . $partnumber);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
@@ -1417,14 +1456,20 @@ class SparePartController extends Controller
                 'supplier_color' => '#a27745',
             ]);
         }
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. fbst';
+
+        return;
     }
 
     public function searchGerat(String $brand, String $partnumber)
     {
+        //$start = microtime(true);
         $ch = curl_init();
 
         curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         $result = curl_exec($ch);
@@ -1478,13 +1523,21 @@ class SparePartController extends Controller
                 }
             }
         }
-        
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. grt';
         return;
     }
 
     public function searchAutopiter(String $brand, String $partnumber)
     {
-        $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL");
+        //$start = microtime(true);
+        $connect = array(
+            'options' => array(
+                'connection_timeout' => 1,
+                'trace' => true
+            )
+        );
+
+        $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL", $connect['options']);
         $brand = strtolower($brand);
         if (!($client->IsAuthorization()->IsAuthorizationResult)) {
             $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
@@ -1656,7 +1709,7 @@ class SparePartController extends Controller
                 ]);
             }
         }       
-
+        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. atptr';
         return;
     }
 
