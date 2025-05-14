@@ -634,5 +634,13 @@ $(document).ready(function() {
       hammer.on('swiperight', showPrev);
 });
 
+//блокирование кнопки отправить запрос по VIN после первого нажатия и высплытие окна ожидания
+$('#send-vin-search-btn').on('click', function () {
+   $('#shadow').show();
+   $('#shadow').addClass('d-flex');
+   $('#loading').text('Ваш запрос отправляется, пожалуйста ожидайте...');
+   $(this).attr('disabled', true);
+});
+
 
 

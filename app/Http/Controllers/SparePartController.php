@@ -547,12 +547,11 @@ class SparePartController extends Controller
 
         try {
             $result = json_decode($html, true);
-            
         } catch (\Throwable $th) {
             return;
         }
         
-        if (empty($result) ) {
+        if (empty($result) || !$result) {
             return;
         } else if (array_key_exists('message', $result) && $result['message'] != 'Ok') {
             return;
@@ -586,7 +585,12 @@ class SparePartController extends Controller
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded; charset=UTF-8'));
         $html = curl_exec($ch);
         curl_close($ch);
-        $result = json_decode($html, true);
+
+        try {
+            $result = json_decode($html, true);
+        } catch (\Throwable $th) {
+            return;
+        }
         
         if (!array_key_exists('items', $result) || empty($result['items'] || array_key_exists('message', $result))) {
             return;
@@ -655,7 +659,6 @@ class SparePartController extends Controller
         $query  = new SoapClient($connect['wsdl'], $connect['options']);
         try {
             $result = $query->GetSearch($param);
-            
         } catch (\Throwable $th) {
             return view('components.hostError');
         }
@@ -1257,8 +1260,7 @@ class SparePartController extends Controller
         curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         try {
-            $result = json_decode(curl_exec($ch1)); 
-            
+            $result = json_decode(curl_exec($ch1));
         } catch (\Throwable $th) {
             return;
         }
@@ -1375,15 +1377,20 @@ class SparePartController extends Controller
         
         try {
             $response1 = json_decode(curl_exec($ch1));
-            curl_close($ch1);
         } catch (\Throwable $th) {
             return;
         }
-        
+
+        curl_close($ch1);
+
         if (gettype($response1) == 'object' && property_exists($response1, 'messages')) {
             return;
         }
         
+        if (empty($response1) || !$response1) {
+            return;
+        }
+
         foreach ($response1 as $item) {
             foreach ($item->remains as $store) {
                 if($store->id == self::KULAN_ASTSTORE_ID) {

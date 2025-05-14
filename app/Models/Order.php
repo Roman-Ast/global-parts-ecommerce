@@ -23,6 +23,10 @@ class Order extends Model
         'sale_channel'
     ];
 
+    protected $casts = [
+        'date' => 'date',
+    ];
+
     public function products(): HasMany
     {
         return $this->hasMany(OrderProduct::class);

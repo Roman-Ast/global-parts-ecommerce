@@ -11,6 +11,7 @@ use App\Models\SupplierSettlement;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\OfficePrice;
+use Carbon\Carbon;
 
 class AdminPanelController extends Controller
 {
@@ -19,9 +20,22 @@ class AdminPanelController extends Controller
      */
     public function index()
     {
-        $user = auth()->user();
-        $orders = Order::orderBy('created_at', 'desc')->get();
+        /*$today = Carbon::now();
+
+        // Определим начало и конец отчетного периода
+        if ($today->day >= 8) {
+            $start = Carbon::create($today->year, $today->month, 8);
+            $end = $start->copy()->addMonth()->subDay(); // до 7 числа следующего месяца
+        } else {
+            $end = Carbon::create($today->year, $today->month, 7);
+            $start = $end->copy()->subMonth()->addDay(); // с 8 числа предыдущего месяца
+        }
+
         
+        $orders = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->get();*/
+        
+        $orders = Order::orderBy('created_at', 'desc')->get();
+        $user = auth()->user();
         $settlements = Setlement::all();
         $users = User::all();
         $payments = Payment::all();

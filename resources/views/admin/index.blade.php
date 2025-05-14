@@ -100,20 +100,20 @@
         <div id="content">
             <div id="orders" class="admin-content-item">
                 <div id="orders-filter">
-                    <div id="orders-filter-date" class="order-filter-item">
-                        <input type="date" name="filter_date_from" class="input-group input-group-sm"value="{{ Carbon::now()->subDays(14)->format('Y-m-d') }}" >
-                        <input type="date" name="filter_date_to" class="input-group input-group-sm" value="{{ date('Y-m-d') }}">
+                    <div id="orders-filter-date" class="order-filter-item input-group">
+                        <input type="date" name="filter_date_from" class="form-control input-group-sm"value="{{ Carbon::now()->subDays(14)->format('Y-m-d') }}" >
+                        <input type="date" name="filter_date_to" class="form-control input-group-sm" value="{{ date('Y-m-d') }}">
                     </div>
-                    <div id="orders-filter-user" class="order-filter-item">
-                        <select name="user">
+                    <div id="orders-filter-user" class="order-filter-item input-group">
+                        <select name="user" class="form-control">
                             <option selected disabled value="null">Выбери пользователя</option>
                             @foreach ($users as $user)
                                 <option value="{{ $user->id }}">{{ $user->name }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div id="orders-filter-customer" class="order-filter-item">
-                        <select name="customer">
+                    <div id="orders-filter-customer" class="order-filter-item input-group">
+                        <select name="customer" class="form-control">
                             <option selected disabled value="null">Выбери клиента</option>
                             @foreach ($customers as $customer)
                                 <option value="{{ $customer }}">{{ $customer }}</option>
@@ -267,7 +267,7 @@
                             {{ $orderItem->status }} <img src="/images/clock-wait-16.png">
                        </div>
                        <div class="order-item-date">
-                            {{ $orderItem->date }}
+                            {{ $orderItem->date->format('d.m.y') }}
                        </div>
                        <div class="order-item-time">
                             {{ $orderItem->sale_channel }}

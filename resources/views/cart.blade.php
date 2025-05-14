@@ -5,19 +5,19 @@
 @section('content')
 
 
-<div id="search-catalog-main-container" class="container">
-    <div id="cart-shadow"></div>
-    <div id="order-confirmation-form">
-      <div id="order-confirmation-form-header" class="order-confirmation-form-item">
-        Оформление заказа
-      </div>
-      <div id="order-confirmation-form-content" class="order-confirmation-form-item">
-        Пожалуйста, подтвердите оформление заказа...
-      </div>
-      <div id="order-confirmation-form-buttons" class="order-confirmation-form-item">
-        <button class="btn btn-secondary" id="order-cancel">Отмена</button>
-        <button class="btn btn-primary" id="order-confirm">Оформить заказ</button>
-      </div>
+    <div id="search-catalog-main-container" class="container">
+        <div id="cart-shadow"></div>
+        <div id="order-confirmation-form">
+          <div id="order-confirmation-form-header" class="order-confirmation-form-item">
+            Оформление заказа
+          </div>
+          <div id="order-confirmation-form-content" class="order-confirmation-form-item">
+            Пожалуйста, подтвердите оформление заказа...
+          </div>
+          <div id="order-confirmation-form-buttons" class="order-confirmation-form-item">
+            <button class="btn btn-secondary" id="order-cancel">Отмена</button>
+            <button class="btn btn-primary" id="order-confirm">Оформить заказ</button>
+          </div>
     </div>
 
     @include('components.header')
