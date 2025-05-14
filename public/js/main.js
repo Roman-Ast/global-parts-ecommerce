@@ -297,8 +297,7 @@ $('.modal-close').on('click', function () {
 
 //подтверждение отправки формы
 $('#order-confirm').on('click', function () {
-   alert();
-   //$('#order-btn-submit').click();
+   $('#order-btn-submit').click();
    $(this).attr('disabled', true);
 });
 $('#order-cancel').on('click', function () {
