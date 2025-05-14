@@ -81,17 +81,17 @@
                 @csrf
                 <div class="mb-3">
                   <label for="vin" class="form-label fw-semibold">Винкод авто (VIN)</label>
-                  <input type="text" name="vincode" class="form-control" id="vin" placeholder="Например: KMH1234567890" required>
+                  <input type="text" name="vincode" class="form-control vin-selection-field" id="vin" placeholder="Например: KMH1234567890" required>
                 </div>
 
                 <div class="mb-3">
                   <label for="parts" class="form-label fw-semibold">Какие запчасти нужны</label>
-                  <textarea class="form-control" name="spareparts" id="parts" rows="3" placeholder="Например: фара, бампер, колодки..." required></textarea>
+                  <textarea class="form-control vin-selection-field" name="spareparts" id="parts" rows="3" placeholder="Например: фара, бампер, колодки..." required></textarea>
                 </div>
 
                 <div class="mb-3">
                   <label for="phone" class="form-label fw-semibold">Телефон (для обратной связи)</label>
-                  <input type="tel" class="form-control" name="phone" id="phone" placeholder="+7 (777) 123-45-67" required>
+                  <input type="tel" class="form-control vin-selection-field" name="phone" id="phone" placeholder="+7 (777) 123-45-67" required>
                   <p id="error" style="color:red;"></p>
                 </div>
 
@@ -243,168 +243,7 @@
           <i>Больше отзывов можно посмотреть <a href="https://2gis.kz/astana/search/%D0%B0%D0%B2%D1%82%D0%BE%D0%B7%D0%B0%D0%BF%D1%87%D0%B0%D1%81%D1%82%D0%B8/firm/70000001080248919/71.428541%2C51.17667/tab/reviews?m=71.443112%2C51.129941%2F10.79" target="_blank">здесь</a><i>
         </div>
       </section>
-
-        <!--<div id="main-blocks-container" class="bg-light">
-            <div id="how-we-work">
-                <div id="how-we-work-header">
-                    Как заказать запчасти у нас - всего 3 шага!
-                </div>
-                <div id="how-we-work-content">
-                    <div id="how-we-work-img-container">
-                        <img src="/images/man-working-laptop.jpg" alt="man-working-laptop" id="how-we-work-img">
-                    </div>
-                    <div id="how-we-work-text-container">
-                            <div>
-                                1. <img src="/images/camera-36.png" alt="camera">  Вы присылаете VIN или фото техпаспорта (WhatsApp или через форму)
-                            </div>
-                            <div>
-                                2. <img src="/images/lupa-36.png" alt="loop"> Подберем подходящие детали и отправим вам с фото, ценой и сроками доставки
-                            </div>
-                            <div>
-                                3. <img src="/images/icons8-delivery-36.png" alt="delivery">  Доставляем в ваш город или выдаем в Астане
-                            </div>
-                    </div>
-                </div>
-            </div>
-            <div id="cta-block">
-                <div id="cta-block-header">
-                    Не знаете номер детали? Подберем по VIN!
-                </div>
-                <div id="cta-block-content">
-                    <div id="cta-img-container">
-                        <img src="/images/car_vin_search2.png" alt="vin_search_car" id="cta-img-container-img">
-                    </div>
-                    <div id="cta-block-text-container">
-                        <form id="feedback-form-wrapper" action="/sparepart-request" method="POST" class="form-control">
-                            @csrf
-                            
-                            <div id="feedback-form-inner-wrapper">
-                                <div class="mb-2">
-                                    <label class="form-label">Винкод авто (VIN)</label>
-                                    <input type="text" class="form-control" name="vincode" required minlength="7">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Запчасти, которые ищете</label>
-                                    <textarea class="form-control" name="spareparts" placeholder="введите список запчастей..." required  minlength="4" rows="5"></textarea>
-                                </div>
-                                
-                                <button type="submit" class="btn btn-danger">Получить подбор</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div id="why-us-wrapper" class="bg-light">
-            <div id="why-us-header">
-                Почему нас выбирают более 1000 клиентов по Казахстану
-            </div>
-            <div id="why-us-content">
-                <div id="why-us-text-container">
-                    
-                        <div>
-                            <img src="/images/lupa-36.png" alt="searching">
-                            Подбор по VIN-коду - быстро и точно
-                        </div>
-                        <div>
-                            <img src="/images/icons8-cart-sp-36.png" alt="cart-spareparts">
-                            Оригиналы и качественные аналоги в наличии и на заказ
-                        </div>
-                        <div>
-                            <img src="/images/icons8-delivery-red-36.png" alt="cart-spareparts">
-                            Отправка по Казахстану за 1-3 дня
-                        </div>
-                        <div>
-                            <img src="/images/icons8-cell-phone-36.png" alt="cart-spareparts">
-                            Консультация в WhatsApp без ожидания
-                        </div>
-                        <div>
-                            <img src="/images/icons8-dollars-36.png" alt="cart-spareparts">
-                            Доступные цены - работаем напрямую с поставщиками
-                        </div>
-                        <div>
-                            <img src="/images/icons8-warranty-36.png" alt="cart-spareparts">
-                            Гарантия и возврат, если запчасть не подошла
-                        </div>
-                    
-                </div>
-                <div id="why-us-img-container">
-                    <img src="/images/why-us.jpg" alt="why-us" id="why-us-img">
-                </div>
-            </div>
-        </div>
-
-        <div id="review-wrapper" class="bg-light">
-            <div id="review-header">
-                Отзывы наших клиентов
-            </div>
-            <div id="review-content">
-                
-                    <div id="carouselExample" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
-                        <div class="carousel-inner">
-                            <div class="carousel-item active">
-                            <img src="images/reviews/review1.jpeg" class="d-block w-100" alt="...">
-                            </div>
-                            <div class="carousel-item">
-                            <img src="images/reviews/review2.jpeg" class="d-block w-100" alt="...">
-                            </div>
-                            <div class="carousel-item">
-                            <img src="images/reviews/review3.jpeg" class="d-block w-100" alt="...">
-                            </div>
-                        </div>
-                        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
-                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                            <span class="visually-hidden">Previous</span>
-                        </button>
-                        <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
-                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                            <span class="visually-hidden">Next</span>
-                        </button>
-                    </div>
-                
-            </div>
-            <div id="review-footer">
-                <i>Больше отзывов можно посмотреть <a href="https://2gis.kz/astana/search/%D0%B0%D0%B2%D1%82%D0%BE%D0%B7%D0%B0%D0%BF%D1%87%D0%B0%D1%81%D1%82%D0%B8/firm/70000001080248919/71.428541%2C51.17667/tab/reviews?m=71.443112%2C51.129941%2F10.79" target="_blank">здесь</a><i>
-            </div>
-        </div>
-
-        <div id="popular-categories-wrapper" class="container bg-light ">
-            <a href="/hyundai" id="popular-categories-korea" style="text-decoration:none;color:#111;">
-                <div class="popular-categories-korea-card">
-                    <img src="/images/hyundai/hyundai.svg" alt="hyundai" class="popular-categories-korea-card-img">
-                </div>
-                <div class="popular-categories-korea-card">
-                    <img src="/images/kia-logo.png" alt="kia" class="popular-categories-korea-card-img">
-                </div>
-                <div class="popular-category-text-container ">
-                    Запчасти Hyundai/Kia <i style="color: #0000EE;">(смотреть)</i>
-                </div>
-            </a>
-            <div id="popular-categories-china">
-                <div class="popular-categories-china-card">
-                    <img src="/images/chinacars/chinese-logos.png" alt="china-cars" class="popular-categories-china-card-img w-100">
-                </div>
-                <div class="popular-category-text-container">
-                    Запчасти на китайские авто
-                </div>
-            </div>
-            <div id="popular-categories-others">
-                <div class="popular-categories-others-card">
-                    <img src="/images/car-from-parts.jpg" alt="other-cars" class="popular-categories-others-card-img w-100">
-                </div>
-                <div class="popular-category-text-container">
-                    Запчасти на все автомобили
-                </div>
-            </div>
-        </div>-->
     </div>
-
-    <!--<a class="whatsapp-container">
-        <img src="images/whatsapp72.png" alt="wa-big" style="cursor:pointer" title="При первом заказе через whatsapp скидка 5%">
-        <div id="whatsapp-offer-wrapper">
-            <div class="whatsapp-offer" id="whatsapp-offer-2">Напиши нам прямо сейчас, быстрый подбор по VIN!</div>
-        </div>
-    </a>-->
 
     <div id="review-modal" style="display: none;">
       <div class="modal-overlay"></div>

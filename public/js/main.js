@@ -635,10 +635,23 @@ $(document).ready(function() {
 
 //блокирование кнопки отправить запрос по VIN после первого нажатия и высплытие окна ожидания
 $('#send-vin-search-btn').on('click', function () {
-   $('#shadow').show();
-   $('#shadow').addClass('d-flex');
-   $('#loading').text('Ваш запрос отправляется, пожалуйста ожидайте...');
-   $(this).removeClass('btn-success').addClass('btn-secondary');
+   let isValid = true;
+
+    $('.vin-selection-field').each(function () {
+        if ($(this).val().trim() === '') {
+            isValid = false;
+            return false;
+        }
+   });
+   if (isValid) {
+      $('#shadow').show();
+      $('#shadow').addClass('d-flex');
+      $('#loading').text('Ваш запрос отправляется, пожалуйста ожидайте...');
+      $(this).removeClass('btn-success').addClass('btn-secondary');
+   } else {
+      e.preventDefault();
+      return;
+   }
 });
 
 
