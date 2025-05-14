@@ -406,13 +406,6 @@
         </div>
     </a>-->
 
-    <a href="#"
-      class="whatsapp-fixed-btn"
-      aria-label="Написать в WhatsApp">
-      <div class="pulse-ring"></div>
-      <i class="bi bi-whatsapp"></i>
-    </a>
-
     <div id="review-modal" style="display: none;">
       <div class="modal-overlay"></div>
       <div class="modal-content">

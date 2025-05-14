@@ -61,7 +61,7 @@
         </div>
         <div id="shadow-main">
             <div id="modal-qr" class="container">
-                <img src="images/wa-qr.jpeg" alt="wa-qr">
+                <img src="images/whatsapp_qr_77087172549.png" alt="wa-qr">
                 Для перехода в Whatsapp отсканируйте QR-код с камеры мобильного телефона
             </div>
         </div>
@@ -135,6 +135,14 @@
             </div>
         </div>
     </div>
+
+    <a href="#"
+      class="whatsapp-fixed-btn"
+      aria-label="Написать в WhatsApp">
+      <div class="pulse-ring"></div>
+      <i class="bi bi-whatsapp"></i>
+    </a>
+    
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
         <script src="{{ URL::asset('js/jquery.min.js') }}"></script>
         <script src="{{ URL::asset('js/main.js') }}"></script>
