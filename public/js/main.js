@@ -639,7 +639,6 @@ $('#send-vin-search-btn').on('click', function () {
    $('#shadow').show();
    $('#shadow').addClass('d-flex');
    $('#loading').text('Ваш запрос отправляется, пожалуйста ожидайте...');
-   $(this).attr('disabled', true);
 });
 
 
