@@ -92,7 +92,6 @@
         display: none;
         z-index: 6;
         border: 1px solid #aaa;
-        height: 30vh;
         background-color: #eee;
         border-radius: 20px;
     }
@@ -118,6 +117,7 @@
         height: 30%;
         padding-right: 30px;
         padding-top: 30px;
+        padding-bottom: 30px;
     }
     #cart-shadow{
         left: 0;
