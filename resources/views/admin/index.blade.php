@@ -150,10 +150,10 @@
                                 <td>{{ $data['totalSalesSum'] }}</td>
                                 <td>{{ $data['totalSalesPrimeCostSum'] }}</td>
                                 <td>{{ $data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] }}</td>
-                                <td>{{ round(100 - (($data['totalSalesPrimeCostSum'] * 100) / $data['totalSalesSum']), 2) }}%</td>
+                                <td>{{ $data['totalSalesSum'] ? round(100 - (($data['totalSalesPrimeCostSum'] * 100) / $data['totalSalesSum']), 2) : 0 }}%</td>
                                 <td>{{ $data['countOfSales'] }}</td>
-                                <td>{{ round($data['totalSalesSum'] / $data['countOfSales']) }}</td>
-                                <td>{{ round(($data['totalSalesSum'] * 100) /  $totalSalesSum, 2) }}</td>
+                                <td>{{ $data['countOfSales'] ? round($data['totalSalesSum'] / $data['countOfSales']) : 0 }}</td>
+                                <td>{{ $totalSalesSum ? round(($data['totalSalesSum'] * 100) /  $totalSalesSum, 2) : 0 }}</td>
                                 <td>{{ round(($data['totalSalesSum'] * 3) /  100) }}</td>
                                 <td>
                                     @if($sale_channel == 'kaspi')
@@ -169,9 +169,17 @@
                                 </td>
                                 <td>
                                     @if($sale_channel == 'kaspi')
-                                    {{ 100 - round(100 - ((round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100) - ($data['totalSalesSum'] * 12) /  100)* 100) / $data['totalSalesSum']), 2) }}%
+                                        @if($data['totalSalesSum'] > 0)
+                                            {{ 100 - round(100 - ((round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100) - ($data['totalSalesSum'] * 12) /  100)* 100) / $data['totalSalesSum']), 2) }}%
+                                        @else
+                                            0
+                                        @endif
                                     @else
-                                    {{ 100 - round(100 - ((round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100))* 100) / $data['totalSalesSum']), 2) }}%
+                                        @if($data['totalSalesSum'] > 0)
+                                            {{ 100 - round(100 - ((round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100))* 100) / $data['totalSalesSum']), 2) }}%
+                                        @else
+                                            0
+                                        @endif
                                     @endif
                                 </td>
                             </tr>
@@ -202,7 +210,7 @@
                                 <td colspan="3">
                                     <strong>Средний чек</strong>
                                 </td>
-                                <td>{{ number_format(round($totalSalesSum / $totalCountOfSales), 0, '.', ' ') }}</td>
+                                <td>{{ $totalCountOfSales ? number_format(round($totalSalesSum / $totalCountOfSales), 0, '.', ' ') : 0 }}</td>
                             </tr>
                             <tr>
                                 <td></td>
@@ -216,7 +224,7 @@
                                 <td colspan="3">
                                     <strong>Маржа грязная, %</strong>
                                 </td>
-                                <td>{{ number_format(round(100 - (($totalPrimeCostSum * 100) / $totalSalesSum), 2), 2, '.', ' ') }}</td>
+                                <td>{{ $totalSalesSum ? number_format(round(100 - (($totalPrimeCostSum * 100) / $totalSalesSum), 2), 2, '.', ' ') : 0 }}</td>
                             </tr>
                             <tr>
                                 <td></td>
@@ -244,7 +252,7 @@
                                 <td colspan="3">
                                     <strong>Маржа чистая, %</strong>
                                 </td>
-                                <td>{{ round((($marginClear * 100) / $totalSalesSum), 2) }}</td>
+                                <td>{{ $totalSalesSum? round((($marginClear * 100) / $totalSalesSum), 2) : 0 }}</td>
                             </tr>
                             
                         </table>

@@ -20,7 +20,7 @@ class AdminPanelController extends Controller
      */
     public function index()
     {
-        $today = Carbon::now();
+         $today = Carbon::now();
 
 		if ($today->day >= 8) {
 			$start = Carbon::create($today->year, $today->month, 8)->startOfDay();
