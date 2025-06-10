@@ -22,17 +22,17 @@ class AdminPanelController extends Controller
     {
         $today = Carbon::now();
 
-        // Определим начало и конец отчетного периода
-        if ($today->day >= 8) {
-            $start = Carbon::create($today->year, $today->month, 8);
-            $end = $start->copy()->addMonth()->subDay(); // до 7 числа следующего месяца
-        } else {
-            $end = Carbon::create($today->year, $today->month, 7);
-            $start = $end->copy()->subMonth()->addDay(); // с 8 числа предыдущего месяца
-        }
+		if ($today->day >= 8) {
+			$start = Carbon::create($today->year, $today->month, 8)->startOfDay();
+			$end = $start->copy()->addMonth()->subDay()->endOfDay(); // 7 число в 23:59:59
+		} else {
+			$end = Carbon::create($today->year, $today->month, 7)->endOfDay();
+			$start = $end->copy()->subMonth()->addDay()->startOfDay(); // 8 число в 00:00:00
+		}
 
         
-        $orders = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->orderBy('date', 'desc')->get();
+        //$orders = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->orderBy('date', 'desc')->get();
+		$orders = Order::whereBetween('created_at', [$start, $end])->orderBy('date', 'desc')->get();
         //dd($orders);
         //$orders = Order::orderBy('created_at', 'desc')->get();
         $user = auth()->user();
@@ -62,16 +62,16 @@ class AdminPanelController extends Controller
         ];
 
         foreach ($sales_statistics as $sale_channel => $data) {
-            $sales_statistics[$sale_channel]['totalSalesPrimeCostSum'] = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->where('sale_channel', $sale_channel)->sum('sum');
-            $sales_statistics[$sale_channel]['totalSalesSum'] = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->where('sale_channel', $sale_channel)->sum('sum_with_margine');
-            $sales_statistics[$sale_channel]['countOfSales'] = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->where('sale_channel', $sale_channel)->count();
+            $sales_statistics[$sale_channel]['totalSalesPrimeCostSum'] = Order::whereBetween('created_at', [$start, $end])->where('sale_channel', $sale_channel)->sum('sum');
+            $sales_statistics[$sale_channel]['totalSalesSum'] = Order::whereBetween('created_at', [$start, $end])->where('sale_channel', $sale_channel)->sum('sum_with_margine');
+            $sales_statistics[$sale_channel]['countOfSales'] = Order::whereBetween('created_at', [$start, $end])->where('sale_channel', $sale_channel)->count();
         }
 
-        $totalSalesSum = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->sum('sum_with_margine');
-        $totalPrimeCostSum = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->sum('sum');
-        $totalCountOfSales = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->count();
+        $totalSalesSum = Order::whereBetween('created_at', [$start, $end])->sum('sum_with_margine');
+        $totalPrimeCostSum = Order::whereBetween('created_at', [$start, $end])->sum('sum');
+        $totalCountOfSales = Order::whereBetween('created_at', [$start, $end])->count();
         $totalTax = round($totalSalesSum * 3 / 100);
-        $kaspiComission = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->where('sale_channel', 'kaspi')->sum('sum_with_margine') * 12 / 100;
+        $kaspiComission = Order::whereBetween('created_at', [$start, $end])->where('sale_channel', 'kaspi')->sum('sum_with_margine') * 12 / 100;
         $marginClear = round($totalSalesSum - $totalPrimeCostSum - $totalTax - $kaspiComission);
 
         foreach ($users as $user) {

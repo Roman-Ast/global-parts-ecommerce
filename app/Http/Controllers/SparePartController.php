@@ -111,7 +111,7 @@ class SparePartController extends Controller
         
             $fields = array("JSONparameter" => "{'Article': '".$partNumber."'}");
             
-            curl_setopt($ch1, CURLOPT_URL, "api.tmparts.ru/api/ArticleBrandList?".http_build_query($fields)); 
+            curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/ArticleBrandList?".http_build_query($fields)); 
             curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
             
             $headers = array(         
@@ -591,7 +591,9 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        
+        if(!$result) {
+			return;
+		}
         if (!array_key_exists('items', $result) || empty($result['items'] || array_key_exists('message', $result))) {
             return;
         } 
@@ -1482,7 +1484,9 @@ class SparePartController extends Controller
         $xml_snippet = simplexml_load_string( $result );
         $json_convert = json_encode( $xml_snippet );
         $json = json_decode( $json_convert );
-        
+        if (!$json) {
+			return;
+		}
         foreach ($json->shop->offers->offer as $item) {
             $cross_numbers = explode(', ', $item->description);
             
