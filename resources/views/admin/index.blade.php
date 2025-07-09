@@ -261,87 +261,7 @@
                         </div>
                     </div>
                 </div>
-                <!--<div id="stats_graphics">
-                    <div id="stats_graphics_header">
-                        <span>График</span>
-                        <img src="/images/plus-24.png" alt="open/close table" id="show-close-admin-panel-graphics">
-                    </div>
-                    <div id="stats_graphics_content" status="closed">
-                        <h2>1. Сумма продаж и закупа по месяцам</h2>
-                        <canvas id="salesChart" width="800" height="400"></canvas>
-
-                        <div style="margin-bottom: 1rem;">
-                            <button onclick="showOrdersChart()">📈 Заказы по каналам</button>
-                            <button onclick="showRevenueChart()">📊 Структура дохода</button>
-                            </div>
-
-                            <canvas id="channelsChart" width="600" height="400"></canvas>
-
-
-                        <script>
-                            const stats = {!! json_encode($stats) !!};
-
-                            const labels = Object.keys(stats);
-                            const salesData = labels.map(label => stats[label].total_sales_sum);
-                            const purchaseData = labels.map(label => stats[label].total_purchase_sum);
-
-                            // Подготовка данных по каналам продаж
-                            const allChannels = new Set();
-                            labels.forEach(label => {
-                                Object.keys(stats[label].channels).forEach(ch => allChannels.add(ch));
-                            });
-
-                            const channelData = Array.from(allChannels).map(channel => {
-                                return {
-                                    label: channel,
-                                    data: labels.map(label => stats[label].channels[channel]?.order_count ?? 0),
-                                    backgroundColor: getRandomColor(),
-                                    stack: 'orders'
-                                };
-                            });
-
-                            function getRandomColor() {
-                                const r = Math.floor(Math.random() * 200);
-                                const g = Math.floor(Math.random() * 200);
-                                const b = Math.floor(Math.random() * 200);
-                                return `rgba(${r},${g},${b},0.7)`;
-                            }
-
-                            // График 1 — Суммы
-                            new Chart(document.getElementById('salesChart'), {
-                                type: 'line',
-                                data: {
-                                    labels: labels,
-                                    datasets: [
-                                        {
-                                            label: 'Продажи (с наценкой)',
-                                            data: salesData,
-                                            backgroundColor: 'rgba(75, 192, 192, 0.6)'
-                                        },
-                                        {
-                                            label: 'Закуп (себестоимость)',
-                                            data: purchaseData,
-                                            backgroundColor: 'rgba(255, 99, 132, 0.6)'
-                                        }
-                                    ]
-                                },
-                                options: {
-                                    responsive: true,
-                                    plugins: {
-                                        title: {
-                                            display: true,
-                                            text: 'Сумма продаж и закупа по месяцам'
-                                        }
-                                    }
-                                }
-                            });
-
-                            
-                        </script>
-
-                        
-                    </div>
-                </div>-->
+                
                 <div id="stats_graphics">
                     <div id="stats_graphics_header">
                         <span>График</span>
@@ -358,6 +278,11 @@
                         </div>
 
                         <canvas id="channelsChart" width="800" height="400"></canvas>
+
+                        <h2>3. График по дням за текущий месяц</h2>
+                        <div class="chart-container" style="position: relative; width: 100%; max-width: 1000px; margin: 20px auto;">
+                            <canvas id="reportMonthChart" height="60"></canvas>
+                        </div>
 
                         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
                         <script>
@@ -546,9 +471,63 @@
 
                             // По умолчанию: отобразим график заказов
                             showOrdersChart();
+
+                            // 3. График "Сумма продаж и закупа за отчетный период (по дням)"
+                            const reportLabels = @json($labels);
+                            const reportSalesData = @json($salesData);
+                            const reportPurchaseData = @json($purchaseData);
+
+                            new Chart(document.getElementById('reportMonthChart'), {
+                                type: 'line',
+                                data: {
+                                    labels: reportLabels, // массив дат с 8 числа прошлого месяца по 7 текущего
+                                    datasets: [
+                                        {
+                                            label: 'Продажи (с наценкой)',
+                                            data: reportSalesData, // данные продаж по дням
+                                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                                            borderColor: 'rgba(75, 192, 192, 1)',
+                                            fill: true,
+                                            tension: 0.3
+                                        },
+                                        {
+                                            label: 'Закуп (себестоимость)',
+                                            data: reportPurchaseData, // данные закупа по дням
+                                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                                            borderColor: 'rgba(255, 99, 132, 1)',
+                                            fill: true,
+                                            tension: 0.3
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        title: {
+                                            display: true,
+                                            text: 'Сумма продаж и закупа за отчетный месяц (по дням)'
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            title: {
+                                                display: true,
+                                                text: 'День'
+                                            }
+                                        },
+                                        y: {
+                                            title: {
+                                                display: true,
+                                                text: 'Сумма (₸)'
+                                            }
+                                        }
+                                    }
+                                }
+                            });
                         </script>
                     </div>
                 </div>
+                
 
                 @foreach ($orders as $orderItem)
                 <div class="admin-order-item-wrapper">

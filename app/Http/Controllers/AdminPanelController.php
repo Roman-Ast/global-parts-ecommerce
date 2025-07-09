@@ -140,7 +140,42 @@ class AdminPanelController extends Controller
                 'pay' => SupplierSettlement::where('supplier', 'atptr')->where('operation', 'payment')->sum('sum'),
             ],
         ];
+
+
+        //статистика по дням недели за текущий период
+        $startForDailyStats = now()->day >= 8
+            ? now()->copy()->startOfMonth()->addDays(7) // 8-е число текущего месяца
+            : now()->copy()->subMonth()->startOfMonth()->addDays(7); // 8-е число прошлого месяца
+
+        $endForDailyStats = $startForDailyStats->copy()->addMonth()->subDay(); // 7-е число следующего месяца
+
+        // Предположим, у тебя $orders — это коллекция всех заказов
+        $ordersInPeriod = $orders->filter(function($order) use ($startForDailyStats, $endForDailyStats) {
+            return $order->date >= $startForDailyStats && $order->date <= $endForDailyStats;
+        });
+
+        $dailyStats = [];
+
+        foreach ($startForDailyStats->copy()->toPeriod($endForDailyStats) as $date) {
+            $key = $date->format('d.m');
+
+            $ordersOfDay = $ordersInPeriod->filter(function($order) use ($date) {
+                return $order->date->isSameDay($date);
+            });
+
+            $sales = $ordersOfDay->sum('sum_with_margine');
+            $purchases = $ordersOfDay->sum('sum');
+
+            $dailyStats[$key] = [
+                'sales' => round($sales, 2),
+                'purchases' => round($purchases, 2),
+            ];
+        }
         
+        $labels = array_keys($dailyStats);
+        $salesData = array_column($dailyStats, 'sales');
+        $purchaseData = array_column($dailyStats, 'purchases');
+
         return view('admin/index', [
             'orders' => $orders,
             'settlements' => $settlements,
@@ -162,7 +197,10 @@ class AdminPanelController extends Controller
             'totalTax' => $totalTax,
             'kaspiComission' => $kaspiComission,
             'marginClear' => $marginClear,
-            'stats' => $stats
+            'stats' => $stats,
+            'labels' => $labels,
+            'salesData' => $salesData,
+            'purchaseData' => $purchaseData,
         ]);
     }
 
