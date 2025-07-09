@@ -11,7 +11,8 @@ use App\Models\SupplierSettlement;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\OfficePrice;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class AdminPanelController extends Controller
 {
@@ -20,7 +21,9 @@ class AdminPanelController extends Controller
      */
     public function index()
     {
-         $today = Carbon::now();
+        $stats = $this->getDataByMonths();
+
+        $today = Carbon::now();
 
 		if ($today->day >= 8) {
 			$start = Carbon::create($today->year, $today->month, 8)->startOfDay();
@@ -31,10 +34,8 @@ class AdminPanelController extends Controller
 		}
 
         
-        //$orders = Order::whereBetween('date', [$start->toDateString(), $end->toDateString()])->orderBy('date', 'desc')->get();
-		$orders = Order::whereBetween('created_at', [$start, $end])->orderBy('date', 'desc')->get();
-        //dd($orders);
-        //$orders = Order::orderBy('created_at', 'desc')->get();
+        
+		$orders = Order::whereBetween('date', [$start, $end])->orderBy('date', 'desc')->get();
         $user = auth()->user();
         $settlements = Setlement::all();
         $users = User::all();
@@ -62,16 +63,16 @@ class AdminPanelController extends Controller
         ];
 
         foreach ($sales_statistics as $sale_channel => $data) {
-            $sales_statistics[$sale_channel]['totalSalesPrimeCostSum'] = Order::whereBetween('created_at', [$start, $end])->where('sale_channel', $sale_channel)->sum('sum');
-            $sales_statistics[$sale_channel]['totalSalesSum'] = Order::whereBetween('created_at', [$start, $end])->where('sale_channel', $sale_channel)->sum('sum_with_margine');
-            $sales_statistics[$sale_channel]['countOfSales'] = Order::whereBetween('created_at', [$start, $end])->where('sale_channel', $sale_channel)->count();
+            $sales_statistics[$sale_channel]['totalSalesPrimeCostSum'] = Order::whereBetween('date', [$start, $end])->where('sale_channel', $sale_channel)->sum('sum');
+            $sales_statistics[$sale_channel]['totalSalesSum'] = Order::whereBetween('date', [$start, $end])->where('sale_channel', $sale_channel)->sum('sum_with_margine');
+            $sales_statistics[$sale_channel]['countOfSales'] = Order::whereBetween('date', [$start, $end])->where('sale_channel', $sale_channel)->count();
         }
 
-        $totalSalesSum = Order::whereBetween('created_at', [$start, $end])->sum('sum_with_margine');
-        $totalPrimeCostSum = Order::whereBetween('created_at', [$start, $end])->sum('sum');
-        $totalCountOfSales = Order::whereBetween('created_at', [$start, $end])->count();
+        $totalSalesSum = Order::whereBetween('date', [$start, $end])->sum('sum_with_margine');
+        $totalPrimeCostSum = Order::whereBetween('date', [$start, $end])->sum('sum');
+        $totalCountOfSales = Order::whereBetween('date', [$start, $end])->count();
         $totalTax = round($totalSalesSum * 3 / 100);
-        $kaspiComission = Order::whereBetween('created_at', [$start, $end])->where('sale_channel', 'kaspi')->sum('sum_with_margine') * 12 / 100;
+        $kaspiComission = Order::whereBetween('date', [$start, $end])->where('sale_channel', 'kaspi')->sum('sum_with_margine') * 12 / 100;
         $marginClear = round($totalSalesSum - $totalPrimeCostSum - $totalTax - $kaspiComission);
 
         foreach ($users as $user) {
@@ -139,7 +140,7 @@ class AdminPanelController extends Controller
                 'pay' => SupplierSettlement::where('supplier', 'atptr')->where('operation', 'payment')->sum('sum'),
             ],
         ];
-
+        
         return view('admin/index', [
             'orders' => $orders,
             'settlements' => $settlements,
@@ -160,7 +161,8 @@ class AdminPanelController extends Controller
             'goods_in_office_sum' => $goods_in_office_sum,
             'totalTax' => $totalTax,
             'kaspiComission' => $kaspiComission,
-            'marginClear' => $marginClear
+            'marginClear' => $marginClear,
+            'stats' => $stats
         ]);
     }
 
@@ -402,9 +404,13 @@ class AdminPanelController extends Controller
             ->with('class', 'alert-succes');
     }
 
-    public function change(Request $request)
+    public function getDataByMonths()
     {
+        $orders = Order::all()->toArray();
+        //dd($orders);
+        $stats = $this->groupOrdersWithStatsByPeriod($orders);
         
+        return $stats;
     }
 
     /**
@@ -415,5 +421,81 @@ class AdminPanelController extends Controller
         $deletingItem = OfficePrice::where('id', $request->data['deletingItemId'])->delete();
         
         return json_encode('success');
+    }
+
+    function groupOrdersByCustomMonth(array $orders): array
+    {
+            $grouped = [];
+
+            foreach ($orders as $order) {
+                // Парсим дату
+                $date = Carbon::parse($order['date']);
+
+                // Определяем, к какому отчетному месяцу относится заказ
+                if ($date->day >= 8) {
+                    $periodStart = Carbon::create($date->year, $date->month, 8)->startOfDay();
+                } else {
+                    $periodStart = Carbon::create($date->year, $date->month, 1)->subMonth()->day(8)->startOfDay();
+                }
+
+                $key = $periodStart->translatedFormat('F Y'); // например, "Апрель 2025" (если стоит локаль ru_RU)
+
+                // Группировка по ключу
+                $grouped[$key][] = $order;
+            }
+
+            return $grouped;
+    }
+
+    function groupOrdersWithStatsByPeriod(array $orders): array
+    {
+        $result = [];
+
+        foreach ($orders as $order) {
+            $date = Carbon::parse($order['date']);
+
+            // Определяем начало отчетного периода
+            if ($date->day >= 8) {
+                $periodStart = Carbon::create($date->year, $date->month, 8)->startOfDay();
+            } else {
+                $periodStart = Carbon::create($date->year, $date->month, 1)->subMonth()->day(8)->startOfDay();
+            }
+
+            // Ключ периода (можно заменить на $periodStart->format('Y-m') для технической группировки)
+            $periodKey = $periodStart->translatedFormat('F Y');
+
+            // Инициализация, если впервые видим период
+            if (!isset($result[$periodKey])) {
+                $result[$periodKey] = [
+                    'period_range' => $periodStart->toDateString() . ' по ' . $periodStart->copy()->addMonth()->subDay()->toDateString(),
+                    'total_sales_sum' => 0,
+                    'total_purchase_sum' => 0,
+                    'order_count' => 0,
+                    'channels' => [] // для sale_channel
+                ];
+            }
+
+            // Общие данные по периоду
+            $result[$periodKey]['total_sales_sum'] += $order['sum_with_margine'];
+            $result[$periodKey]['total_purchase_sum'] += $order['sum'];
+            $result[$periodKey]['order_count']++;
+
+            // Канал продаж
+            $channel = $order['sale_channel'] ?? 'неизвестно';
+
+            if (!isset($result[$periodKey]['channels'][$channel])) {
+                $result[$periodKey]['channels'][$channel] = [
+                    'sales_sum' => 0,
+                    'purchase_sum' => 0,
+                    'order_count' => 0
+                ];
+            }
+
+            $result[$periodKey]['channels'][$channel]['sales_sum'] += $order['sum_with_margine'];
+            $result[$periodKey]['channels'][$channel]['purchase_sum'] += $order['sum'];
+            $result[$periodKey]['channels'][$channel]['order_count']++;
+        }
+
+        return $result;
     }
 }

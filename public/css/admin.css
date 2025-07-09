@@ -89,6 +89,19 @@
     width: 65%;
     margin-bottom: 20px;
 }
+#stats_graphics{
+    border:1px solid #bbb;
+    width: 65%;
+    margin-bottom: 20px;
+}
+#stats_graphics_header{
+    display: flex;
+    justify-content: space-between;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-right: 10px;
+    padding-left: 10px;
+}
 #admin-panel-orders-by-channel{
     display: none;
     flex-direction: column;

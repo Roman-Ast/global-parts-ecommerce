@@ -261,6 +261,107 @@
                         </div>
                     </div>
                 </div>
+                <div id="stats_graphics">
+                    <div id="stats_graphics_header">
+                        График
+                    </div>
+                    <div id="stats_graphics_content">
+                        <h2>1. Сумма продаж и закупа по месяцам</h2>
+    <canvas id="salesChart" width="800" height="400"></canvas>
+
+    <h2>2. Количество заказов по каналам продаж</h2>
+    <canvas id="channelsChart" width="800" height="400"></canvas>
+
+    <script>
+        const stats = {!! json_encode($stats) !!};
+
+        const labels = Object.keys(stats);
+        const salesData = labels.map(label => stats[label].total_sales_sum);
+        const purchaseData = labels.map(label => stats[label].total_purchase_sum);
+
+        // Подготовка данных по каналам продаж
+        const allChannels = new Set();
+        labels.forEach(label => {
+            Object.keys(stats[label].channels).forEach(ch => allChannels.add(ch));
+        });
+
+        const channelData = Array.from(allChannels).map(channel => {
+            return {
+                label: channel,
+                data: labels.map(label => stats[label].channels[channel]?.order_count ?? 0),
+                backgroundColor: getRandomColor(),
+                stack: 'orders'
+            };
+        });
+
+        function getRandomColor() {
+            const r = Math.floor(Math.random() * 200);
+            const g = Math.floor(Math.random() * 200);
+            const b = Math.floor(Math.random() * 200);
+            return `rgba(${r},${g},${b},0.7)`;
+        }
+
+        // График 1 — Суммы
+        new Chart(document.getElementById('salesChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Продажи (с наценкой)',
+                        data: salesData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                    },
+                    {
+                        label: 'Закуп (себестоимость)',
+                        data: purchaseData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Сумма продаж и закупа по месяцам'
+                    }
+                }
+            }
+        });
+
+        // График 2 — Заказы по каналам
+        new Chart(document.getElementById('channelsChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: channelData
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Количество заказов по каналам продаж'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true
+                    },
+                    y: {
+                        stacked: true
+                    }
+                }
+            }
+        });
+    </script>
+                    </div>
+                </div>
                 @foreach ($orders as $orderItem)
                 <div class="admin-order-item-wrapper">
                     <div class="order-item-header">
