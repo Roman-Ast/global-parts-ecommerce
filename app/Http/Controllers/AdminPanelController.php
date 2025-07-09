@@ -144,17 +144,21 @@ class AdminPanelController extends Controller
 
         //статистика по дням недели за текущий период
         $startForDailyStats = now()->day >= 8
-            ? now()->copy()->startOfMonth()->addDays(7) // 8-е число текущего месяца
-            : now()->copy()->subMonth()->startOfMonth()->addDays(7); // 8-е число прошлого месяца
+            ? now()->copy()->startOfMonth()->addDays(7)
+            : now()->copy()->subMonth()->startOfMonth()->addDays(7);
 
-        $endForDailyStats = $startForDailyStats->copy()->addMonth()->subDay(); // 7-е число следующего месяца
+        $endForDailyStats = $startForDailyStats->copy()->addMonth()->subDay();
 
-        // Предположим, у тебя $orders — это коллекция всех заказов
         $ordersInPeriod = $orders->filter(function($order) use ($startForDailyStats, $endForDailyStats) {
             return $order->date >= $startForDailyStats && $order->date <= $endForDailyStats;
         });
 
         $dailyStats = [];
+        $pointColors = [];
+
+        $planPerDay = 300000;
+        $upperThreshold = 390000;
+        $actualSum = 0;
 
         foreach ($startForDailyStats->copy()->toPeriod($endForDailyStats) as $date) {
             $key = $date->format('d.m');
@@ -163,18 +167,30 @@ class AdminPanelController extends Controller
                 return $order->date->isSameDay($date);
             });
 
-            $sales = $ordersOfDay->sum('sum_with_margine');
-            $purchases = $ordersOfDay->sum('sum');
+            $sales = round($ordersOfDay->sum('sum_with_margine'), 2);
+            $purchases = round($ordersOfDay->sum('sum'), 2);
+            $actualSum += $sales;
+
+            // Цвет точек по условию
+            if ($sales < $planPerDay) {
+                $pointColors[] = 'rgba(255, 99, 132, 1)'; // красный
+            } elseif ($sales <= $upperThreshold) {
+                $pointColors[] = 'rgba(255, 206, 86, 1)'; // жёлтый
+            } else {
+                $pointColors[] = 'rgba(75, 192, 192, 1)'; // зелёный
+            }
 
             $dailyStats[$key] = [
-                'sales' => round($sales, 2),
-                'purchases' => round($purchases, 2),
+                'sales' => $sales,
+                'purchases' => $purchases,
             ];
         }
-        
+
         $labels = array_keys($dailyStats);
         $salesData = array_column($dailyStats, 'sales');
         $purchaseData = array_column($dailyStats, 'purchases');
+        $plannedSum = $planPerDay * count($labels);
+
 
         return view('admin/index', [
             'orders' => $orders,
@@ -201,6 +217,9 @@ class AdminPanelController extends Controller
             'labels' => $labels,
             'salesData' => $salesData,
             'purchaseData' => $purchaseData,
+            'plannedSum' => $plannedSum,
+            'actualSum' => $actualSum,
+            'pointColors' => $pointColors,
         ]);
     }
 
