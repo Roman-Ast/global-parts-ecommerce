@@ -189,7 +189,10 @@ class AdminPanelController extends Controller
         $labels = array_keys($dailyStats);
         $salesData = array_column($dailyStats, 'sales');
         $purchaseData = array_column($dailyStats, 'purchases');
-        $plannedSum = $planPerDay * count($labels);
+        $plannedSum = $planPerDay * $startForDailyStats->copy()->toPeriod($endForDailyStats)->filter(function($d) {
+            return $d->lte(now());
+        })->count();
+
 
 
         return view('admin/index', [
