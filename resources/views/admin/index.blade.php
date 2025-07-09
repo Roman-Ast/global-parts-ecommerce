@@ -261,107 +261,295 @@
                         </div>
                     </div>
                 </div>
+                <!--<div id="stats_graphics">
+                    <div id="stats_graphics_header">
+                        <span>График</span>
+                        <img src="/images/plus-24.png" alt="open/close table" id="show-close-admin-panel-graphics">
+                    </div>
+                    <div id="stats_graphics_content" status="closed">
+                        <h2>1. Сумма продаж и закупа по месяцам</h2>
+                        <canvas id="salesChart" width="800" height="400"></canvas>
+
+                        <div style="margin-bottom: 1rem;">
+                            <button onclick="showOrdersChart()">📈 Заказы по каналам</button>
+                            <button onclick="showRevenueChart()">📊 Структура дохода</button>
+                            </div>
+
+                            <canvas id="channelsChart" width="600" height="400"></canvas>
+
+
+                        <script>
+                            const stats = {!! json_encode($stats) !!};
+
+                            const labels = Object.keys(stats);
+                            const salesData = labels.map(label => stats[label].total_sales_sum);
+                            const purchaseData = labels.map(label => stats[label].total_purchase_sum);
+
+                            // Подготовка данных по каналам продаж
+                            const allChannels = new Set();
+                            labels.forEach(label => {
+                                Object.keys(stats[label].channels).forEach(ch => allChannels.add(ch));
+                            });
+
+                            const channelData = Array.from(allChannels).map(channel => {
+                                return {
+                                    label: channel,
+                                    data: labels.map(label => stats[label].channels[channel]?.order_count ?? 0),
+                                    backgroundColor: getRandomColor(),
+                                    stack: 'orders'
+                                };
+                            });
+
+                            function getRandomColor() {
+                                const r = Math.floor(Math.random() * 200);
+                                const g = Math.floor(Math.random() * 200);
+                                const b = Math.floor(Math.random() * 200);
+                                return `rgba(${r},${g},${b},0.7)`;
+                            }
+
+                            // График 1 — Суммы
+                            new Chart(document.getElementById('salesChart'), {
+                                type: 'line',
+                                data: {
+                                    labels: labels,
+                                    datasets: [
+                                        {
+                                            label: 'Продажи (с наценкой)',
+                                            data: salesData,
+                                            backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                                        },
+                                        {
+                                            label: 'Закуп (себестоимость)',
+                                            data: purchaseData,
+                                            backgroundColor: 'rgba(255, 99, 132, 0.6)'
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        title: {
+                                            display: true,
+                                            text: 'Сумма продаж и закупа по месяцам'
+                                        }
+                                    }
+                                }
+                            });
+
+                            
+                        </script>
+
+                        
+                    </div>
+                </div>-->
                 <div id="stats_graphics">
                     <div id="stats_graphics_header">
-                        График
+                        <span>График</span>
+                        <img src="/images/plus-24.png" alt="open/close table" id="show-close-admin-panel-graphics">
                     </div>
-                    <div id="stats_graphics_content">
+                    <div id="stats_graphics_content" status="closed">
                         <h2>1. Сумма продаж и закупа по месяцам</h2>
-    <canvas id="salesChart" width="800" height="400"></canvas>
+                        <canvas id="salesChart" width="800" height="400"></canvas>
 
-    <h2>2. Количество заказов по каналам продаж</h2>
-    <canvas id="channelsChart" width="800" height="400"></canvas>
+                        <h2>2. Графики по каналам продаж</h2>
+                        <div style="margin-bottom: 1rem;">
+                            <button onclick="showOrdersChart()">📈 Заказы по каналам</button>
+                            <button onclick="showRevenueChart()">📊 Структура дохода</button>
+                        </div>
 
-    <script>
-        const stats = {!! json_encode($stats) !!};
+                        <canvas id="channelsChart" width="800" height="400"></canvas>
 
-        const labels = Object.keys(stats);
-        const salesData = labels.map(label => stats[label].total_sales_sum);
-        const purchaseData = labels.map(label => stats[label].total_purchase_sum);
+                        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                        <script>
+                            const stats = {!! json_encode($stats) !!};
 
-        // Подготовка данных по каналам продаж
-        const allChannels = new Set();
-        labels.forEach(label => {
-            Object.keys(stats[label].channels).forEach(ch => allChannels.add(ch));
-        });
+                            const labels = Object.keys(stats);
+                            const salesData = labels.map(label => stats[label].total_sales_sum);
+                            const purchaseData = labels.map(label => stats[label].total_purchase_sum);
 
-        const channelData = Array.from(allChannels).map(channel => {
-            return {
-                label: channel,
-                data: labels.map(label => stats[label].channels[channel]?.order_count ?? 0),
-                backgroundColor: getRandomColor(),
-                stack: 'orders'
-            };
-        });
+                            // 1. График "Сумма продаж и закупа по месяцам"
+                            new Chart(document.getElementById('salesChart'), {
+                                type: 'line',
+                                data: {
+                                    labels: labels,
+                                    datasets: [
+                                        {
+                                            label: 'Продажи (с наценкой)',
+                                            data: salesData,
+                                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                                            borderColor: 'rgba(75, 192, 192, 1)',
+                                            fill: true,
+                                            tension: 0.3
+                                        },
+                                        {
+                                            label: 'Закуп (себестоимость)',
+                                            data: purchaseData,
+                                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                                            borderColor: 'rgba(255, 99, 132, 1)',
+                                            fill: true,
+                                            tension: 0.3
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        title: {
+                                            display: true,
+                                            text: 'Сумма продаж и закупа по месяцам'
+                                        }
+                                    }
+                                }
+                            });
 
-        function getRandomColor() {
-            const r = Math.floor(Math.random() * 200);
-            const g = Math.floor(Math.random() * 200);
-            const b = Math.floor(Math.random() * 200);
-            return `rgba(${r},${g},${b},0.7)`;
-        }
+                            // 2. Графики по каналам (переключаемые)
 
-        // График 1 — Суммы
-        new Chart(document.getElementById('salesChart'), {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Продажи (с наценкой)',
-                        data: salesData,
-                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
-                    },
-                    {
-                        label: 'Закуп (себестоимость)',
-                        data: purchaseData,
-                        backgroundColor: 'rgba(255, 99, 132, 0.6)'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Сумма продаж и закупа по месяцам'
-                    }
-                }
-            }
-        });
+                            let channelChart; // глобально
 
-        // График 2 — Заказы по каналам
-        new Chart(document.getElementById('channelsChart'), {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: channelData
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Количество заказов по каналам продаж'
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
-                    }
-                },
-                scales: {
-                    x: {
-                        stacked: true
-                    },
-                    y: {
-                        stacked: true
-                    }
-                }
-            }
-        });
-    </script>
+                            // Подготовка данных по каналам
+                            const allChannels = new Set();
+                            labels.forEach(label => {
+                                Object.keys(stats[label].channels).forEach(ch => allChannels.add(ch));
+                            });
+
+                            // Данные: Количество заказов по каналам по месяцам
+                            const channelOrderData = Array.from(allChannels).map(channel => {
+                                return {
+                                    label: channel,
+                                    data: labels.map(label => stats[label].channels[channel]?.order_count ?? 0),
+                                    backgroundColor: getRandomColor(),
+                                    borderColor: getRandomColor(),
+                                    fill: false,
+                                    tension: 0.2
+                                };
+                            });
+
+                            // Данные: Структура дохода по каналам (пример — данные статичны, можно заменить на динамические)
+                            const revenueLabels = ['Kaspi', '2GIS', 'OLX', 'Site', 'Friends'];
+                            const revenueData = {
+                                labels: revenueLabels,
+                                datasets: [
+                                    {
+                                        label: 'Себестоимость',
+                                        data: [22280, 109458, 35259, 73812, 0],
+                                        backgroundColor: '#ff6384'
+                                    },
+                                    {
+                                        label: 'Налог',
+                                        data: [932, 5670, 1620, 2897, 0],
+                                        backgroundColor: '#ff9f40'
+                                    },
+                                    {
+                                        label: 'Комиссия',
+                                        data: [3726, 0, 0, 0, 0],
+                                        backgroundColor: '#ffcd56'
+                                    },
+                                    {
+                                        label: 'Чистая маржа',
+                                        data: [4113, 73872, 17121, 19851, 0],
+                                        backgroundColor: '#4bc0c0'
+                                    }
+                                ]
+                            };
+
+                            function showOrdersChart() {
+                                if (channelChart) channelChart.destroy();
+                                const ctx = document.getElementById('channelsChart').getContext('2d');
+                                channelChart = new Chart(ctx, {
+                                    type: 'line',
+                                    data: {
+                                        labels: labels,
+                                        datasets: channelOrderData
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        plugins: {
+                                            title: {
+                                                display: true,
+                                                text: '📈 Количество заказов по каналам'
+                                            },
+                                            tooltip: {
+                                                mode: 'index',
+                                                intersect: false
+                                            },
+                                            legend: {
+                                                position: 'top'
+                                            }
+                                        },
+                                        scales: {
+                                            x: {
+                                                title: {
+                                                    display: true,
+                                                    text: 'Месяц'
+                                                }
+                                            },
+                                            y: {
+                                                title: {
+                                                    display: true,
+                                                    text: 'Количество заказов'
+                                                },
+                                                beginAtZero: true
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+
+                            function showRevenueChart() {
+                                if (channelChart) channelChart.destroy();
+                                const ctx = document.getElementById('channelsChart').getContext('2d');
+                                channelChart = new Chart(ctx, {
+                                    type: 'bar',
+                                    data: revenueData,
+                                    options: {
+                                        responsive: true,
+                                        plugins: {
+                                            title: {
+                                                display: true,
+                                                text: '📊 Структура дохода по каналам'
+                                            },
+                                            tooltip: {
+                                                mode: 'index',
+                                                intersect: false
+                                            },
+                                            legend: {
+                                                position: 'top'
+                                            }
+                                        },
+                                        scales: {
+                                            x: {
+                                                stacked: true,
+                                                title: {
+                                                    display: true,
+                                                    text: 'Каналы продаж'
+                                                }
+                                            },
+                                            y: {
+                                                stacked: true,
+                                                beginAtZero: true,
+                                                title: {
+                                                    display: true,
+                                                    text: 'Сумма в тенге'
+                                                }
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+
+                            function getRandomColor() {
+                                const r = Math.floor(Math.random() * 200);
+                                const g = Math.floor(Math.random() * 200);
+                                const b = Math.floor(Math.random() * 200);
+                                return `rgba(${r},${g},${b},0.7)`;
+                            }
+
+                            // По умолчанию: отобразим график заказов
+                            showOrdersChart();
+                        </script>
                     </div>
                 </div>
+
                 @foreach ($orders as $orderItem)
                 <div class="admin-order-item-wrapper">
                     <div class="order-item-header">

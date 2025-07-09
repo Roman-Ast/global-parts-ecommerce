@@ -102,6 +102,9 @@
     padding-right: 10px;
     padding-left: 10px;
 }
+#stats_graphics_content{
+    display: none;
+}
 #admin-panel-orders-by-channel{
     display: none;
     flex-direction: column;

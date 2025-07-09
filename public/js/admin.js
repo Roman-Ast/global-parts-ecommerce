@@ -363,6 +363,20 @@ $('#show-close-admin-panel-statistic-wrapper').on('click', function () {
     }
  });
 
+ $('#show-close-admin-panel-graphics').on('click', function () {
+    if ($(this).parent().next().attr('status') == 'closed') {
+       $(this).parent().next().slideDown('200', function () {
+        $('#stats_graphics_header').children().first().next().attr('src', '/images/minus-24.png')
+     });
+       $(this).parent().next().attr('status', 'opened');
+    } else {
+       $(this).parent().next().slideUp('200', function () {
+        $('#stats_graphics_header').children().first().next().attr('src', '/images/plus-24.png')
+     });
+       $(this).parent().next().attr('status', 'closed');
+    }
+ });
+
  //изменить кол-во и/или цену в товарах в офисе
  $('.good_in_office_delete').on('click', function () {
     let deletingItemId = $(this).parent().parent().children().first().val();
