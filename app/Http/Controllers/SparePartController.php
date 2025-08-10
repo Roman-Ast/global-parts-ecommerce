@@ -51,14 +51,61 @@ class SparePartController extends Controller
 
     public function catalogSearch(Request $request) 
     {
+        function searchCatalogTiss($tissApeyKey, $partNumber)
+        {
+            $ch1 = curl_init(); 
+        
+            $fields = array("JSONparameter" => "{'Article': '".$partNumber."'}");
+            
+            curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/ArticleBrandList?".http_build_query($fields)); 
+            curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
+            
+            $headers = array(         
+                'Authorization: Bearer '. $tissApeyKey
+            ); 
+            curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+            
+            try {
+                $response = json_decode(curl_exec($ch1),true);
+            } catch (\Throwable $th) {
+                return view('components.hostError');
+            }
+            
+            if (!array_key_exists('BrandList', $response)) {
+                return view('components.nothingFound');
+            }
+            $catalog = [];
+            
+            foreach ($response['BrandList'] as $item) {
+                array_push($catalog,[
+                    'brand' => $item['BrandName'],
+                    'partnumber' => $response['Article'],
+                    'name' => '',
+                    'guid' => '',
+                    'rossko_need_to_search' => false
+                ]);
+            }
+            
+            return $catalog;
+            
+        }
+
         $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber)); 
         
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 2 // общее время ожидания (подключение + ответ)
+            ]
+        ]);
+
+
         //поиск брэндлиста по каталогам
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
             'options' => array(
                 'connection_timeout' => 1,
-                'trace' => true
+                'trace' => true,
+                'stream_context' => $context
             )
         );
         
@@ -70,15 +117,39 @@ class SparePartController extends Controller
             'address_id'  => '229881'
         );
         
-        $query  = new SoapClient($connect['wsdl'], $connect['options']);
+        try {
+            $query = new SoapClient($connect['wsdl'], $connect['options']);
+        } catch (\Throwable $th) {
+            $catalog = searchCatalogTiss(self::TISS_API_KEY, $partNumber);
+
+            if(empty($catalog)) {
+                return view('components.nothingFound');
+            }
+
+            return view('catalogSearchRes')->with([
+                    'finalArr' => $catalog,
+                    'only_on_stock' => $request->only_on_stock
+                ]
+            );
+        }
+        
         
         try {
             $result = $query->GetSearch($param);
-            
         } catch (\Throwable $th) {
-            return view('components.hostError');
-        }
-        
+            searchCatalogTiss(self::TISS_API_KEY, $partNumber);
+
+            if(empty($catalog)) {
+                return view('components.nothingFound');
+            }
+
+            return view('catalogSearchRes')->with([
+                    'finalArr' => $catalog,
+                    'only_on_stock' => $request->only_on_stock
+                ]
+            );
+        } 
+       
         if ($result->SearchResult->success) {
             $catalog = [];
 
@@ -107,43 +178,13 @@ class SparePartController extends Controller
                 'only_on_stock' => $request->only_on_stock
             ]);
         } else {
-            $ch1 = curl_init(); 
-        
-            $fields = array("JSONparameter" => "{'Article': '".$partNumber."'}");
-            
-            curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/ArticleBrandList?".http_build_query($fields)); 
-            curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
-            
-            $headers = array(         
-                'Authorization: Bearer '. self::TISS_API_KEY
-            ); 
-            curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
-            
-            try {
-                $response = json_decode(curl_exec($ch1),true);
-            } catch (\Throwable $th) {
-                return view('components.hostError');
-            }
-            
-            if (!array_key_exists('BrandList', $response)) {
+           searchCatalogTiss(self::TISS_API_KEY, $partNumber);
+
+           if(empty($catalog)) {
                 return view('components.nothingFound');
             }
-            $catalog = [];
-            
-            foreach ($response['BrandList'] as $item) {
-                array_push($catalog,[
-                    'brand' => $item['BrandName'],
-                    'partnumber' => $response['Article'],
-                    'name' => '',
-                    'guid' => '',
-                    'rossko_need_to_search' => false
-                ]);
-            }
-            if(empty($catalog)) {
-                return view('components.nothingFound');
-            }
-            
-            return view('catalogSearchRes')->with([
+
+           return view('catalogSearchRes')->with([
                     'finalArr' => $catalog,
                     'only_on_stock' => $request->only_on_stock
                 ]
