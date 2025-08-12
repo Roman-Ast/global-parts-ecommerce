@@ -33,8 +33,6 @@ class AdminPanelController extends Controller
 			$start = $end->copy()->subMonth()->addDay()->startOfDay(); // 8 число в 00:00:00
 		}
 
-        
-        
 		$orders = Order::whereBetween('date', [$start, $end])->orderBy('date', 'desc')->get();
         $user = auth()->user();
         $settlements = Setlement::all();
@@ -192,8 +190,6 @@ class AdminPanelController extends Controller
         $plannedSum = $planPerDay * $startForDailyStats->copy()->toPeriod($endForDailyStats)->filter(function($d) {
             return $d->lte(now());
         })->count();
-
-
 
         return view('admin/index', [
             'orders' => $orders,

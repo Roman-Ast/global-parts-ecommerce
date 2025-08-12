@@ -281,7 +281,7 @@
 
                         <h2>3. График по дням за текущий месяц</h2>
                         <div class="chart-container" style="position: relative; width: 100%; max-width: 1000px; margin: 20px auto;">
-                            <canvas id="reportMonthChart" height="60"></canvas>
+                            <canvas id="reportMonthChart" height="150"></canvas>
                         </div>
 
                         <div id="salesSummary" style="text-align:center; font-size: 1.1em; margin-top: 20px;"></div>
@@ -485,90 +485,90 @@
                             const plannedSum = {{ $plannedSum }};
 
                            
-document.addEventListener("DOMContentLoaded", function () {
-    const ctx = document.getElementById('reportMonthChart');
+                    document.addEventListener("DOMContentLoaded", function () {
+                        const ctx = document.getElementById('reportMonthChart');
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: reportLabels,
-            datasets: [
-                {
-                    label: 'Продажи (с наценкой)',
-                    data: reportSalesData,
-                    borderColor: 'rgba(0, 123, 255, 0.6)',
-                    backgroundColor: 'rgba(0, 0, 0, 0)',
-                    fill: false,
-                    tension: 0.3,
-                    pointBackgroundColor: pointColors,
-                    pointRadius: 6,
-                    pointHoverRadius: 7
-                },
-                {
-                    label: 'Закуп (себестоимость)',
-                    data: reportPurchaseData,
-                    backgroundColor: 'rgba(255, 99, 132, 0.3)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    fill: true,
-                    tension: 0.3
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Сумма продаж и закупа за отчетный месяц (по дням)'
-                },
-                annotation: {
-                    annotations: {
-                        planLine: {
+                        new Chart(ctx, {
                             type: 'line',
-                            yMin: 300000,
-                            yMax: 300000,
-                            borderColor: 'rgba(255, 159, 64, 1)',
-                            borderWidth: 2,
-                            label: {
-                                content: 'План: 300 000 ₸',
-                                enabled: true,
-                                position: 'start',
-                                backgroundColor: 'rgba(255, 159, 64, 0.7)'
+                            data: {
+                                labels: reportLabels,
+                                datasets: [
+                                    {
+                                        label: 'Продажи (с наценкой)',
+                                        data: reportSalesData,
+                                        borderColor: 'rgba(0, 123, 255, 0.6)',
+                                        backgroundColor: 'rgba(0, 0, 0, 0)',
+                                        fill: false,
+                                        tension: 0.3,
+                                        pointBackgroundColor: pointColors,
+                                        pointRadius: 6,
+                                        pointHoverRadius: 7
+                                    },
+                                    {
+                                        label: 'Закуп (себестоимость)',
+                                        data: reportPurchaseData,
+                                        backgroundColor: 'rgba(255, 99, 132, 0.3)',
+                                        borderColor: 'rgba(255, 99, 132, 1)',
+                                        fill: true,
+                                        tension: 0.3
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    title: {
+                                        display: true,
+                                        text: 'Сумма продаж и закупа за отчетный месяц (по дням)'
+                                    },
+                                    annotation: {
+                                        annotations: {
+                                            planLine: {
+                                                type: 'line',
+                                                yMin: 300000,
+                                                yMax: 300000,
+                                                borderColor: 'rgba(255, 159, 64, 1)',
+                                                borderWidth: 2,
+                                                label: {
+                                                    content: 'План: 300 000 ₸',
+                                                    enabled: true,
+                                                    position: 'start',
+                                                    backgroundColor: 'rgba(255, 159, 64, 0.7)'
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        title: {
+                                            display: true,
+                                            text: 'День'
+                                        }
+                                    },
+                                    y: {
+                                        title: {
+                                            display: true,
+                                            text: 'Сумма (₸)'
+                                        },
+                                        ticks: {
+                                            callback: function (value) {
+                                                return value.toLocaleString() + ' ₸';
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'День'
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Сумма (₸)'
-                    },
-                    ticks: {
-                        callback: function (value) {
-                            return value.toLocaleString() + ' ₸';
-                        }
-                    }
-                }
-            }
-        }
-    });
+                        });
 
-    // Вывод итогов под графиком
-    const summaryEl = document.getElementById('salesSummary');
-    const summaryColor = actualSum >= plannedSum ? 'green' : 'red';
-    summaryEl.innerHTML = `
-        Плановая сумма продаж: <b>${plannedSum.toLocaleString()} ₸</b><br>
-        Фактическая сумма продаж: <b style="color:${summaryColor}">${actualSum.toLocaleString()} ₸</b>
-    `;
-});
+                        // Вывод итогов под графиком
+                        const summaryEl = document.getElementById('salesSummary');
+                        const summaryColor = actualSum >= plannedSum ? 'green' : 'red';
+                        summaryEl.innerHTML = `
+                            Плановая сумма продаж: <b>${plannedSum.toLocaleString()} ₸</b><br>
+                            Фактическая сумма продаж: <b style="color:${summaryColor}">${actualSum.toLocaleString()} ₸</b>
+                        `;
+                    });
 
 
                         </script>
@@ -1002,6 +1002,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <option value="site">Сайт</option>
                                 <option value="friends">Свои</option>
                                 <option value="kaspi">Каспи</option>
+                                <option value="repeat_request">Повторное обращение</option>
                             </select>
                         </div>
                         <label for="basic-url" class="form-label" id="manually-order-list-open">Товар</label>
