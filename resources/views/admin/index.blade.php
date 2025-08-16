@@ -1142,6 +1142,49 @@
                         </button>
                     </p>
                 </form>
+                <form action="{{ url('import-voltage') }}" method="post" enctype="multipart/form-data">
+                    {{ csrf_field() }}
+
+                    <div class="form-group{{ $errors->has('file') ? 'has-error' : '' }}">
+                        <label for="file" class="control-label">Файл для импорта VoltageKZ</label>
+
+                        <input id="file" type="file" class="form-controll" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
+
+                        @if ($errors->has('file'))
+                            <span class="help-block">
+                                <strong>{{ $errors->first('file') }}</stromg>
+                            </span>
+                        @endif
+                    </div>
+
+                    <p>
+                        <button type="submit" class="btn btn-success" name="submit">
+                            <i class="fa fa-check"></i>Загрузить
+                        </button>
+                    </p>
+                </form>
+                <form action="{{ url('import-blue-star') }}" method="post" enctype="multipart/form-data">
+                    {{ csrf_field() }}
+
+                    <div class="form-group{{ $errors->has('file') ? 'has-error' : '' }}">
+                        <label for="file" class="control-label">Файл для импорта BlueStar</label>
+
+                        <input id="file" type="file" class="form-controll" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
+
+                        @if ($errors->has('file'))
+                            <span class="help-block">
+                                <strong>{{ $errors->first('file') }}</stromg>
+                            </span>
+                        @endif
+                    </div>
+
+                    <p>
+                        <button type="submit" class="btn btn-success" name="submit">
+                            <i class="fa fa-check"></i>Загрузить
+                        </button>
+                    </p>
+                </form>
+
             </div>
             <div id="goods_in_office" class="container admin-content-item">
                 <div class="alert" style="align-text:center;" id="alert-admin-goods-in-office">

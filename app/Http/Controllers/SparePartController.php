@@ -14,6 +14,7 @@ use App\Models\OfficePrice;
 use App\Models\gm_pricelist_from_adil;
 use App\Models\XuiPoimiPrice;
 use App\Models\IngvarPrice;
+use App\Models\VoltagePrice;
 use Collator;
 
 class SparePartController extends Controller
@@ -98,7 +99,6 @@ class SparePartController extends Controller
             ]
         ]);
 
-
         //поиск брэндлиста по каталогам
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
@@ -132,7 +132,6 @@ class SparePartController extends Controller
                 ]
             );
         }
-        
         
         try {
             $result = $query->GetSearch($param);
@@ -214,6 +213,7 @@ class SparePartController extends Controller
         $this->searchXuiPoimi($request->brand, $partNumber);
         $this->searchForumAuto($request->brand, $partNumber);
         $this->searchIngvar($request->brand, $partNumber);
+        $this->searchVoltage($request->brand, $partNumber);
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -1942,6 +1942,61 @@ class SparePartController extends Controller
                 'supplier_color' => '#77942e',
                 'deliveryStart' => '1 день',
             ]);    
+        }
+
+        return;
+    }
+
+    public function searchVoltage(String $brand, String $partnumber)
+    {
+        $searchedPart = VoltagePrice::where('oem', '=', $partnumber)
+            ->orWhere('article', '=', $partnumber)
+            ->get()
+            ->toArray();
+        
+        if (empty($searchedPart)) {
+            return;
+        }
+        
+        foreach ($searchedPart as $item) {
+            
+            if (strtolower($partnumber) == strtolower($item['article'])) {
+                array_push($this->finalArr['brands'], $item['brand']);
+
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand' => $item['brand'],
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'price' => $item['price'],
+                    'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    'qty' => $item['qty'],
+                    'supplier_city' => 'Астана',
+                    'supplier_name' => 'vltg',
+                    'supplier_color' => '#77942e',
+                    'deliveryStart' => \Carbon::today()->toDateString(),
+                ]);
+            } else {
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand' => $item['brand'],
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'stock_legend' => '',
+                    'qty' => $item['qty'],
+                    'price' => $item['price'],
+                    'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    'delivery_time' => '1.5-2 часа',
+                    'stocks' => [
+                        [
+                            'qty' => $item['qty'],
+                            'price' =>$item['price'],
+                            'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                        ]
+                    ],
+                    'supplier_name' => 'vltg',
+                    'supplier_city' => 'Астана',
+                    'supplier_color' => 'yellow',
+                ]);
+            }
         }
 
         return;

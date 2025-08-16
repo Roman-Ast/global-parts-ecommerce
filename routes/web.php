@@ -19,7 +19,10 @@ use App\Models\gm_pricelist_from_adil;
 use App\Models\OfficePrice;
 use App\Models\XuiPoimiPrice;
 use App\Models\IngvarPrice;
+use App\Http\Controllers\VoltagePriceController;
+use App\Http\Controllers\BlueStarPriceController;
 use App\Http\Controllers\SparePartRequestController;
+use App\Http\Controllers\AISimpleSearchController;
 /*
 Route::get('/home', function() {
     (new IngvarPrice())->importToDb();
@@ -39,6 +42,8 @@ Route::post('/cart/delete', [CartController::class, 'deleteItem']);
 Route::post('/cart/update', [CartController::class, 'update']);
 Route::get('cart/clear', [CartController::class, 'clear']);
 Route::post('/sparepart-request', [SparePartRequestController::class, 'store']);
+Route::post('/simpleAISearchWithoutVin', [AISimpleSearchController::class, 'searchArticlesByGPT']);
+Route::post('/simpleAIVinSearch', [AISimpleSearchController::class, 'searchArticlesByGPTWithVin']);
 
 Route::get('/hyundai', function() {
     return view('korean-cars.index');
@@ -98,6 +103,8 @@ Route::middleware(['auth', 'verified'])->group(function() {
     Route::post('import-in-office', [OfficePriceController::class, 'store']);
     Route::post('import-xui-poimi', [XuiPoimiPriceController::class, 'store']);
     Route::post('import-ingvar', [IngvarPriceController::class, 'store']);
+    Route::post('import-voltage', [VoltagePriceController::class, 'store']);
+    Route::post('import-blue-star', [BlueStarPriceController::class, 'store']);
 });
 
 Route::middleware('auth')->group(function() {

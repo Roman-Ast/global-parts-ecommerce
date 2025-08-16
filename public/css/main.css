@@ -222,5 +222,41 @@ ul{
     cursor: pointer;
     padding: 0 20px;
   }
+  .new-badge {
+        display: inline-block;
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        color: #000;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        animation: blink 1.2s infinite;
+        margin-right: 8px;
+    }
+
+ /* Мигание бейджа */
+    @keyframes blink {
+        50% { opacity: 0.5; }
+    }
+
+    /* Адаптив: на мобилке кнопка всегда под полем */
+    @media (max-width: 576px) {
+        #ai-search-form .col-sm-auto {
+            width: 100%;
+        }
+    }
+
+    /* Красивое автоподстраивание высоты textarea */
+    textarea {
+        resize: none;
+        overflow: hidden;
+    }
+
+#ai-search-results{
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+
 
   

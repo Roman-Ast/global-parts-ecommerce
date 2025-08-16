@@ -656,3 +656,203 @@ $('#send-vin-search-btn').on('click', function () {
 
 
 
+ // переключение форм
+const switcher = document.getElementById("searchModeSwitch");
+const formNoVin = document.getElementById("form-no-vin");
+const formVin = document.getElementById("form-vin");
+const switchLabel = document.querySelector("label[for='searchModeSwitch']");
+
+// Инициализация тултипа
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl, {
+    trigger: 'manual', // показываем вручную
+    delay: { "show": 0, "hide": 2000 } // задержка скрытия 2 сек
+  })
+})
+
+// получаем сам tooltip по id
+const tooltipEl = document.querySelector('[data-bs-toggle="tooltip"]');
+const tooltip = bootstrap.Tooltip.getInstance(tooltipEl);
+
+switcher.addEventListener("change", () => {
+   if (switcher.checked) {
+      formNoVin.classList.add("d-none");
+      formVin.classList.remove("d-none");
+      tooltip.setContent({ '.tooltip-inner': "Поиск по VIN — точность выше, но не 100%." });
+   } else {
+      formVin.classList.add("d-none");
+      formNoVin.classList.remove("d-none");
+      tooltip.setContent({ '.tooltip-inner': "Поиск без VIN — результат менее точный, но попробовать можно." });
+   }
+
+   tooltip.show();
+   setTimeout(() => tooltip.hide(), 4000); // держим 4 секунды
+});
+
+// Подсказка при первой загрузке (по умолчанию без VIN)
+document.addEventListener("DOMContentLoaded", () => {
+  showTooltip("Без VIN: точность ниже, но попробовать можно 👌");
+});
+
+// ИИ поиск без винкода
+$('#ai-no-vin-form-btn').on('click', function () {
+   const resultsDiv = document.getElementById("ai-search-results");
+   $('#ai-no-vin-form-btn').css({'border': '1px solid #bbb'});
+
+   if($('#ai-no-vin-input').val().length < 20) {
+      $('#ai-no-vin-input').css({'border': '1px solid red'});
+      $(resultsDiv).css({'color': 'red'});
+      $(resultsDiv).text('Введите все необходимые данные!');
+      return;
+   }
+   
+   $(this).attr('disabled', true);
+
+   resultsDiv.innerHTML = `
+      <div class="text-center text-muted">
+            <div class="spinner-border text-success" role="status"></div>
+          <p class="mt-2">Подбираем запчасти...</p>
+      </div>
+   `;
+
+   const dataFromInput = $('#ai-no-vin-input').val();
+   console.log(dataFromInput);
+   
+   $.ajax({
+      data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: dataFromInput},
+      url: "/simpleAISearchWithoutVin",
+      type: "POST",
+      dataType: 'json',
+      success: function (data) {
+         
+         
+         $('#ai-no-vin-form-btn').attr('disabled', false);
+         const parsedData = JSON.parse(data);
+
+         $('#ai-search-results').empty();
+         $('#ai-no-vin-input').empty();
+
+         const resultsDiv = document.getElementById("ai-search-results");
+         let answer = parsedData.choices?.[0]?.message?.content || "Нет ответа от сервера.";
+         
+         // Заменяем переносы строк на <br> и экранируем HTML-символы
+         answer = answer
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\n/g, "<br>");
+
+         resultsDiv.innerHTML = `<div class="card card-body bg-light text-dark">${answer}</div>`;
+      },
+      error: function (error) {
+         $('#ai-no-vin-form-btn').attr('disabled', false);
+         $('#ai-search-results').empty();
+         $('#ai-no-vin-input').empty();
+         const resultsDiv = document.getElementById("ai-search-results");
+
+         resultsDiv.innerHTML = `<div class="card card-body bg-light text-danger">${error}</div>`;
+      }
+   });
+});
+
+// ИИ поиск с винкодом
+$('#ai-vin-form-btn').on('click', function () {
+   const resultsDiv = document.getElementById("ai-search-results");
+   $('#ai-vin-input').css({'border': '1px solid #bbb'});
+
+   if($('#ai-vin-input').val().length < 12) {
+      $('#ai-vin-input').css({'border': '1px solid red'});
+      $(resultsDiv).css({'color': 'red'});
+      $(resultsDiv).text('Введите все необходимые данные!');
+      return;
+   }
+   if($('#ai-vin-part-input').val().length < 5) {
+      $('#ai-vin-part-input').css({'border': '1px solid red'});
+      $(resultsDiv).css({'color': 'red'});
+      $(resultsDiv).text('Введите все необходимые данные!');
+      return;
+   }
+   
+   $(this).attr('disabled', true);
+
+   resultsDiv.innerHTML = `
+      <div class="text-center text-muted">
+            <div class="spinner-border text-success" role="status"></div>
+          <p class="mt-2">Подбираем запчасти...</p>
+      </div>
+   `;
+
+   const VIN = $('#ai-vin-input').val();
+   const part = $('#ai-vin-part-input').val();
+
+   const dataFromInput = {
+      VIN: VIN,
+      part: part
+   };
+   
+   $.ajax({
+      data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: dataFromInput},
+      url: "/simpleAIVinSearch",
+      type: "POST",
+      dataType: 'json',
+      success: function (data) {
+         $('#ai-vin-part-input').css({'border': '1px solid #bbb'});
+         $('#ai-vin-input').css({'border': '1px solid #bbb'});
+
+         $('#ai-vin-form-btn').attr('disabled', false);
+
+         // очищаем инпуты
+         $('#ai-vin-input').val('');
+         $('#ai-vin-part-input').val('');
+
+         const resultsDiv = document.getElementById("ai-search-results");
+         let answer = data.answer || "Нет ответа от сервера.";
+
+         // экранируем HTML
+         answer = answer
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+         // Markdown → HTML
+        // Заголовки ###
+         answer = answer.replace(/^### (.*$)/gim, "<h5 class='mt-3 mb-2 fw-bold text-start'>$1</h5>");
+         // Заголовки ##
+         answer = answer.replace(/^## (.*$)/gim, "<h4 class='mt-3 mb-2 fw-bold text-start'>$1</h4>");
+         // Заголовки #
+         answer = answer.replace(/^# (.*$)/gim, "<h3 class='mt-3 mb-2 fw-bold text-start'>$1</h3>");
+         // Жирный текст **...**
+         answer = answer.replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>");
+         // Списки
+         answer = answer.replace(/^\d+\. (.*$)/gim, "<li>$1</li>");
+         answer = answer.replace(/^- (.*$)/gim, "<li>$1</li>");
+         // Переносы строк
+         answer = answer.replace(/\n/g, "<br>");
+
+         // оборачиваем списки <li> в <ul>
+         answer = answer.replace(/(<li>.*<\/li>)/gims, "<ul class='ms-3 mb-2'>$1</ul>");
+
+         resultsDiv.innerHTML = `
+            <div class="card card-body bg-light text-dark text-start">
+               ${answer}
+            </div>
+         `;
+      },
+      error: function (error) {
+         $('#ai-vin-form-btn').attr('disabled', false);
+         $('#ai-search-results').empty();
+         $('#ai-vin-input').empty();
+         $('#ai-vin-part-input').empty();
+         const resultsDiv = document.getElementById("ai-search-results");
+
+         resultsDiv.innerHTML = `<div class="card card-body bg-light text-danger">${error}</div>`;
+      }
+   });
+});
+//всплытие подсказки относительно подбора с винкодом и без
+
+
+
+
+

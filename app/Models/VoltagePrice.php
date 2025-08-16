@@ -4,15 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class IngvarPrice extends Model
+class VoltagePrice extends Model
 {
     protected $guarded = [];
 
-    protected $table = 'ingvar_price';
+    protected $table = 'voltage_price';
 
     public function importToDb()
     {
-        $path = resource_path('/pending-files/ingvar/*.csv');
+        $path = resource_path('/pending-files/voltage/*.csv');
 
         $g = glob($path);
 
@@ -21,16 +21,17 @@ class IngvarPrice extends Model
             $data = array_map('str_getcsv', file($file));
             //dd($data);
             foreach ($data as $key => $row) {
-                $modifiedRow = explode(';', $row[0]);
+                //dd($row);
+                //$modifiedRow = explode(';', $row[0]);
                 //dd($modifiedRow);
                 
                 self::updateOrCreate([
-                    'oem' => $modifiedRow[0],
-                    'article' => $modifiedRow[1],
-                    'brand' => $modifiedRow[2],
-                    'name' => $modifiedRow[3],
-                    'price' => $modifiedRow[4],
-                    'qty' => $modifiedRow[5]
+                    'oem' => $row[0],
+                    'article' => $row[1],
+                    'brand' => $row[2],
+                    'name' => $row[3],
+                    'price' => $row[4],
+                    'qty' => $row[5]
                 ]);
             }
 
