@@ -69,7 +69,7 @@ class SparePartController extends Controller
             }
             
             $result = $client->FindCatalog (array("Number"=>$partNumber));
-            //dd($result);
+            
             $catalog = [];
 
             if (is_array($result->FindCatalogResult->SearchCatalogModel)) {
@@ -92,7 +92,6 @@ class SparePartController extends Controller
                 ]);        
             }
             
-            //dd($catalog);
             return $catalog;
         }
 
@@ -176,7 +175,7 @@ class SparePartController extends Controller
                     ]);
                 }
             }
-            //dd($catalog);
+            
             return view('catalogSearchRes')->with([
                 'finalArr' => $catalog,
                 'only_on_stock' => $request->only_on_stock
@@ -1600,7 +1599,7 @@ class SparePartController extends Controller
         }
         
         $noAnalogsResult = $client->FindCatalog (array("Number"=>$partnumber));
-        dd($noAnalogsResult);
+        
         if(!$noAnalogsResult || empty($noAnalogsResult)) {
             return;
         }
