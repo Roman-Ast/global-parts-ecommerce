@@ -201,7 +201,7 @@ class SparePartController extends Controller
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
         
-        /*if($request->rossko_need_to_search) {
+        if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
         $this->searchArmtek($request->brand, $partNumber);
@@ -217,7 +217,7 @@ class SparePartController extends Controller
         $this->searchXuiPoimi($request->brand, $partNumber);
         $this->searchForumAuto($request->brand, $partNumber);
         $this->searchIngvar($request->brand, $partNumber);
-        $this->searchVoltage($request->brand, $partNumber);*/
+        $this->searchVoltage($request->brand, $partNumber);
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -527,7 +527,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-        //dd($result);
+        
         //помещаем найденные позиции в итоговый массив
         if ($result && strlen($result['message']) <= 2 && !empty($result)) {
             foreach ($result['items'] as $key => $item) {
