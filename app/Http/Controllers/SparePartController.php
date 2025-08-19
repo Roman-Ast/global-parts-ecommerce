@@ -52,47 +52,50 @@ class SparePartController extends Controller
 
     public function catalogSearch(Request $request) 
     {
-        function searchCatalogTiss($tissApeyKey, $partNumber)
-        {
-            $ch1 = curl_init(); 
-        
-            $fields = array("JSONparameter" => "{'Article': '".$partNumber."'}");
-            
-            curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/ArticleBrandList?".http_build_query($fields)); 
-            curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
-            
-            $headers = array(         
-                'Authorization: Bearer '. $tissApeyKey
-            ); 
-            curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
-            
-            try {
-                $response = json_decode(curl_exec($ch1),true);
-            } catch (\Throwable $th) {
-                return view('components.hostError');
+        $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber));
+
+        function catalogAutopiterSearch(String $partNumber) {
+            $connect = array(
+                'options' => array(
+                    'connection_timeout' => 1,
+                    'trace' => true
+                )
+            );
+
+            $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL", $connect['options']);
+    
+            if (!($client->IsAuthorization()->IsAuthorizationResult)) {
+                $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
             }
             
-            if (!array_key_exists('BrandList', $response)) {
-                return view('components.nothingFound');
-            }
+            $result = $client->FindCatalog (array("Number"=>$partNumber));
+            //dd($result);
             $catalog = [];
-            
-            foreach ($response['BrandList'] as $item) {
-                array_push($catalog,[
-                    'brand' => $item['BrandName'],
-                    'partnumber' => $response['Article'],
-                    'name' => '',
+
+            if (is_array($result->FindCatalogResult->SearchCatalogModel)) {
+                foreach ($result->FindCatalogResult->SearchCatalogModel as $value) {
+                    array_push($catalog, [
+                        'brand' => $value->CatalogName,
+                        'partnumber' => $value->Number,
+                        'name' => $value->Name,
+                        'guid' => '',
+                        'rossko_need_to_search' => false
+                    ]);
+                }
+            } else {
+                array_push($catalog, [
+                    'brand' => $result->FindCatalogResult->SearchCatalogModel->CatalogName,
+                    'partnumber' => $result->FindCatalogResult->SearchCatalogModel->Number,
+                    'name' => $result->FindCatalogResult->SearchCatalogModel->Name,
                     'guid' => '',
                     'rossko_need_to_search' => false
-                ]);
+                ]);        
             }
             
+            //dd($catalog);
             return $catalog;
-            
         }
 
-        $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber)); 
-        
         $context = stream_context_create([
             'http' => [
                 'timeout' => 2 // общее время ожидания (подключение + ответ)
@@ -119,8 +122,9 @@ class SparePartController extends Controller
         
         try {
             $query = new SoapClient($connect['wsdl'], $connect['options']);
+            
         } catch (\Throwable $th) {
-            $catalog = searchCatalogTiss(self::TISS_API_KEY, $partNumber);
+            $catalog = catalogAutopiterSearch($partNumber);
 
             if(empty($catalog)) {
                 return view('components.nothingFound');
@@ -136,7 +140,8 @@ class SparePartController extends Controller
         try {
             $result = $query->GetSearch($param);
         } catch (\Throwable $th) {
-            searchCatalogTiss(self::TISS_API_KEY, $partNumber);
+            
+            $catalog = catalogAutopiterSearch($partNumber);
 
             if(empty($catalog)) {
                 return view('components.nothingFound');
@@ -171,13 +176,13 @@ class SparePartController extends Controller
                     ]);
                 }
             }
-            
+            //dd($catalog);
             return view('catalogSearchRes')->with([
                 'finalArr' => $catalog,
                 'only_on_stock' => $request->only_on_stock
             ]);
         } else {
-           searchCatalogTiss(self::TISS_API_KEY, $partNumber);
+           $catalog = catalogAutopiterSearch($partNumber);
 
            if(empty($catalog)) {
                 return view('components.nothingFound');
@@ -197,7 +202,7 @@ class SparePartController extends Controller
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
         
-        if($request->rossko_need_to_search) {
+        /*if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
         $this->searchArmtek($request->brand, $partNumber);
@@ -213,7 +218,7 @@ class SparePartController extends Controller
         $this->searchXuiPoimi($request->brand, $partNumber);
         $this->searchForumAuto($request->brand, $partNumber);
         $this->searchIngvar($request->brand, $partNumber);
-        $this->searchVoltage($request->brand, $partNumber);
+        $this->searchVoltage($request->brand, $partNumber);*/
         
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -1595,7 +1600,7 @@ class SparePartController extends Controller
         }
         
         $noAnalogsResult = $client->FindCatalog (array("Number"=>$partnumber));
-        
+        dd($noAnalogsResult);
         if(!$noAnalogsResult || empty($noAnalogsResult)) {
             return;
         }
@@ -2107,3 +2112,50 @@ class SparePartController extends Controller
         }
     }
 } 
+
+
+
+
+
+
+
+
+
+/*function searchCatalogTiss($tissApeyKey, $partNumber)
+        {
+            $ch1 = curl_init(); 
+        
+            $fields = array("JSONparameter" => "{'Article': '".$partNumber."'}");
+            
+            curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/ArticleBrandList?".http_build_query($fields)); 
+            curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
+            
+            $headers = array(         
+                'Authorization: Bearer '. $tissApeyKey
+            ); 
+            curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
+            
+            try {
+                $response = json_decode(curl_exec($ch1),true);
+            } catch (\Throwable $th) {
+                return view('components.hostError');
+            }
+            
+            if (!array_key_exists('BrandList', $response)) {
+                return view('components.nothingFound');
+            }
+            $catalog = [];
+            
+            foreach ($response['BrandList'] as $item) {
+                array_push($catalog,[
+                    'brand' => $item['BrandName'],
+                    'partnumber' => $response['Article'],
+                    'name' => '',
+                    'guid' => '',
+                    'rossko_need_to_search' => false
+                ]);
+            }
+            
+            return $catalog;
+            
+        } */
