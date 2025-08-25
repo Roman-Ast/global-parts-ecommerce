@@ -2066,43 +2066,45 @@ class SparePartController extends Controller
     function setPrice($price)
     {
         $priceWithMargin = 0;
-        
-        if ($price > 0 && $price <= 600) {
-            $priceWithMargin = $price * 3; 
-        } else if ($price > 600 && $price <= 2000) {
-            $priceWithMargin = $price * 2;
-        } else if ($price > 2000 && $price <= 4000) {
-            $priceWithMargin = $price * 1.63;
-        } else if ($price > 4000 && $price <= 10000) {
-            $priceWithMargin = $price * 1.40;
-        } else if ($price > 10000 && $price <= 20000) {
-            $priceWithMargin = $price * 1.34;
+
+        if ($price > 0 && $price <= 900) {
+            $priceWithMargin = $price * 3.2; 
+        } else if ($price > 900 && $price <= 3000) {
+            $priceWithMargin = $price * 2.2;
+        } else if ($price > 3000 && $price <= 6000) {
+            $priceWithMargin = $price * 1.9;
+        } else if ($price > 6000 && $price <= 10000) {
+            $priceWithMargin = $price * 1.55;
+        } else if ($price > 10000 && $price <= 15000) {
+            $priceWithMargin = $price * 1.42;
+        } else if ($price > 15000 && $price <= 20000) {
+            $priceWithMargin = $price * 1.39;
         } else if ($price > 20000 && $price <= 30000) {
             $priceWithMargin = $price * 1.33;
         } else if ($price > 30000 && $price <= 40000) {
-            $priceWithMargin = $price * 1.29;
+            $priceWithMargin = $price * 1.35;
         } else if ($price > 40000 && $price <= 50000) {
-            $priceWithMargin = $price * 1.27;
+            $priceWithMargin = $price * 1.33;
         } else if ($price > 50000 && $price <= 60000) {
-            $priceWithMargin = $price * 1.26;
+            $priceWithMargin = $price * 1.31;
         } else if ($price > 60000 && $price <= 70000) {
-            $priceWithMargin = $price * 1.25;
+            $priceWithMargin = $price * 1.295;
         } else if ($price > 70000 && $price <= 80000) {
-            $priceWithMargin = $price * 1.24;
+            $priceWithMargin = $price * 1.265;
         } else if ($price > 80000 && $price <= 90000) {
-            $priceWithMargin = $price * 1.23;
+            $priceWithMargin = $price * 1.24;
         } else if ($price > 90000 && $price <= 100000) {
             $priceWithMargin = $price * 1.22;
         } else if ($price > 100000 && $price <= 120000) {
             $priceWithMargin = $price * 1.21;
         } else if ($price > 120000) {
-            $priceWithMargin = $price * 1.20;
+            $priceWithMargin = $price * 1.216;
         }
         
         if (Auth()->user() && Auth()->user()->user_role == 'common') {
             return $priceWithMargin;
         } else if(Auth()->user() && Auth()->user()->user_role == 'opt') {
-            return $priceWithMargin - ($priceWithMargin * 0.08);
+            return $priceWithMargin - ($priceWithMargin * 0.07);
         } elseif(Auth()->user() && Auth()->user()->user_role == 'admin') {
             $priceWithMargin = SetPrice::setPriceForAdmin($price);
             return $priceWithMargin;
@@ -2111,50 +2113,3 @@ class SparePartController extends Controller
         }
     }
 } 
-
-
-
-
-
-
-
-
-
-/*function searchCatalogTiss($tissApeyKey, $partNumber)
-        {
-            $ch1 = curl_init(); 
-        
-            $fields = array("JSONparameter" => "{'Article': '".$partNumber."'}");
-            
-            curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/ArticleBrandList?".http_build_query($fields)); 
-            curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1); 
-            
-            $headers = array(         
-                'Authorization: Bearer '. $tissApeyKey
-            ); 
-            curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
-            
-            try {
-                $response = json_decode(curl_exec($ch1),true);
-            } catch (\Throwable $th) {
-                return view('components.hostError');
-            }
-            
-            if (!array_key_exists('BrandList', $response)) {
-                return view('components.nothingFound');
-            }
-            $catalog = [];
-            
-            foreach ($response['BrandList'] as $item) {
-                array_push($catalog,[
-                    'brand' => $item['BrandName'],
-                    'partnumber' => $response['Article'],
-                    'name' => '',
-                    'guid' => '',
-                    'rossko_need_to_search' => false
-                ]);
-            }
-            
-            return $catalog;
-            
-        } */
