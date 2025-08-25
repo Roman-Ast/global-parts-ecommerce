@@ -68,7 +68,15 @@ class SparePartController extends Controller
                 $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
             }
             
-            $result = $client->FindCatalog (array("Number"=>$partNumber));
+            try {
+                $result = $client->FindCatalog (array("Number"=>$partNumber));
+            } catch (\Throwable $th) {
+                return [];
+            }
+            
+            if (!property_exists($result->FindCatalogResult, 'SearchCatalogModel')) {
+                return [];
+            }
             
             $catalog = [];
 
@@ -2006,7 +2014,8 @@ class SparePartController extends Controller
         return;
     }
 
-    public function getCheckoutDetails () {
+    public function getCheckoutDetails () 
+    {
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetDeliveryDetails',
             'options' => array(
