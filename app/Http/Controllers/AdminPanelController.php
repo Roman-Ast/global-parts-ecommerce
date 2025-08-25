@@ -57,7 +57,8 @@ class AdminPanelController extends Controller
             '2gis' => [],
             'olx' => [],
             'friends' => [],
-            'site' => []
+            'site' => [],
+            'repeat_request' => [],
         ];
 
         foreach ($sales_statistics as $sale_channel => $data) {

@@ -22,7 +22,7 @@ class BlueStarPrice extends Model
             //dd($data);
             foreach ($data as $key => $row) {
                 //dd($row);
-                //$modifiedRow = explode(';', $row[0]);
+                $modifiedRow = explode(';', $row[0]);
                 //dd($modifiedRow);
                 
                 self::updateOrCreate([

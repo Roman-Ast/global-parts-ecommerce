@@ -29,7 +29,7 @@ class BlueStarPriceController extends Controller
 
             session()->flash('status', 'queued for importing');
         }
-        (new VoltagePrice())->importToDb();
+        (new BlueStarPrice())->importToDb();
 
         return redirect('admin_panel');
     }

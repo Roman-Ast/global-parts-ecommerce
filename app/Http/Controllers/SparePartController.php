@@ -15,6 +15,7 @@ use App\Models\gm_pricelist_from_adil;
 use App\Models\XuiPoimiPrice;
 use App\Models\IngvarPrice;
 use App\Models\VoltagePrice;
+use App\Models\BlueStarPrice;
 use Collator;
 
 class SparePartController extends Controller
@@ -226,7 +227,8 @@ class SparePartController extends Controller
         $this->searchForumAuto($request->brand, $partNumber);
         $this->searchIngvar($request->brand, $partNumber);
         $this->searchVoltage($request->brand, $partNumber);
-        
+        $this->searchBlueStar($request->brand, $partNumber);
+
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
         }
@@ -2014,6 +2016,36 @@ class SparePartController extends Controller
         return;
     }
 
+    public function searchBlueStar(String $brand, String $partnumber)
+    {
+        $searchedPart = BlueStarPrice::where('oem', $partnumber)
+            ->orWhere('article', $partnumber)
+            ->get()
+            ->toArray();
+        
+        if (empty($searchedPart)) {
+            return;
+        }
+        //dd($searchedPart);
+        foreach ($searchedPart as $item) {
+            array_push($this->finalArr['brands'], $item['brand']);
+
+            array_push($this->finalArr['searchedNumber'], [
+                'brand' => $item['brand'],
+                'article' => $item['article'],
+                'name' => $item['name'],
+                'price' => $item['price'],
+                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                'qty' => $item['qty'],
+                'supplier_city' => 'Астана',
+                'supplier_name' => 'blstr',
+                'supplier_color' => 'green',
+                'deliveryStart' => date('d.m.Y'),
+            ]);    
+        }
+        
+        return;
+    }
     public function getCheckoutDetails () 
     {
         $connect = array(
