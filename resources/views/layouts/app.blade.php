@@ -141,10 +141,10 @@
             </a>
 
             <a href="https://go.2gis.com/BjDJe" target="_blank" class="social-media-links">
-                <img src="/images/color-location-48.png" alt="location">
+                <img src="/images/color-location1-48.png" alt="location">
             </a>
 
-            <a href="" class="social-media-links">
+            <a href="tel:+77087172549" class="social-media-links">
                 <img src="/images/color-phone-48.png" alt="location">
             </a>
 
