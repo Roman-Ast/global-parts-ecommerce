@@ -19,7 +19,7 @@
             
     @endif
 
-    <div id="social-media-container" class="container">
+    <!--<div id="social-media-container" class="container">
       
       <div id="instagram-container">
         <a href="https://www.instagram.com/global_parts_astana?igsh=Yjg2ZXphN2Rkb2E2" target="_blank">
@@ -31,7 +31,7 @@
           <img src="/images/color-location-24.png" alt="address">
         </a>
       </div>
-    </div>
+    </div>-->
 
     <div id="main-container" class="container">
       <!-- Блок ИИ помощника -->

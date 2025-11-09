@@ -135,13 +135,26 @@
             </div>
         </div>
     </div>
+        <div id="social-media-container">
+            <a href="https://www.instagram.com/global_parts_astana?igsh=Yjg2ZXphN2Rkb2E2" target="_blank">
+                <img src="/images/color-instagram-48.png" alt="instagram">
+            </a>
 
-    <a href="#"
-      class="whatsapp-fixed-btn"
-      aria-label="Написать в WhatsApp">
-      <div class="pulse-ring"></div>
-      <i class="bi bi-whatsapp"></i>
-    </a>
+            <a href="https://go.2gis.com/BjDJe" target="_blank">
+                <img src="/images/color-location-48.png" alt="location">
+            </a>
+
+            <a href="#"
+                class="whatsapp-fixed-btn"
+                aria-label="Написать в WhatsApp">
+                <div class="pulse-ring"></div>
+                <i class="bi bi-whatsapp"></i>
+            </a>
+        </div>
+        
+    
+        
+    
     
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
         <script src="{{ URL::asset('js/jquery.min.js') }}"></script>

@@ -17,37 +17,6 @@
         min-height: 90vh;
         margin-bottom: 180px;
     }
-    #social-media-container{
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        justify-content: space-evenly;
-        align-items: center;
-        padding-top: 20px;
-    }
-    #tiktok-container {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px; /* расстояние между иконкой и плашкой */
-}
-
-#tiktok-container img {
-  width: 24px;
-  height: 24px;
-}
-
-.tiktok-badge {
-  background: #ff4747;
-  color: #fff;
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 6px;
-  line-height: 1;
-  font-weight: 500;
-  user-select: none;
-  white-space: nowrap;
-}
     #feedback-form-wrapper{
         margin-bottom: 15px;
     }

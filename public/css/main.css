@@ -69,9 +69,18 @@ ul{
     }
     
 }
-
+#social-media-container{
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 24vh;
+}
 .whatsapp-fixed-btn {
-    position: fixed;
+    
     bottom: 80px;
     right: 20px;
     z-index: 9999;
