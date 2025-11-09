@@ -19,9 +19,23 @@
             
     @endif
 
+    <div id="social-media-container" class="container">
+      
+      <div id="instagram-container">
+        <a href="https://www.instagram.com/global_parts_astana?igsh=Yjg2ZXphN2Rkb2E2" target="_blank">
+          <img src="/images/color-instagram-24.png" alt="instagram">
+        </a>
+      </div>
+      <div id="2gis-container">
+        <a href="https://go.2gis.com/BjDJe" target="_blank">
+          <img src="/images/color-location-24.png" alt="address">
+        </a>
+      </div>
+    </div>
+
     <div id="main-container" class="container">
       <!-- Блок ИИ помощника -->
-      <section class="hero-section text-center p-4 bg-white">
+      <!-- <section class="hero-section text-center p-4 bg-white">
         <div class="container">
           <h2 class="fw-bold mb-3 text-dark">
             🤖 ИИ-помощник по подбору запчастей (GPT 5.0)
@@ -31,7 +45,7 @@
             Введите данные авто или VIN и нужную деталь — наш ИИ найдет оригинальные номера и аналоги.
           </p>
 
-          <!-- Переключатель -->
+          
           <div class="d-flex justify-content-center mb-4">
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" id="searchModeSwitch">
@@ -44,7 +58,7 @@
             </div>
           </div>
 
-          <!-- Форма без VIN -->
+          
           <div id="form-no-vin" class="row g-2 justify-content-center">
             <div class="col-12 col-sm-8 col-md-6">
               <textarea id="ai-no-vin-input" class="form-control form-control-lg" rows="2"
@@ -55,7 +69,7 @@
             </div>
           </div>
 
-          <!-- Форма с VIN -->
+          
           <div id="form-vin" class="row g-2 justify-content-center d-none">
             <div class="col-12 col-sm-6 col-md-4">
               <input type="text" id="ai-vin-input" class="form-control form-control-lg"
@@ -70,12 +84,30 @@
             </div>
           </div>
 
-          <!-- Результаты -->
+          
           <div id="ai-search-results" class="mt-4 text-start"></div>
         </div>
+      </section> -->
+
+      <section class="hero-section text-center p-4 bg-light mt-5">
+            <div class="container">
+                <h1 class="display-5 fw-bold mb-3 text-dark">Запчасти с доставкой по Казахстану</h1>
+                <p class="lead text-muted mb-4">Быстрый подбор по VIN. Оригиналы и аналоги в наличии и на заказ.</p>
+
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="#vin-form" class="btn btn-success btn-lg px-4" id="scroll-to-form">Подобрать по VIN</a>
+                <a href="#" class="btn btn-outline-success btn-lg px-4 wa-top-container">
+                    WhatsApp
+                </a>
+                </div>
+
+                <div class="mt-4">
+                <small class="text-muted"><b>г.Астана</b><br>Работаем с 10:00 до 19:00. Ответим в WhatsApp даже в выходные 📦</small>
+                </div>
+            </div>
       </section>
         
-        <section class="steps-section py-5 bg-white mt-5">
+      <section class="steps-section py-5 bg-white mt-5">
           <div class="container">
             <h2 class="text-center fw-bold mb-4">Как заказать запчасти — всего 3 шага</h2>
 
@@ -107,24 +139,6 @@
           </div>
       </section>
 
-      <section class="hero-section text-center p-4 bg-light mt-5">
-            <div class="container">
-                <h1 class="display-5 fw-bold mb-3 text-dark">Запчасти с доставкой по Казахстану</h1>
-                <p class="lead text-muted mb-4">Быстрый подбор по VIN. Оригиналы и аналоги в наличии и на заказ.</p>
-
-                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <a href="#vin-form" class="btn btn-success btn-lg px-4" id="scroll-to-form">Подобрать по VIN</a>
-                <a href="#" class="btn btn-outline-success btn-lg px-4 wa-top-container">
-                    WhatsApp
-                </a>
-                </div>
-
-                <div class="mt-4">
-                <small class="text-muted">Работаем с 10:00 до 19:00. Ответим в WhatsApp даже в выходные 📦</small>
-                </div>
-            </div>
-        </section>
-        
       <section class="cta-form-section py-5 bg-light mt-5" id="vin-form">
         <div class="container">
           <div class="text-center mb-4">
