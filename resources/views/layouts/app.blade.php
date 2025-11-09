@@ -136,12 +136,16 @@
         </div>
     </div>
         <div id="social-media-container">
-            <a href="https://www.instagram.com/global_parts_astana?igsh=Yjg2ZXphN2Rkb2E2" target="_blank">
+            <a href="https://www.instagram.com/global_parts_astana?igsh=Yjg2ZXphN2Rkb2E2" target="_blank" class="social-media-links">
                 <img src="/images/color-instagram-48.png" alt="instagram">
             </a>
 
-            <a href="https://go.2gis.com/BjDJe" target="_blank">
+            <a href="https://go.2gis.com/BjDJe" target="_blank" class="social-media-links">
                 <img src="/images/color-location-48.png" alt="location">
+            </a>
+
+            <a href="" class="social-media-links">
+                <img src="/images/color-phone-48.png" alt="location">
             </a>
 
             <a href="#"

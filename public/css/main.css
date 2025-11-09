@@ -77,7 +77,9 @@ ul{
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
-  height: 24vh;
+}
+.social-media-links{
+  margin-bottom: 20px;
 }
 .whatsapp-fixed-btn {
     
