@@ -16,6 +16,8 @@ use App\Models\XuiPoimiPrice;
 use App\Models\IngvarPrice;
 use App\Models\VoltagePrice;
 use App\Models\BlueStarPrice;
+use App\Models\InterkomPrice;
+use App\Models\AdilPhaetonPrice;
 use Collator;
 
 class SparePartController extends Controller
@@ -214,7 +216,6 @@ class SparePartController extends Controller
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
         $this->searchArmtek($request->brand, $partNumber);
-        $this->searchAdilsGM($request->brand, $partNumber);
         $this->searchStockInOffice($request->brand, $partNumber);
         $this->searchGerat($request->brand, $partNumber);
         $this->searchShatem($request->brand, $partNumber);
@@ -228,6 +229,8 @@ class SparePartController extends Controller
         $this->searchIngvar($request->brand, $partNumber);
         $this->searchVoltage($request->brand, $partNumber);
         $this->searchBlueStar($request->brand, $partNumber);
+        $this->searchInterkom($request->brand, $partNumber);
+        $this->searchAdilPhaeton($request->brand, $partNumber);
 
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
@@ -2046,6 +2049,69 @@ class SparePartController extends Controller
         
         return;
     }
+
+    public function searchInterkom(String $brand, String $partnumber)
+    {
+        $searchedPart = InterkomPrice::where('oem', $partnumber)
+            ->orWhere('article', $partnumber)
+            ->get()
+            ->toArray();
+        
+        if (empty($searchedPart)) {
+            return;
+        }
+        //dd($searchedPart);
+        foreach ($searchedPart as $item) {
+            array_push($this->finalArr['brands'], $item['brand']);
+
+            array_push($this->finalArr['searchedNumber'], [
+                'brand' => $item['brand'],
+                'article' => $item['article'],
+                'name' => $item['name'],
+                'price' => $item['price'],
+                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                'qty' => $item['qty'],
+                'supplier_city' => 'Астана',
+                'supplier_name' => 'ntrkm',
+                'supplier_color' => 'green',
+                'deliveryStart' => date('d.m.Y'),
+            ]);    
+        }
+        
+        return;
+    }
+
+    public function searchAdilPhaeton(String $brand, String $partnumber)
+    {
+        $searchedPart = AdilPhaetonPrice::where('oem', $partnumber)
+            ->orWhere('article', $partnumber)
+            ->get()
+            ->toArray();
+        
+        if (empty($searchedPart)) {
+            return;
+        }
+        //dd($searchedPart);
+        foreach ($searchedPart as $item) {
+            array_push($this->finalArr['brands'], $item['brand']);
+
+            array_push($this->finalArr['searchedNumber'], [
+                'brand' => $item['brand'],
+                'article' => $item['article'],
+                'name' => $item['name'],
+                'price' => $item['price'],
+                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                'qty' => $item['qty'],
+                'supplier_city' => 'Астана',
+                'supplier_name' => 'adil',
+                'supplier_color' => 'green',
+                'deliveryStart' => date('d.m.Y'),
+            ]);    
+        }
+        
+        return;
+    }
+
     public function getCheckoutDetails () 
     {
         $connect = array(

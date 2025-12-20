@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('blue_star_price', function (Blueprint $table) {
+        Schema::create('adil_phaeton_price', function (Blueprint $table) {
             $table->id();
             $table->string('oem');
             $table->string('article');
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('blue_star_price');
+        Schema::dropIfExists('adil_phaeton_price');
     }
 };

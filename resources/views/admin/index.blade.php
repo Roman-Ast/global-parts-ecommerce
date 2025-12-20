@@ -1185,6 +1185,50 @@
                     </p>
                 </form>
 
+                 <form action="{{ url('import-interkom') }}" method="post" enctype="multipart/form-data">
+                    {{ csrf_field() }}
+
+                    <div class="form-group{{ $errors->has('file') ? 'has-error' : '' }}">
+                        <label for="file" class="control-label">Файл для импорта Интерком</label>
+
+                        <input id="file" type="file" class="form-controll" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
+
+                        @if ($errors->has('file'))
+                            <span class="help-block">
+                                <strong>{{ $errors->first('file') }}</stromg>
+                            </span>
+                        @endif
+                    </div>
+
+                    <p>
+                        <button type="submit" class="btn btn-success" name="submit">
+                            <i class="fa fa-check"></i>Загрузить
+                        </button>
+                    </p>
+                </form>
+
+                <form action="{{ url('import-adil-phaeton') }}" method="post" enctype="multipart/form-data">
+                    {{ csrf_field() }}
+
+                    <div class="form-group{{ $errors->has('file') ? 'has-error' : '' }}">
+                        <label for="file" class="control-label">Файл для импорта Адиль Фаэтон</label>
+
+                        <input id="file" type="file" class="form-controll" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
+
+                        @if ($errors->has('file'))
+                            <span class="help-block">
+                                <strong>{{ $errors->first('file') }}</stromg>
+                            </span>
+                        @endif
+                    </div>
+
+                    <p>
+                        <button type="submit" class="btn btn-success" name="submit">
+                            <i class="fa fa-check"></i>Загрузить
+                        </button>
+                    </p>
+                </form>
+
             </div>
             <div id="goods_in_office" class="container admin-content-item">
                 <div class="alert" style="align-text:center;" id="alert-admin-goods-in-office">

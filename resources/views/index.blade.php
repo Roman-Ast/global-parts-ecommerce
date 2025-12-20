@@ -19,20 +19,6 @@
             
     @endif
 
-    <!--<div id="social-media-container" class="container">
-      
-      <div id="instagram-container">
-        <a href="https://www.instagram.com/global_parts_astana?igsh=Yjg2ZXphN2Rkb2E2" target="_blank">
-          <img src="/images/color-instagram-24.png" alt="instagram">
-        </a>
-      </div>
-      <div id="2gis-container">
-        <a href="https://go.2gis.com/BjDJe" target="_blank">
-          <img src="/images/color-location-24.png" alt="address">
-        </a>
-      </div>
-    </div>-->
-
     <div id="main-container" class="container">
       <!-- Блок ИИ помощника -->
       <!-- <section class="hero-section text-center p-4 bg-white">

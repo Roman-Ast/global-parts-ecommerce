@@ -19,16 +19,20 @@ use App\Models\gm_pricelist_from_adil;
 use App\Models\OfficePrice;
 use App\Models\XuiPoimiPrice;
 use App\Models\IngvarPrice;
+use App\Models\InterkomPrice;
+use App\Models\AdilPhaetonPrice;
 use App\Http\Controllers\VoltagePriceController;
 use App\Http\Controllers\BlueStarPriceController;
+use App\Http\Controllers\InterkomPriceController;
+use App\Http\Controllers\AdilPhaetonPriceController;
 use App\Http\Controllers\SparePartRequestController;
 use App\Http\Controllers\AISimpleSearchController;
-/*
-Route::get('/home', function() {
-    (new IngvarPrice())->importToDb();
+
+/*Route::get('/home', function() {
+    (new AdilPhaetonPrice())->importToDb();
     dd('done');
-});
-*/
+});*/
+
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);
 Route::post('/getPart/', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
@@ -105,6 +109,8 @@ Route::middleware(['auth', 'verified'])->group(function() {
     Route::post('import-ingvar', [IngvarPriceController::class, 'store']);
     Route::post('import-voltage', [VoltagePriceController::class, 'store']);
     Route::post('import-blue-star', [BlueStarPriceController::class, 'store']);
+    Route::post('import-interkom', [InterkomPriceController::class, 'store']);
+    Route::post('import-adil-phaeton', [AdilPhaetonPriceController::class, 'store']);
 });
 
 Route::middleware('auth')->group(function() {
