@@ -32,7 +32,7 @@ class OrderPlaced extends Mailable
     public function build()
     {
         return $this
-            ->to('globalparts.ast@yandex.ru', $this->order->name)
+            ->to('globalparts.ast@inbox.ru', $this->order->name)
             ->subject('Заказ от клиента на сайте')
             ->view('email.placed');
     }

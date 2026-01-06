@@ -224,7 +224,7 @@ class SparePartController extends Controller
         $this->searchTiss($request->brand, $partNumber);
         $this->searchKulan($request->brand, $partNumber);
         $this->searchFebest($request->brand, $partNumber);
-        $this->searchXuiPoimi($request->brand, $partNumber);
+        //$this->searchXuiPoimi($request->brand, $partNumber);
         $this->searchForumAuto($request->brand, $partNumber);
         $this->searchIngvar($request->brand, $partNumber);
         $this->searchVoltage($request->brand, $partNumber);
@@ -1778,37 +1778,6 @@ class SparePartController extends Controller
             }
         }       
         //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. atptr';
-        return;
-    }
-
-    public function searchAdilsGM(String $brand, String $partnumber)
-    {
-        $searchedPart = gm_pricelist_from_adil::where('oem', $partnumber)
-            ->orWhere('article', $partnumber)
-            ->get()
-            ->toArray();
-        
-        if (empty($searchedPart)) {
-            return;
-        }
-        //dd($searchedPart);
-        foreach ($searchedPart as $item) {
-            array_push($this->finalArr['brands'], $item['brand']);
-
-            array_push($this->finalArr['searchedNumber'], [
-                'brand' => $item['brand'],
-                'article' => $item['article'],
-                'name' => $item['name'],
-                'price' => $item['price'],
-                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                'qty' => $item['qty'],
-                'supplier_city' => 'Алматы',
-                'supplier_name' => 'Adil`s GM',
-                'supplier_color' => 'green',
-                'deliveryStart' => date('d.m.Y', strtotime('+10 day', strtotime(date('d.m.y')))),
-            ]);    
-        }
-        
         return;
     }
 

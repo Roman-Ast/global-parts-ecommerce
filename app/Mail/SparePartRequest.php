@@ -31,7 +31,7 @@ class SparePartRequest extends Mailable
     public function build()
     {
         return $this
-            ->to('globalparts.ast@yandex.ru', $this->requestData)
+            ->to('globalparts.ast@inbox.ru', $this->requestData)
             ->subject('Запрос подбора по винкоду')
             ->view('email.sparePartRequest');
     }
