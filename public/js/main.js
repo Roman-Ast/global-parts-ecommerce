@@ -35,7 +35,7 @@ $(window).on('load', function () {
          }
       });
    }
-   //проверка сатуса returned
+   //проверка статуса returned
    $('.order_product_status').each(function (key, elem) {
       if ($(elem).find('option:selected').val() == 'returned') {
          $(this).attr('disabled', true);
@@ -552,39 +552,62 @@ $('.review-item').on('mouseleave', function () {
 const phoneInput = document.getElementById("phone");
 
 phoneInput.addEventListener("input", function () {
-let input = phoneInput.value.replace(/\D/g, ""); // Убираем все нецифры
+    let input = phoneInput.value.replace(/\D/g, ""); // убираем всё кроме цифр
 
-if (input.startsWith("8")) {
-   input = "7" + input.slice(1); // Заменяем 8 на 7
-}
+    if (input.startsWith("8")) {
+        input = "7" + input.slice(1); // 8 → 7
+    }
 
-if (input.length > 11) input = input.slice(0, 11); // Ограничение по длине
+    if (input.length > 11) {
+        input = input.slice(0, 11); // максимум 11 цифр
+    }
 
-let formatted = "+7";
-if (input.length > 1) formatted += " (" + input.slice(1, 4);
-if (input.length >= 4) formatted += ") " + input.slice(4, 7);
-if (input.length >= 7) formatted += "-" + input.slice(7, 9);
-if (input.length >= 9) formatted += "-" + input.slice(9, 11);
-   phoneInput.value = formatted;
+    let formatted = "+7";
+    if (input.length > 1) formatted += " (" + input.slice(1, 4);
+    if (input.length >= 4) formatted += ") " + input.slice(4, 7);
+    if (input.length >= 7) formatted += "-" + input.slice(7, 9);
+    if (input.length >= 9) formatted += "-" + input.slice(9, 11);
+
+    phoneInput.value = formatted;
+
+    // убираем ошибку при корректном вводе
+    if (input.length === 11) {
+        document.getElementById("error").textContent = "";
+        phoneInput.style.border = "";
+    }
 });
 
 function validatePhone() {
-const raw = phoneInput.value.replace(/\D/g, "");
-const error = document.getElementById("error");
-    
-// Проверка: номер начинается с 7, затем разрешённый код оператора, затем 7 цифр
-const valid = /^7(00|01|02|05|07|08|47|71|76|77|78)\d{7}$/.test(raw);
-    
-if (!valid) {
-   error.textContent = "Введите номер с допустимым кодом оператора (700, 701, 702, 705, 707 и т.д.).";
-   return false;
-}
-    
-error.textContent = "";
+    const raw = phoneInput.value.replace(/\D/g, "");
+    const error = document.getElementById("error");
+
+    // номер должен быть введён полностью
+    if (raw.length !== 11) {
+        error.textContent = "Убедитесь, что номер телефона введён полностью.";
+        phoneInput.style.border = "1px solid #d32f2f";
+        return false;
+    }
+
+    // допустимые коды операторов Казахстана
+    const valid = /^7\d{10}$/.test(raw);
+
+    if (!valid) {
+      error.textContent = "Проверьте номер телефона.";
+      phoneInput.style.border = "1px solid #d32f2f";
+      return false;
+   }
+   
+   $('#shadow').show();
+   $('#shadow').addClass('d-flex');
+   $('#loading').text('Ваш запрос отправляется, пожалуйста ожидайте...');
+   $(this).removeClass('btn-success').addClass('btn-secondary');
+   error.textContent = "";
+   phoneInput.style.border = "";
    return true;
 }
 
-    //увеличение и пролистывание отзывов
+
+//увеличение и пролистывание отзывов
 $(document).ready(function() {
       const $modal = $('#review-modal');
       const $modalImg = $('#modal-img');
@@ -632,28 +655,6 @@ $(document).ready(function() {
       hammer.on('swipeleft', showNext);
       hammer.on('swiperight', showPrev);
 });
-
-//блокирование кнопки отправить запрос по VIN после первого нажатия и высплытие окна ожидания
-$('#send-vin-search-btn').on('click', function () {
-   let isValid = true;
-
-    $('.vin-selection-field').each(function () {
-        if ($(this).val().trim() === '') {
-            isValid = false;
-            return false;
-        }
-   });
-   if (isValid) {
-      $('#shadow').show();
-      $('#shadow').addClass('d-flex');
-      $('#loading').text('Ваш запрос отправляется, пожалуйста ожидайте...');
-      $(this).removeClass('btn-success').addClass('btn-secondary');
-   } else {
-      e.preventDefault();
-      return;
-   }
-});
-
 
 
  // переключение форм

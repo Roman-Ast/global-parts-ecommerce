@@ -132,7 +132,7 @@
             <p class="text-muted lead mb-0">Подберем по VIN — быстро и точно</p>
           </div>
 
-          <form class="row justify-content-center" action="/sparepart-request" method="POST">
+          <form class="row justify-content-center" action="/sparepart-request" method="POST" onsubmit="return validatePhone();">
             <div class="col-lg-8">
               <form class="p-4 border rounded-4 shadow-sm bg-white">
                 @csrf
@@ -149,7 +149,7 @@
                 <div class="mb-3">
                   <label for="phone" class="form-label fw-semibold">Телефон (для обратной связи)</label>
                   <input type="tel" class="form-control vin-selection-field" name="phone" id="phone" placeholder="+7 (777) 123-45-67" required>
-                  <p id="error" style="color:red;"></p>
+                  <div id="error" style="font-size:12px; font-style:italic; color:#d32f2f; margin-top:4px;"></div>
                 </div>
 
                 <div class="mb-3">
