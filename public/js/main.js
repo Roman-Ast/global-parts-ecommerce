@@ -548,7 +548,7 @@ $('.review-item').on('mouseleave', function () {
    $(this).css({'transform': 'scale(1)'});
 });
 
-//проверка ввода номера телефона
+//редактирование номера телефона под формат КЗ
 const phoneInput = document.getElementById("phone");
 
 phoneInput.addEventListener("input", function () {
@@ -577,6 +577,7 @@ phoneInput.addEventListener("input", function () {
     }
 });
 
+//валидация VIN номера
 function validatePhone() {
     const raw = phoneInput.value.replace(/\D/g, "");
     const error = document.getElementById("error");
@@ -597,15 +598,124 @@ function validatePhone() {
       return false;
    }
    
-   $('#shadow').show();
-   $('#shadow').addClass('d-flex');
-   $('#loading').text('Ваш запрос отправляется, пожалуйста ожидайте...');
-   $(this).removeClass('btn-success').addClass('btn-secondary');
    error.textContent = "";
    phoneInput.style.border = "";
    return true;
 }
 
+//проверка винкода
+function validateVin() {
+   
+    const vinInput = document.getElementById("vin");
+    const value = vinInput.value.trim();
+    let error = vinInput.nextElementSibling;
+
+    // создаём блок ошибки, если его ещё нет
+    if (!error || !error.classList.contains("vin-error")) {
+        error = document.createElement("div");
+        error.className = "vin-error";
+        error.style.fontSize = "12px";
+        error.style.fontStyle = "italic";
+        error.style.color = "#d32f2f";
+        error.style.marginTop = "4px";
+        vinInput.after(error);
+    }
+
+    // длина 8-17 символов
+    if (value.length < 8) {
+        error.textContent = "VIN / номер кузова должен быть не менее 8 символов.";
+        vinInput.style.border = "1px solid #d32f2f";
+        return false;
+    }
+    if (value.length > 17) {
+        error.textContent = "VIN / номер кузова не может быть длиннее 17 символов.";
+        vinInput.style.border = "1px solid #d32f2f";
+        return false;
+    }
+
+    // кириллица
+    const cyrillicMatches = value.match(/[А-Яа-яЁёЀ-ӿ]/g);
+    if (cyrillicMatches) {
+        error.textContent = `В VIN / номере кузова нельзя использовать кириллицу! Найдено: ${cyrillicMatches.join(', ')}`;
+        vinInput.style.border = "1px solid #d32f2f";
+        return false;
+    }
+
+    // минимум 2 латинские буквы
+    const latinLetters = (value.match(/[A-Za-z]/g) || []).length;
+    if (latinLetters < 2) {
+        error.textContent = "VIN / номер кузова должен содержать минимум 2 латинские буквы.";
+        vinInput.style.border = "1px solid #d32f2f";
+        return false;
+    }
+
+    // минимум 1 цифра
+    const digitsCount = (value.match(/\d/g) || []).length;
+    if (digitsCount < 1) {
+        error.textContent = "VIN / номер кузова должен содержать хотя бы одну цифру.";
+        vinInput.style.border = "1px solid #d32f2f";
+        return false;
+    }
+
+    // запрет I, O, Q для 17-символьного VIN
+    if (value.length === 17 && /[IOQ]/i.test(value)) {
+        error.textContent = "VIN не должен содержать буквы I, O, Q.";
+        vinInput.style.border = "1px solid #d32f2f";
+        return false;
+    }
+
+    // всё ок
+    error.textContent = "";
+    vinInput.style.border = "";
+    return true;
+}
+
+//валидация списка запчастей в запросе по вин
+function validateParts() {
+    const partsInput = document.getElementById("parts"); // id поля списка запчастей
+    const value = partsInput.value.trim();
+    let error = partsInput.nextElementSibling;
+
+    // создаём блок ошибки при необходимости
+    if (!error || !error.classList.contains("parts-error")) {
+        error = document.createElement("div");
+        error.className = "parts-error";
+        error.style.fontSize = "12px";
+        error.style.fontStyle = "italic";
+        error.style.color = "#d32f2f";
+        error.style.marginTop = "4px";
+        partsInput.after(error);
+    }
+
+    // минимум символов
+    if (value.length < 10) {
+        error.textContent = "Опишите список запчастей подробнее (минимум 10 символов).";
+        partsInput.style.border = "1px solid #d32f2f";
+        return false;
+    }
+
+    // не только цифры
+    if (/^\d+$/.test(value)) {
+        error.textContent = "Добавьте описание к списку запчастей.";
+        partsInput.style.border = "1px solid #d32f2f";
+        return false;
+    }
+
+    // всё ок
+    error.textContent = "";
+    partsInput.style.border = "";
+    return true;
+}
+
+//выводим окно ожидания после отправки запроса по винкоду на почту
+function showWaitongWindow() {
+   $('#shadow').show();
+   $('#shadow').addClass('d-flex');
+   $('#loading').text('Ваш запрос отправляется, пожалуйста ожидайте...');
+   $(this).removeClass('btn-success').addClass('btn-secondary');
+
+   return true;
+}
 
 //увеличение и пролистывание отзывов
 $(document).ready(function() {

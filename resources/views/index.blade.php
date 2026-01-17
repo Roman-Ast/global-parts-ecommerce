@@ -132,7 +132,7 @@
             <p class="text-muted lead mb-0">Подберем по VIN — быстро и точно</p>
           </div>
 
-          <form class="row justify-content-center" action="/sparepart-request" method="POST" onsubmit="return validatePhone();">
+          <form class="row justify-content-center" action="/sparepart-request" method="POST" onsubmit="return validateVin() && validateParts() && validatePhone() && showWaitongWindow();">
             <div class="col-lg-8">
               <form class="p-4 border rounded-4 shadow-sm bg-white">
                 @csrf
