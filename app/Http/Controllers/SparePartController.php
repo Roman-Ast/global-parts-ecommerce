@@ -19,6 +19,7 @@ use App\Models\BlueStarPrice;
 use App\Models\InterkomPrice;
 use App\Models\AdilPhaetonPrice;
 use Collator;
+use Http;
 
 class SparePartController extends Controller
 {
@@ -224,7 +225,6 @@ class SparePartController extends Controller
         $this->searchTiss($request->brand, $partNumber);
         $this->searchKulan($request->brand, $partNumber);
         $this->searchFebest($request->brand, $partNumber);
-        //$this->searchXuiPoimi($request->brand, $partNumber);
         $this->searchForumAuto($request->brand, $partNumber);
         $this->searchIngvar($request->brand, $partNumber);
         $this->searchVoltage($request->brand, $partNumber);
@@ -252,10 +252,19 @@ class SparePartController extends Controller
             }
             return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
         });
-        //dd($this->finalArr);
+        
+        usort($this->finalArr['crosses_to_order'], function ($a, $b)
+        {
+            if ($a['priceWithMargine'] == $b['priceWithMargine']) {
+                return 0;
+            }
+            return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
+        });
+
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
+            'chosenBrand' => $request->brand,
             'brands' => $arr
         ]);
     }
@@ -1072,6 +1081,10 @@ class SparePartController extends Controller
             // in case of json
             $json_responce_data = $response->json();
             
+            if (!$json_responce_data) {
+                return;
+            }
+
             if(property_exists($json_responce_data, 'MESSAGES') && !empty($json_responce_data->MESSAGES)) {
                 return;
             }
@@ -1136,18 +1149,19 @@ class SparePartController extends Controller
         
         //получение токена
         $request_params = [
-            'ApiKey' => '{a9000264-381b-4c69-9af4-51fdd93b8eda}',
+            'ApiKey' => '{3f3b6eeb-709c-4dcb-be59-147ce8f9cb87}',
         ];
-        $ch = curl_init('https://api.shate-m.kz/api/v1/auth/loginbyapikey/');
+        $ch = curl_init('https://api.shate-m.kz/api/v1/auth/loginByapiKey');
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($request_params));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
         curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-
+        
         try {
             $response = json_decode(curl_exec($ch));
+            
         } catch (\Throwable $th) {
             return;
         }
@@ -1163,7 +1177,7 @@ class SparePartController extends Controller
             'SearchString' => $partnumber,
             'TradeMarkNames' => $brand
         ];
-        //dd($params);
+       
         $ch1 = curl_init();
         $resUrl = 'https://api.shate-m.kz/api/v1/articles/search?' . http_build_query($params);
         curl_setopt($ch1, CURLOPT_URL, $resUrl);
@@ -1186,83 +1200,94 @@ class SparePartController extends Controller
             return ;
         }
         $articleId = $html[0]->article->id;
-        
+
         //получение ценового предложения
         $headers1 = [
-            'Authorization:Bearer ' . $access_token,
+            'Authorization: Bearer ' . $access_token,
             'Content-Type: application/json',
         ];
-        $request_params2 = [
+        $request_params1 = [
             array(
                 'articleId' => $articleId,
                 'includeAnalogs' => true
             )
         ];
         $ch2 = curl_init();
-        curl_setopt($ch2, CURLOPT_URL, "https://api.shate-m.kz/api/v1/prices/search/with_article_info/");
+        curl_setopt($ch2, CURLOPT_URL, "https://api.shate-m.kz/api/v1/prices/search/with_article_info");
         curl_setopt($ch2, CURLOPT_POST, true);
-        curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($request_params2));
+        curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($request_params1));
         curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers1);
         curl_setopt($ch2, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
         curl_setopt($ch2, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch2, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
-        $response = json_decode(curl_exec($ch2));
-        
         try {
-            $response = json_decode(curl_exec($ch2));
+            $priceOffer = json_decode(curl_exec($ch2));
         } catch (\Throwable $th) {
             return;
         }
-        if (empty($response) || isset($response->messages)) {
+
+        if (empty($priceOffer) || isset($priceOffer->messages)) {
             return;
         }
         
         curl_close($ch2);
         
-        foreach ($response as $key => $item) {
-            if ($item->article->code == $partnumber) {
-                foreach ($item->prices as $price) {
+        foreach ($priceOffer as $key => $priceEntity) {
+            array_push($this->finalArr['brands'], $priceEntity->article->tradeMarkName);
+
+            if ($priceEntity->article->code == $partnumber) {
+                foreach ($priceEntity->prices as $priceItem) {
                     if (
-                        $price->addInfo->city == 'Шымкент' || $price->addInfo->city == 'Екатеринбург' || 
-                        $price->addInfo->city == 'Подольск' || $price->addInfo->city == 'Костанай' || $price->addInfo->city == 'Караганда'
+                        $priceItem->addInfo->city == 'Шымкент' || $priceItem->addInfo->city == 'Екатеринбург' || $priceItem->addInfo->city == 'Алматы'||
+                        $priceItem->addInfo->city == 'Подольск' || $priceItem->addInfo->city == 'Костанай' || $priceItem->addInfo->city == 'Караганда'
                     ) {
-                        array_push($this->finalArr['brands'], $item->article->tradeMarkName);
-                        
                         array_push($this->finalArr['searchedNumber'], [
-                            'brand' => $item->article->tradeMarkName,
-                            'article' => $item->article->code,
-                            'name' => $item->article->name,
-                            'price' => $price->price->value,
-                            'priceWithMargine' => round($this->setPrice($price->price->value), self::ROUND_LIMIT),
-                            'qty' => $price->quantity->available,
+                            'brand' => $priceEntity->article->tradeMarkName,
+                            'article' => $priceEntity->article->code,
+                            'name' => $priceEntity->article->name,
+                            'price' => $priceItem->price->value,
+                            'priceWithMargine' => round($this->setPrice($priceItem->price->value), self::ROUND_LIMIT),
+                            'qty' => $priceItem->quantity->available,
                             'supplier_city' => 'ast',
                             'supplier_name' => 'shtm',
                             'supplier_color' => '#6b6b6b',
-                            'deliveryStart' => date('d.m.Y', strtotime(stristr($price->shippingDateTime, 'T', true))),
+                            'deliveryStart' => date('d.m.Y', strtotime(stristr($priceItem->shippingDateTime, 'T', true))),
+                        ]);
+                    } else if ($priceItem->addInfo->city  == 'Астана') {
+                        array_push($this->finalArr['searchedNumber'], [
+                            'brand' => $priceEntity->article->tradeMarkName,
+                            'article' => $priceEntity->article->code,
+                            'name' => $priceEntity->article->name,
+                            'price' => $priceItem->price->value,
+                            'priceWithMargine' => round($this->setPrice($priceItem->price->value), self::ROUND_LIMIT),
+                            'qty' => $priceItem->quantity->available,
+                            'supplier_city' => 'ast',
+                            'supplier_name' => 'shtm',
+                            'supplier_color' => '#6b6b6b',
+                            'delivery_time' => '1.5-2 часа',
                         ]);
                     }
                 }
+                
             } else {
-                foreach ($item->prices as $key => $price) {
-                    if($price->addInfo->city == 'Астана') {
-                        array_push($this->finalArr['brands'], $item->article->tradeMarkName);
-                        
+                foreach ($priceEntity->prices as $priceItem) {
+                    if($priceItem->addInfo->city == 'Астана') {
                         array_push($this->finalArr['crosses_on_stock'], [
-                            'brand' => $item->article->tradeMarkName,
-                            'article' => $item->article->code,
-                            'name' => $item->article->name,
-                            'stock_legend' => $price->addInfo->city,
-                            'qty' => $price->quantity->available,
-                            'price' => $price->price->value,
-                            'priceWithMargine' => round($this->setPrice($price->price->value), self::ROUND_LIMIT),
+                            'brand' => $priceEntity->article->tradeMarkName,
+                            'article' => $priceEntity->article->code,
+                            'name' => $priceEntity->article->name,
+                            'stock_legend' => $priceItem->addInfo->city,
+                            'qty' => $priceItem->quantity->available,
+                            'price' => $priceItem->price->value,
+                            'priceWithMargine' => round($this->setPrice($priceItem->price->value), self::ROUND_LIMIT),
                             'delivery_time' => '1.5-2 часа',
                             'stocks' => [
                                 [
-                                    'qty' => $price->quantity->available,
-                                    'price' => $price->price->value,
-                                    'priceWithMargine' => round($this->setPrice($price->price->value), self::ROUND_LIMIT),
+                                    'qty' => $priceItem->quantity->available,
+                                    'price' => $priceItem->price->value,
+                                    'priceWithMargine' => round($this->setPrice($priceItem->price->value), self::ROUND_LIMIT),
                                 ]
                             ],
                             'supplier_name' => 'shtm',
@@ -1270,28 +1295,26 @@ class SparePartController extends Controller
                             'supplier_color' => '#6b6b6b',
                         ]);
                     } else if (
-                        $price->addInfo->city == 'Екатеринбург' || $price->addInfo->city == 'Караганда' ||
-                        $price->addInfo->city == 'Подольск' || $price->addInfo->city == 'Костанай' || $price->addInfo->city == 'Шымкент'
+                        $priceItem->addInfo->city == 'Шымкент' || $priceItem->addInfo->city == 'Екатеринбург' || $priceItem->addInfo->city == 'Алматы'||
+                        $priceItem->addInfo->city == 'Подольск' || $priceItem->addInfo->city == 'Костанай' || $priceItem->addInfo->city == 'Караганда'
                     ) {
-                        array_push($this->finalArr['brands'], $item->article->tradeMarkName);
-                        
                         array_push($this->finalArr['crosses_to_order'], [
-                            'brand' => $item->article->tradeMarkName,
-                            'article' => $item->article->code,
-                            'name' => $item->article->name,
-                            'qty' => $price->quantity->available,
-                            'price' => $price->price->value,
-                            'priceWithMargine' => round($this->setPrice($price->price->value), self::ROUND_LIMIT),
-                            'delivery_time' => date('d.m.Y', strtotime(stristr($price->shippingDateTime, 'T', true))),
+                            'brand' => $priceEntity->article->tradeMarkName,
+                            'article' => $priceEntity->article->code,
+                            'name' => $priceEntity->article->name,
+                            'qty' => $priceItem->quantity->available,
+                            'price' => $priceItem->price->value,
+                            'priceWithMargine' => round($this->setPrice($priceItem->price->value), self::ROUND_LIMIT),
+                            'delivery_time' => date('d.m.Y', strtotime(stristr($priceItem->shippingDateTime, 'T', true))),
                             'stocks' => [
                                 [
-                                    'qty' => $price->quantity->available,
-                                    'price' => $price->price->value,
-                                    'priceWithMargine' => round($this->setPrice($price->price->value), self::ROUND_LIMIT),
+                                    'qty' => $priceItem->quantity->available,
+                                    'price' => $priceItem->price->value,
+                                    'priceWithMargine' => round($this->setPrice($priceItem->price->value), self::ROUND_LIMIT),
                                 ]
                             ],
                             'supplier_name' => 'shtm',
-                            'supplier_city' => $price->addInfo->city,
+                            'supplier_city' => $priceItem->addInfo->city,
                             'supplier_color' => '#6b6b6b',
                         ]);
                     }

@@ -33,7 +33,7 @@
     
         <div id="search-part-main-container">
             <div id="search-res-header">
-                <div>Предложения для <span id="search-res-header-val">"{{ $finalArr['originNumber'] }}"</span></div>
+                <div>Предложения для <span id="search-res-header-val">{{ $chosenBrand}} {{ $finalArr['originNumber'] }}</span></div>
                 @auth
                 @if(auth()->user()->user_role == "admin")
                     <div id="articles-hide-wrapper">

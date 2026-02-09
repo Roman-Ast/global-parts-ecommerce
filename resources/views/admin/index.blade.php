@@ -271,14 +271,6 @@
                         <h2>1. Сумма продаж и закупа по месяцам</h2>
                         <canvas id="salesChart" width="800" height="400"></canvas>
 
-                        <h2>2. Графики по каналам продаж</h2>
-                        <div style="margin-bottom: 1rem;">
-                            <button onclick="showOrdersChart()">📈 Заказы по каналам</button>
-                            <button onclick="showRevenueChart()">📊 Структура дохода</button>
-                        </div>
-
-                        <canvas id="channelsChart" width="800" height="400"></canvas>
-
                         <h2>3. График по дням за текущий месяц</h2>
                         <div class="chart-container" style="position: relative; width: 100%; max-width: 1000px; margin: 20px auto;">
                             <canvas id="reportMonthChart" height="150"></canvas>
@@ -330,151 +322,6 @@
                                     }
                                 }
                             });
-
-                            // 2. Графики по каналам (переключаемые)
-
-                            let channelChart; // глобально
-
-                            // Подготовка данных по каналам
-                            const allChannels = new Set();
-                            labels.forEach(label => {
-                                Object.keys(stats[label].channels).forEach(ch => allChannels.add(ch));
-                            });
-
-                            // Данные: Количество заказов по каналам по месяцам
-                            const channelOrderData = Array.from(allChannels).map(channel => {
-                                return {
-                                    label: channel,
-                                    data: labels.map(label => stats[label].channels[channel]?.order_count ?? 0),
-                                    backgroundColor: getRandomColor(),
-                                    borderColor: getRandomColor(),
-                                    fill: false,
-                                    tension: 0.2
-                                };
-                            });
-
-                            // Данные: Структура дохода по каналам (пример — данные статичны, можно заменить на динамические)
-                            const revenueLabels = ['Kaspi', '2GIS', 'OLX', 'Site', 'Friends'];
-                            const revenueData = {
-                                labels: revenueLabels,
-                                datasets: [
-                                    {
-                                        label: 'Себестоимость',
-                                        data: [22280, 109458, 35259, 73812, 0],
-                                        backgroundColor: '#ff6384'
-                                    },
-                                    {
-                                        label: 'Налог',
-                                        data: [932, 5670, 1620, 2897, 0],
-                                        backgroundColor: '#ff9f40'
-                                    },
-                                    {
-                                        label: 'Комиссия',
-                                        data: [3726, 0, 0, 0, 0],
-                                        backgroundColor: '#ffcd56'
-                                    },
-                                    {
-                                        label: 'Чистая маржа',
-                                        data: [4113, 73872, 17121, 19851, 0],
-                                        backgroundColor: '#4bc0c0'
-                                    }
-                                ]
-                            };
-
-                            function showOrdersChart() {
-                                if (channelChart) channelChart.destroy();
-                                const ctx = document.getElementById('channelsChart').getContext('2d');
-                                channelChart = new Chart(ctx, {
-                                    type: 'line',
-                                    data: {
-                                        labels: labels,
-                                        datasets: channelOrderData
-                                    },
-                                    options: {
-                                        responsive: true,
-                                        plugins: {
-                                            title: {
-                                                display: true,
-                                                text: '📈 Количество заказов по каналам'
-                                            },
-                                            tooltip: {
-                                                mode: 'index',
-                                                intersect: false
-                                            },
-                                            legend: {
-                                                position: 'top'
-                                            }
-                                        },
-                                        scales: {
-                                            x: {
-                                                title: {
-                                                    display: true,
-                                                    text: 'Месяц'
-                                                }
-                                            },
-                                            y: {
-                                                title: {
-                                                    display: true,
-                                                    text: 'Количество заказов'
-                                                },
-                                                beginAtZero: true
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-
-                            function showRevenueChart() {
-                                if (channelChart) channelChart.destroy();
-                                const ctx = document.getElementById('channelsChart').getContext('2d');
-                                channelChart = new Chart(ctx, {
-                                    type: 'bar',
-                                    data: revenueData,
-                                    options: {
-                                        responsive: true,
-                                        plugins: {
-                                            title: {
-                                                display: true,
-                                                text: '📊 Структура дохода по каналам'
-                                            },
-                                            tooltip: {
-                                                mode: 'index',
-                                                intersect: false
-                                            },
-                                            legend: {
-                                                position: 'top'
-                                            }
-                                        },
-                                        scales: {
-                                            x: {
-                                                stacked: true,
-                                                title: {
-                                                    display: true,
-                                                    text: 'Каналы продаж'
-                                                }
-                                            },
-                                            y: {
-                                                stacked: true,
-                                                beginAtZero: true,
-                                                title: {
-                                                    display: true,
-                                                    text: 'Сумма в тенге'
-                                                }
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-
-                            function getRandomColor() {
-                                const r = Math.floor(Math.random() * 200);
-                                const g = Math.floor(Math.random() * 200);
-                                const b = Math.floor(Math.random() * 200);
-                                return `rgba(${r},${g},${b},0.7)`;
-                            }
-
-                            // По умолчанию: отобразим график заказов
-                            showOrdersChart();
 
                             // 3. График "Сумма продаж и закупа за отчетный период (по дням)"
                             const reportLabels = @json($labels);
@@ -868,79 +715,23 @@
                 @endforeach
             </div>
             <div id="supplier_settlements" class="container admin-content-item">
-                <div id="supplier_settlements-header">
-                    <div class="supplier_settlements-header-item">
-                        <div></div>
-                        <div>Заказы</div>
-                        <div>Оплата</div>
-                        <div>Итог</div>
-                    </div>
-                    @foreach ($suppliers_debt as $supplierName => $supplierSettlement)
-                    <div class="supplier_settlements-header-item">
-                        <div class="supplier_settlements-header-item-name">
-                            {{ $supplierName }}
+                <div id="supplier_settlements_wrapper">
+                    @foreach ($suppliers_settlements as $supplier => $settlementsByMonth)
+                        <div class="suppliers_settlements_item">
+                            <div class="supplier_name">{{ $supplier }}</div>
+                            @foreach ($settlementsByMonth as $month => $sum)
+                                <div class="settlementsByMonth">
+                                    <div class="months">
+                                        <div class="month">{{  $month }}</div>
+                                    </div>
+                                    <div class="sums">
+                                        <div class="sum">{{ $sum }}</div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
-                        <div class="supplier_settlements-header-item-sum-order" style="color: red;">
-                            {{ $supplierSettlement['ralizationSum'] }}
-                        </div>
-                        <div class="supplier_settlements-header-item-sum-pay" style="color: green;">
-                            {{ $supplierSettlement['pay'] }}
-                        </div>
-                        <div class="supplier_settlements-header-item-total">
-                            @if (($supplierSettlement['pay'] + $supplierSettlement['ralizationSum']) < 0) 
-                                <span style="color: red">{{ $supplierSettlement['pay'] + $supplierSettlement['ralizationSum']}}</span>
-                            @else 
-                                <span style="color: green">{{ $supplierSettlement['pay'] + $supplierSettlement['ralizationSum']}}</span>
-                            @endif
-                        </div>
-                    </div>
                     @endforeach
-                    
                 </div>
-                <div id="customers-header">
-                    <div class="customers-header-item">
-                        Заказ
-                    </div>
-                    <div class="customers-header-item">
-                        Поставщик
-                    </div>
-                    <div class="customers-header-item">
-                        Сумма
-                    </div>
-                    <div class="customers-header-item">
-                        Дата
-                    </div>
-                    <div class="customers-header-item">
-                        Операция
-                    </div>
-                </div>
-                @foreach ($supplerSettlements as $settlement)
-                    <div class="customer-content">
-                        <div class="customer-content-item">
-                            {{ $settlement['order_id'] }}
-                        </div>
-                        <div class="customer-content-item">
-                            {{ $settlement['supplier'] }}
-                        </div>
-                        <div class="customer-content-item">
-                            @if ($settlement['operation'] == 'realization')
-                                <span style="color: red">{{ $settlement['sum'] }}</span>
-                            @else
-                                <span style="color: green">{{ $settlement['sum'] }}</span>
-                            @endif
-                        </div>
-                        <div class="customer-content-item">
-                            {{ $settlement['date'] }}
-                        </div>
-                        <div class="customer-content-item">
-                            @if ($settlement['operation'] == 'realization')
-                                <img src="images/realised-24.png">
-                            @else
-                                <img src="images/cash-24.png">
-                            @endif
-                        </div>
-                    </div>
-                @endforeach
             </div>
             <div id="supplier_payments" class="container admin-content-item">
                 <form id="pay-container" action="{{ route('supplier.payment') }}" method="POST">

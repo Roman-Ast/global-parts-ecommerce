@@ -99,47 +99,102 @@ class AdminPanelController extends Controller
             'rmtk' => 'Армтек',
             'phtn' => 'Фаэтон',
             'atptr' => 'Автопитер',
+            'avtozakup' => 'Автозакуп',
+            'emex' => 'emex',
             'rlm' => 'Рулим',
-            'leopart' => 'Леопарт', 
+            'radle' => 'Radle', 
             'fbst' => 'Фебест',
             'Krn' => 'Корея',
             'kln' => 'Кулан',
             'frmt' => 'Форумавто',
             'china_ata' => 'Китайцы Алматы',
+            'china_igor' => 'Китай Игорь',
+            'voltag_ast' => 'Вольтаж Астана',
+            'kz_starter' => 'КЗ стартер',
+            'cc_motors_talgat' => 'СС моторс Талгат',
+            'gerat_ast' => 'Герат Астана',
+            'kainar_razbor_tima' => 'Кайнар Тима',
+            'zakaz_auto' => 'заказ авто',
             'thr' => 'Сторонние'
         ];
 
-        $suppliers_debt = [
-            'shtm' => [
-                'ralizationSum' => SupplierSettlement::where('supplier', 'shtm')->where('operation', 'realization')->sum('sum'),
-                'pay' => SupplierSettlement::where('supplier', 'shtm')->where('operation', 'payment')->sum('sum'),
-            ],
-            'rssk' => [
-                'ralizationSum' => SupplierSettlement::where('supplier', 'rssk')->where('operation', 'realization')->sum('sum'),
-                'pay' => SupplierSettlement::where('supplier', 'rssk')->where('operation', 'payment')->sum('sum'),
-            ],
-            'trd' => [
-                'ralizationSum' => SupplierSettlement::where('supplier', 'trd')->where('operation', 'realization')->sum('sum'),
-                'pay' => SupplierSettlement::where('supplier', 'trd')->where('operation', 'payment')->sum('sum'),
-            ],
-            'tss' => [
-                'ralizationSum' => SupplierSettlement::where('supplier', 'tss')->where('operation', 'realization')->sum('sum'),
-                'pay' => SupplierSettlement::where('supplier', 'tss')->where('operation', 'payment')->sum('sum'),
-            ],
-            'rmtk' => [
-                'ralizationSum' => SupplierSettlement::where('supplier', 'rmtk')->where('operation', 'realization')->sum('sum'),
-                'pay' => SupplierSettlement::where('supplier', 'rmtk')->where('operation', 'payment')->sum('sum'),
-            ],
-            'phtn' => [
-                'ralizationSum' => SupplierSettlement::where('supplier', 'phtn')->where('operation', 'realization')->sum('sum'),
-                'pay' => SupplierSettlement::where('supplier', 'phtn')->where('operation', 'payment')->sum('sum'),
-            ],
-            'atptr' => [
-                'ralizationSum' => SupplierSettlement::where('supplier', 'atptr')->where('operation', 'realization')->sum('sum'),
-                'pay' => SupplierSettlement::where('supplier', 'atptr')->where('operation', 'payment')->sum('sum'),
-            ],
-        ];
+        $today = Carbon::today();
+        $startPeriod = Carbon::create(2025, 4, 8); // начало учётного периода
 
+        // 1️⃣ Получаем продажи с учётным месяцем
+        $sales = SupplierSettlement::select(
+                'supplier',
+                DB::raw("
+                    DATE_FORMAT(
+                        CASE
+                            -- текущий учётный месяц (с 8 числа текущего месяца по сегодня)
+                            WHEN YEAR(`date`) = YEAR(CURDATE()) AND MONTH(`date`) = MONTH(CURDATE()) AND DAY(`date`) >= 8 THEN `date`
+                            -- даты с 8 числа → текущий месяц
+                            WHEN DAY(`date`) >= 8 THEN `date`
+                            -- даты 1–7 числа → предыдущий месяц
+                            ELSE DATE_SUB(`date`, INTERVAL 1 MONTH)
+                        END,
+                        '%m.%Y'
+                    ) as accounting_month
+                "),
+                DB::raw('SUM(`sum`) as total')
+            )
+            ->whereDate('date', '>=', $startPeriod)
+            ->whereDate('date', '<=', $today)
+            ->groupBy('supplier', 'accounting_month')
+            ->orderBy('supplier')
+            ->orderByRaw("STR_TO_DATE(accounting_month, '%m.%Y') ASC")
+            ->get();
+
+        // 2️⃣ Собираем все учётные месяцы
+        $allMonths = [];
+        foreach ($sales as $sale) {
+            $allMonths[$sale->accounting_month] = true;
+        }
+
+        // Убедимся, что текущий учётный месяц есть в списке
+        $currentAccountingMonth = $today->day >= 8
+            ? $today->format('m.Y')
+            : $today->subMonth()->format('m.Y');
+
+        $allMonths[$currentAccountingMonth] = true;
+
+        // Преобразуем в массив и сортируем по дате
+        $allMonths = array_keys($allMonths);
+        usort($allMonths, function($a, $b) {
+            return Carbon::createFromFormat('m.Y', $a)->timestamp <=> Carbon::createFromFormat('m.Y', $b)->timestamp;
+        });
+
+        // 3️⃣ Формируем массив поставщиков с нулями по всем месяцам
+        $suppliers_settlements = [];
+
+        foreach ($sales as $sale) {
+            $supplier = $sale->supplier;
+            $month = $sale->accounting_month;
+            $sum = $sale->total;
+
+            if (!isset($suppliers_settlements[$supplier])) {
+                $suppliers_settlements[$supplier] = array_fill_keys($allMonths, 0);
+            }
+
+            $suppliers_settlements[$supplier][$month] = abs($sum);
+        }
+
+        // 4️⃣ Добавляем total
+        foreach ($suppliers_settlements as $supplier => $months) {
+            $suppliers_settlements[$supplier]['total'] = array_sum($months);
+        }
+
+        function cmp($a, $b) {
+            if ($a == $b) {
+                return 0;
+            }
+            return ($a < $b) ? -1 : 1;
+        }
+
+        //uasort(suppliers_settlements);
+
+        //dd($suppliers_settlements);
 
         //статистика по дням недели за текущий период
         $startForDailyStats = now()->day >= 8
@@ -202,7 +257,7 @@ class AdminPanelController extends Controller
             'customers' => array_unique($customers),
             'supplerSettlements' => $supplerSettlements,
             'suppliers' => $suppliers,
-            'suppliers_debt' => $suppliers_debt,
+            'suppliers_settlements' => $suppliers_settlements,
             'sales_statistics' => $sales_statistics,
             'totalSalesSum' => $totalSalesSum,
             'totalPrimeCostSum' => $totalPrimeCostSum,
