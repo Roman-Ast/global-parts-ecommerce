@@ -230,20 +230,32 @@ $('#order-filter-btn-drop').on('click', function () {
 
 $('#add_parts_list_item').on('click', function (params) {
     const suppliers = {
-        'shtm': 'Шатэ-М',
-        'rssk': 'Росско',
-        'trd': 'Автотрейд',
-        'tss': 'Тисс',
-        'rmtk': 'Армтек',
-        'phtn': 'Фаэтон',
-        'atptr': 'Автопитер',
-        'rlm': 'Рулим',
-        'leopart': 'Леопарт', 
-        'fbst': 'Фебест',
-        'frmt': 'Форумавто',
-        'Krn': 'Корея',
-        'thr':  'Сторонние',
-        'china_ata': 'Китайцы Алматы'
+        'shtm' : 'Шатэ-М',
+            'rssk' : 'Росско',
+            'trd' : 'Автотрейд',
+            'tss' : 'Тисс',
+            'rmtk' : 'Армтек',
+            'phtn' : 'Фаэтон',
+            'atptr' : 'Автопитер',
+            'avtozakup' : 'Автозакуп',
+            'emex' : 'emex',
+            'rlm' : 'Рулим',
+            'radle' : 'Radle', 
+            'fbst' : 'Фебест',
+            'Krn' : 'Корея',
+            'kln' : 'Кулан',
+            'frmt' : 'Форумавто',
+            'china_ata' : 'Китайцы Алматы',
+            'china_igor' : 'Китай Игорь',
+            'voltag_ast' : 'Вольтаж Астана',
+            'kz_starter' : 'КЗ стартер',
+            'cc_motors_talgat' : 'СС моторс Талгат',
+            'gerat_ast' : 'Герат Астана',
+            'kainar_razbor_tima' : 'Кайнар Тима',
+            'zakaz_auto' : 'заказ авто',
+            'kap' : 'kap',
+            'alem_auto' : 'alem_auto',
+            'thr' : 'Сторонние'
     };
 
     $('#manually-order-parts-list').append(
