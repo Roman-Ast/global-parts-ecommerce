@@ -197,32 +197,39 @@
     padding: 0;
 }
 #supplier_settlements_wrapper{
+    padding: 0;
     margin: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: stretch;
+    width: 100%;
+    height: 90vh;
+    overflow: scroll;
 }
-
 .suppliers_settlements_item{
-    border: 1px solid red;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    align-items: stretch;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(120px, 1fr);
+    grid-template-rows: 1fr;
 }
 .supplier_name{
-   
     display: flex;
     justify-content: flex-start;
     height: 100%;
-    border: 1px solid orange;
 }
 .settlementsByMonth{
-    border: 1px solid green;
+    border-bottom: 1px solid #aaa;
+    border-right: 1px solid #aaa;
 }
-
+.settlementsByMonth{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.supplier_settlements_months{
+    font-style: italic;
+}
+.supplier_settlements_sums{
+    font-weight: 600;
+}
 .admin-order-item-sum{
     display: flex;
     flex-direction: column;

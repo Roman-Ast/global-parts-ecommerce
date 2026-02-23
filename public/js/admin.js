@@ -253,8 +253,8 @@ $('#add_parts_list_item').on('click', function (params) {
             'gerat_ast' : 'Герат Астана',
             'kainar_razbor_tima' : 'Кайнар Тима',
             'zakaz_auto' : 'заказ авто',
-            'kap' : 'kap',
-            'alem_auto' : 'alem_auto',
+            'kap' : 'Кореан Автопартс',
+            'alem_auto' : 'Алемавто',
             'thr' : 'Сторонние'
     };
 

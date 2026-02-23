@@ -21,6 +21,30 @@ class AdminPanelController extends Controller
      */
     public function index()
     {
+        //выгружаем данные по продажам за весь период
+        $salesSumFromBegin = Order::sum('sum_with_margine');
+        $primeCostSumFromBegin = Order::sum('sum');
+        $countOfSalesFromBegin = Order::count();
+        $totalItemsSoldFromBegin = OrderProduct::count();
+        $kaspiComissionFromBegin = Order::where('sale_channel', 'kaspi')->sum('sum_with_margine') * 12 / 100;
+        $marginClearFromBegin = round($salesSumFromBegin - $primeCostSumFromBegin - $kaspiComissionFromBegin);
+
+        //выгружаем данные продаж по каналам за весь период
+        $sales_statistics_from_begin = [
+            'kaspi' => [],
+            '2gis' => [],
+            'olx' => [],
+            'friends' => [],
+            'site' => [],
+            'repeat_request' => [],
+        ];
+
+        foreach ($sales_statistics_from_begin as $sale_channel => $data) {
+            $sales_statistics_from_begin[$sale_channel]['totalSalesPrimeCostSum'] = Order::where('sale_channel', $sale_channel)->sum('sum');
+            $sales_statistics_from_begin[$sale_channel]['totalSalesSum'] = Order::where('sale_channel', $sale_channel)->sum('sum_with_margine');
+            $sales_statistics_from_begin[$sale_channel]['countOfSales'] = Order::where('sale_channel', $sale_channel)->count();
+        }
+
         $stats = $this->getDataByMonths();
 
         $today = Carbon::now();
@@ -70,9 +94,9 @@ class AdminPanelController extends Controller
         $totalSalesSum = Order::whereBetween('date', [$start, $end])->sum('sum_with_margine');
         $totalPrimeCostSum = Order::whereBetween('date', [$start, $end])->sum('sum');
         $totalCountOfSales = Order::whereBetween('date', [$start, $end])->count();
-        $totalTax = round($totalSalesSum * 3 / 100);
+        
         $kaspiComission = Order::whereBetween('date', [$start, $end])->where('sale_channel', 'kaspi')->sum('sum_with_margine') * 12 / 100;
-        $marginClear = round($totalSalesSum - $totalPrimeCostSum - $totalTax - $kaspiComission);
+        $marginClear = round($totalSalesSum - $totalPrimeCostSum - $kaspiComission);
 
         foreach ($users as $user) {
             $usersCalculating[$user->id] = [
@@ -104,7 +128,7 @@ class AdminPanelController extends Controller
             'rlm' => 'Рулим',
             'radle' => 'Radle', 
             'fbst' => 'Фебест',
-            'Krn' => 'Корея',
+            'Krn_tnt' => 'Корея Танат',
             'kln' => 'Кулан',
             'frmt' => 'Форумавто',
             'china_ata' => 'Китайцы Алматы',
@@ -115,8 +139,8 @@ class AdminPanelController extends Controller
             'gerat_ast' => 'Герат Астана',
             'kainar_razbor_tima' => 'Кайнар Тима',
             'zakaz_auto' => 'заказ авто',
-            'kap' => 'kap',
-            'alem_auto' => 'alem_auto',
+            'kap' => 'Кореан Автопартс',
+            'alem_auto' => 'Алемавто',
             'thr' => 'Сторонние'
         ];
 
@@ -182,21 +206,31 @@ class AdminPanelController extends Controller
             $suppliers_settlements[$supplier][$month] = abs($sum);
         }
 
+        $suppliersInStock = [
+            'shtm', 'rssk', 'trd', 'tss', 'rmtk', 'phtn', 'fbst',
+            'kln', 'frmt', 'voltag_ast', 'kz_starter', 'cc_motors_talgat',
+            'gerat_ast', 'kainar_razbor_tima', 'kap', 'alem_auto',
+        ];
+
         // 4️⃣ Добавляем total
         foreach ($suppliers_settlements as $supplier => $months) {
             $suppliers_settlements[$supplier]['total'] = array_sum($months);
-        }
 
-        function cmp($a, $b) {
+            if (in_array($supplier, $suppliersInStock)) {
+                $suppliers_settlements[$supplier]['color'] = '#066402';
+                $suppliers_settlements[$supplier]['type'] = 'in_stock';
+            } else {
+                $suppliers_settlements[$supplier]['color'] = '#1c64b6';
+                $suppliers_settlements[$supplier]['type'] = 'for_order';
+            }
+        }
+        //dd($suppliers_settlements);
+        uasort($suppliers_settlements, function ($a, $b) {
             if ($a == $b) {
                 return 0;
             }
-            return ($a < $b) ? -1 : 1;
-        }
-
-        //uasort(suppliers_settlements);
-
-        //dd($suppliers_settlements);
+            return ($a < $b) ? 1 : -1;
+        });
 
         //статистика по дням недели за текущий период
         $startForDailyStats = now()->day >= 8
@@ -248,7 +282,7 @@ class AdminPanelController extends Controller
         $plannedSum = $planPerDay * $startForDailyStats->copy()->toPeriod($endForDailyStats)->filter(function($d) {
             return $d->lte(now());
         })->count();
-
+    
         return view('admin/index', [
             'orders' => $orders,
             'settlements' => $settlements,
@@ -261,13 +295,13 @@ class AdminPanelController extends Controller
             'suppliers' => $suppliers,
             'suppliers_settlements' => $suppliers_settlements,
             'sales_statistics' => $sales_statistics,
+            'sales_statistics_from_begin' => $sales_statistics_from_begin,
             'totalSalesSum' => $totalSalesSum,
             'totalPrimeCostSum' => $totalPrimeCostSum,
             'totalCountOfSales' => $totalCountOfSales,
             'goods_in_office' => $goods_in_office,
             'goods_in_office_count' => $goods_in_office_count,
             'goods_in_office_sum' => $goods_in_office_sum,
-            'totalTax' => $totalTax,
             'kaspiComission' => $kaspiComission,
             'marginClear' => $marginClear,
             'stats' => $stats,
@@ -277,6 +311,12 @@ class AdminPanelController extends Controller
             'plannedSum' => $plannedSum,
             'actualSum' => $actualSum,
             'pointColors' => $pointColors,
+            'salesSumFromBegin' => $salesSumFromBegin,
+            'primeCostSumFromBegin' => $primeCostSumFromBegin,
+            'countOfSalesFromBegin' => $countOfSalesFromBegin,
+            'totalItemsSoldFromBegin' => $totalItemsSoldFromBegin,
+            'kaspiComissionFromBegin' => $kaspiComissionFromBegin,
+            'marginClearFromBegin' => $marginClearFromBegin,
         ]);
     }
 

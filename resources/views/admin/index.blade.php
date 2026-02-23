@@ -139,7 +139,6 @@
                                 <th>Кол-во продаж</th>
                                 <th>Средний чек</th>
                                 <th>% от общих продаж</th>
-                                <th>налог, 3%</th>
                                 <th>Комиссия</th>
                                 <th>Маржа чистая</th>.
                                 <th>Маржа чистая, %</th>
@@ -229,13 +228,6 @@
                             <tr>
                                 <td></td>
                                 <td colspan="3">
-                                    <strong>Налог</strong>
-                                </td>
-                                <td>{{ number_format($totalTax, 0, '.', ' ') }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="3">
                                     <strong>Комиссии</strong>
                                 </td>
                                 <td>{{ number_format($kaspiComission, 0, '.', ' ') }}</td>
@@ -256,12 +248,8 @@
                             </tr>
                             
                         </table>
-                        <div id="admin-panel-orders-total">
-
-                        </div>
                     </div>
                 </div>
-                
                 <div id="stats_graphics">
                     <div id="stats_graphics_header">
                         <span>График</span>
@@ -270,6 +258,126 @@
                     <div id="stats_graphics_content" status="closed">
                         <h2>1. Сумма продаж и закупа по месяцам</h2>
                         <canvas id="salesChart" width="800" height="400"></canvas>
+
+                        <h2>2. Статистика продаж за весь период</h2>
+                        <div id="admin-panel-orders-from begin" status="closed">
+                            <table class="table table-striped">
+                                <thead>
+                                    <th>Канал продаж</th>
+                                    <th>Сумма</th>
+                                    <th>С/С</th>
+                                    <th>Маржа грязная</th>
+                                    <th>Маржа грязная, %</th>
+                                    <th>Кол-во продаж</th>
+                                    <th>Средний чек</th>
+                                    <th>% от общих продаж</th>
+                                    <th>Комиссия</th>
+                                    <th>Маржа чистая</th>.
+                                    <th>Маржа чистая, %</th>
+                                </thead>
+                                @foreach ($sales_statistics_from_begin as $sale_channel => $data)
+                                <tr>
+                                    <td>{{ $sale_channel }}</td>
+                                    <td>{{ number_format($data['totalSalesSum'], 0, '', ' '); }}</td>
+                                    <td>{{ number_format($data['totalSalesPrimeCostSum'], 0, '', ' ') }}</td>
+                                    <td>{{ number_format($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'], 0, '', ' ') }}</td>
+                                    <td>{{ number_format($data['totalSalesSum'] ? round(100 - (($data['totalSalesPrimeCostSum'] * 100) / $data['totalSalesSum']), 2) : 0, 0, '', ' ') }}%</td>
+                                    <td>{{ number_format($data['countOfSales'], 0, '', ' ') }}</td>
+                                    <td>{{ number_format($data['countOfSales'] ? round($data['totalSalesSum'] / $data['countOfSales']) : 0, 0, '', ' ') }}</td>
+                                    <td>{{ $salesSumFromBegin ? round(($data['totalSalesSum'] * 100) /  $salesSumFromBegin, 2) : 0 }}</td>
+                                    <td>
+                                        @if($sale_channel == 'kaspi')
+                                        {{ number_format(($data['totalSalesSum'] * 12) /  100, 0, '', ' ') }}
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($sale_channel == 'kaspi')
+                                        {{ number_format(round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - ($data['totalSalesSum'] * 12) /  100), 0, '', ' ') }}
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($sale_channel == 'kaspi')
+                                            @if($data['totalSalesSum'] > 0)
+                                                {{ number_format(100 - round(100 - ((round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100) - ($data['totalSalesSum'] * 12) /  100)* 100) / $data['totalSalesSum']), 2), 0, '', ' ') }}%
+                                            @else
+                                                0
+                                            @endif
+                                        @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                                <tr>
+                                    <td></td>
+                                    <td colspan="3">
+                                        <strong>Общий оборот</strong>
+                                    </td>
+                                    <td>{{ number_format($salesSumFromBegin, 0, '.', ' ') }}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td colspan="3">
+                                        <strong>С/С</strong>
+                                    </td>
+                                    <td>{{ number_format($primeCostSumFromBegin, 0, '.', ' ') }}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td colspan="3">
+                                        <strong>Кол-во продаж</strong>
+                                    </td>
+                                    <td>{{ number_format($countOfSalesFromBegin, 0, '.', ' ') }}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td colspan="3">
+                                        <strong>Кол-во проданных единиц</strong>
+                                    </td>
+                                    <td>{{ number_format($totalItemsSoldFromBegin, 0, '.', ' ') }}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td colspan="3">
+                                        <strong>Средний чек</strong>
+                                    </td>
+                                    <td>{{ $salesSumFromBegin ? number_format(round($salesSumFromBegin / $countOfSalesFromBegin), 0, '.', ' ') : 0 }}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td colspan="3">
+                                        <strong>Маржа грязная</strong>
+                                    </td>
+                                    <td>{{ number_format($salesSumFromBegin - $primeCostSumFromBegin, 0, '.', ' ') }}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td colspan="3">
+                                        <strong>Маржа грязная, %</strong>
+                                    </td>
+                                    <td>{{ $salesSumFromBegin ? number_format(round(100 - (($primeCostSumFromBegin * 100) / $salesSumFromBegin), 2), 2, '.', ' ') : 0 }}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td colspan="3">
+                                        <strong>Комиссии</strong>
+                                    </td>
+                                    <td>{{ number_format($kaspiComissionFromBegin, 0, '.', ' ') }}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td colspan="3">
+                                        <strong>Маржа чистая</strong>
+                                    </td>
+                                    <td>{{ number_format($marginClearFromBegin, 0, '.', ' ') }}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td colspan="3">
+                                        <strong>Маржа чистая, %</strong>
+                                    </td>
+                                    <td>{{ $salesSumFromBegin? round((($marginClearFromBegin * 100) / $salesSumFromBegin), 2) : 0 }}</td>
+                                </tr>
+                            </table>
+                        </div>
 
                         <h2>3. График по дням за текущий месяц</h2>
                         <div class="chart-container" style="position: relative; width: 100%; max-width: 1000px; margin: 20px auto;">
@@ -717,20 +825,25 @@
             <div id="supplier_settlements" class="container admin-content-item">
                 <div id="supplier_settlements_wrapper">
                     @foreach ($suppliers_settlements as $supplier => $settlementsByMonth)
-                        <div class="suppliers_settlements_item">
+                        <div class="suppliers_settlements_item" style="background-color:{{ $settlementsByMonth['color'] }}">
                             <div class="supplier_name">{{ $supplier }}</div>
                             @foreach ($settlementsByMonth as $month => $sum)
+                                @if($month == 'color' || $month == 'type')
+                                    @continue
+                                @else
                                 <div class="settlementsByMonth">
-                                    <div class="months">
-                                        <div class="month">{{  $month }}</div>
+                                    <div class="supplier_settlements_months">
+                                        <div class="month">{{ $month }}</div>
                                     </div>
-                                    <div class="sums">
-                                        <div class="sum">{{ $sum }}</div>
+                                    <div class="supplier_settlements_sums">
+                                        <div class="sum">{{ number_format($sum, 0, '', ' ') }}</div>
                                     </div>
                                 </div>
+                                @endif
                             @endforeach
                         </div>
                     @endforeach
+
                 </div>
             </div>
             <div id="supplier_payments" class="container admin-content-item">

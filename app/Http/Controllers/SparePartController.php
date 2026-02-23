@@ -269,7 +269,8 @@ class SparePartController extends Controller
         ]);
     }
 
-    public function searchPhaeton(String $brand, String $partnumber) {
+    public function searchPhaeton(String $brand, String $partnumber) 
+    {
         //$start = microtime(true);
 
         $ch = curl_init();
