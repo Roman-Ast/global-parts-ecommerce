@@ -1,5 +1,114 @@
 
 @media (min-width: 581px) {
+    #curtain-grey-searchpartres{
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        left: 0;
+        top: 0;
+        background-color: rgba(001,001,001, 0.7);
+        z-index: 9;
+        display: none;
+    }
+    .spare-part-info-show{
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+    .spare-part-info-show:hover{
+        transform: scale(1.1);
+    }
+    .info-block{
+        width: 60%;
+        position: absolute;
+        top: 4vh;
+        left: 20vw;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #eee;
+        padding: 10px;
+        z-index: 10;
+        display: none;
+    }
+    .block-info-close-wrapper{
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+    }
+    .info-block-pictures{
+        width: 100%;
+        display: flex;
+        flex-direction: row-reverse;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        align-items: stretch;
+    }
+    .info-block-pictures-name{
+        width: 30%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+    }
+    .info-block-pictures-name-header{
+        text-align: left;
+        font-weight: 600;
+        font-size: 1.5em;
+        margin-bottom: 15px;
+    }
+    .info-block-pictures-name-brand{
+        text-align: left;
+        font-weight: 600;
+        font-size: 1.2em;
+        margin-bottom: 15px;
+    }
+    .info-block-pictures-name-article{
+        text-align: left;
+        font-weight: 600;
+        font-size: 1.2em;
+        margin-bottom: 15px;
+    }
+    .carouselExampleControls{
+        width: 70%;
+    }
+    .carousel-item{
+        width: 100%;
+        height: 450px;
+    }
+    .carousel-item-img{
+        width:100%;
+        height:100%;
+        object-fit: contain;
+        background:#f2f2f2;
+        display:block;
+    }
+    .info-block-information{
+        width: 100%;
+        height: 30vh;
+    }
+    .info-oem-numbers{
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-start !important;
+        align-items: flex-start !important;
+    }
+    .info-description{
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        align-items: flex-start !important;
+    }
+    .info-description-sizes{
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+    }
+
     #search-res-main-container{
         margin-top: 150px;
         margin-bottom: 18vh;

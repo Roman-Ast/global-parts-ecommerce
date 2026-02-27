@@ -8,6 +8,8 @@
     @include('components.header')
     @include('components.header-mini')
 
+    <div id="curtain-grey-searchpartres"></div>
+
     <div id="search-res-main-wrapper">
         <div id="search-res-filter">
             <div class="search-res-filter-item" id="filter-brands">
@@ -92,7 +94,11 @@
                                 {{ $searchItem['name'] }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                                <img src="/images/info_pic.png" alt="info">
+                                @if(array_key_exists('info',$searchItem))
+                                    <img src="/images/info_pic.png" alt="info">
+                                @else
+                                    <img src="/images/info_unavailable.png" alt="info">
+                                @endif
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-delivery">
                                 @if (date('d.m.y',strtotime($searchItem['deliveryStart'])) == date('d.m.y'))
@@ -131,10 +137,8 @@
                     <a href="###">Показать еще 10</a>
                 </div>
             </div>
-
             @endif
 
-            
             @if (!empty($finalArr['crosses_in_office']))
 
             <div class="searchResForRequestPartNumber">
@@ -167,7 +171,11 @@
                         {{ $crossItem['name'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                        <img src="/images/info_pic.png" alt="info">
+                        @if(array_key_exists('info',$crossItem))
+                            <img src="/images/info_pic.png" alt="info">
+                        @else
+                            <img src="/images/info_unavailable.png" alt="info">
+                        @endif
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery" style="background-color:{{ $crossItem['supplier_color']}};color:#111">
                         {{ $crossItem['delivery_time'] }}
@@ -236,7 +244,127 @@
                         {{ $crossItem['name'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                        <img src="/images/info_pic.png" alt="info">
+                        
+                        @if (array_key_exists('info', $crossItem))
+                            <img src="/images/info_pic.png" alt="info" class="spare-part-info-show">
+
+                            <div class="info-block">
+                                <div class="block-info-close-wrapper">
+                                    <button type="button" class="btn-close block-info-item-close" aria-label="Close"></button>
+                                </div>
+                                <div class="info-block-pictures">
+                                        <div class="info-block-pictures-name">
+                                            <div class="info-block-pictures-name-header">
+                                                {{ $crossItem['name'] }}
+                                            </div>
+                                            <div class="info-block-pictures-name-brand">
+                                                <span style="color:#bbb"> Брэнд: </span> {{ $crossItem['brand'] }}
+                                            </div>
+                                            <div class="info-block-pictures-name-article">
+                                                <span style="color:#bbb"> Артикул: </span> {{ $crossItem['article'] }}
+                                            </div>
+                                        </div>
+                                        <div id="carouselExampleControls-{{ $crossItem['article'] }}" class="carousel slide carouselExampleControls" data-bs-ride="carousel">
+                                        <div class="carousel-inner">
+                                            @if (!empty($crossItem['info']['pictures']))
+                                                @foreach($crossItem['info']['pictures'] as $pic_number => $picture_address)
+                                                    @if($pic_number == 0)
+                                                        <div class="carousel-item active">
+                                                            <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
+                                                        </div>
+                                                    @else
+                                                        <div class="carousel-item">
+                                                            <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                            @endif
+                                        </div>
+                                        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls-{{ $crossItem['article'] }}" data-bs-slide="prev">
+                                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                            <span class="visually-hidden">Previous</span>
+                                        </button>
+                                        <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleControls-{{ $crossItem['article'] }}" data-bs-slide="next">
+                                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                            <span class="visually-hidden">Next</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="info-block-information">
+                                    <!-- NAV TABS -->
+                                    <ul class="nav nav-tabs" id="productTabs-{{ $crossItem['article'] }}" role="tablist">
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link active"
+                                                    id="description-tab"
+                                                    data-bs-toggle="tab"
+                                                    data-bs-target="#description-{{ $crossItem['article'] }}"
+                                                    type="button"
+                                                    role="tab">
+                                                Описание
+                                            </button>
+                                        </li>
+
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link"
+                                                    id="original-tab"
+                                                    data-bs-toggle="tab"
+                                                    data-bs-target="#original-{{ $crossItem['article'] }}"
+                                                    type="button"
+                                                    role="tab">
+                                                Оригинальные номера
+                                            </button>
+                                        </li>
+
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link"
+                                                    id="usage-tab"
+                                                    data-bs-toggle="tab"
+                                                    data-bs-target="#usage-{{ $crossItem['article'] }}"
+                                                    type="button"
+                                                    role="tab">
+                                                Применение в автомобилях
+                                            </button>
+                                        </li>
+                                    </ul>
+
+                                    <!-- TAB CONTENT -->
+                                    <div class="tab-content mt-3" id="productTabsContent-{{ $crossItem['article'] }}" class="productTabsContent">
+
+                                        <div class="tab-pane fade show active info-description"
+                                            id="description-{{ $crossItem['article'] }}"
+                                            role="tabpanel">
+                                            <ul class="info-description-sizes">
+                                                <li>
+                                                    <b>Размеры</b>
+                                                </li>
+                                                <li>Ширина: {{ $crossItem['info']['params']['sizes']['width'] }}</li>
+                                                <li>Высота: {{ $crossItem['info']['params']['sizes']['height'] }}</li>
+                                                <li>Толщина: {{ $crossItem['info']['params']['sizes']['depth'] }}</li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="tab-pane fade info-oem-numbers"
+                                            id="original-{{ $crossItem['article'] }}"
+                                            role="tabpanel">
+                                                @foreach($crossItem['info']['params']['OEM'] as $oem_number)
+                                                    {{ $oem_number }}
+                                                @endforeach
+                                        </div>
+
+                                        <div class="tab-pane fade"
+                                            id="usage-{{ $crossItem['article'] }}"
+                                            role="tabpanel">
+                                            <p>
+                                                
+                                            </p>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <img src="/images/info_unavailable.png" alt="info">
+                        @endif
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery parts-on-stock">
                         {{ $crossItem['delivery_time'] }}
@@ -268,7 +396,6 @@
 
             @endif
 
-            
             @if (count($finalArr['crosses_to_order']) > 0)
             
             <div class="searchResForRequestPartNumber">
@@ -301,18 +428,15 @@
                         {{ $crossItem['name'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                        <img src="/images/info_pic.png" alt="info">
+                        @if(array_key_exists('info',$crossItem))
+                            <img src="/images/info_pic.png" alt="info">
+                        @else
+                            <img src="/images/info_unavailable.png" alt="info">
+                        @endif
                     </div>
-                    @if ($crossItem['supplier_name'] == 'grt')
-                        <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery" style="background-color: #a8e1fe;color:#111;font-style:italic;">
-                            {{ date('d.m.y',strtotime($crossItem['delivery_time'])) }}
-                        </div>
-                    @else
                         <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
                             {{ date('d.m.y',strtotime($crossItem['delivery_time'])) }}
                         </div>
-                    @endif
-                    
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item stock-item-qty">

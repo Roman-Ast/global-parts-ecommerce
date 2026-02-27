@@ -55,6 +55,15 @@ $(window).on('load', function () {
       $('.wa-top-container').attr('href', 'https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта.')
    }
 });
+
+$('.spare-part-info-show').on('click', function () {
+   $('#curtain-grey-searchpartres').css({'display': 'block'});
+   $(this).next().slideDown(400);
+});
+$('.block-info-item-close').on('click', function () {
+   $(this).parent().parent().slideUp(400);
+   $('#curtain-grey-searchpartres').fadeOut(600);
+});
 //показывать кнопку удаления текста при вводе в инпут поиска запчастей
 $('#searchBarInput').on('input', function () {
    $('#search-input-text-delete').fadeIn(200);
@@ -961,7 +970,8 @@ $('#ai-vin-form-btn').on('click', function () {
       }
    });
 });
-//всплытие подсказки относительно подбора с винкодом и без
+//открытие блока с информацией и картинками товара
+
 
 
 

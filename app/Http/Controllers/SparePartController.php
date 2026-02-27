@@ -1553,10 +1553,10 @@ class SparePartController extends Controller
 
     public function searchGerat(String $brand, String $partnumber)
     {
-        //$start = microtime(true);
+        //$start = microtime(true);old anchor 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php'
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php');
+        curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/storage_astana.php');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
         curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
@@ -1569,14 +1569,16 @@ class SparePartController extends Controller
         if (!$json) {
 			return;
 		}
+        //dd($json);
         foreach ($json->shop->offers->offer as $item) {
+            //dd($item);
             $cross_numbers = explode(', ', $item->description);
             
             foreach ($cross_numbers as $cross_number) {
                 if (strtolower($cross_number) == strtolower($partnumber) || strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
                     if (strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
                         array_push($this->finalArr['brands'], $item->vendor);
-
+                        dd($item->param);
                         array_push($this->finalArr['searchedNumber'], [
                             'brand' => $item->vendor,
                             'article' => $item->vendorCode,
@@ -1585,21 +1587,34 @@ class SparePartController extends Controller
                             'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
                             'qty' => $item->count,
                             'supplier_name' => 'grt',
-                            'supplier_city' => 'Алмата',
+                            'supplier_city' => 'Астана',
                             'supplier_color' => '#7bafcf',
-                            'deliveryStart' => date('d.m.Y', strtotime('+4day')),
+                            'deliveryStart' => '1.5-2 часа',
                         ]);
                     } else {
                         array_push($this->finalArr['brands'], $item->vendor);
 
-                        array_push($this->finalArr['crosses_to_order'], [
+                        array_push($this->finalArr['crosses_on_stock'], [
                             'brand' => $item->vendor,
                             'article' => $item->vendorCode,
                             'name' => substr($item->model, 0, 60),
                             'qty' => $item->count,
                             'price' => $item->price,
                             'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                            'delivery_time' => date('d.m.Y', strtotime('+4day')),
+                            'delivery_time' => "1.5-2 часа",
+                            'info' => [
+                                'pictures' => $item->picture,
+                                'params' => [
+                                    'OEM' => explode(',', $item->param[3]),
+                                    'suitable_to' => '',
+                                    'tech_info' => '',
+                                    'sizes' => [
+                                        'width' => $item->param[6],
+                                        'height' => $item->param[5],
+                                        'depth' => $item->param[4]
+                                    ]
+                                ],
+                            ],
                             'stocks' => [
                                 [
                                     'qty' => $item->count,
@@ -1608,7 +1623,7 @@ class SparePartController extends Controller
                                 ]
                             ],
                             'supplier_name' => 'grt',
-                            'supplier_city' => 'Алмата',
+                            'supplier_city' => 'Астана',
                             'supplier_color' => '#feed00'
                         ]); 
                     }
