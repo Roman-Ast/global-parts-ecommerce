@@ -33,6 +33,10 @@ use App\Http\Controllers\AISimpleSearchController;
     dd('done');
 });*/
 
+Route::get('/test-host-error', function () {
+    return view('components.hostError');
+});
+
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);
 Route::post('/getPart/', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
@@ -49,6 +53,7 @@ Route::post('/sparepart-request', [SparePartRequestController::class, 'store']);
 Route::post('/simpleAISearchWithoutVin', [AISimpleSearchController::class, 'searchArticlesByGPT']);
 Route::post('/simpleAIVinSearch', [AISimpleSearchController::class, 'searchArticlesByGPTWithVin']);
 
+//каталог корейских авто
 Route::get('/hyundai', function() {
     return view('korean-cars.index');
 });
@@ -62,6 +67,23 @@ Route::get('hyundai/k520-23', function() {
     return view('korean-cars.k520-23');
 });
 Route::get('hyundai/sportage21-25', function() {
+    return view('korean-cars.sportage21-25');
+});
+
+//каталог корейскикитайских авто
+Route::get('/chinacars', function() {
+    return view('china-cars.index');
+});
+Route::get('/china/chery-tigo-7-pro', function() {
+    return view('china-cars.chery-tiggo-7-pro');
+});
+Route::get('china/sonata19-23', function() {
+    return view('korean-cars.sonata19-23');
+});
+Route::get('china/k520-23', function() {
+    return view('korean-cars.k520-23');
+});
+Route::get('china/sportage21-25', function() {
     return view('korean-cars.sportage21-25');
 });
 

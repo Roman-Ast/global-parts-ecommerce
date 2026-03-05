@@ -260,6 +260,24 @@ class SparePartController extends Controller
             }
             return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
         });
+        //dd($this->finalArr);
+
+        $finalArrEmpty = false;
+
+        foreach ($this->finalArr as $stock => $spareParts) {
+            if (gettype($spareParts) == 'array') {
+                if (!empty($spareParts)) {
+                    break;
+                } else {
+                    $finalArrEmpty = true;
+                }
+            }
+        }
+        if ($finalArrEmpty) {
+            return view('components.notFoundStub', [
+                'article' => $this->finalArr['originNumber']
+            ]);
+        }
 
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
@@ -1578,7 +1596,7 @@ class SparePartController extends Controller
                 if (strtolower($cross_number) == strtolower($partnumber) || strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
                     if (strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
                         array_push($this->finalArr['brands'], $item->vendor);
-                        dd($item->param);
+                        dd($item);
                         array_push($this->finalArr['searchedNumber'], [
                             'brand' => $item->vendor,
                             'article' => $item->vendorCode,
@@ -1593,7 +1611,7 @@ class SparePartController extends Controller
                         ]);
                     } else {
                         array_push($this->finalArr['brands'], $item->vendor);
-
+                        //dd($item);
                         array_push($this->finalArr['crosses_on_stock'], [
                             'brand' => $item->vendor,
                             'article' => $item->vendorCode,
@@ -1608,10 +1626,14 @@ class SparePartController extends Controller
                                     'OEM' => explode(',', $item->param[3]),
                                     'suitable_to' => '',
                                     'tech_info' => '',
-                                    'sizes' => [
+                                    'sizes' => count($item->param) > 4 ?[
                                         'width' => $item->param[6],
                                         'height' => $item->param[5],
                                         'depth' => $item->param[4]
+                                    ] : [
+                                        'width' => 'нет информации',
+                                        'height' => 'нет информации',
+                                        'depth' => 'нет информации'
                                     ]
                                 ],
                             ],
@@ -1643,11 +1665,16 @@ class SparePartController extends Controller
                 'trace' => true
             )
         );
+        $brand = strtolower($brand);
 
         $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL", $connect['options']);
-        $brand = strtolower($brand);
-        if (!($client->IsAuthorization()->IsAuthorizationResult)) {
-            $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
+        
+        try {
+            if (!($client->IsAuthorization()->IsAuthorizationResult)) {
+                $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
+            }
+        } catch (\Throwable $th) {
+            return view('components.hostError');
         }
         
         $noAnalogsResult = $client->FindCatalog (array("Number"=>$partnumber));

@@ -5,7 +5,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>@yield('title')</title>
-        <link rel="icon" href="{{ URL::asset('images/logo1.png') }}">
+        <link rel="icon" href="{{ URL::asset('images/favicon-32x32.png') }}">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -34,19 +34,18 @@
         <link href="{{ URL::asset('css/components/footer-bar-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/notfound.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/korean-cars/index.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/korean-cars/index.mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/components/nothingFoundStub.css') }}" rel="stylesheet">
+        <link href="{{ asset('/css/korean-cars/index.css') }}" rel="stylesheet">
+        <link href="{{ asset('/css/korean-cars/index.mini.css') }}" rel="stylesheet">
+        <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
+        <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     
         <!-- Styles -->
         <style>
 
         </style>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" 
-integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" 
-crossorigin="anonymous"></script>
+        
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body>

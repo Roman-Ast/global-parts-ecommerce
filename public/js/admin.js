@@ -230,32 +230,33 @@ $('#order-filter-btn-drop').on('click', function () {
 
 $('#add_parts_list_item').on('click', function (params) {
     const suppliers = {
-        'shtm' : 'Шатэ-М',
-            'rssk' : 'Росско',
-            'trd' : 'Автотрейд',
-            'tss' : 'Тисс',
-            'rmtk' : 'Армтек',
-            'phtn' : 'Фаэтон',
-            'atptr' : 'Автопитер',
-            'avtozakup' : 'Автозакуп',
-            'emex' : 'emex',
-            'rlm' : 'Рулим',
-            'radle' : 'Radle', 
-            'fbst' : 'Фебест',
-            'Krn' : 'Корея',
-            'kln' : 'Кулан',
-            'frmt' : 'Форумавто',
-            'china_ata' : 'Китайцы Алматы',
-            'china_igor' : 'Китай Игорь',
-            'voltag_ast' : 'Вольтаж Астана',
-            'kz_starter' : 'КЗ стартер',
-            'cc_motors_talgat' : 'СС моторс Талгат',
-            'gerat_ast' : 'Герат Астана',
-            'kainar_razbor_tima' : 'Кайнар Тима',
-            'zakaz_auto' : 'заказ авто',
-            'kap' : 'Кореан Автопартс',
-            'alem_auto' : 'Алемавто',
-            'thr' : 'Сторонние'
+        '1' : 'Шатэ-М',
+            '2' : 'Росско',
+            '3' : 'Автотрейд',
+            '4' : 'Тисс',
+            '5' : 'Армтек',
+            '6' : 'Фаэтон',
+            '7' : 'Автопитер',
+            '8' : 'Автозакуп',
+            '9' : 'emex',
+            '10' : 'Рулим',
+            '11' : 'Radle', 
+            '12' : 'Фебест',
+            '13' : 'Корея Танат',
+            '14' : 'Кулан',
+            '15' : 'Форумавто',
+            '16' : 'Китайцы Алматы',
+            '17' : 'Китай Игорь',
+            '18' : 'Вольтаж Астана',
+            '19' : 'КЗ стартер',
+            '20' : 'СС моторс Талгат',
+            '21' : 'Герат Астана',
+            '22' : 'Кайнар Тима',
+            '23' : 'заказ авто',
+            '24' : 'Кореан Автопартс',
+            '25' : 'Алемавто',
+            '26': 'Ердос Автомарт ',
+            '27' : 'Сторонние'
     };
 
     $('#manually-order-parts-list').append(
@@ -295,7 +296,8 @@ $('#add_parts_list_item').on('click', function (params) {
 $('#manually-order-submit').on('click', function () {
     let data = {
         orderInfo: [],
-        products: []
+        products: [],
+        paymentInfo: [],
     };
     
     $('.manually-order-main-info').each(function (key, elem) {
@@ -311,12 +313,19 @@ $('#manually-order-submit').on('click', function () {
         });
     });
 
+    $('#manualy-order-payment-details-body').each(function (productId, elem) {
+        let arr = $(elem).children();
+        $.each(arr, function (key, elem) {
+            data.paymentInfo.push($(elem).val());
+        });
+    });
+    
     let allowToOrder = true;
 
     $('.manually-order-parts-list-item-content').children().each(function (productId, elem) {
         if (!$(elem).val()) {
             allowToOrder = false;
-            warning_msg = 'Не все поля заполнены!'
+            warning_msg = 'Не все поля заполнены в информации о товарах!'
             return;
         }
         if (!$('#manualy_order_sale_channel').val()) {
@@ -325,6 +334,18 @@ $('#manually-order-submit').on('click', function () {
             return;
         }
     });
+
+    $('#manualy-order-payment-details-body').children().each(function (productId, elem) {
+        if (!$(elem).val()) { 
+            if ($(elem).attr('name') == 'comments') {
+                return true;    
+            }
+            allowToOrder = false;
+            warning_msg = 'Не все поля заполнены в деталях оплаты!'
+            return false;
+        }
+    });
+
     if (!allowToOrder) {
         $('#alert-admin').addClass('alert-warning');
         $('#alert-admin').html(warning_msg);
@@ -334,6 +355,7 @@ $('#manually-order-submit').on('click', function () {
         }, 3000);
         return;
     }
+    console.log(data);
     
     $.ajax({
         data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
@@ -435,6 +457,7 @@ $(document).on('input', '.manually-order-parts-list-item-qty, .manually-order-pa
     });
 
     $('#manualy-order-total-sum-with-margine-num').html(sumWithMargine);
+    $('#manualy-order-payment-details-amount').val(sumWithMargine);
     $('#manualy-order-total-prime-cost-sum-inner').html(primeCostSum);
     $('#manualy-order-total-qty-inner').html(totalQty);
 });

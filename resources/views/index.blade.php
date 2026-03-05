@@ -19,63 +19,389 @@
             
     @endif
 
-    <div id="main-container" class="container">
-      <!-- Блок ИИ помощника -->
-      <!-- <section class="hero-section text-center p-4 bg-white">
-        <div class="container">
-          <h2 class="fw-bold mb-3 text-dark">
-            🤖 ИИ-помощник по подбору запчастей (GPT 5.0)
-            <span class="badge bg-warning text-dark ms-2" style="animation: blink 1.2s infinite;">НОВИНКА</span>
-          </h2>
-          <p class="lead text-muted mb-4">
-            Введите данные авто или VIN и нужную деталь — наш ИИ найдет оригинальные номера и аналоги.
-          </p>
+    
 
-          
-          <div class="d-flex justify-content-center mb-4">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="searchModeSwitch">
-              <label class="form-check-label" for="searchModeSwitch"
-                    data-bs-toggle="tooltip" 
-                    data-bs-placement="top" 
-                    title="Без VIN: точность ниже, но попробовать можно 👌">
-                Поиск по VIN
-              </label>
-            </div>
-          </div>
+  <div class="container-lg py-3 py-lg-4" id="main-container">
+        <section class="gp-hero shadow-sm">
 
-          
-          <div id="form-no-vin" class="row g-2 justify-content-center">
-            <div class="col-12 col-sm-8 col-md-6">
-              <textarea id="ai-no-vin-input" class="form-control form-control-lg" rows="2"
-                placeholder="Например: Hyundai Accent 2013 радиатор" required></textarea>
-            </div>
-            <div class="col-12 col-sm-auto">
-              <button type="submit" class="btn btn-success btn-lg w-100" id="ai-no-vin-form-btn">🔍 Найти</button>
-            </div>
-          </div>
+            <h1 class="gp-h1 fw-bold mb-4" style="text-align:center">
+                Запчасти для авто с доставкой по Казахстану 
+                
+            </h1>
 
-          
-          <div id="form-vin" class="row g-2 justify-content-center d-none">
-            <div class="col-12 col-sm-6 col-md-4">
-              <input type="text" id="ai-vin-input" class="form-control form-control-lg"
-                placeholder="Введите VIN (например: KMHCT41BDD...)" required>
-            </div>
-            <div class="col-12 col-sm-6 col-md-4">
-              <input type="text" id="ai-vin-part-input" class="form-control form-control-lg"
-                placeholder="Какая запчасть нужна? (например: колодки)" required>
-            </div>
-            <div class="col-12 col-sm-auto">
-              <button type="submit" class="btn btn-success btn-lg w-100" id="ai-vin-form-btn">🔍 Найти</button>
-            </div>
-          </div>
+            <p class="gp-muted mb-4" style="text-align:center">
+                Быстрый подбор по VIN. Оригиналы и аналоги — в наличии или с доставкой по РК.
+            </p>
 
-          
-          <div id="ai-search-results" class="mt-4 text-start"></div>
+            <div class="d-flex flex-row justify-content-center align-items-center gap-2 mb-3 col-12 align-items-stretch" >
+                <a href="#vin-form" class="btn btn-success btn-lg px-4" id="scroll-to-form">Подобрать по VIN</a>
+
+                <a href="#" class="btn btn-outline-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
+                    Написать в WhatsApp
+                </a>
+            </div>
+
+            <div class="gp-muted small mb-3 text-center">
+                <div class="fw-semibold text-dark text-center">г. Астана</div>
+                Работаем с 10:00 до 19:00. Ответим в WhatsApp даже в выходные.
+            </div>
+
+            <div class="row g-2">
+                <div class="col-12 col-lg-4">
+                    <div class="gp-badge d-flex align-items-center gap-2 fs-4 text-center  mt-3">
+                        <span class="text-success">✔</span>
+                        <span><b>Более 1000</b> довольных клиентов</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-4">
+                    <div class="gp-badge d-flex align-items-center gap-2 fs-4 text-center  mt-3">
+                        <span class="text-success">✔</span>
+                        <span><b>Гарантия</b> соответствия и подлинности</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-4">
+                    <div class="gp-badge d-flex align-items-center gap-2 fs-4 text-center mt-3">
+                        <span class="text-success">✔</span>
+                        <span>Китайские, корейские, японские, европейские авто</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        {{-- POPULAR CATEGORIES --}}
+        <section class="mt-4 mt-lg-5 shadow-sm" id="popular-categories">
+
+            <div id="popular-categories-header" class="mb-3 text-dark fs-5 fw-semibold">
+              Популярные категории
+            </div>
+
+            <div id="popular-categories-container">
+
+              <div class="popular-categories-item shadow-sm">
+                <div class="popular-categories-img">
+                  <img src="images/popular-categories/chasis.png" alt="chasis" class="popular-categories-img">
+                </div>
+                <div class="popular-categories-name text-dark">
+                  Ходовая часть
+                </div>
+              </div>
+
+              <div class="popular-categories-item shadow-sm">
+                <div class="popular-categories-img">
+                  <img src="images/popular-categories/brakes.png" alt="brakes" class="popular-categories-img">
+                </div>
+                <div class="popular-categories-name text-dark">
+                  Тормозная система
+                </div>
+              </div>
+
+              <div class="popular-categories-item shadow-sm">
+                <div class="popular-categories-img">
+                  <img src="images/popular-categories/body.png" alt="body" class="popular-categories-img">
+                </div>
+                <div class="popular-categories-name text-dark">
+                  Кузовные детали
+                </div>
+              </div>
+
+              <div class="popular-categories-item shadow-sm">
+                <div class="popular-categories-img">
+                  <img src="images/popular-categories/engine.png" alt="engine" class="popular-categories-img">
+                </div>
+                <div class="popular-categories-name text-dark">
+                  Детали ДВС
+                </div>
+              </div>
+
+              <div class="popular-categories-item shadow-sm">
+                <div class="popular-categories-img">
+                  <img src="images/popular-categories/electricparts.png" alt="electricparts" class="popular-categories-img">
+                </div>
+                <div class="popular-categories-name text-dark">
+                  Электрика
+                </div>
+              </div>
+
+            </div>
+        </section>
+
+        {{-- REVIEWS + HELP BLOCK (как на 2й картинке: слева фото/блок, справа отзывы) --}}
+        <section class="mt-7 mt-lg-5">
+            <h2 class="h4 fw-bold mb-3 text-center text-lg-start">Отзывы довольных клиентов</h2>
+
+            <div class="row g-3 align-items-stretch">
+                {{-- Слева: фото склада + блок помощи --}}
+                <div class="col-12 col-lg-6">
+                    <div class="gp-help h-100 shadow-sm">
+                        {{-- Фото склада (ты подставишь src) --}}
+                        <div class="ratio ratio-21x9 rounded-4 overflow-hidden bg-light">
+                            <img src="images/i.webp"
+                                alt="Склад"
+                                style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+
+                        <div class="mt-3">
+                            <div class="h5 fw-bold mb-1">Быстрая помощь в подборе запчастей</div>
+                            <div class="gp-muted mb-3">
+                                Подберём нужное для вашего авто в 1 клик — напишите нам в чат
+                            </div>
+
+                            <a href="https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта!" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center">
+                                Подобрать запчасть в WhatsApp
+                            </a>
+
+                            <div class="mt-4 gp-muted">
+                                У нас собраны запчасти для самых популярных марок автомобилей — оригиналы и проверенные аналоги. Поможем быстро подобрать нужную деталь и оформить заказ. Доставка по Астане и отправка по всему Казахстану удобными транспортными службами. <img src="images/icons8-delivery-36.png" alt="red-car">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Справа: карточки отзывов + "Нашли дешевле" --}}
+                <div class="col-12 col-lg-6">
+                    <div class="row g-3">
+                        @foreach($reviews as $r)
+                            <div class="col-12">
+                                <div class="gp-review-card shadow-sm">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <img class="gp-review-avatar" src="{{ $r['avatar'] }}" alt="{{ $r['name'] }}">
+                                            <div>
+                                                <div class="fw-bold">{{ $r['author'] }}</div>
+                                                <div class="small gp-muted">
+                                                {{ $r['date'] ?? '' }}
+                                                <a href="{{ $r['src'] }}" target="_blank"><i>смотреть отзыв</i></a>
+                                              </div>
+                                                
+                                            </div>
+                                        </div>
+                                        <div class="small text-warning">
+                                            @for($i=0;$i<($r['stars'] ?? 5);$i++) ★ @endfor
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-2 gp-muted">
+                                        {{ $r['text'] ?? '' }}
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+
+                        <div class="col-12">
+                            <div class="gp-review-card shadow-sm">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3">
+                                    <div class="fw-semibold">
+                                        Нашли дешевле? Сделаем скидку! <span class="text-warning">🤝</span>
+                                    </div>
+                                    <span class="small gp-muted">Покажите цену/скрин</span>
+                                </div>
+
+                                <div class="d-flex flex-column flex-sm-row gap-2 mt-3">
+                                    <a href="https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта!" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-btns">
+                                        Купить по WhatsApp
+                                    </a>
+                                    <a href="#" class="btn btn-outline-secondary btn-lg flex-fill">
+                                        Позвонить
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {{-- Почему выбирают нас--}}
+        <section class="why-us-section py-5 bg-white mt-5">
+            <div class="container">
+              <h2 class="text-center fw-bold mb-4">Почему нас выбирают более 1000 покупателей по Казахстану</h2>
+
+              <div class="row gy-4">
+                <div class="col-md-6 col-lg-4">
+                  <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
+                    <div class="fs-2 me-3 text-primary">🔧</div>
+                    <div>
+                      <h6 class="fw-semibold mb-1">Подбор по VIN-коду</h6>
+                      <p class="text-muted mb-0">Быстро, точно и удобно — не нужно искать самому</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                  <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
+                    <div class="fs-2 me-3 text-success">✅</div>
+                    <div>
+                      <h6 class="fw-semibold mb-1">Оригиналы и качественные аналоги</h6>
+                      <p class="text-muted mb-0">В наличии и под заказ напрямую от поставщиков</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                  <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
+                    <div class="fs-2 me-3 text-danger">📦</div>
+                    <div>
+                      <h6 class="fw-semibold mb-1">Доставка по Казахстану</h6>
+                      <p class="text-muted mb-0">Отправка за 1–3 дня, а по Астане — самовывоз</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                  <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
+                    <div class="fs-2 me-3 text-info">💬</div>
+                    <div>
+                      <h6 class="fw-semibold mb-1">Консультации через WhatsApp</h6>
+                      <p class="text-muted mb-0">Без звонков — пишите, как удобно</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                  <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
+                    <div class="fs-2 me-3 text-warning">💰</div>
+                    <div>
+                      <h6 class="fw-semibold mb-1">Доступные цены</h6>
+                      <p class="text-muted mb-0">Работаем напрямую с проверенными поставщиками</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4">
+                  <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
+                    <div class="fs-2 me-3 text-secondary">🔄</div>
+                    <div>
+                      <h6 class="fw-semibold mb-1">Гарантия и возврат</h6>
+                      <p class="text-muted mb-0">Если запчасть не подошла — обмен или возврат</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </section>
+        
+        {{-- Форма подбора по винкоду--}}
+        <section class="cta-form-section py-5 bg-light mt-5" id="vin-form">
+            <div class="container">
+              <div class="text-center mb-4">
+                <h2 class="fw-bold">Не знаете номер детали?</h2>
+                <p class="text-muted lead mb-0">Подберем по VIN — быстро и точно</p>
+              </div>
+
+              <form class="row justify-content-center" action="/sparepart-request" method="POST" onsubmit="return validateVin() && validateParts() && validatePhone() && showWaitongWindow();">
+                <div class="col-lg-8">
+                  <form class="p-4 border rounded-4 shadow-sm bg-white">
+                    @csrf
+                    <div class="mb-3">
+                      <label for="vin" class="form-label fw-semibold">Винкод авто (VIN)</label>
+                      <input type="text" name="vincode" class="form-control vin-selection-field" id="vin" placeholder="Например: KMH1234567890" required>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="parts" class="form-label fw-semibold">Какие запчасти нужны</label>
+                      <textarea class="form-control vin-selection-field" name="spareparts" id="parts" rows="3" placeholder="Например: фара, бампер, колодки..." required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="phone" class="form-label fw-semibold">Телефон (для обратной связи)</label>
+                      <input type="tel" class="form-control vin-selection-field" name="phone" id="phone" placeholder="+7 (777) 123-45-67" required>
+                      <div id="error" style="font-size:12px; font-style:italic; color:#d32f2f; margin-top:4px;"></div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="note" class="form-label fw-semibold">Примечание (не обязательно)</label>
+                      <input class="form-control" name="note" id="note" placeholder="Например: только оригинал...">
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                      <button type="submit" class="btn btn-success btn-lg" id="send-vin-search-btn">Получить подбор</button>
+                    </div>
+                  </form>
+                </div>
+              </form>
+
+            </div>
+        </section>
+
+        {{-- Каталог по авто--}}
+        <section class="cta-form-section py-5 mt-5">
+            <div class="text-center mb-4">
+              
+              
+              <h2 class="fw-bold">Хиты продаж по моделям авто</h2>
+              <p class="text-muted lead mb-0">Переходите сразу к спискам популярных моделей и находите нужное быстрее.</p>
+                
+              </p>
+
+              
+              <div class="row text-center gy-4">
+                
+              
+                <a href="/hyundai" class="category-card">
+                  <img src="/images/hyundai/Hyundai_KIA_log.png" alt="Hyundai/Kia">
+                  <h3>Модели Hyundai / Kia</h3>
+                  <p>Elantra, Tucson, Rio, Sorento и другие.</p>
+                </a>
+
+              
+                <a href="/chinacars" class="category-card">
+                  <img src="/images/chinacars/chinese-logos.png" alt="Китайские авто">
+                  <h3>Модели китайских авто</h3>
+                  <p>Chery, Haval, Geely, JAC, Exeed и др.(в разработке)</p>
+                </a>
+
+                
+                <a href="#" class="category-card">
+                  <img src="/images/car-from-parts.png" alt="Все авто">
+                  <h3>Все популярные авто</h3>
+                  <p>Выберите марку и модель для подбора запчастей. (в разработке)</p>
+                </a>
+
+              </div>
+            </div>
+        </section>
+
+
+        {{-- FOOTER CONTACTS --}}
+        <div class="mt-4 mt-lg-5 text-center d-flex justify-content-center" >
+            <div id="pre-footer-contacts">
+              <div class="gp-muted small mb-2">
+                  Контакты для быстрого заказа
+              </div>
+
+              <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                  <a class="gp-phone-pill text-decoration-none text-dark" href="tel:+77087172549">
+                      📞 <span>+7 708 717 25 49</span>
+                  </a>
+                  <a class="gp-phone-pill text-decoration-none text-dark" href="tel:+77058443458">
+                      📞 <span>+7 708 844 34 58</span>
+                  </a>
+              </div>
+
+              <div class="mt-3 gp-muted small">
+                  {{ date('Y') }} © GlobalParts.kz — запчасти в наличии и с доставкой по РК
+              </div>
+            </div>
         </div>
-      </section> -->
+    
 
-      <section class="hero-section text-center p-4 bg-light mt-5">
+  </div>
+
+
+     
+
+    @include('components.footer-bar-mini')
+    @include('components.footer')
+@endsection
+
+
+
+ <!--<div id="main-container" class="container">-->
+      <!--<section class="hero-section text-center p-4 bg-light mt-5">
             <div class="container">
                 <h1 class="display-5 fw-bold mb-3 text-dark">Запчасти с доставкой по Казахстану</h1>
                 <p class="lead text-muted mb-4">Быстрый подбор по VIN. Оригиналы и аналоги в наличии и на заказ.</p>
@@ -170,30 +496,30 @@
       <section class="cta-form-section py-5 bg-light mt-5">
         <div class="text-center mb-4">
           
-          <!-- Заголовок -->
+          
           <h2 class="fw-bold">Хиты продаж по моделям авто</h2>
           <p class="text-muted lead mb-0">Переходите сразу к спискам популярных моделей и находите нужное быстрее.</p>
             
           </p>
 
-          <!-- Карточки -->
+          
           <div class="row text-center gy-4">
             
-            <!-- Hyundai / Kia -->
+          
             <a href="/hyundai" class="category-card">
               <img src="/images/hyundai/Hyundai_KIA_log.png" alt="Hyundai/Kia">
               <h3>Модели Hyundai / Kia</h3>
               <p>Elantra, Tucson, Rio, Sorento и другие.</p>
             </a>
 
-            <!-- Китайские авто -->
+           
             <a href="#" class="category-card">
               <img src="/images/chinacars/chinese-logos.png" alt="Китайские авто">
               <h3>Модели китайских авто</h3>
               <p>Chery, Haval, Geely, JAC, Exeed и др.(в разработке)</p>
             </a>
 
-            <!-- Все модели -->
+            
             <a href="#" class="category-card">
               <img src="/images/car-from-parts.png" alt="Все авто">
               <h3>Все популярные авто</h3>
@@ -295,7 +621,7 @@
             <div class="col-sm-6 col-lg-4 review-item">
               <img src="/images/reviews/review6.jpeg" class="img-fluid rounded-4 shadow-sm review-img" alt="Отзыв 3">
             </div>
-            <!-- остальные 6 отзывов -->
+            
           </div>
           <i>Больше отзывов можно посмотреть <a href="https://2gis.kz/astana/search/%D0%B0%D0%B2%D1%82%D0%BE%D0%B7%D0%B0%D0%BF%D1%87%D0%B0%D1%81%D1%82%D0%B8/firm/70000001080248919/71.428541%2C51.17667/tab/reviews?m=71.443112%2C51.129941%2F10.79" target="_blank">здесь</a><i>
         </div>
@@ -312,11 +638,7 @@
           <span class="next">&rarr;</span>
         </div>
       </div>
-    </div>
-
-    @include('components.footer-bar-mini')
-    @include('components.footer')
-@endsection
+    </div>-->
 
 
 

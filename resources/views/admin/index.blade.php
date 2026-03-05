@@ -24,12 +24,20 @@
                     Создать заказ
                 </div>
             </div>
-            <div class="menu-item-container" target="settlements">
+            <div class="menu-item-container" target="cashflow_transactions">
                 <div class="menu-item-img">
 
                 </div>
-                <div class="menu-item-name">
-                    Взаиморасчеты
+                <div class="menu-item-name" >
+                    Движение денежных средств
+                </div>
+            </div>
+            <div class="menu-item-container" target="make_cashflow_transactions">
+                <div class="menu-item-img">
+
+                </div>
+                <div class="menu-item-name" >
+                    Создать движение денежных средств
                 </div>
             </div>
             <div class="menu-item-container" target="all-customers">
@@ -51,7 +59,7 @@
             <div class="menu-item-container" target="all-payments">
                 <div class="menu-item-img">
                     
-                </div>
+                </div>  
                 <div class="menu-item-name">
                     Все оплаты
                 </div>
@@ -98,7 +106,7 @@
             </div>
         </div>
         <div id="content">
-            <div id="orders" class="admin-content-item">
+            <div id="orders" class="container admin-content-item">
                 <div id="orders-filter">
                     <div id="orders-filter-date" class="order-filter-item input-group">
                         <input type="date" name="filter_date_from" class="form-control input-group-sm"value="{{ Carbon::now()->subDays(14)->format('Y-m-d') }}" >
@@ -612,64 +620,6 @@
                 </div>
                 @endforeach
             </div>
-            <div id="settlements" class="container admin-content-item">
-                <div id="settlement-item-header">
-                    <div id="settlement-item-header-date">
-                        Дата
-                    </div>
-                    <div id="settlement-item-header-id">
-                        Операция
-                    </div>
-                    <div id="settlement-item-header-username">
-                        Контрагент
-                    </div>
-                    <div id="settlement-item-header-paid">
-                        Оплачено
-                    </div>
-                    <div id="settlement-item-header-realised">
-                        Отгружено
-                    </div>
-                    <div id="settlement-item-header-sum">
-                        Сумма
-                    </div>
-                </div>
-                @foreach ($settlements as $settlementItem)
-                    <div class="settlement-item-wrapper">
-                        <div class="settlement-item-header">
-                            <div class="settlement-item-date">
-                                {{ $settlementItem->date }}
-                            </div>
-                            <div class="settlement-item-id">
-                                <input type="hidden" class="order_{{ $settlementItem->order_id }}" name="order_id" value="{{ $settlementItem->order_id }}">
-                                <a href="#">Реализация товаров №0000{{ $settlementItem->order_id }}</a>
-                            </div>
-                            <div class="settlement-item-username">
-                                {{ $settlementItem->user->name }}
-                            </div>
-                            <div class="settlement-item-operation">
-                                @if ($settlementItem->paid)
-                                    <img src="images/cash-24.png">
-                                @endif
-                            </div>
-                            <div class="settlement-item-operation">
-                                @if ($settlementItem->released)
-                                    <img src="images/realised-24.png">
-                                @endif
-                            </div>
-                            <div class="settlement-item-sum">
-                                {{ number_format($settlementItem->sumWithMargine, 2, '.', ' ') }}
-                            </div>
-                        </div>
-                        <div class="settlement-item-content">
-                            <table class="table settlement-item-content-table">
-                                <tbody>
-                                
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
             <div id="make-pay" class="container admin-content-item">
                 <form id="pay-container" action="/payment" method="POST">
                     @csrf
@@ -872,8 +822,8 @@
                         <div class="pay-item-container-input">
                             <select name="supplier" class="form-control">
                                 <option disabled selected>Выбери поставщика</option>
-                                @foreach ($suppliers as $supplierEng => $supplierRus)
-                                    <option value="{{ $supplierEng }}">{{ $supplierRus }}</option>
+                                @foreach ($suppliers as $supplier)
+                                    <option value="{{ $supplier['id'] }}">{{ $supplier['name'] }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -911,50 +861,126 @@
                         </div>
                         <label for="basic-url" class="form-label" id="manually-order-list-open">Товар</label>
                     </div>
-                    
-                    <div id="manually-order-parts-list">
-                        <div id="manually-order-bar">
-                            <a href="###" id="add_parts_list_item">Добавить еще товар</a>
-                            <input type="submit" value="Оформить заказ" class="btn btn-sm btn-success" id="manually-order-submit">
-                        </div>
-                        <div class="manually-order-parts-list-item">
-                            <div class="manually-order-parts-list-item-header">
-                                <label class="form-label parts-list-item">Артикул</label>
-                                <label class="form-label">Бренд</label>
-                                <label class="form-label">Наименование</label>
-                                <label class="form-label">Кол-во</label>
-                                <label class="form-label">С/С</label>
-                                <label class="form-label">Розница</label>
-                                <label class="form-label">Поставщик</label>
-                                <label class="form-label">Доставка</label>
+
+                    <!-- NAV TABS -->
+                    <ul class="nav nav-tabs" id="customTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button
+                        class="nav-link active"
+                        id="tab1-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#tab1"
+                        type="button"
+                        role="tab"
+                        aria-controls="tab1"
+                        aria-selected="true"
+                        >
+                        Информация о товарах
+                        </button>
+                    </li>
+
+                    <li class="nav-item" role="presentation">
+                        <button
+                        class="nav-link"
+                        id="tab2-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#tab2"
+                        type="button"
+                        role="tab"
+                        aria-controls="tab2"
+                        aria-selected="false"
+                        >
+                        Детали оплаты
+                        </button>
+                    </li>
+                    </ul>
+
+                    <!-- TAB CONTENT -->
+                    <div class="tab-content border border-top-0 p-3">
+                    <div
+                        class="tab-pane fade show active"
+                        id="tab1"
+                        role="tabpanel"
+                        aria-labelledby="tab1-tab"
+                    >
+                        <div id="manually-order-parts-list">
+                                <div id="manually-order-bar">
+                                    <a href="###" id="add_parts_list_item">Добавить еще товар</a>
+                                    <input type="submit" value="Оформить заказ" class="btn btn-sm btn-success" id="manually-order-submit">
+                                </div>
+                                <div class="manually-order-parts-list-item">
+                                    <div class="manually-order-parts-list-item-header">
+                                        <label class="form-label parts-list-item">Артикул</label>
+                                        <label class="form-label">Бренд</label>
+                                        <label class="form-label">Наименование</label>
+                                        <label class="form-label">Кол-во</label>
+                                        <label class="form-label">С/С</label>
+                                        <label class="form-label">Розница</label>
+                                        <label class="form-label">Поставщик</label>
+                                        <label class="form-label">Доставка</label>
+                                    </div>
+                                    <div class="manually-order-parts-list-item-content">
+                                        <input type="text" class="form-control" name="article" required>
+                                        <input type="text" class="form-control" name="brand" required>
+                                        <input type="text" class="form-control" name="name" required>
+                                        <input type="number" class="form-control manually-order-parts-list-item-qty" name="qty" required> 
+                                        <input type="number" class="form-control manually-order-parts-list-price" name="price" required>
+                                        <input type="number" class="form-control manually-order-parts-list-price-with-margine" name="priceWithMargine" required>
+                                        <select name="from_stock" class="order_product_item_supplier">
+                                            <option disabled selected>Выбери поставщика</option>
+                                            @foreach ($suppliers as $key => $supplier)
+                                                <option value="{{ $supplier['id'] }}:{{ $supplier['code'] }}">{{ $supplier['name'] }}</option>
+                                            @endforeach
+                                        </select>
+                                        <input type="date" class="form-control" name="deliveryTime" value="{{ date('Y-m-d') }}" required>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="manually-order-parts-list-item-content">
-                                <input type="text" class="form-control" name="article" required>
-                                <input type="text" class="form-control" name="brand" required>
-                                <input type="text" class="form-control" name="name" required>
-                                <input type="number" class="form-control manually-order-parts-list-item-qty" name="qty" required> 
-                                <input type="number" class="form-control manually-order-parts-list-price" name="price" required>
-                                <input type="number" class="form-control manually-order-parts-list-price-with-margine" name="priceWithMargine" required>
-                                <select name="from_stock" class="order_product_item_supplier">
-                                    <option disabled selected>Выбери поставщика</option>
-                                    @foreach ($suppliers as $key => $supplier)
-                                        <option value="{{ $key }}">{{ $supplier }}</option>
+                            <div id="manually-order-total">
+                                <div id="manualy-order-total-sum-with-margine" class="manualy-order-total-item">
+                                    Итого розница: <span id="manualy-order-total-sum-with-margine-num" class="manualy-order-total-item-num">0</span>
+                                </div>
+                                <div id="manualy-order-total-prime-cost-sum" class="manualy-order-total-item">
+                                    Итого С/С: <span id="manualy-order-total-prime-cost-sum-inner" class="manualy-order-total-item-num">0</span>
+                                </div>
+                                <div id="manualy-order-total-qty" class="manualy-order-total-item">
+                                    Итого кол-во: <span id="manualy-order-total-qty-inner" class="manualy-order-total-item-num">0</span>
+                                </div>
+                            </div>
+                    </div>
+
+                    <!-- <div
+                        class="tab-pane fade"
+                        id="tab2"
+                        role="tabpanel"
+                        aria-labelledby="tab2-tab"
+                    >
+                        <div id="manualy-order-payment-details">
+                            <div id="manualy-order-payment-details-header">
+                                <label class="form-label">Счет для поступления</label>
+                                <label class="form-label">Дата</label>
+                                <label class="form-label">Сумма</label>
+                                <label class="form-label">Тип транзаакции</label>
+                                <label class="form-label">Комментарии</label>
+                            </div>
+                            <div id="manualy-order-payment-details-body">
+                                <select name="account" id="" class="form-select">
+                                    <option disabled selected>Выбери счет</option>
+                                    @foreach ($accounts as $account)
+                                        <option value="{{ $account['id'] }}">{{ $account['name'] }}</option>
                                     @endforeach
                                 </select>
-                                <input type="date" class="form-control" name="deliveryTime" value="{{ date('Y-m-d') }}" required>
+                                <input type="date" class="form-control" name="date" value="{{ date('Y-m-d') }}" required>
+                                <input type="number" class="form-control" name="amount" min="0" id="manualy-order-payment-details-amount" required>
+                                <select name="type" id="" class="form-control">
+                                    <option value="payment">Оплата</option>
+                                    <option value="refund">Возврат</option>
+                                </select>
+                                <input type="text" class="form-control" name="comments" placeholder="комментарии">
                             </div>
                         </div>
-                    </div>
-                    <div id="manually-order-total">
-                        <div id="manualy-order-total-sum-with-margine" class="manualy-order-total-item">
-                            Итого розница: <span id="manualy-order-total-sum-with-margine-num" class="manualy-order-total-item-num">0</span>
-                        </div>
-                        <div id="manualy-order-total-prime-cost-sum" class="manualy-order-total-item">
-                            Итого С/С: <span id="manualy-order-total-prime-cost-sum-inner" class="manualy-order-total-item-num">0</span>
-                        </div>
-                        <div id="manualy-order-total-qty" class="manualy-order-total-item">
-                            Итого кол-во: <span id="manualy-order-total-qty-inner" class="manualy-order-total-item-num">0</span>
-                        </div>
+                    </div>-->
+
                     </div>
                 </div>
             </div>
@@ -1205,6 +1231,12 @@
                         <button type="submit" class="btn btn-primary">Submit</button>
                     </form>
                 </div>
+            </div>
+            <div id="cashflow_transactions" class="container admin-content-item">
+                список
+            </div>
+            <div id="make_cashflow_transactions" class="container admin-content-item">
+                форма
             </div>
         </div>
     </div>

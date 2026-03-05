@@ -1,4 +1,21 @@
 @media (max-width: 580px) {
+    #popular-categories-container{
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-gap:10px;
+        padding-left: 30px;
+        padding-right: 30px;
+        justify-content: center;
+        justify-items: center;
+    }
+    #pre-footer-contacts{
+      background-color:beige;
+      width:100%;
+      background-color:#f9e09a;
+      border-radius:15px;
+      padding-bottom:10px;
+      padding-top:10px;
+    }
     .alertion-success{
         width: 100%;
         background-color: #d1e7dd;

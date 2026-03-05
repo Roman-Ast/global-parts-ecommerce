@@ -267,17 +267,23 @@
                                         <div id="carouselExampleControls-{{ $crossItem['article'] }}" class="carousel slide carouselExampleControls" data-bs-ride="carousel">
                                         <div class="carousel-inner">
                                             @if (!empty($crossItem['info']['pictures']))
-                                                @foreach($crossItem['info']['pictures'] as $pic_number => $picture_address)
-                                                    @if($pic_number == 0)
-                                                        <div class="carousel-item active">
-                                                            <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
-                                                        </div>
-                                                    @else
-                                                        <div class="carousel-item">
-                                                            <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
-                                                        </div>
-                                                    @endif
-                                                @endforeach
+                                                @if (gettype($crossItem['info']['pictures']) == 'string')
+                                                    <div class="carousel-item active">
+                                                        <img src="{{ $crossItem['info']['pictures'] }}" class="carousel-item-img" alt="sparepart-picture">
+                                                    </div>
+                                                @else
+                                                    @foreach($crossItem['info']['pictures'] as $pic_number => $picture_address)
+                                                        @if($pic_number == 0)
+                                                            <div class="carousel-item active">
+                                                                <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
+                                                            </div>
+                                                        @else
+                                                            <div class="carousel-item">
+                                                                <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
+                                                            </div>
+                                                        @endif
+                                                    @endforeach
+                                                @endif
                                             @endif
                                         </div>
                                         <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls-{{ $crossItem['article'] }}" data-bs-slide="prev">

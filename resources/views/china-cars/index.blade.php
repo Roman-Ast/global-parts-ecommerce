@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Hyundai/Kia')
+@section('title', 'Китайские авто')
 
 @section('content')
 @include('components.header')
@@ -8,99 +8,99 @@
 
 <div id="korean-cars-wrapper" class="container">
     
-    <h3 id="korean-cars-wrapper-header" class="fw-semibold">Автозапчасти Hyundai</h3>
+    <h3 id="korean-cars-wrapper-header" class="fw-semibold">Автозапчасти на Китайские авто</h3>
 
     <div id="korean-cars-container">
-        <a href="hyundai/santafe20-24" class="korean-cars-item">
+        <a href="china/chery-tigo-7-pro" class="korean-cars-item">
             <div class="korean-cars-img-container">
-                <img src="/images/hyundai/santafe2023-red.png" alt="korean-car">
+                <img src="images/chinacars/chery-tiggo7.webp" alt="korean-car">
             </div>
             <div class="korean-cars-item-header">
-                Hyundai Santafe
+                Chery Tiggo 7 Pro
             </div>
             <div class="korean-cars-item-description">
                 
             </div>
         </a>
 
-        <a href="hyundai/sonata19-23" class="korean-cars-item">
+        <a href="china/chery-tigo-2-pro" class="korean-cars-item">
             <div class="korean-cars-img-container">
-                <img src="/images/hyundai/sonata19-23.png" alt="korean-car">
+                <img src="/images/chinacars/Chery_Tiggo_2_Pro.png" alt="korean-car">
             </div>
             <div class="korean-cars-item-header">
-                Hyundai Sonata(`19-`23)
+                Chery Tiggo 2 Pro
             </div>
             <div class="korean-cars-item-description">
                 
             </div>
         </a>
 
-        <a href="hyundai/k520-23" class="korean-cars-item">
+        <a href="china/haval-h-6" class="korean-cars-item">
             <div class="korean-cars-img-container">
-                <img src="/images/hyundai/kiak5-20-23.png" alt="korean-car">
+                <img src="/images/chinacars/haval-h6.webp" alt="korean-car">
             </div>
             <div class="korean-cars-item-header">
-                Kia K5 (`20-`23)
+                Haval H6
             </div>
             <div class="korean-cars-item-description">
                 
             </div>
         </a>
 
-        <a href="/hyundai/sportage21-25" class="korean-cars-item">
+        <a href="china/haval-m6" class="korean-cars-item">
             <div class="korean-cars-img-container">
-                <img src="/images/hyundai/sportage23.png" alt="korean-car">
+                <img src="/images/chinacars/haval-m6.jpg" alt="korean-car">
             </div>
             <div class="korean-cars-item-header">
-                Kia Sportage
+                Haval M6
             </div>
             <div class="korean-cars-item-description">
                 
             </div>
         </a>
 
-        <a href="" class="korean-cars-item">
+        <a href="china/geely-coolray" class="korean-cars-item">
             <div class="korean-cars-img-container">
-                <img src="/images/hyundai/tucson-newred.png" alt="korean-car">
+                <img src="/images/chinacars/coolray-red.webp" alt="korean-car">
             </div>
             <div class="korean-cars-item-header">
-                Hyundai Tucson
+                Geely Coolray
             </div>
             <div class="korean-cars-item-description">
                 
             </div>
         </a>
 
-        <a href="" class="korean-cars-item">
+        <a href="china/jetour-x-90-plus" class="korean-cars-item">
             <div class="korean-cars-img-container">
-                <img src="/images/hyundai/sonata-new.png" alt="korean-car">
+                <img src="/images/chinacars/jetour-x90plus.png" alt="jetour-x90plus">
             </div>
             <div class="korean-cars-item-header">
-                Hyundai Sonata
+                Jetour X 90 Plus
             </div>
             <div class="korean-cars-item-description">
                 
             </div>
         </a>
 
-        <a href="" class="korean-cars-item">
+        <a href="china/geely-atlas" class="korean-cars-item">
             <div class="korean-cars-img-container">
-                <img src="/images/hyundai/elantra-new.png" alt="korean-car">
+                <img src="/images/chinacars/geely-atlas.webp" alt="Geely Atlas">
             </div>
             <div class="korean-cars-item-header">
-                Hyundai Elantra
+                Geely Atlas
             </div>
             <div class="korean-cars-item-description">
                 
             </div>
         </a>
 
-        <a href="" class="korean-cars-item">
+        <a href="china/tank-300" class="korean-cars-item">
             <div class="korean-cars-img-container">
-                <img src="/images/hyundai/seltos-new.png" alt="korean-car">
+                <img src="/images/chinacars/tank-300.png" alt="tank-300">
             </div>
             <div class="korean-cars-item-header">
-                Kia Seltos
+                Tank 300
             </div>
             <div class="korean-cars-item-description">
                 

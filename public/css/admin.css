@@ -264,17 +264,20 @@
     display: flex;
     justify-content: space-between;
 }
-#manually-order-parts-list{
-    width: 95%;
-    
-    position: relative;
+#manually-order-main{
+    width: 50%;
+    margin-bottom: 20px;
 }
 #manually-order-parts-list{
+    width: 95%;
+    padding: 5px;
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: stretch;
 }
+
 .manually-order-parts-list-item{
     display: flex;
     flex-direction: column;
@@ -299,9 +302,28 @@
     align-items: center;
     margin-bottom: 10px;
 }
-#manually-order-main{
-    width: 50%;
+#manualy-order-payment-details{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    width: 100%;
+    padding: 10px;
 }
+#manualy-order-payment-details-header{
+    display: grid;
+    grid-template-columns: 20% 20% 20% 20% 20%;
+    grid-template-rows: 1fr;
+    column-gap: 10px;
+
+}
+#manualy-order-payment-details-body{
+    display: grid;
+    grid-template-columns: 20% 20% 20% 20% 20%;
+    grid-template-rows: 1fr;
+    column-gap: 10px;
+}
+
 .alert{
     display: none;
 }

@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AdminPanel;
+use App\Models\Suppliers;
+use App\Models\Accounts;
 use App\Models\Order;
 use App\Models\OrderProduct;
+use App\Models\OrderPayment;
+use App\Models\CashflowTransactions;
 use App\Models\Payment;
 use App\Models\Setlement;
 use App\Models\SupplierSettlement;
@@ -59,7 +63,7 @@ class AdminPanelController extends Controller
 
 		$orders = Order::whereBetween('date', [$start, $end])->orderBy('date', 'desc')->get();
         $user = auth()->user();
-        $settlements = Setlement::all();
+        //$settlements = Setlement::all();
         $users = User::all();
         $payments = Payment::all();
         $sumOrders = $user->orders->sum('sum');
@@ -115,34 +119,9 @@ class AdminPanelController extends Controller
             'arrived_at_the_point_of_delivery' => "поступило в ПВЗ", 'issued' => "выдано", 'returned' => 'возвращено'
         ];
 
-        $suppliers = [
-            'shtm' => 'Шатэ-М',
-            'rssk' => 'Росско',
-            'trd' => 'Автотрейд',
-            'tss' => 'Тисс',
-            'rmtk' => 'Армтек',
-            'phtn' => 'Фаэтон',
-            'atptr' => 'Автопитер',
-            'avtozakup' => 'Автозакуп',
-            'emex' => 'emex',
-            'rlm' => 'Рулим',
-            'radle' => 'Radle', 
-            'fbst' => 'Фебест',
-            'Krn_tnt' => 'Корея Танат',
-            'kln' => 'Кулан',
-            'frmt' => 'Форумавто',
-            'china_ata' => 'Китайцы Алматы',
-            'china_igor' => 'Китай Игорь',
-            'voltag_ast' => 'Вольтаж Астана',
-            'kz_starter' => 'КЗ стартер',
-            'cc_motors_talgat' => 'СС моторс Талгат',
-            'gerat_ast' => 'Герат Астана',
-            'kainar_razbor_tima' => 'Кайнар Тима',
-            'zakaz_auto' => 'заказ авто',
-            'kap' => 'Кореан Автопартс',
-            'alem_auto' => 'Алемавто',
-            'thr' => 'Сторонние'
-        ];
+        $suppliers = Suppliers::all()->toArray();
+        $accounts = Accounts::all()->toArray();
+        //dd($accounts);
 
         $today = Carbon::today();
         $startPeriod = Carbon::create(2025, 4, 8); // начало учётного периода
@@ -285,7 +264,6 @@ class AdminPanelController extends Controller
     
         return view('admin/index', [
             'orders' => $orders,
-            'settlements' => $settlements,
             'users' => $users,
             'payments' => $payments,
             'statuses' => $statuses,
@@ -317,6 +295,7 @@ class AdminPanelController extends Controller
             'totalItemsSoldFromBegin' => $totalItemsSoldFromBegin,
             'kaspiComissionFromBegin' => $kaspiComissionFromBegin,
             'marginClearFromBegin' => $marginClearFromBegin,
+            'accounts' => $accounts,
         ]);
     }
 
@@ -499,8 +478,36 @@ class AdminPanelController extends Controller
             'customer_phone' => $request->data['orderInfo'][2],
             'sale_channel' => $request->data['orderInfo'][3]
         ]);
+
+        $order_payment = OrderPayment::create([
+            'order_id' => $order->id,
+            'account_id' => $request->data['paymentInfo'][0],
+            'paid_at' => $request->data['paymentInfo'][1],
+            'amount' => $request->data['paymentInfo'][2],
+            'type' => $request->data['paymentInfo'][3],
+            'comment' => $request->data['paymentInfo'][4],
+        ]);
         
+        $cashflowTransaction = CashflowTransactions::create([
+            'txn_at' => $order_payment->paid_at, // дата фактической оплаты
+            'direction' => 'in',
+            'cashflow_category_id' => 1, // например: "Оплата от клиента"
+            'expense_category_id' => null,
+            'supplier_id' => null,
+            'user_id' => auth()->id(),
+            'account_id' => $order_payment->account_id,
+            'amount' => $order_payment->amount,
+            'category' => 'sale', // если оставляешь строки (лучше автозаполнять)
+            'subcategory' => 'Оплата по заказу',
+            'counterparty' => $order->customer_phone ?? null,
+            'related_table' => 'orders',
+            'related_id' => $order->id,
+            'comment' => 'Оплата по заказу №' . $order->id,
+        ]);
+
         foreach ($request->data['products'] as $product) {
+            [$supplierId, $supplierCode] = preg_split('/\s*:\s*/', $product[6]);
+
             $orderProduct = OrderProduct::create([
                 'order_id' => $order->id,
                 'article' => $product[0],
@@ -512,14 +519,15 @@ class AdminPanelController extends Controller
                 'item_sum' => $product[4] * $product[3],
                 'itemSumWithMargine' => $product[5] * $product[3],
                 'searched_number' => '',
-                'fromStock' => $product[6],
+                'fromStock' => $supplierCode,
                 'deliveryTime' => $product[7],
                 'status' => 'payment_waiting'
             ]);
             $supplier_settlement = SupplierSettlement::create([
                 'order_id' => $order->id,
                 'product_id' => $orderProduct->id,
-                'supplier' => $product[6],
+                'supplier' => $supplierCode,
+                'supplier_id' => (int) $supplierId,
                 'sum' => -($product[4] * $product[3]),
                 'date' => $request->data['orderInfo'][1],
                 'operation' => 'realization'
