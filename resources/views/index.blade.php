@@ -149,7 +149,7 @@
                                 Подберём нужное для вашего авто в 1 клик — напишите нам в чат
                             </div>
 
-                            <a href="https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта!" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
+                            <a href="" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
                                 Подобрать запчасть в WhatsApp
                             </a>
 
@@ -200,7 +200,7 @@
                                 </div>
 
                                 <div class="d-flex flex-column flex-sm-row gap-2 mt-3">
-                                    <a href="https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта!" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
+                                    <a href="" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
                                         Купить по WhatsApp
                                     </a>
                                     <a href="#" class="btn btn-outline-secondary btn-lg flex-fill">
