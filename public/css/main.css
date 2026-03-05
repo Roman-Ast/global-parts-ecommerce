@@ -3,7 +3,6 @@ body{
     padding: 0;
     margin: 0;
 }
-
 a{
     text-decoration: none;
 }
@@ -74,7 +73,7 @@ ul{
 #social-media-container{
   position: fixed;
   bottom: 80px;
-  right: 20px;
+  left: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;

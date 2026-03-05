@@ -155,7 +155,7 @@
 
                             <div class="mt-4 gp-muted">
                                 У нас собраны запчасти для самых популярных марок автомобилей — оригиналы и проверенные аналоги. <br> 
-                                <span class="fw-semibold fs-5">Более 30 складов В КЗ, ближнем и дальнем зарубежье </span><img src="images/warehouse-48.png" alt="spareparts"> <br>
+                                <span class="fw-semibold fs-5">Более 30 складов </span><img src="images/warehouse-48.png" alt="spareparts"> <br>
                                 <span class="fw-semibold fs-5">Более 100 000 запчастей</span> <img src="images/piston-48.png" alt="spareparts">
                             </div>
                         </div>
@@ -217,8 +217,40 @@
             </div>
         </section>
 
+        {{-- 3 шага для заказа--}}
+        <section class="steps-section py-5 mt-5" style="background-color:#f5f8fa">
+          <div class="container">
+            <h2 class="text-center fw-bold mb-4">Как заказать запчасти — всего 3 шага</h2>
+
+            <div class="row text-center gy-4">
+              <div class="col-md-4">
+                <div class="p-4 border rounded-4 shadow-sm h-100">
+                  <div class="fs-1 mb-3 text-primary">📸</div>
+                  <h5 class="fw-semibold">1. Присылаете VIN или фото техпаспорта - 30 секунд</h5>
+                  <p class="text-muted mb-0">Отправляйте в WhatsApp или через форму на сайте</p>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="p-4 border rounded-4 shadow-sm h-100">
+                  <div class="fs-1 mb-3 text-success">🔍</div>
+                  <h5 class="fw-semibold">2. Мы подбираем нужные детали - 5-10 минут</h5>
+                  <p class="text-muted mb-0">Высылаем фото, цену и срок доставки</p>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="p-4 border rounded-4 shadow-sm h-100">
+                  <div class="fs-1 mb-3 text-danger">📦</div>
+                  <h5 class="fw-semibold">3. Отправляем в ваш город 1-3 дня</h5>
+                  <p class="text-muted mb-0">Доставка по РК или самовывоз в Астане</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
         {{-- Почему выбирают нас--}}
-        <section class="why-us-section py-5 bg-white mt-5">
+        <section class="why-us-section py-5 bg-white mt-3">
             <div class="container">
               <h2 class="text-center fw-bold mb-4">Почему нас выбирают более 1000 покупателей по Казахстану</h2>
 
@@ -285,41 +317,9 @@
               </div>
             </div>
         </section>
-        
-        {{-- 3 шага для заказа--}}
-        <section class="steps-section py-5 bg-white mt-5">
-          <div class="container">
-            <h2 class="text-center fw-bold mb-4">Как заказать запчасти — всего 3 шага</h2>
 
-            <div class="row text-center gy-4">
-              <div class="col-md-4">
-                <div class="p-4 border rounded-4 shadow-sm h-100">
-                  <div class="fs-1 mb-3 text-primary">📸</div>
-                  <h5 class="fw-semibold">1. Присылаете VIN или фото техпаспорта - 30 секунд</h5>
-                  <p class="text-muted mb-0">Отправляйте в WhatsApp или через форму на сайте</p>
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="p-4 border rounded-4 shadow-sm h-100">
-                  <div class="fs-1 mb-3 text-success">🔍</div>
-                  <h5 class="fw-semibold">2. Мы подбираем нужные детали - 5-10 минут</h5>
-                  <p class="text-muted mb-0">Высылаем фото, цену и срок доставки</p>
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="p-4 border rounded-4 shadow-sm h-100">
-                  <div class="fs-1 mb-3 text-danger">📦</div>
-                  <h5 class="fw-semibold">3. Отправляем в ваш город 1-3 дня</h5>
-                  <p class="text-muted mb-0">Доставка по РК или самовывоз в Астане</p>
-                </div>
-              </div>
-            </div>
-          </div>
-      </section>
         {{-- Форма подбора по винкоду--}}
-        <section class="cta-form-section py-5 bg-light mt-5" id="vin-form">
+        <section class="cta-form-section py-5 bg-light mt-3" id="vin-form">
             <div class="container">
               <div class="text-center mb-4">
                 <h2 class="fw-bold">Не знаете номер детали?</h2>
