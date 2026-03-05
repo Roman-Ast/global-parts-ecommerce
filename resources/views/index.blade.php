@@ -25,19 +25,19 @@
         <section class="gp-hero shadow-sm">
 
             <h1 class="gp-h1 fw-bold mb-4" style="text-align:center">
-                Запчасти для авто с доставкой по Казахстану 
+                Подбор автозапчастей по VIN за 5 минут. Оригиналы и аналоги с доставкой по Казахстану 
                 
             </h1>
 
             <p class="gp-muted mb-4" style="text-align:center">
-                Быстрый подбор по VIN. Оригиналы и аналоги — в наличии или с доставкой по РК.
+                Подберём нужную деталь и покажем цену и срок доставки.
             </p>
 
             <div class="d-flex flex-row justify-content-center align-items-center gap-2 mb-3 col-12 align-items-stretch" >
-                <a href="#vin-form" class="btn btn-success btn-lg px-4" id="scroll-to-form">Подобрать по VIN</a>
+                <a href="#vin-form" class="btn btn-success btn-lg px-4" id="scroll-to-form">Подобрать запчасть по VIN</a>
 
                 <a href="#" class="btn btn-outline-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
-                    Написать в WhatsApp
+                    Получить подбор в WhatsApp
                 </a>
             </div>
 
@@ -150,11 +150,13 @@
                             </div>
 
                             <a href="#" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
-                                Подобрать запчасть в WhatsApp
+                                Получить подбор в WhatsApp за 5 минут
                             </a>
 
                             <div class="mt-4 gp-muted">
-                                У нас собраны запчасти для самых популярных марок автомобилей — оригиналы и проверенные аналоги. Поможем быстро подобрать нужную деталь и оформить заказ. Доставка по Астане и отправка по всему Казахстану удобными транспортными службами. <img src="images/icons8-delivery-36.png" alt="red-car">
+                                У нас собраны запчасти для самых популярных марок автомобилей — оригиналы и проверенные аналоги. <br> 
+                                <span class="fw-semibold fs-5">Более 30 складов В КЗ, ближнем и дальнем зарубежье </span><img src="images/warehouse-48.png" alt="spareparts"> <br>
+                                <span class="fw-semibold fs-5">Более 100 000 запчастей</span> <img src="images/piston-48.png" alt="spareparts">
                             </div>
                         </div>
                     </div>
@@ -173,7 +175,7 @@
                                                 <div class="fw-bold">{{ $r['author'] }}</div>
                                                 <div class="small gp-muted">
                                                 {{ $r['date'] ?? '' }}
-                                                <a href="{{ $r['src'] }}" target="_blank"><i>смотреть отзыв</i></a>
+                                                <a href="{{ $r['src'] }}" target="_blank"><i>смотреть в 2GIS</i></a>
                                               </div>
                                                 
                                             </div>
@@ -284,6 +286,38 @@
             </div>
         </section>
         
+        {{-- 3 шага для заказа--}}
+        <section class="steps-section py-5 bg-white mt-5">
+          <div class="container">
+            <h2 class="text-center fw-bold mb-4">Как заказать запчасти — всего 3 шага</h2>
+
+            <div class="row text-center gy-4">
+              <div class="col-md-4">
+                <div class="p-4 border rounded-4 shadow-sm h-100">
+                  <div class="fs-1 mb-3 text-primary">📸</div>
+                  <h5 class="fw-semibold">1. Присылаете VIN или фото техпаспорта - 30 секунд</h5>
+                  <p class="text-muted mb-0">Отправляйте в WhatsApp или через форму на сайте</p>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="p-4 border rounded-4 shadow-sm h-100">
+                  <div class="fs-1 mb-3 text-success">🔍</div>
+                  <h5 class="fw-semibold">2. Мы подбираем нужные детали - 5-10 минут</h5>
+                  <p class="text-muted mb-0">Высылаем фото, цену и срок доставки</p>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="p-4 border rounded-4 shadow-sm h-100">
+                  <div class="fs-1 mb-3 text-danger">📦</div>
+                  <h5 class="fw-semibold">3. Отправляем в ваш город 1-3 дня</h5>
+                  <p class="text-muted mb-0">Доставка по РК или самовывоз в Астане</p>
+                </div>
+              </div>
+            </div>
+          </div>
+      </section>
         {{-- Форма подбора по винкоду--}}
         <section class="cta-form-section py-5 bg-light mt-5" id="vin-form">
             <div class="container">
