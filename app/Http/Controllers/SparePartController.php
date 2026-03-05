@@ -264,7 +264,7 @@ class SparePartController extends Controller
 
         $finalArrEmpty = false;
 
-        foreach ($this->finalArr as $stock => $spareParts) {
+        /*foreach ($this->finalArr as $stock => $spareParts) {
             if (gettype($spareParts) == 'array') {
                 if (!empty($spareParts)) {
                     break;
@@ -272,7 +272,7 @@ class SparePartController extends Controller
                     $finalArrEmpty = true;
                 }
             }
-        }
+        }*/
         if ($finalArrEmpty) {
             return view('components.notFoundStub', [
                 'article' => $this->finalArr['originNumber']
@@ -1596,7 +1596,7 @@ class SparePartController extends Controller
                 if (strtolower($cross_number) == strtolower($partnumber) || strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
                     if (strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
                         array_push($this->finalArr['brands'], $item->vendor);
-                        dd($item);
+                        //dd($item);
                         array_push($this->finalArr['searchedNumber'], [
                             'brand' => $item->vendor,
                             'article' => $item->vendorCode,
@@ -1608,6 +1608,23 @@ class SparePartController extends Controller
                             'supplier_city' => 'Астана',
                             'supplier_color' => '#7bafcf',
                             'deliveryStart' => '1.5-2 часа',
+                            'info' => [
+                                'pictures' => $item->picture ?? '',
+                                'params' => count($item->param) <=3 ? [] : [
+                                    'OEM' => explode(',', $item->param[3]),
+                                    'suitable_to' => '',
+                                    'tech_info' => '',
+                                    'sizes' => count($item->param) > 4 ?[
+                                        'width' => $item->param[6],
+                                        'height' => $item->param[5],
+                                        'depth' => $item->param[4]
+                                    ] : [
+                                        'width' => 'нет информации',
+                                        'height' => 'нет информации',
+                                        'depth' => 'нет информации'
+                                    ]
+                                ],
+                            ],
                         ]);
                     } else {
                         array_push($this->finalArr['brands'], $item->vendor);
@@ -1621,8 +1638,8 @@ class SparePartController extends Controller
                             'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
                             'delivery_time' => "1.5-2 часа",
                             'info' => [
-                                'pictures' => $item->picture,
-                                'params' => [
+                                'pictures' => $item->picture ?? 0,
+                                'params' => count($item->param) <=3 ? [] : [
                                     'OEM' => explode(',', $item->param[3]),
                                     'suitable_to' => '',
                                     'tech_info' => '',

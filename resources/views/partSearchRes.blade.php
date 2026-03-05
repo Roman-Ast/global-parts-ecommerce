@@ -343,18 +343,21 @@
                                                 <li>
                                                     <b>Размеры</b>
                                                 </li>
-                                                <li>Ширина: {{ $crossItem['info']['params']['sizes']['width'] }}</li>
-                                                <li>Высота: {{ $crossItem['info']['params']['sizes']['height'] }}</li>
-                                                <li>Толщина: {{ $crossItem['info']['params']['sizes']['depth'] }}</li>
+                                                <li>Ширина: {{ $crossItem['info']['params']['sizes']['width'] ?? '' }}</li>
+                                                <li>Высота: {{ $crossItem['info']['params']['sizes']['height'] ?? '' }}</li>
+                                                <li>Толщина: {{ $crossItem['info']['params']['sizes']['depth'] ?? ''}}</li>
                                             </ul>
                                         </div>
 
                                         <div class="tab-pane fade info-oem-numbers"
                                             id="original-{{ $crossItem['article'] }}"
                                             role="tabpanel">
-                                                @foreach($crossItem['info']['params']['OEM'] as $oem_number)
-                                                    {{ $oem_number }}
-                                                @endforeach
+                                                @if (array_key_exists('OEM', $crossItem['info']['params']))
+                                                    @foreach($crossItem['info']['params']['OEM'] as $oem_number)
+                                                        {{ $oem_number }}
+                                                    @endforeach
+                                                @endif
+                                                
                                         </div>
 
                                         <div class="tab-pane fade"

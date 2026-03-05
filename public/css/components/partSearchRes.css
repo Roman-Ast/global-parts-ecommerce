@@ -19,7 +19,7 @@
     }
     .info-block{
         width: 60%;
-        position: absolute;
+        position: fixed;
         top: 4vh;
         left: 20vw;
         border: 1px solid #ddd;

@@ -119,8 +119,10 @@ class AdminPanelController extends Controller
             'arrived_at_the_point_of_delivery' => "поступило в ПВЗ", 'issued' => "выдано", 'returned' => 'возвращено'
         ];
 
-        $suppliers = Suppliers::all()->toArray();
-        $accounts = Accounts::all()->toArray();
+        /*$suppliers = Suppliers::all()->toArray();
+        $accounts = Accounts::all()->toArray();*/
+        $suppliers = [];
+        $accounts = [];
         //dd($accounts);
 
         $today = Carbon::today();
