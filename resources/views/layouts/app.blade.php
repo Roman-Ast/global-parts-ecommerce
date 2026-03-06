@@ -40,14 +40,19 @@
         <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    
-        <!-- Styles -->
-        <style>
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
 
-        </style>
+            gtag('config', 'AW-16870370925');
+        </script>
         
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
+    
     <body>
 
         @yield('content')
