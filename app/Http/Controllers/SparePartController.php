@@ -298,7 +298,7 @@ class SparePartController extends Controller
             'Brand' => $brand,
             'Sources[]' => '1',
             'UserGuid' => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
-            'ApiKey' => 'LnxrDfpQVZz1ncuoI14e',
+            'ApiKey' => '0UKIrpU3W3AnAfDf97Nr',
             'includeAnalogs' => 'true'
         ];
 
@@ -313,7 +313,7 @@ class SparePartController extends Controller
         } catch (\Throwable $th) {
             return;
         }
-
+        //dd($response);
         if (!$response || $response->IsError) {
             return;
         }
