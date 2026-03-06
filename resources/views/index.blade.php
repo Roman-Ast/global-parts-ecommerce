@@ -34,10 +34,10 @@
             </p>
 
             <div class="d-flex flex-row justify-content-center align-items-center gap-2 mb-3 col-12 align-items-stretch" >
-                <a href="#vin-form" class="btn btn-success btn-lg px-4" id="scroll-to-form">Подобрать запчасть по VIN</a>
+                <a href="#vin-form" class="btn btn-success btn-lg px-4" id="scroll-to-form">Подобрать по VIN</a>
 
                 <a href="#" class="btn btn-outline-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
-                    Получить подбор в WhatsApp
+                    Подбор в WhatsApp
                 </a>
             </div>
 
@@ -84,7 +84,7 @@
                 <div class="popular-categories-img">
                   <img src="images/popular-categories/chasis.png" alt="chasis" class="popular-categories-img">
                 </div>
-                <div class="popular-categories-name text-dark">
+                <div class="popular-categories-name text-dark text-center">
                   Ходовая часть
                 </div>
               </div>
@@ -93,7 +93,7 @@
                 <div class="popular-categories-img">
                   <img src="images/popular-categories/brakes.png" alt="brakes" class="popular-categories-img">
                 </div>
-                <div class="popular-categories-name text-dark">
+                <div class="popular-categories-name text-dark text-center">
                   Тормозная система
                 </div>
               </div>
@@ -102,7 +102,7 @@
                 <div class="popular-categories-img">
                   <img src="images/popular-categories/body.png" alt="body" class="popular-categories-img">
                 </div>
-                <div class="popular-categories-name text-dark">
+                <div class="popular-categories-name text-dark text-center">
                   Кузовные детали
                 </div>
               </div>
@@ -111,7 +111,7 @@
                 <div class="popular-categories-img">
                   <img src="images/popular-categories/engine.png" alt="engine" class="popular-categories-img">
                 </div>
-                <div class="popular-categories-name text-dark">
+                <div class="popular-categories-name text-dark text-center">
                   Детали ДВС
                 </div>
               </div>
@@ -120,8 +120,17 @@
                 <div class="popular-categories-img">
                   <img src="images/popular-categories/electricparts.png" alt="electricparts" class="popular-categories-img">
                 </div>
-                <div class="popular-categories-name text-dark">
+                <div class="popular-categories-name text-dark text-center">
                   Электрика
+                </div>
+              </div>
+
+              <div class="popular-categories-item shadow-sm">
+                <div class="popular-categories-img">
+                  <img src="images/popular-categories/add-tools.png" alt="electricparts" class="popular-categories-img">
+                </div>
+                <div class="popular-categories-name text-dark text-center">
+                  Доп. оборудование
                 </div>
               </div>
 
@@ -150,20 +159,23 @@
                             </div>
 
                             <a href="#" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
-                                Получить подбор в WhatsApp за 5 минут
+                                Получить подбор в WhatsApp
                             </a>
 
                             <div class="mt-4 gp-muted">
                                 У нас собраны запчасти для самых популярных марок автомобилей — оригиналы и проверенные аналоги. <br> 
-                                <span class="fw-semibold fs-5">Более 30 складов </span><img src="images/warehouse-48.png" alt="spareparts"> <br>
-                                <span class="fw-semibold fs-5">Более 100 000 запчастей</span> <img src="images/piston-48.png" alt="spareparts">
+                                <span class="fw-semibold fs-5 mt-2">Более 50 складов </span> <br>
+                                <span class="fw-semibold fs-5 mt-2">Более 100 000 запчастей</span> 
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {{-- Справа: карточки отзывов + "Нашли дешевле" --}}
-                <div class="col-12 col-lg-6">
+                <div class="col-12 col-lg-6" id="reviews-card-container">
+                  <div id="review-card-header">
+                    <img src="images/2gis-logo.png" style="width:36px" class="mb-3"> 4.8 ★ рейтинг в 2ГИС • 68 оценок
+                  </div>
                     <div class="row g-3">
                         @foreach($reviews as $r)
                             <div class="col-12">
@@ -205,7 +217,7 @@
                                     <a href="#" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
                                         Купить по WhatsApp
                                     </a>
-                                    <a href="#" class="btn btn-outline-secondary btn-lg flex-fill">
+                                    <a href="tel:+77087172549" class="btn btn-outline-secondary btn-lg flex-fill">
                                         Позвонить
                                     </a>
                                 </div>

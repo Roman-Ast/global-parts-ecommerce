@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
+        <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-16870370925');
+</script>
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -40,21 +49,9 @@
         <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-        <!-- Google tag (gtag.js) -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-
-            gtag('config', 'AW-16870370925');
-        </script>
-        
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
-    
     <body>
-
         @yield('content')
         <div id="shadow" class="position-fixed">
             <div class="d-flex justify-content-center">
@@ -142,7 +139,7 @@
             </div>
         </div>
     </div>
-        <div id="social-media-container">
+    <div id="social-media-container">
             <a href="https://www.instagram.com/global_parts_astana?igsh=Yjg2ZXphN2Rkb2E2" target="_blank" class="social-media-links">
                 <img src="/images/color-instagram-48.png" alt="instagram">
             </a>
@@ -161,11 +158,17 @@
                 <div class="pulse-ring"></div>
                 <i class="bi bi-whatsapp"></i>
             </a>
-        </div>
-        
-    
-        
-    
+    </div>
+
+    <div id="social-media-container-open">
+        <img src="images/arrow-down-blue.png" id="social-media-container-close">
+        <a href="#"
+            class="whatsapp-fixed-btn-only-to-open-block"
+            aria-label="Написать в WhatsApp">
+            <div class="pulse-ring"></div>
+            <i class="bi bi-whatsapp"></i>
+        </a>
+    </div>
     
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
         <script src="{{ URL::asset('js/jquery.min.js') }}"></script>
