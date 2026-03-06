@@ -119,10 +119,10 @@ class AdminPanelController extends Controller
             'arrived_at_the_point_of_delivery' => "поступило в ПВЗ", 'issued' => "выдано", 'returned' => 'возвращено'
         ];
 
-        /*$suppliers = Suppliers::all()->toArray();
-        $accounts = Accounts::all()->toArray();*/
-        $suppliers = [];
-        $accounts = [];
+        $suppliers = Suppliers::all()->toArray();
+        $accounts = Accounts::all()->toArray();
+        //$suppliers = [];
+        //$accounts = [];
         //dd($accounts);
 
         $today = Carbon::today();
@@ -481,7 +481,7 @@ class AdminPanelController extends Controller
             'sale_channel' => $request->data['orderInfo'][3]
         ]);
 
-        $order_payment = OrderPayment::create([
+        /*$order_payment = OrderPayment::create([
             'order_id' => $order->id,
             'account_id' => $request->data['paymentInfo'][0],
             'paid_at' => $request->data['paymentInfo'][1],
@@ -505,7 +505,7 @@ class AdminPanelController extends Controller
             'related_table' => 'orders',
             'related_id' => $order->id,
             'comment' => 'Оплата по заказу №' . $order->id,
-        ]);
+        ]);*/
 
         foreach ($request->data['products'] as $product) {
             [$supplierId, $supplierCode] = preg_split('/\s*:\s*/', $product[6]);
