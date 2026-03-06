@@ -15,6 +15,8 @@ class HomeController extends Controller
             ->limit(4)
             ->get();
 
-        Route::get('/', [HomeController::class, 'index']);
+        return view('index', [
+            'reviews' => $reviews
+        ]);
     }
 }
