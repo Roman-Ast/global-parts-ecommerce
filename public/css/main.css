@@ -40,6 +40,7 @@ ul{
         display: flex;
         flex-direction: column;
         padding: 0;
+        border: 1px solid red;
     }
     #modal-qr{
         width: 300px;
@@ -71,7 +72,7 @@ ul{
 #social-media-container{
   position: fixed;
   bottom: 160px;
-  left: 10px;
+  right: 10px;
   display: none;
   flex-direction: column;
   justify-content: space-between;
@@ -79,7 +80,7 @@ ul{
 }
 #social-media-container-open{
   position: fixed;
-  left: 10px;
+  right: 10px;
   bottom: 90px;
   display: flex;
   flex-direction: column;
@@ -89,7 +90,7 @@ ul{
 #social-media-container-close{
   display: none;
   position: absolute;
-  left: 20;
+  right: 10;
   bottom: 20;
 }
 .social-media-links{

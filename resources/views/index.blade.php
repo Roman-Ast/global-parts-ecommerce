@@ -174,7 +174,7 @@
                 {{-- Справа: карточки отзывов + "Нашли дешевле" --}}
                 <div class="col-12 col-lg-6" id="reviews-card-container">
                   <div id="review-card-header">
-                    <img src="images/2gis-logo.png" style="width:36px" class="mb-3"> 4.8 ★ рейтинг в 2ГИС • 68 оценок
+                    <img src="images/2gis-logo.png" style="width:36px" class="mb-3"> 4.8 ★ в 2ГИС • 68 оценок
                   </div>
                     <div class="row g-3">
                         @foreach($reviews as $r)
