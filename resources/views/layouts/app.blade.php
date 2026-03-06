@@ -162,12 +162,12 @@
 
     <div id="social-media-container-open">
         <img src="images/arrow-down-blue.png" id="social-media-container-close">
-        <a href="#"
+        <div
             class="whatsapp-fixed-btn-only-to-open-block"
             aria-label="Написать в WhatsApp">
             <div class="pulse-ring"></div>
             <i class="bi bi-whatsapp"></i>
-        </a>
+        </div>
     </div>
     
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>

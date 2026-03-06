@@ -59,8 +59,8 @@ $(window).on('load', function () {
 $('.whatsapp-fixed-btn-only-to-open-block').on('click', function () {
    $('#social-media-container').slideDown(300)
       .css({'display': 'flex'});
-   $(this).fadeOut(400);
-   $('#social-media-container-close').fadeIn(450).css({'right':10, 'bottom': 20});
+   $(this).fadeOut(200);
+   $('#social-media-container-close').fadeIn(500).css({'right':10, 'bottom': 20});
 });
 //закрытие блока соцсетей и контактов
 $('#social-media-container-close').on('click', function () {
