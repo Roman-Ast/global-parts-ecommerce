@@ -8,35 +8,36 @@
         top: 0;
         left: 0;
         background-color: white;
+        height: 120px;
         z-index: 1;
-        border-bottom: 1px solid #ccc;
+        border-bottom: 4px solid #d8e6eb;
     }
     #search-btn{
         background-color: #fff;
         border: none !important;
-    }
-    #search-btn{
-        border: 1px solid #aaa;
+        box-shadow: 2px 2px 2px #d8e6eb;
     }
     #search-bar-container{
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        height: 80px;
+        height: 100px;
         width: 100%;
     }
     #input-searchbtn-wrapper{
         display: flex;
         flex-direction: row;
+        align-items: stretch;
         width: 96%;
         margin-bottom: 5px;
     }
     #search-button-container{
         display: flex;
         justify-content: center;
-        align-items: center;
+        align-items: stretch;
         margin-right: 5px;
+        box-shadow: 2px 2px 2px #d8e6eb;
     }
     #three-dots-wrapper{
         display: flex;
