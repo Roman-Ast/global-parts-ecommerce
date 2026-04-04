@@ -41,19 +41,17 @@ Route::get('/test-host-error', function () {
     return view('components.hostError');
 });
 
-Route::get('/', [HomeController::class, 'index']);
-Route::get('/home', [HomeController::class, 'index'])->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::redirect('/home', '/', 301);
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);
 Route::post('/getPart/', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
-Route::get('/cart', [CartController::class, 'index']);
-Route::post('/cart/add', [CartController::class, 'store']);
-Route::post('/cart/delete', [CartController::class, 'deleteItem']);
-Route::post('/cart/update', [CartController::class, 'update']);
-Route::get('cart/clear', [CartController::class, 'clear']);
-Route::get('/cart', [CartController::class, 'index']);
-Route::post('/cart/delete', [CartController::class, 'deleteItem']);
-Route::post('/cart/update', [CartController::class, 'update']);
-Route::get('cart/clear', [CartController::class, 'clear']);
+
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/add', [CartController::class, 'store'])->name('cart.add');
+Route::post('/cart/delete', [CartController::class, 'deleteItem'])->name('cart.delete');
+Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::get('cart/clear', [CartController::class, 'clear'])->name('cart.clear');
+
 Route::post('/sparepart-request', [SparePartRequestController::class, 'store']);
 Route::post('/simpleAISearchWithoutVin', [AISimpleSearchController::class, 'searchArticlesByGPT']);
 Route::post('/simpleAIVinSearch', [AISimpleSearchController::class, 'searchArticlesByGPTWithVin']);

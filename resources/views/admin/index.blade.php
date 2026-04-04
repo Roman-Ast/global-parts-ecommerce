@@ -1523,7 +1523,7 @@
                         </button>
                     </li>
 
-                    <li class="nav-item" role="presentation">
+                    <!--<li class="nav-item" role="presentation">
                         <button
                         class="nav-link"
                         id="tab2-tab"
@@ -1536,7 +1536,7 @@
                         >
                         Детали оплаты
                         </button>
-                    </li>
+                    </li>-->
                     </ul>
 
                     <!-- TAB CONTENT -->

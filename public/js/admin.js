@@ -340,7 +340,7 @@ $('#manually-order-submit').on('click', function () {
         }
     });
 
-   $('#manualy-order-payment-details-body').children().each(function (productId, elem) {
+   /*$('#manualy-order-payment-details-body').children().each(function (productId, elem) {
         if (!$(elem).val()) { 
             if ($(elem).attr('name') == 'comments') {
                 return true;    
@@ -349,7 +349,7 @@ $('#manually-order-submit').on('click', function () {
             warning_msg = 'Не все поля заполнены в деталях оплаты!'
             return false;
         }
-    });
+    });*/
 
     if (!allowToOrder) {
         $('#alert-admin').addClass('alert-warning');

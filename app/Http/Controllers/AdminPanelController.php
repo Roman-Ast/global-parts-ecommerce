@@ -934,7 +934,7 @@ class AdminPanelController extends Controller
             'sale_channel' => $request->data['orderInfo'][4]
         ]);
 
-        $orderPayment = OrderPayment::create([
+        /*$orderPayment = OrderPayment::create([
             'order_id' => $order->id,
             'account_id' => $request->data['paymentInfo'][0],
             'paid_at' => $request->data['paymentInfo'][1],
@@ -960,7 +960,7 @@ class AdminPanelController extends Controller
             'related_table' => 'orders',
             'related_id' => $order->id,
             'comment' => ($orderPayment->type === 'refund' ? 'Возврат по заказу №' : 'Оплата по заказу №') . $order->id,
-        ]);
+        ]);*/
 
         foreach ($request->data['products'] as $product) {
             $supplierId = (int)$product[6];
