@@ -295,65 +295,72 @@
 
     // article и brand у тебя уже должны быть объявлены выше в скрипте
     fetch(`/api/search-prices?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`)
-    .then(response => {
-        if (!response.ok) throw new Error('Ошибка сервера (500)');
-        return response.json();
-    })
-    .then(json => {
-        // Внутри .then(json => {
-    loader.style.display = 'none';
-    content.style.display = 'block';
-    
-    let html = '';
-    const offers = json.offers || [];
+        .then(response => {
+            if (!response.ok) throw new Error('Ошибка сервера (500)');
+            return response.json();
+        })
+        .then(json => {
+            let html = '';
+            const offers = json.offers || [];
 
-    if (offers.length > 0) {
-        offers.forEach(offer => {
-            const qty = parseInt(offer.qty) || 0;
-            const price = Number(offer.priceWithMargine || 0).toLocaleString();
-            
-            // Форматируем дату доставки (убираем лишнее T00:00:00)
-            let delivery = offer.delivery_time || offer.deliveryStart || '1-2 дня';
-            if (delivery.includes('T')) delivery = delivery.split('T')[0];
+            if (offers.length > 0) {
+                offers.forEach(offer => {
+                    const qty = parseInt(offer.qty) || 0;
+                    const price = Number(offer.priceWithMargine || 0).toLocaleString();
+                    let delivery = offer.delivery_time || offer.deliveryStart || '1-2 дня';
+                    if (delivery.includes('T')) delivery = delivery.split('T')[0];
 
-            html += `
-            <tr>
-                <td class="ps-4 py-3">
-                    <div class="fw-bold text-primary">${offer.brand}</div>
-                    <div class="small text-muted">${offer.article}</div>
-                    <div class="extra-small text-muted" style="font-size: 0.7rem; max-width: 300px;">
-                        ${offer.name || ''}
-                    </div>
-                </td>
-                <td class="text-center align-middle">
-                    <span class="badge bg-light text-dark border">${delivery}</span>
-                    <div class="small text-muted" style="font-size: 0.65rem;">${offer.supplier_city || ''}</div>
-                </td>
-                <td class="text-center align-middle">
-                    <span class="badge ${qty > 0 ? 'bg-success' : 'bg-secondary'}">${qty} шт.</span>
-                </td>
-                <td class="align-middle fw-bold h5 text-primary">${price} ₸</td>
-                <td class="pe-4 text-end">
-                    <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Купить</button>
-                </td>
-            </tr>`;
+                    // Подготавливаем данные для корзины в виде объекта
+                    const cartData = {
+                        brand: offer.brand,
+                        article: offer.article,
+                        name: offer.name || 'Автозапчасть',
+                        price: offer.price, // Себестоимость
+                        priceWithMargine: offer.priceWithMargine, // Цена продажи
+                        qty: 1,
+                        deliveryTime: delivery,
+                        stockFrom: offer.supplier_city || 'Склад',
+                        originNumber: offer.article
+                    };
+
+                    // Кодируем объект в строку, чтобы передать в функцию
+                    const jsonStr = JSON.stringify(cartData).replace(/'/g, "&apos;");
+
+                    html += `
+                    <tr>
+                        <td class="ps-4 py-3">
+                            <div class="fw-bold text-primary">${offer.brand}</div>
+                            <div class="small text-muted">${offer.article}</div>
+                            <div class="extra-small text-muted" style="font-size: 0.7rem; max-width: 300px;">
+                                ${offer.name || ''}
+                            </div>
+                        </td>
+                        <td class="text-center align-middle">
+                            <span class="badge bg-light text-dark border">${delivery}</span>
+                            <div class="small text-muted" style="font-size: 0.65rem;">${offer.supplier_city || ''}</div>
+                        </td>
+                        <td class="text-center align-middle">
+                            <span class="badge ${qty > 0 ? 'bg-success' : 'bg-secondary'}">${qty} шт.</span>
+                        </td>
+                        <td class="align-middle fw-bold h5 text-primary">${price} ₸</td>
+                        <td class="pe-4 text-end">
+                            <button onclick='addToCartFromApi(this, ${jsonStr})' 
+                                    class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">
+                                Купить
+                            </button>
+                        </td>
+                    </tr>`;
+                });
+                tbody.innerHTML = html;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            loader.style.display = 'none';
+            placeholder.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Ошибка. Повторить?';
         });
-        tbody.innerHTML = html;
-        btn.innerHTML = 'Обновлено';
-    } else {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5">Нет предложений.</td></tr>';
-        btn.innerHTML = 'Повторить';
-        btn.disabled = false;
-    }
-    })
-    .catch(err => {
-        console.error(err);
-        loader.style.display = 'none';
-        placeholder.style.display = 'block';
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Ошибка. Повторить?';
-        //alert('Сервер не успел ответить (Timeout). Нажмите кнопку еще раз.');
-    });
 });
 </script>
 @endsection
