@@ -95,8 +95,6 @@ Route::get('/product/{brand}/{article}', [GlobalProductController::class, 'show'
 Route::get('/api/search-prices', [App\Http\Controllers\GlobalProductController::class, 'getApiPrices']);
 
 Route::middleware('guest')->group(function() {
-    Route::get('/', [HomeController::class, 'index']);
-    
     Route::get('register', [UserController::class, 'create'])->name('register');
     Route::post('register', [UserController::class, 'store'])->name('user.store');
 

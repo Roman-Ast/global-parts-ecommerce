@@ -92,22 +92,48 @@ public function getApiPrices(Request $request)
             $finalData['crosses_to_order'] ?? []
         );
 
-        // Чистим массив от объектов и рекурсий (оставляем только плоские данные)
+        // 1. Сначала делаем "плоский" массив, как у тебя и было
         $cleanOffers = [];
         foreach ($all as $item) {
             $cleanOffers[] = [
-                'brand'   => (string)($item['brand'] ?? ''),
+                'brand'   => strtoupper((string)($item['brand'] ?? '')), // В верхний регистр для точности
                 'article' => (string)($item['article'] ?? ''),
                 'name'    => mb_convert_encoding((string)($item['name'] ?? ''), 'UTF-8', 'UTF-8'),
-                'qty'     => $item['qty'] ?? 0,
-                'priceWithMargine' => $item['priceWithMargine'] ?? 0,
+                'qty'     => (int)($item['qty'] ?? 0),
+                'price'   => $item['price'] ?? 0, // Не забудь про себестоимость для ERP
+                'priceWithMargine' => (int)($item['priceWithMargine'] ?? 0),
                 'delivery_time'    => (string)($item['delivery_time'] ?? ($item['deliveryStart'] ?? '1-2 дня')),
-                'supplier_city'    => (string)($item['supplier_city'] ?? '')
+                'supplier_city'    => (string)($item['supplier_city'] ?? 'Склад')
             ];
         }
 
-        // Вместо response()->json используем нативный PHP вывод для теста
-        return response()->json(['offers' => $cleanOffers], 200, [], JSON_UNESCAPED_UNICODE);
+        // 2. А теперь "умная" группировка через коллекции
+        $processed = collect($cleanOffers)
+            ->groupBy(function($item) {
+                // Убираем лишние символы из артикула для точного сравнения (ST-1040 == ST1040)
+                $cleanArt = preg_replace('/[^A-Za-z0-9]/', '', $item['article']);
+                return $item['brand'] . '|' . $cleanArt;
+            })
+            ->map(function($group) {
+                // Для каждой группы (например, все Sufix ST1040) 
+                // сначала ищем, есть ли что-то в наличии в Астане
+                $inAstana = $group->first(function($item) {
+                    return $item['supplier_city'] === 'ast' || $item['delivery_time'] === '1.5-2 часа';
+                });
+
+                // Если есть в Астане - берем его, если нет - берем самый дешевый вариант из РФ/ОАЭ
+                return $inAstana ?: $group->sortBy('priceWithMargine')->first();
+            })
+            ->sortBy('priceWithMargine') // Сортируем весь итоговый список от дешевых к дорогим
+            ->values();
+
+        // 3. Возвращаем чистый JSON
+        return response()->json(
+            ['offers' => $processed], 
+            200, 
+            [], 
+            JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT
+        );
 
     } catch (\Throwable $e) {
         // Если упало, мы ХОТИМ видеть текст ошибки

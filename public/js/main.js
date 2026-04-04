@@ -742,219 +742,220 @@ function showWaitongWindow() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('vin-request-form');
-    const fileInput = document.getElementById('tech_passport');
-    const previewList = document.getElementById('photo-preview-list');
-    const fileNameBlock = document.getElementById('selected-file-name');
-    const vinInput = document.getElementById('vin');
-    const vinPhotoError = document.getElementById('vin-photo-error');
-    const submitBtn = document.getElementById('send-vin-search-btn');
+      const form = document.getElementById('vin-request-form');
+      const fileInput = document.getElementById('tech_passport');
+      const previewList = document.getElementById('photo-preview-list');
+      const fileNameBlock = document.getElementById('selected-file-name');
+      const vinInput = document.getElementById('vin');
+      const vinPhotoError = document.getElementById('vin-photo-error');
+      const submitBtn = document.getElementById('send-vin-search-btn');
 
-    if (!form || !fileInput || !previewList || !fileNameBlock || !vinInput || !vinPhotoError || !submitBtn) {
-        console.log('VIN form elements not found');
-        return;
-    }
+      if (!form || !fileInput || !previewList || !fileNameBlock || !vinInput || !vinPhotoError || !submitBtn) {
+         console.log('VIN form elements not found');
+         return;
+      }
 
-    let selectedFiles = [];
-    let isSubmitting = false;
-    const MAX_FILES = 5;
-    const MAX_WIDTH = 1600;
-    const IMAGE_QUALITY = 0.72;
+      let selectedFiles = [];
+      let isSubmitting = false;
+      const MAX_FILES = 5;
+      const MAX_WIDTH = 1600;
+      const IMAGE_QUALITY = 0.72;
 
-    function syncInputFiles() {
-        const dt = new DataTransfer();
-        selectedFiles.forEach(file => dt.items.add(file));
-        fileInput.files = dt.files;
-    }
+      function syncInputFiles() {
+         const dt = new DataTransfer();
+         selectedFiles.forEach(file => dt.items.add(file));
+         fileInput.files = dt.files;
+      }
 
-    function showFileMessage(message, isError = false) {
-        fileNameBlock.textContent = message;
-        fileNameBlock.className = isError ? 'small mt-2 text-danger' : 'form-text mt-2';
-    }
+      function showFileMessage(message, isError = false) {
+         fileNameBlock.textContent = message;
+         fileNameBlock.className = isError ? 'small mt-2 text-danger' : 'form-text mt-2';
+      }
 
-    function clearVinPhotoError() { vinPhotoError.textContent = ''; }
-    function showVinPhotoError(message) { vinPhotoError.textContent = message; }
+      function clearVinPhotoError() { vinPhotoError.textContent = ''; }
+      function showVinPhotoError(message) { vinPhotoError.textContent = message; }
 
-    function updateFileText() {
-        if (selectedFiles.length === 0) {
-            showFileMessage('Можно прикрепить до 5 файлов (фото или PDF)');
-            return;
-        }
-        showFileMessage(`Выбрано файлов: ${selectedFiles.length}`);
-    }
+      function updateFileText() {
+         if (selectedFiles.length === 0) {
+               showFileMessage('Можно прикрепить до 5 файлов (фото или PDF)');
+               return;
+         }
+         showFileMessage(`Выбрано файлов: ${selectedFiles.length}`);
+      }
 
-    function renderPreviews() {
-        previewList.innerHTML = '';
+      function renderPreviews() {
+         previewList.innerHTML = '';
 
-        selectedFiles.forEach((file, index) => {
-            const isPdf = file.type === 'application/pdf';
-            const reader = new FileReader();
+         selectedFiles.forEach((file, index) => {
+               const isPdf = file.type === 'application/pdf';
+               const reader = new FileReader();
 
-            reader.onload = function (e) {
-                // Если PDF - показываем иконку, если картинка - само фото
-                const previewContent = isPdf 
-                    ? `<div class="d-flex align-items-center justify-content-center bg-secondary text-white rounded mb-2 w-100" style="height: 140px; font-size: 40px;">📄</div>`
-                    : `<img src="${e.target.result}" alt="preview" class="img-fluid rounded mb-2 w-100" style="height: 140px; object-fit: cover;">`;
+               reader.onload = function (e) {
+                  // Если PDF - показываем иконку, если картинка - само фото
+                  const previewContent = isPdf 
+                     ? `<div class="d-flex align-items-center justify-content-center bg-secondary text-white rounded mb-2 w-100" style="height: 140px; font-size: 40px;">📄</div>`
+                     : `<img src="${e.target.result}" alt="preview" class="img-fluid rounded mb-2 w-100" style="height: 140px; object-fit: cover;">`;
 
-                previewList.insertAdjacentHTML('beforeend', `
-                    <div class="col-6 col-md-4">
-                        <div class="border rounded-3 p-2 h-100 bg-light">
-                            ${previewContent}
-                            <div class="small text-muted mb-2 text-truncate">
-                                ${escapeHtml(file.name || 'Файл')}
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-photo-btn" data-index="${index}">
-                                Удалить
-                            </button>
-                        </div>
-                    </div>
-                `);
-            };
+                  previewList.insertAdjacentHTML('beforeend', `
+                     <div class="col-6 col-md-4">
+                           <div class="border rounded-3 p-2 h-100 bg-light">
+                              ${previewContent}
+                              <div class="small text-muted mb-2 text-truncate">
+                                 ${escapeHtml(file.name || 'Файл')}
+                              </div>
+                              <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-photo-btn" data-index="${index}">
+                                 Удалить
+                              </button>
+                           </div>
+                     </div>
+                  `);
+               };
 
-            // Для PDF не нужно читать DataURL для картинки, но нужно для вызова onload
-            if (isPdf) {
-                reader.onload({ target: { result: null } }); 
-            } else {
-                reader.readAsDataURL(file);
-            }
-        });
-    }
+               // Для PDF не нужно читать DataURL для картинки, но нужно для вызова onload
+               if (isPdf) {
+                  reader.onload({ target: { result: null } }); 
+               } else {
+                  reader.readAsDataURL(file);
+               }
+         });
+      }
 
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+      function escapeHtml(text) {
+         const div = document.createElement('div');
+         div.textContent = text;
+         return div.innerHTML;
+      }
 
-    function validateVinOrPhoto() {
-        const vin = vinInput.value.trim();
-        if (vin === '' && selectedFiles.length === 0) {
-            showVinPhotoError('Укажите VIN или прикрепите хотя бы 1 файл');
-            return false;
-        }
-        clearVinPhotoError();
-        return true;
-    }
+      function validateVinOrPhoto() {
+         const vin = vinInput.value.trim();
+         if (vin === '' && selectedFiles.length === 0) {
+               showVinPhotoError('Укажите VIN или прикрепите хотя бы 1 файл');
+               return false;
+         }
+         clearVinPhotoError();
+         return true;
+      }
 
-    function removePhoto(index) {
-        selectedFiles.splice(index, 1);
-        syncInputFiles();
-        updateFileText();
-        renderPreviews();
-    }
+      function removePhoto(index) {
+         selectedFiles.splice(index, 1);
+         syncInputFiles();
+         updateFileText();
+         renderPreviews();
+      }
 
-    function handleFiles(input) {
-        const newFiles = Array.from(input.files);
+      function handleFiles(input) {
+         const newFiles = Array.from(input.files);
 
-        if (newFiles.length === 0) return;
+         if (newFiles.length === 0) return;
 
-        if (selectedFiles.length + newFiles.length > MAX_FILES) {
-            showFileMessage(`Максимум ${MAX_FILES} файлов`, true);
-            input.value = '';
-            return;
-        }
+         if (selectedFiles.length + newFiles.length > MAX_FILES) {
+               showFileMessage(`Максимум ${MAX_FILES} файлов`, true);
+               input.value = '';
+               return;
+         }
 
-        newFiles.forEach(file => {
-            // Разрешаем картинки и PDF
-            if (file.type.startsWith('image/') || file.type === 'application/pdf') {
-                selectedFiles.push(file);
-            }
-        });
+         newFiles.forEach(file => {
+               // Разрешаем картинки и PDF
+               if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+                  selectedFiles.push(file);
+               }
+         });
 
-        syncInputFiles();
-        updateFileText();
-        renderPreviews();
-        clearVinPhotoError();
-        input.value = '';
-    }
+         syncInputFiles();
+         updateFileText();
+         renderPreviews();
+         clearVinPhotoError();
+         input.value = '';
+      }
 
-    async function compressImage(file, maxWidth = MAX_WIDTH, quality = IMAGE_QUALITY) {
-        // Если это PDF - возвращаем файл как есть, сжатие только для фото
-        if (file.type === 'application/pdf') {
-            return file;
-        }
+      async function compressImage(file, maxWidth = MAX_WIDTH, quality = IMAGE_QUALITY) {
+         // Если это PDF - возвращаем файл как есть, сжатие только для фото
+         if (file.type === 'application/pdf') {
+               return file;
+         }
 
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            const img = new Image();
+         return new Promise((resolve) => {
+               const reader = new FileReader();
+               const img = new Image();
 
-            reader.onload = e => img.src = e.target.result;
-            img.onload = function () {
-                let width = img.width;
-                let height = img.height;
+               reader.onload = e => img.src = e.target.result;
+               img.onload = function () {
+                  let width = img.width;
+                  let height = img.height;
 
-                if (width > maxWidth) {
-                    height = Math.round(height * (maxWidth / width));
-                    width = maxWidth;
-                }
+                  if (width > maxWidth) {
+                     height = Math.round(height * (maxWidth / width));
+                     width = maxWidth;
+                  }
 
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
+                  const canvas = document.createElement('canvas');
+                  canvas.width = width;
+                  canvas.height = height;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(img, 0, 0, width, height);
 
-                canvas.toBlob(blob => {
-                    if (!blob) { resolve(file); return; }
-                    const compressedFile = new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', {
-                        type: 'image/jpeg',
-                        lastModified: Date.now()
-                    });
-                    resolve(compressedFile);
-                }, 'image/jpeg', quality);
-            };
-            img.onerror = () => resolve(file);
-            reader.readAsDataURL(file);
-        });
-    }
+                  canvas.toBlob(blob => {
+                     if (!blob) { resolve(file); return; }
+                     const compressedFile = new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', {
+                           type: 'image/jpeg',
+                           lastModified: Date.now()
+                     });
+                     resolve(compressedFile);
+                  }, 'image/jpeg', quality);
+               };
+               img.onerror = () => resolve(file);
+               reader.readAsDataURL(file);
+         });
+      }
 
-    fileInput.addEventListener('change', function () { handleFiles(this); });
+      fileInput.addEventListener('change', function () { handleFiles(this); });
 
-    vinInput.addEventListener('input', function () {
-        if (vinInput.value.trim() !== '' || selectedFiles.length > 0) clearVinPhotoError();
-    });
+      vinInput.addEventListener('input', function () {
+         if (vinInput.value.trim() !== '' || selectedFiles.length > 0) clearVinPhotoError();
+      });
 
-    previewList.addEventListener('click', function (e) {
-        const btn = e.target.closest('.remove-photo-btn');
-        if (btn) removePhoto(Number(btn.dataset.index));
-    });
+      previewList.addEventListener('click', function (e) {
+         const btn = e.target.closest('.remove-photo-btn');
+         if (btn) removePhoto(Number(btn.dataset.index));
+      });
 
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault(); // Всегда стопаем сначала
+      form.addEventListener('submit', async function (e) {
+         e.preventDefault(); // Всегда стопаем сначала
 
-        if (isSubmitting || !validateVinOrPhoto()) return;
+         if (isSubmitting || !validateVinOrPhoto()) return;
 
-        // Проверка внешних валидаторов (если они есть)
-        if ((window.validateVin && !validateVin()) || 
-            (window.validateParts && !validateParts()) || 
-            (window.validatePhone && !validatePhone())) return;
+         // Проверка внешних валидаторов (если они есть)
+         if ((window.validateVin && !validateVin()) || 
+               (window.validateParts && !validateParts()) || 
+               (window.validatePhone && !validatePhone())) return;
 
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = 'Обработка... <span class="spinner-border spinner-border-sm"></span>';
+         submitBtn.disabled = true;
+         submitBtn.innerHTML = 'Обработка... <span class="spinner-border spinner-border-sm"></span>';
 
-        try {
-            if (selectedFiles.length > 0) {
-                showFileMessage('Сжимаем изображения...');
-                const processed = [];
-                for (const file of selectedFiles) {
-                    processed.push(await compressImage(file));
-                }
-                selectedFiles = processed;
-                syncInputFiles();
-            }
+         try {
+               if (selectedFiles.length > 0) {
+                  showFileMessage('Сжимаем изображения...');
+                  const processed = [];
+                  for (const file of selectedFiles) {
+                     processed.push(await compressImage(file));
+                  }
+                  selectedFiles = processed;
+                  syncInputFiles();
+               }
 
-            if (window.showWaitongWindow) showWaitongWindow();
+               if (window.showWaitongWindow) showWaitongWindow();
 
-            isSubmitting = true;
-            form.submit();
-        } catch (error) {
-            console.error(error);
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Получить подбор';
-            showFileMessage('Ошибка при обработке файлов', true);
-        }
-    });
+               isSubmitting = true;
+               form.submit();
+         } catch (error) {
+               console.error(error);
+               submitBtn.disabled = false;
+               submitBtn.textContent = 'Получить подбор';
+               showFileMessage('Ошибка при обработке файлов', true);
+         }
+      });
 });
+
 
 function addToCartFromApi(button, itemData) {
     // 1. Визуальный отклик

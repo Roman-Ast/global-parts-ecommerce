@@ -269,7 +269,7 @@ class SparePartController extends Controller
                 'article' => $this->finalArr['originNumber']
             ]);
         }
-        
+        //dd($this->finalArr);
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
