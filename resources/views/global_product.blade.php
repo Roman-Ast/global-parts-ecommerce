@@ -309,34 +309,32 @@
 
     if (offers.length > 0) {
         offers.forEach(offer => {
-            const qty = parseInt(offer.qty) || 0;
-            const price = Number(offer.priceWithMargine || 0).toLocaleString();
-            
-            // Форматируем дату доставки (убираем лишнее T00:00:00)
-            let delivery = offer.delivery_time || offer.deliveryStart || '1-2 дня';
-            if (delivery.includes('T')) delivery = delivery.split('T')[0];
+            // Подготавливаем данные для корзины
+            const cartData = {
+                brand: offer.brand,
+                article: offer.article,
+                name: offer.name || 'Автозапчасть',
+                price: offer.price, // для ERP
+                priceWithMargine: offer.priceWithMargine, // для клиента
+                qty: 1,
+                deliveryTime: offer.delivery_time || '1-2 дня',
+                stockFrom: offer.supplier || 'Склад',
+                originNumber: offer.article // или оригинальный номер, если есть
+            };
+
+            // Превращаем объект в строку для атрибута onclick
+            const jsonStr = JSON.stringify(cartData).replace(/'/g, "&apos;");
 
             html += `
-            <tr>
-                <td class="ps-4 py-3">
-                    <div class="fw-bold text-primary">${offer.brand}</div>
-                    <div class="small text-muted">${offer.article}</div>
-                    <div class="extra-small text-muted" style="font-size: 0.7rem; max-width: 300px;">
-                        ${offer.name || ''}
-                    </div>
-                </td>
-                <td class="text-center align-middle">
-                    <span class="badge bg-light text-dark border">${delivery}</span>
-                    <div class="small text-muted" style="font-size: 0.65rem;">${offer.supplier_city || ''}</div>
-                </td>
-                <td class="text-center align-middle">
-                    <span class="badge ${qty > 0 ? 'bg-success' : 'bg-secondary'}">${qty} шт.</span>
-                </td>
-                <td class="align-middle fw-bold h5 text-primary">${price} ₸</td>
-                <td class="pe-4 text-end">
-                    <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Купить</button>
-                </td>
-            </tr>`;
+                <tr>
+                    ... (твои колонки) ...
+                    <td class="pe-4 text-end">
+                        <button onclick='addToCartFromApi(this, ${jsonStr})' 
+                                class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">
+                            Купить
+                        </button>
+                    </td>
+                </tr>`;
         });
         tbody.innerHTML = html;
         btn.innerHTML = 'Обновлено';
