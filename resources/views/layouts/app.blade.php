@@ -13,6 +13,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        
         <title>@yield('title')</title>
         <link rel="icon" href="{{ URL::asset('images/favicon-32x32.png') }}">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
@@ -44,6 +45,7 @@
         <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/notfound.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/nothingFoundStub.css') }}" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link href="{{ asset('/css/korean-cars/index.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/index.mini.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
@@ -169,15 +171,15 @@
             <i class="bi bi-whatsapp"></i>
         </div>
     </div>
-    
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
         <script src="{{ URL::asset('js/jquery.min.js') }}"></script>
         <script src="{{ URL::asset('js/main.js') }}"></script>
         <script src="{{ URL::asset('js/admin.js') }}"></script>
         <script src="{{ URL::asset('js/korean-cars.js') }}"></script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+        <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>-->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        
     </body>
 </html>
 

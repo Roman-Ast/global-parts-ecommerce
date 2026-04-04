@@ -17,6 +17,9 @@ class SupplierSettlement extends Model
         'sum',
         'date',
         'operation',
-        'product_id'
+        'product_id',
+        'payment_due_date',
+        'supplier_id',
+
     ];
 }

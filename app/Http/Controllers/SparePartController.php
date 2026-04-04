@@ -18,8 +18,9 @@ use App\Models\VoltagePrice;
 use App\Models\BlueStarPrice;
 use App\Models\InterkomPrice;
 use App\Models\AdilPhaetonPrice;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\Pool;
 use Collator;
-use Http;
 
 class SparePartController extends Controller
 {
@@ -209,7 +210,6 @@ class SparePartController extends Controller
 
     public function getSearchedPartAndCrosses (Request $request)
     {
-        
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
         
@@ -260,25 +260,16 @@ class SparePartController extends Controller
             }
             return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
         });
-        //dd($this->finalArr);
 
         $finalArrEmpty = false;
 
-        /*foreach ($this->finalArr as $stock => $spareParts) {
-            if (gettype($spareParts) == 'array') {
-                if (!empty($spareParts)) {
-                    break;
-                } else {
-                    $finalArrEmpty = true;
-                }
-            }
-        }*/
+        
         if ($finalArrEmpty) {
             return view('components.notFoundStub', [
                 'article' => $this->finalArr['originNumber']
             ]);
         }
-
+        
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
@@ -286,7 +277,7 @@ class SparePartController extends Controller
             'brands' => $arr
         ]);
     }
-
+    
     public function searchPhaeton(String $brand, String $partnumber) 
     {
         //$start = microtime(true);
@@ -2270,5 +2261,15 @@ class SparePartController extends Controller
         } else {
             return $priceWithMargin;
         }
+    }
+
+    private function getShatemToken()
+    {
+        return cache()->remember('shatem_token', 3600, function () {
+            $response = Http::asForm()->post('https://api.shate-m.kz/api/v1/auth/loginByapiKey', [
+                'ApiKey' => '{3f3b6eeb-709c-4dcb-be59-147ce8f9cb87}',
+            ]);
+            return $response->json()['access_token'] ?? null;
+        });
     }
 } 

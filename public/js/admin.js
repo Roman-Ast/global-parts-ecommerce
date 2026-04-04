@@ -1,4 +1,9 @@
 
+$.ajaxSetup({
+    headers: {
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    }
+});
 
 $('.close-flash').on('click', function () {
     $(this).parent().slideUp();
@@ -356,7 +361,7 @@ $('#manually-order-submit').on('click', function () {
         return;
     }
     console.log(data);
-    
+    //return;
     $.ajax({
         data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
         url: "/manually_make_order",
@@ -461,3 +466,214 @@ $(document).on('input', '.manually-order-parts-list-item-qty, .manually-order-pa
     $('#manualy-order-total-prime-cost-sum-inner').html(primeCostSum);
     $('#manualy-order-total-qty-inner').html(totalQty);
 });
+
+//хуки для фильтрации полей в создании ДДС
+$('.cft-direction').on('change', function () {
+    if ($(this).val() == 'in') {
+        $('.expense-categories').attr('disabled', true);
+    } else {
+        $('.expense-categories').attr('disabled', false);
+    }
+});
+
+$('.cft-direction').on('change', function () {
+    let direction = $(this).val();
+
+    $('.cashflow-categories option').each(function () {
+        let optionDirection = $(this).attr('data-direction');
+        
+        if (optionDirection && optionDirection !== direction) {
+            $(this).prop('disabled', true);
+        } else {
+            $(this).prop('disabled', false);
+        }
+        if ($(this).val() == 'initial') {
+            $(this).prop('disabled', true);
+        }
+    });
+});
+
+$('.cashflow-categories').on('change', function () {
+    if ($(this).val() != 2) {
+        $('.expense-categories').attr('disabled', true);
+        //$('.subcategory').attr('disabled', true);
+    } else {
+        $('.expense-categories').attr('disabled', false);
+        $('.subcategory').attr('disabled', false);
+    }
+    
+    if ($(this).val() == 3 || $(this).val() == 4 ) {
+        $('.suppliers').attr('disabled', false);
+        
+    } else {
+        $('.suppliers').attr('disabled', true);
+    }
+
+    if ($(this).val() == 1) {
+
+        $.ajax({
+            url: "/additional-payment",
+            type: "GET",
+            dataType: 'json',
+            success: function (data) {
+                let options = '<option selected disabled>Выбери заказ</option>';
+
+                data.forEach(function(order){
+                    let d = new Date(order.date);
+
+                    let date = d.toLocaleDateString('ru-RU', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: '2-digit'
+                    });
+
+                    options += `
+                        <option value="${order.id}">
+                            #${order.id} | ${order.customer_phone} | ${order.sum_with_margine}₸ | ${date}
+                        </option>
+                    `;
+
+                });
+
+                $('.cashflow-categories').parent().append(`
+                    <div class="mb-3" id="orders-by-request">
+                        <label class="cft-header-item form-label">Заказ</label>
+                        <select class="orders form-select" name="order_id">
+                            ${options}
+                        </select>
+                    </div>
+                `);
+            },
+            error: function (data) {
+                console.log(data);
+            }
+        });
+    } else {
+        $('#orders-by-request').remove();
+        $('.subcategory').val('');
+    }
+});
+
+$(document).on('change', '.orders', function () {
+    let orderId = $(this).val();
+    let text = `Доплата по заказу #${orderId}`;
+    let phonetext = $(this).find('option:selected').text();
+    let phone = phonetext.split('|')[1].trim();
+
+    $('.counterparty').val(phone);
+    $('input[name="subcategory"]').val('Доплата по заказу');
+    $('input[name="comment"]').val(text);
+});
+
+
+//подтягиваем данные заказа в форму возврата от клиента
+$('#cr_order_id').on('change', function () {
+    let data = {
+        order_id: $(this).val()
+    };
+
+    //заполняем товары из заказа
+    $.ajax({
+        url: "/choose_products_from_order",
+        type: "POST",
+        dataType: "json",
+        data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
+        success: function (products) {
+            let select = $('#cr_order_products');
+            select.find('option').remove();
+            select.append('<option value="">Выберите товар</option>');
+
+            products.forEach(function(product){
+                select.append(
+                    `<option value="${product.id}" 
+                    data-supplier_name="${product.fromStock}" 
+                    data-supplier_id="${product.supplier_id}" 
+                    data-qty="${product.qty}"
+                    data-price="${product.price}"
+                    data-iswm="${product.itemSumWithMargine}"
+                    >
+                        ${product.article} | ${product.brand} | ${product.name}
+                    </option>`
+                );
+            });
+        },
+        error: function (xhr) {
+            console.log(xhr);
+        }
+    });
+
+    //заполняем данные клиента
+    $('#customer_data').val($(this).find('option:selected').data('customer-data'));
+    $('#customer_phone').val($(this).find('option:selected').data('customer-phone'));
+    $('#customer_id').val($(this).find('option:selected').data('customer-id'));
+});
+
+//заполняем данные товара
+$(document).on('change','#cr_order_products', function () {
+    $('#cr_supplier_name').val($(this).find('option:selected').data('supplier_name'));
+    $('#cr_supplier_id').val($(this).find('option:selected').data('supplier_id'));
+    $('#cr_qty').val($(this).find('option:selected').data('qty'));
+    //вставим контрольное значение кол-ва товара, чтоб не могли вернуть больше чем продали
+    $('#control_cr_qty').val($(this).find('option:selected').data('qty'));
+    $('#cr_product_price').val($(this).find('option:selected').data('iswm') / $(this).find('option:selected').data('qty'));
+    $('#customer_refund_amount').val($(this).find('option:selected').data('iswm'));
+
+    //зполняем данные по поставщику
+    $('#supplier_purchase_price').val($(this).find('option:selected').data('price'));
+    $('#supplier_refund_amount').val($(this).find('option:selected').data('price') * $(this).find('option:selected').data('qty'));
+});
+
+//проверка, чтоб кол-во возвращаемого товара не было больше отпущенного
+$('#cr_qty').on('input', function () {
+    if (parseFloat($(this).val()) > parseFloat($('#control_cr_qty').val()) || $(this).val() == '') {
+        $('#cr_qty_error').text('Кол-во возврата превышает проданное или поле пустое');
+        $('#cr_qty').addClass('is-invalid');
+        $(this).val($('#control_cr_qty').val());
+        
+    } else {
+        $('#cr_qty').removeClass('is-invalid');
+        $('#cr_qty_error').text('');
+    }
+    
+});
+
+//проверка чтоб сумма возвращенных средств не была больше факта
+$('#customer_refund_paid').on('input', function () {
+    if (parseFloat($(this).val()) > parseFloat($('#customer_refund_amount').val()) || parseFloat($(this).val()) <= 0) {
+        $('#customer_refund_paid').addClass('is-invalid');
+        $('#cr_customer_refund_paid_error').text('сумма возврата не может быть больше оплаченной!');
+        $(this).val($('#customer_refund_amount').val());
+    } else {
+        $('#customer_refund_paid').removeClass('is-invalid');
+        $('#cr_customer_refund_paid_error').text('');
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const qtyInput = document.querySelector('.qty-input');
+    const salePriceInput = document.querySelector('.sale-price-input');
+    const customerRefundAmountInput = document.querySelector('.customer-refund-amount-input');
+    const supplierPurchasePriceInput = document.querySelector('.supplier-purchase-price-input');
+    const supplierRefundAmountInput = document.querySelector('.supplier-refund-amount-input');
+
+    function recalcAmounts() {
+        const qty = parseFloat(qtyInput?.value || 0);
+        const salePrice = parseFloat(salePriceInput?.value || 0);
+        const purchasePrice = parseFloat(supplierPurchasePriceInput?.value || 0);
+
+        if (customerRefundAmountInput && document.activeElement !== customerRefundAmountInput) {
+            customerRefundAmountInput.value = (qty * salePrice).toFixed(2);
+        }
+
+        if (supplierRefundAmountInput && document.activeElement !== supplierRefundAmountInput) {
+            supplierRefundAmountInput.value = (qty * purchasePrice).toFixed(2);
+        }
+    }
+
+    qtyInput?.addEventListener('input', recalcAmounts);
+    salePriceInput?.addEventListener('input', recalcAmounts);
+    supplierPurchasePriceInput?.addEventListener('input', recalcAmounts);
+});
+
+
+

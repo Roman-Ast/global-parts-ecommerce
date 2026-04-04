@@ -9,18 +9,23 @@ use Illuminate\Queue\SerializesModels;
 
 class SparePartRequest extends Mailable
 {
+   
     use Queueable, SerializesModels;
 
     public $requestData;
+    public $photos;
 
     /**
      * Create a new message instance.
      *
+     * @param array $requestData
+     * @param array $photos
      * @return void
      */
-    public function __construct($requestData)
+    public function __construct(array $requestData, array $photos = [])
     {
         $this->requestData = $requestData;
+        $this->photos = $photos;
     }
 
     /**
@@ -28,11 +33,27 @@ class SparePartRequest extends Mailable
      *
      * @return $this
      */
-    public function build()
+     public function build()
     {
-        return $this
-            ->to('globalparts.ast@inbox.ru', $this->requestData)
+        $mail = $this
+            ->to('globalparts.ast@inbox.ru')
             ->subject('Запрос подбора по винкоду')
             ->view('email.sparePartRequest');
+
+        if (!empty($this->photos)) {
+            foreach ($this->photos as $photo) {
+                if ($photo && $photo->isValid()) {
+                    $mail->attach(
+                        $photo->getRealPath(),
+                        [
+                            'as' => $photo->getClientOriginalName(),
+                            'mime' => $photo->getMimeType(),
+                        ]
+                    );
+                }
+            }
+        }
+
+        return $mail;
     }
 }

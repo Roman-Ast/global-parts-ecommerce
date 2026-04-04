@@ -1,16 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Запрос подбора по винкоду</title>
 </head>
-<body>
-    <p>VINCODE: {{ $requestData['vincode'] }}</p>
-    <p>Список запчастей: {{ $requestData['spareparts'] }}</p>
-    <p>Телефон: {{ $requestData['phone'] }}</p>
-    <p>Примечание: {{ $requestData['note'] }}</p>
-    <h3 style="color: red;">Подбирай быстро и с энтузиазмом!!!</h3>
+<body style="font-family: Arial, sans-serif; background-color:#f5f5f5; padding:20px; margin:0;">
+    
+    🏎 Новая заявка на подбор
+
+    Источник: Форма VIN
+
+    VIN: {{ $requestData['vincode'] ?: 'Не указан (есть фото)' }}
+
+    Что нужно:
+    {{ $requestData['spareparts'] }}
+
+    Телефон:
+    {{ $requestData['phone'] }}
+
+    Примечание:
+    {{ $requestData['note'] ?: '—' }}
+
+    Фото: {{ !empty($photos) ? count($photos) : 0 }} шт.
+
 </body>
 </html>

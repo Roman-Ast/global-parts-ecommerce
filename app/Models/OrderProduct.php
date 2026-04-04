@@ -24,7 +24,11 @@ class OrderProduct extends Model
         'fromStock',
         'deliveryTime',
         'qty',
-        'status'
+        'status',
+        'supplier_id',
+        'payment_policy_snapshot',
+        'payment_delay_days_snapshot'
+        
     ];
 
     

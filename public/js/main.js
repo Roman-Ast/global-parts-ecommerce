@@ -626,13 +626,11 @@ function validatePhone() {
 
 //проверка винкода
 function validateVin() {
-   
     const vinInput = document.getElementById("vin");
     const value = vinInput.value.trim();
-    let error = vinInput.nextElementSibling;
+    let error = vinInput.parentElement.querySelector(".vin-error");
 
-    // создаём блок ошибки, если его ещё нет
-    if (!error || !error.classList.contains("vin-error")) {
+    if (!error) {
         error = document.createElement("div");
         error.className = "vin-error";
         error.style.fontSize = "12px";
@@ -642,19 +640,26 @@ function validateVin() {
         vinInput.after(error);
     }
 
-    // длина 8-17 символов
+    // Если VIN пустой — это теперь нормально.
+    // Обязательность VIN/фото проверяет validateVinOrPhoto()
+    if (value === "") {
+        error.textContent = "";
+        vinInput.style.border = "";
+        return true;
+    }
+
     if (value.length < 8) {
         error.textContent = "VIN / номер кузова должен быть не менее 8 символов.";
         vinInput.style.border = "1px solid #d32f2f";
         return false;
     }
+
     if (value.length > 17) {
         error.textContent = "VIN / номер кузова не может быть длиннее 17 символов.";
         vinInput.style.border = "1px solid #d32f2f";
         return false;
     }
 
-    // кириллица
     const cyrillicMatches = value.match(/[А-Яа-яЁёЀ-ӿ]/g);
     if (cyrillicMatches) {
         error.textContent = `В VIN / номере кузова нельзя использовать кириллицу! Найдено: ${cyrillicMatches.join(', ')}`;
@@ -662,7 +667,6 @@ function validateVin() {
         return false;
     }
 
-    // минимум 2 латинские буквы
     const latinLetters = (value.match(/[A-Za-z]/g) || []).length;
     if (latinLetters < 2) {
         error.textContent = "VIN / номер кузова должен содержать минимум 2 латинские буквы.";
@@ -670,7 +674,6 @@ function validateVin() {
         return false;
     }
 
-    // минимум 1 цифра
     const digitsCount = (value.match(/\d/g) || []).length;
     if (digitsCount < 1) {
         error.textContent = "VIN / номер кузова должен содержать хотя бы одну цифру.";
@@ -678,14 +681,12 @@ function validateVin() {
         return false;
     }
 
-    // запрет I, O, Q для 17-символьного VIN
     if (value.length === 17 && /[IOQ]/i.test(value)) {
         error.textContent = "VIN не должен содержать буквы I, O, Q.";
         vinInput.style.border = "1px solid #d32f2f";
         return false;
     }
 
-    // всё ок
     error.textContent = "";
     vinInput.style.border = "";
     return true;
@@ -738,254 +739,518 @@ function showWaitongWindow() {
    return true;
 }
 
-//увеличение и пролистывание отзывов
-$(document).ready(function() {
-      const $modal = $('#review-modal');
-      const $modalImg = $('#modal-img');
-      const $imgs = $('.review-img');
-      let currentIndex = -1;
-  
-      function openModal(index) {
-        currentIndex = index;
-        $modalImg.attr('src', $imgs.eq(currentIndex).attr('src'));
-        $modal.fadeIn(200);
-      }
-  
-      function closeModal() {
-        $modal.fadeOut(200);
-      }
-  
-      function showNext() {
-        currentIndex = (currentIndex + 1) % $imgs.length;
-        $modalImg.attr('src', $imgs.eq(currentIndex).attr('src'));
-      }
-  
-      function showPrev() {
-        currentIndex = (currentIndex - 1 + $imgs.length) % $imgs.length;
-        $modalImg.attr('src', $imgs.eq(currentIndex).attr('src'));
-      }
-  
-      $imgs.on('click', function() {
-        openModal($imgs.index(this));
-      });
-  
-      $('.modal-close, .modal-overlay').on('click', closeModal);
-      $('.modal-nav .next').on('click', showNext);
-      $('.modal-nav .prev').on('click', showPrev);
-  
-      $(document).on('keydown', function(e) {
-        if ($modal.is(':visible')) {
-          if (e.key === 'ArrowRight') showNext();
-          if (e.key === 'ArrowLeft') showPrev();
-          if (e.key === 'Escape') closeModal();
+//валидация фото в форме отправки запроса по винкоду на почту
+/*
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('vin-request-form');
+    const fileInput = document.getElementById('tech_passport');
+    const previewList = document.getElementById('photo-preview-list');
+    const fileNameBlock = document.getElementById('selected-file-name');
+    const vinInput = document.getElementById('vin');
+    const vinPhotoError = document.getElementById('vin-photo-error');
+    const submitBtn = document.getElementById('send-vin-search-btn');
+
+    if (!form || !fileInput || !previewList || !fileNameBlock || !vinInput || !vinPhotoError || !submitBtn) {
+        console.log('VIN form elements not found');
+        return;
+    }
+
+    let selectedFiles = [];
+    let isSubmitting = false;
+    const MAX_FILES = 5;
+    const MAX_WIDTH = 1600;
+    const IMAGE_QUALITY = 0.72;
+
+    function syncInputFiles() {
+        const dt = new DataTransfer();
+
+        selectedFiles.forEach(file => {
+            dt.items.add(file);
+        });
+
+        fileInput.files = dt.files;
+    }
+
+    function showFileMessage(message, isError = false) {
+        fileNameBlock.textContent = message;
+        fileNameBlock.className = isError
+            ? 'small mt-2 text-danger'
+            : 'form-text mt-2';
+    }
+
+    function clearVinPhotoError() {
+        vinPhotoError.textContent = '';
+    }
+
+    function showVinPhotoError(message) {
+        vinPhotoError.textContent = message;
+    }
+
+    function updateFileText() {
+        if (selectedFiles.length === 0) {
+            showFileMessage('Можно прикрепить до 5 фото');
+            return;
         }
-      });
-  
-      // свайпы
-      var hammer = new Hammer(document.getElementById('review-modal'));
-      hammer.on('swipeleft', showNext);
-      hammer.on('swiperight', showPrev);
+
+        const photoWord = selectedFiles.length === 1 ? 'фото' : 'фото';
+        showFileMessage(`Выбрано ${selectedFiles.length} ${photoWord}`);
+    }
+
+    function renderPreviews() {
+        previewList.innerHTML = '';
+
+        selectedFiles.forEach((file, index) => {
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                previewList.insertAdjacentHTML('beforeend', `
+                    <div class="col-6 col-md-4">
+                        <div class="border rounded-3 p-2 h-100 bg-light">
+                            <img
+                                src="${e.target.result}"
+                                alt="preview"
+                                class="img-fluid rounded mb-2 w-100"
+                                style="height: 140px; object-fit: cover;"
+                            >
+                            <div class="small text-muted mb-2" style="word-break: break-word;">
+                                ${escapeHtml(file.name || 'Фото')}
+                            </div>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger w-100 remove-photo-btn"
+                                data-index="${index}"
+                            >
+                                Удалить
+                            </button>
+                        </div>
+                    </div>
+                `);
+            };
+
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function validateVinOrPhoto() {
+        const vin = vinInput.value.trim();
+
+        if (vin === '' && selectedFiles.length === 0) {
+            showVinPhotoError('Укажите VIN или прикрепите хотя бы 1 фото');
+            return false;
+        }
+
+        clearVinPhotoError();
+        return true;
+    }
+
+    function removePhoto(index) {
+        selectedFiles.splice(index, 1);
+        syncInputFiles();
+        updateFileText();
+        renderPreviews();
+
+        if (selectedFiles.length > 0 || vinInput.value.trim() !== '') {
+            clearVinPhotoError();
+        }
+    }
+
+    function handleFiles(input) {
+        const newFiles = Array.from(input.files);
+
+        if (newFiles.length === 0) {
+            return;
+        }
+
+        if (selectedFiles.length + newFiles.length > MAX_FILES) {
+            showFileMessage(`Можно прикрепить максимум ${MAX_FILES} фото`, true);
+            input.value = '';
+            return;
+        }
+
+        let addedCount = 0;
+
+        newFiles.forEach(file => {
+            if (!file.type || file.type.startsWith('image/')) {
+                selectedFiles.push(file);
+                addedCount++;
+            }
+        });
+
+        syncInputFiles();
+        updateFileText();
+        renderPreviews();
+        clearVinPhotoError();
+
+        if (addedCount === 0) {
+            showFileMessage('Можно загружать только изображения', true);
+        } else {
+            updateFileText();
+        }
+
+        input.value = '';
+    }
+
+    async function compressImage(file, maxWidth = MAX_WIDTH, quality = IMAGE_QUALITY) {
+        return new Promise((resolve) => {
+            if (file.type && !file.type.startsWith('image/')) {
+                resolve(file);
+                return;
+            }
+
+            const reader = new FileReader();
+            const img = new Image();
+
+            reader.onload = function (e) {
+                img.src = e.target.result;
+            };
+
+            img.onload = function () {
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = Math.round(height * (maxWidth / width));
+                    width = maxWidth;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        resolve(file);
+                        return;
+                    }
+
+                    const compressedFile = new File(
+                        [blob],
+                        (file.name || 'image').replace(/\.\w+$/, '') + '.jpg',
+                        {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        }
+                    );
+
+                    resolve(compressedFile);
+                }, 'image/jpeg', quality);
+            };
+
+            img.onerror = function () {
+                resolve(file);
+            };
+
+            reader.readAsDataURL(file);
+        });
+    }
+
+    fileInput.addEventListener('change', function () {
+        handleFiles(this);
+    });
+
+    vinInput.addEventListener('input', function () {
+        if (vinInput.value.trim() !== '' || selectedFiles.length > 0) {
+            clearVinPhotoError();
+        }
+    });
+
+    previewList.addEventListener('click', function (e) {
+        const btn = e.target.closest('.remove-photo-btn');
+        if (!btn) return;
+
+        const index = Number(btn.dataset.index);
+        removePhoto(index);
+    });
+
+    form.addEventListener('submit', async function (e) {
+        if (isSubmitting) {
+            e.preventDefault();
+            return;
+        }
+
+        if (!validateVinOrPhoto()) {
+            e.preventDefault();
+            return;
+        }
+
+        if (typeof validateVin === 'function' && !validateVin()) {
+            e.preventDefault();
+            return;
+        }
+
+        if (typeof validateParts === 'function' && !validateParts()) {
+            e.preventDefault();
+            return;
+        }
+
+        if (typeof validatePhone === 'function' && !validatePhone()) {
+            e.preventDefault();
+            return;
+        }
+
+        e.preventDefault();
+
+        if (submitBtn.dataset.clicked === "true") {
+            return;
+         }
+
+         submitBtn.dataset.clicked = "true";
+         submitBtn.disabled = true;
+         submitBtn.innerHTML = 'Отправка... <span class="spinner-border spinner-border-sm"></span>';
+
+        try {
+            if (selectedFiles.length > 0) {
+                showFileMessage('Сжимаем фото перед отправкой...');
+
+                const compressedFiles = [];
+
+                for (const file of selectedFiles) {
+                    const compressed = await compressImage(file);
+                    compressedFiles.push(compressed);
+                }
+
+                selectedFiles = compressedFiles;
+                syncInputFiles();
+                updateFileText();
+            }
+
+            if (typeof showWaitongWindow === 'function') {
+                showWaitongWindow();
+            }
+
+            isSubmitting = true;
+            form.submit();
+        } catch (error) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Получить подбор';
+            showFileMessage('Ошибка при обработке фото. Попробуйте еще раз.', true);
+        }
+    });
 });
 
 
- // переключение форм
-const switcher = document.getElementById("searchModeSwitch");
-const formNoVin = document.getElementById("form-no-vin");
-const formVin = document.getElementById("form-vin");
-const switchLabel = document.querySelector("label[for='searchModeSwitch']");
+*/
 
-// Инициализация тултипа
-const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-  return new bootstrap.Tooltip(tooltipTriggerEl, {
-    trigger: 'manual', // показываем вручную
-    delay: { "show": 0, "hide": 2000 } // задержка скрытия 2 сек
-  })
-})
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('vin-request-form');
+    const fileInput = document.getElementById('tech_passport');
+    const previewList = document.getElementById('photo-preview-list');
+    const fileNameBlock = document.getElementById('selected-file-name');
+    const vinInput = document.getElementById('vin');
+    const vinPhotoError = document.getElementById('vin-photo-error');
+    const submitBtn = document.getElementById('send-vin-search-btn');
 
-// получаем сам tooltip по id
-const tooltipEl = document.querySelector('[data-bs-toggle="tooltip"]');
-const tooltip = bootstrap.Tooltip.getInstance(tooltipEl);
+    if (!form || !fileInput || !previewList || !fileNameBlock || !vinInput || !vinPhotoError || !submitBtn) {
+        console.log('VIN form elements not found');
+        return;
+    }
 
-switcher.addEventListener("change", () => {
-   if (switcher.checked) {
-      formNoVin.classList.add("d-none");
-      formVin.classList.remove("d-none");
-      tooltip.setContent({ '.tooltip-inner': "Поиск по VIN — точность выше, но не 100%." });
-   } else {
-      formVin.classList.add("d-none");
-      formNoVin.classList.remove("d-none");
-      tooltip.setContent({ '.tooltip-inner': "Поиск без VIN — результат менее точный, но попробовать можно." });
-   }
+    let selectedFiles = [];
+    let isSubmitting = false;
+    const MAX_FILES = 5;
+    const MAX_WIDTH = 1600;
+    const IMAGE_QUALITY = 0.72;
 
-   tooltip.show();
-   setTimeout(() => tooltip.hide(), 4000); // держим 4 секунды
+    function syncInputFiles() {
+        const dt = new DataTransfer();
+        selectedFiles.forEach(file => dt.items.add(file));
+        fileInput.files = dt.files;
+    }
+
+    function showFileMessage(message, isError = false) {
+        fileNameBlock.textContent = message;
+        fileNameBlock.className = isError ? 'small mt-2 text-danger' : 'form-text mt-2';
+    }
+
+    function clearVinPhotoError() { vinPhotoError.textContent = ''; }
+    function showVinPhotoError(message) { vinPhotoError.textContent = message; }
+
+    function updateFileText() {
+        if (selectedFiles.length === 0) {
+            showFileMessage('Можно прикрепить до 5 файлов (фото или PDF)');
+            return;
+        }
+        showFileMessage(`Выбрано файлов: ${selectedFiles.length}`);
+    }
+
+    function renderPreviews() {
+        previewList.innerHTML = '';
+
+        selectedFiles.forEach((file, index) => {
+            const isPdf = file.type === 'application/pdf';
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                // Если PDF - показываем иконку, если картинка - само фото
+                const previewContent = isPdf 
+                    ? `<div class="d-flex align-items-center justify-content-center bg-secondary text-white rounded mb-2 w-100" style="height: 140px; font-size: 40px;">📄</div>`
+                    : `<img src="${e.target.result}" alt="preview" class="img-fluid rounded mb-2 w-100" style="height: 140px; object-fit: cover;">`;
+
+                previewList.insertAdjacentHTML('beforeend', `
+                    <div class="col-6 col-md-4">
+                        <div class="border rounded-3 p-2 h-100 bg-light">
+                            ${previewContent}
+                            <div class="small text-muted mb-2 text-truncate">
+                                ${escapeHtml(file.name || 'Файл')}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-photo-btn" data-index="${index}">
+                                Удалить
+                            </button>
+                        </div>
+                    </div>
+                `);
+            };
+
+            // Для PDF не нужно читать DataURL для картинки, но нужно для вызова onload
+            if (isPdf) {
+                reader.onload({ target: { result: null } }); 
+            } else {
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function validateVinOrPhoto() {
+        const vin = vinInput.value.trim();
+        if (vin === '' && selectedFiles.length === 0) {
+            showVinPhotoError('Укажите VIN или прикрепите хотя бы 1 файл');
+            return false;
+        }
+        clearVinPhotoError();
+        return true;
+    }
+
+    function removePhoto(index) {
+        selectedFiles.splice(index, 1);
+        syncInputFiles();
+        updateFileText();
+        renderPreviews();
+    }
+
+    function handleFiles(input) {
+        const newFiles = Array.from(input.files);
+
+        if (newFiles.length === 0) return;
+
+        if (selectedFiles.length + newFiles.length > MAX_FILES) {
+            showFileMessage(`Максимум ${MAX_FILES} файлов`, true);
+            input.value = '';
+            return;
+        }
+
+        newFiles.forEach(file => {
+            // Разрешаем картинки и PDF
+            if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+                selectedFiles.push(file);
+            }
+        });
+
+        syncInputFiles();
+        updateFileText();
+        renderPreviews();
+        clearVinPhotoError();
+        input.value = '';
+    }
+
+    async function compressImage(file, maxWidth = MAX_WIDTH, quality = IMAGE_QUALITY) {
+        // Если это PDF - возвращаем файл как есть, сжатие только для фото
+        if (file.type === 'application/pdf') {
+            return file;
+        }
+
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            const img = new Image();
+
+            reader.onload = e => img.src = e.target.result;
+            img.onload = function () {
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = Math.round(height * (maxWidth / width));
+                    width = maxWidth;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob(blob => {
+                    if (!blob) { resolve(file); return; }
+                    const compressedFile = new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    resolve(compressedFile);
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = () => resolve(file);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    fileInput.addEventListener('change', function () { handleFiles(this); });
+
+    vinInput.addEventListener('input', function () {
+        if (vinInput.value.trim() !== '' || selectedFiles.length > 0) clearVinPhotoError();
+    });
+
+    previewList.addEventListener('click', function (e) {
+        const btn = e.target.closest('.remove-photo-btn');
+        if (btn) removePhoto(Number(btn.dataset.index));
+    });
+
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault(); // Всегда стопаем сначала
+
+        if (isSubmitting || !validateVinOrPhoto()) return;
+
+        // Проверка внешних валидаторов (если они есть)
+        if ((window.validateVin && !validateVin()) || 
+            (window.validateParts && !validateParts()) || 
+            (window.validatePhone && !validatePhone())) return;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Обработка... <span class="spinner-border spinner-border-sm"></span>';
+
+        try {
+            if (selectedFiles.length > 0) {
+                showFileMessage('Сжимаем изображения...');
+                const processed = [];
+                for (const file of selectedFiles) {
+                    processed.push(await compressImage(file));
+                }
+                selectedFiles = processed;
+                syncInputFiles();
+            }
+
+            if (window.showWaitongWindow) showWaitongWindow();
+
+            isSubmitting = true;
+            form.submit();
+        } catch (error) {
+            console.error(error);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Получить подбор';
+            showFileMessage('Ошибка при обработке файлов', true);
+        }
+    });
 });
-
-// Подсказка при первой загрузке (по умолчанию без VIN)
-document.addEventListener("DOMContentLoaded", () => {
-  showTooltip("Без VIN: точность ниже, но попробовать можно 👌");
-});
-
-// ИИ поиск без винкода
-$('#ai-no-vin-form-btn').on('click', function () {
-   const resultsDiv = document.getElementById("ai-search-results");
-   $('#ai-no-vin-form-btn').css({'border': '1px solid #bbb'});
-
-   if($('#ai-no-vin-input').val().length < 20) {
-      $('#ai-no-vin-input').css({'border': '1px solid red'});
-      $(resultsDiv).css({'color': 'red'});
-      $(resultsDiv).text('Введите все необходимые данные!');
-      return;
-   }
-   
-   $(this).attr('disabled', true);
-
-   resultsDiv.innerHTML = `
-      <div class="text-center text-muted">
-            <div class="spinner-border text-success" role="status"></div>
-          <p class="mt-2">Подбираем запчасти...</p>
-      </div>
-   `;
-
-   const dataFromInput = $('#ai-no-vin-input').val();
-   console.log(dataFromInput);
-   
-   $.ajax({
-      data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: dataFromInput},
-      url: "/simpleAISearchWithoutVin",
-      type: "POST",
-      dataType: 'json',
-      success: function (data) {
-         
-         
-         $('#ai-no-vin-form-btn').attr('disabled', false);
-         const parsedData = JSON.parse(data);
-
-         $('#ai-search-results').empty();
-         $('#ai-no-vin-input').empty();
-
-         const resultsDiv = document.getElementById("ai-search-results");
-         let answer = parsedData.choices?.[0]?.message?.content || "Нет ответа от сервера.";
-         
-         // Заменяем переносы строк на <br> и экранируем HTML-символы
-         answer = answer
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/\n/g, "<br>");
-
-         resultsDiv.innerHTML = `<div class="card card-body bg-light text-dark">${answer}</div>`;
-      },
-      error: function (error) {
-         $('#ai-no-vin-form-btn').attr('disabled', false);
-         $('#ai-search-results').empty();
-         $('#ai-no-vin-input').empty();
-         const resultsDiv = document.getElementById("ai-search-results");
-
-         resultsDiv.innerHTML = `<div class="card card-body bg-light text-danger">${error}</div>`;
-      }
-   });
-});
-
-// ИИ поиск с винкодом
-$('#ai-vin-form-btn').on('click', function () {
-   const resultsDiv = document.getElementById("ai-search-results");
-   $('#ai-vin-input').css({'border': '1px solid #bbb'});
-
-   if($('#ai-vin-input').val().length < 12) {
-      $('#ai-vin-input').css({'border': '1px solid red'});
-      $(resultsDiv).css({'color': 'red'});
-      $(resultsDiv).text('Введите все необходимые данные!');
-      return;
-   }
-   if($('#ai-vin-part-input').val().length < 5) {
-      $('#ai-vin-part-input').css({'border': '1px solid red'});
-      $(resultsDiv).css({'color': 'red'});
-      $(resultsDiv).text('Введите все необходимые данные!');
-      return;
-   }
-   
-   $(this).attr('disabled', true);
-
-   resultsDiv.innerHTML = `
-      <div class="text-center text-muted">
-            <div class="spinner-border text-success" role="status"></div>
-          <p class="mt-2">Подбираем запчасти...</p>
-      </div>
-   `;
-
-   const VIN = $('#ai-vin-input').val();
-   const part = $('#ai-vin-part-input').val();
-
-   const dataFromInput = {
-      VIN: VIN,
-      part: part
-   };
-   
-   $.ajax({
-      data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: dataFromInput},
-      url: "/simpleAIVinSearch",
-      type: "POST",
-      dataType: 'json',
-      success: function (data) {
-         $('#ai-vin-part-input').css({'border': '1px solid #bbb'});
-         $('#ai-vin-input').css({'border': '1px solid #bbb'});
-
-         $('#ai-vin-form-btn').attr('disabled', false);
-
-         // очищаем инпуты
-         $('#ai-vin-input').val('');
-         $('#ai-vin-part-input').val('');
-
-         const resultsDiv = document.getElementById("ai-search-results");
-         let answer = data.answer || "Нет ответа от сервера.";
-
-         // экранируем HTML
-         answer = answer
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
-
-         // Markdown → HTML
-        // Заголовки ###
-         answer = answer.replace(/^### (.*$)/gim, "<h5 class='mt-3 mb-2 fw-bold text-start'>$1</h5>");
-         // Заголовки ##
-         answer = answer.replace(/^## (.*$)/gim, "<h4 class='mt-3 mb-2 fw-bold text-start'>$1</h4>");
-         // Заголовки #
-         answer = answer.replace(/^# (.*$)/gim, "<h3 class='mt-3 mb-2 fw-bold text-start'>$1</h3>");
-         // Жирный текст **...**
-         answer = answer.replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>");
-         // Списки
-         answer = answer.replace(/^\d+\. (.*$)/gim, "<li>$1</li>");
-         answer = answer.replace(/^- (.*$)/gim, "<li>$1</li>");
-         // Переносы строк
-         answer = answer.replace(/\n/g, "<br>");
-
-         // оборачиваем списки <li> в <ul>
-         answer = answer.replace(/(<li>.*<\/li>)/gims, "<ul class='ms-3 mb-2'>$1</ul>");
-
-         resultsDiv.innerHTML = `
-            <div class="card card-body bg-light text-dark text-start">
-               ${answer}
-            </div>
-         `;
-      },
-      error: function (error) {
-         $('#ai-vin-form-btn').attr('disabled', false);
-         $('#ai-search-results').empty();
-         $('#ai-vin-input').empty();
-         $('#ai-vin-part-input').empty();
-         const resultsDiv = document.getElementById("ai-search-results");
-
-         resultsDiv.innerHTML = `<div class="card card-body bg-light text-danger">${error}</div>`;
-      }
-   });
-});
-//открытие блока с информацией и картинками товара
-
-
-
-
-
-

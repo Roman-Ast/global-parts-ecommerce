@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Accounts;
+use App\Models\Suppliers;
+use App\Models\CashflowCategories;
 
 class CashflowTransactions extends Model
 {
@@ -25,4 +28,24 @@ class CashflowTransactions extends Model
         'user_id',
 
     ];
+
+    public function account()
+    {
+        return $this->belongsTo(Accounts::class, 'account_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Suppliers::class);
+    }
+
+    public function cashflowCategory()
+    {
+        return $this->belongsTo(CashflowCategories::class);
+    }
 }

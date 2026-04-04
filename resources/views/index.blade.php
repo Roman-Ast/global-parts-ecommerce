@@ -330,46 +330,116 @@
             </div>
         </section>
 
-        {{-- Форма подбора по винкоду--}}
+        {{-- Форма подбора по винкоду --}}
         <section class="cta-form-section py-5 bg-light mt-3" id="vin-form">
             <div class="container">
-              <div class="text-center mb-4">
-                <h2 class="fw-bold">Не знаете номер детали?</h2>
-                <p class="text-muted lead mb-0">Подберем по VIN — быстро и точно</p>
-              </div>
-
-              <form class="row justify-content-center" action="/sparepart-request" method="POST" onsubmit="return validateVin() && validateParts() && validatePhone() && showWaitongWindow();">
-                <div class="col-lg-8">
-                  <form class="p-4 border rounded-4 shadow-sm bg-white">
-                    @csrf
-                    <div class="mb-3">
-                      <label for="vin" class="form-label fw-semibold">Винкод авто (VIN)</label>
-                      <input type="text" name="vincode" class="form-control vin-selection-field" id="vin" placeholder="Например: KMH1234567890" required>
-                    </div>
-
-                    <div class="mb-3">
-                      <label for="parts" class="form-label fw-semibold">Какие запчасти нужны</label>
-                      <textarea class="form-control vin-selection-field" name="spareparts" id="parts" rows="3" placeholder="Например: фара, бампер, колодки..." required></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                      <label for="phone" class="form-label fw-semibold">Телефон (для обратной связи)</label>
-                      <input type="tel" class="form-control vin-selection-field" name="phone" id="phone" placeholder="+7 (777) 123-45-67" required>
-                      <div id="error" style="font-size:12px; font-style:italic; color:#d32f2f; margin-top:4px;"></div>
-                    </div>
-
-                    <div class="mb-3">
-                      <label for="note" class="form-label fw-semibold">Примечание (не обязательно)</label>
-                      <input class="form-control" name="note" id="note" placeholder="Например: только оригинал...">
-                    </div>
-
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                      <button type="submit" class="btn btn-success btn-lg" id="send-vin-search-btn">Получить подбор</button>
-                    </div>
-                  </form>
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold">Не знаете номер детали?</h2>
+                    <p class="text-muted lead mb-0">Подберем по VIN — быстро и точно</p>
                 </div>
-              </form>
 
+                <form
+                    class="row justify-content-center"
+                    action="/sparepart-request"
+                    method="POST"
+                    enctype="multipart/form-data"
+                    id="vin-request-form"
+                >
+                    @csrf
+
+                    <div class="col-12 col-lg-8">
+                        <div class="p-3 p-md-4 border rounded-4 shadow-sm bg-white">
+
+                            {{-- VIN --}}
+                          <div class="mb-3">
+                              <label for="vin" class="form-label fw-semibold">Винкод авто (VIN)</label>
+                              <input
+                                  type="text"
+                                  name="vincode"
+                                  class="form-control vin-selection-field"
+                                  id="vin"
+                                  placeholder="Например: KMH1234567890"
+                              >
+                              <div id="vin-photo-error" class="text-danger small mt-1"></div>
+                              <div class="form-text">
+                                  Если загрузите фото техпаспорта, VIN можно не заполнять
+                              </div>
+                          </div>
+
+                            {{-- Запчасти --}}
+                            <div class="mb-3">
+                                <label for="parts" class="form-label fw-semibold">Какие запчасти нужны</label>
+                                <textarea
+                                    class="form-control vin-selection-field"
+                                    name="spareparts"
+                                    id="parts"
+                                    rows="3"
+                                    placeholder="Например: фара, бампер, колодки..."
+                                    required
+                                ></textarea>
+                            </div>
+
+                            {{-- Телефон --}}
+                            <div class="mb-3">
+                                <label for="phone" class="form-label fw-semibold">Телефон (для обратной связи)</label>
+                                <input
+                                    type="tel"
+                                    class="form-control vin-selection-field"
+                                    name="phone"
+                                    id="phone"
+                                    placeholder="+7 (777) 123-45-67"
+                                    required
+                                >
+                                <div id="error" style="font-size:12px; font-style:italic; color:#d32f2f; margin-top:4px;"></div>
+                            </div>
+
+                            {{-- Примечание --}}
+                            <div class="mb-3">
+                                <label for="note" class="form-label fw-semibold">Примечание (не обязательно)</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    name="note"
+                                    id="note"
+                                    placeholder="Например: только оригинал..."
+                                >
+                            </div>
+
+                            {{-- Фото и Файлы --}}
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold d-block">
+                                    Фото техпаспорта (VIN) или PDF-документ
+                                </label>
+
+                                <label for="tech_passport" class="btn btn-outline-secondary w-100 py-3 rounded-3">
+                                    📎 Прикрепить фото, PDF или сделать снимок
+                                </label>
+
+                                <input
+                                    type="file"
+                                    class="d-none"
+                                    name="tech_passport[]"
+                                    id="tech_passport"
+                                    accept="image/*,.pdf" 
+                                    multiple
+                                >
+
+                                <div id="selected-file-name" class="form-text mt-2">
+                                    Можно прикрепить до 5 файлов (JPG, PNG, PDF)
+                                </div>
+                                <div id="photo-preview-list" class="row g-2 mt-2"></div>
+                            </div>
+
+                            {{-- Кнопка --}}
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg" id="send-vin-search-btn">
+                                    Получить подбор
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
             </div>
         </section>
 

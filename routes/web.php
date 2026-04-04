@@ -21,12 +21,16 @@ use App\Models\XuiPoimiPrice;
 use App\Models\IngvarPrice;
 use App\Models\InterkomPrice;
 use App\Models\AdilPhaetonPrice;
+use App\Http\Controllers\GlobalProductController;
 use App\Http\Controllers\VoltagePriceController;
 use App\Http\Controllers\BlueStarPriceController;
 use App\Http\Controllers\InterkomPriceController;
 use App\Http\Controllers\AdilPhaetonPriceController;
 use App\Http\Controllers\SparePartRequestController;
 use App\Http\Controllers\AISimpleSearchController;
+use App\Http\Controllers\CustomerReturnController;
+use App\Http\Controllers\FinanceDashboardController;
+
 
 /*Route::get('/home', function() {
     (new AdilPhaetonPrice())->importToDb();
@@ -88,6 +92,9 @@ Route::get('china/sportage21-25', function() {
     return view('korean-cars.sportage21-25');
 });
 
+Route::get('/product/{brand}/{article}', [GlobalProductController::class, 'show'])->name('product.show');
+// Добавляем /api/ в начало пути прямо здесь
+Route::get('/api/search-prices', [App\Http\Controllers\GlobalProductController::class, 'getApiPrices']);
 
 Route::middleware('guest')->group(function() {
     Route::get('/', [HomeController::class, 'index']);
@@ -112,6 +119,7 @@ Route::middleware('guest')->group(function() {
 });
 
 Route::middleware(['auth', 'verified'])->group(function() {
+    Route::post('/make-cashflow-transaction', [AdminPanelController::class, 'makeCashflowTransaction'])->name('make-cashflow-transaction');
     Route::post('/makeorder', [OrderController::class, 'store']);
     Route::get('orders', [OrderController::class, 'index']);
     Route::get('settlements', [SettlementController::class, 'index']);
@@ -132,6 +140,21 @@ Route::middleware(['auth', 'verified'])->group(function() {
     Route::post('import-blue-star', [BlueStarPriceController::class, 'store']);
     Route::post('import-interkom', [InterkomPriceController::class, 'store']);
     Route::post('import-adil-phaeton', [AdilPhaetonPriceController::class, 'store']);
+    Route::get('additional-payment', [AdminPanelController::class, 'additionalPayment']);
+    Route::post('choose_products_from_order', [AdminPanelController::class, 'chooseProductsFromOrder']);
+    Route::post('makeCustomerReturn', [AdminPanelController::class, 'makeCustomerReturn']);
+    Route::get('/supplierRefundComplete/{customerReturn}', 
+        [CustomerReturnController::class, 'edit']
+    )->name('supplierRefundComplete');
+    Route::put('/customer-returns/{customerReturn}', 
+        [CustomerReturnController::class, 'update']
+    )->name('customer_returns.update');
+
+    Route::get('/dashboard/finance', [FinanceDashboardController::class, 'index'])
+    ->name('dashboard.finance');
+
+    
+
 });
 
 Route::middleware('auth')->group(function() {
