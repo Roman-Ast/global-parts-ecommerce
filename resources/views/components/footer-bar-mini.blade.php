@@ -3,8 +3,7 @@
     {{-- Главная --}}
     <div id="footer-bar-logo" style="flex: 1; text-align: center;">
         <a href="/" style="text-decoration: none; color: #333; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-            <i class="fas fa-home" style="font-size: 20px;"></i>
-            <span style="font-size: 10px; font-weight: bold;">Главная</span>
+            <img src="/images/logo1.png" alt="main-logo" id="logo-img" style="height: 55px; width: auto; object-fit: contain;">
         </a>
     </div>
 

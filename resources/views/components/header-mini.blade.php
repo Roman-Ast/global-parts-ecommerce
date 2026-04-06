@@ -18,12 +18,6 @@
         </div>
     </div>
 
-    {{-- Логотип (чуть уменьшил отступ снизу) --}}
-    <div style="display: flex; justify-content: center; padding-top: 15px; padding-bottom: 5px;">
-        <a id="logo-container" href="/" style="display: block;">
-            <img src="/images/logo1.png" alt="main-logo" id="logo-img" style="height: 55px; width: auto; object-fit: contain;">
-        </a>
-    </div>
 
     {{-- МАССИВНЫЙ ПОИСК --}}
     <div id="search-bar-wrapper" style="padding: 10px 15px 15px 15px;">
