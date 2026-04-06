@@ -134,24 +134,7 @@
                                 @auth
                                     <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
                                     
-                                    @if (auth()->user()->user_role == 'admin' || auth()->user()->user_role == 'pre_admin')
-                                        <div class="mb-3">
-                                            <label class="small fw-bold text-muted mb-1">Телефон клиента</label>
-                                            <input type="tel" class="form-control rounded-3" name="customer_phone" placeholder="+7 (___) ___ __ __" required>
-                                        </div>
-                                        <div class="mb-4">
-                                            <label class="small fw-bold text-muted mb-1">Канал продаж</label>
-                                            <select name="sales_channel" class="form-select rounded-3" required>
-                                                <option selected disabled>Выберите канал</option>
-                                                <option value="2gis">2GIS</option>
-                                                <option value="olx">OLX</option>
-                                                <option value="site">Сайт</option>
-                                                <option value="friends">Свои / Прямые</option>
-                                            </select>
-                                        </div>
-                                    @else
-                                        <input type="hidden" name="sales_channel" value="site">
-                                    @endif
+                                    
 
                                     <div class="bg-light p-3 rounded-3 mb-4">
                                         <div class="d-flex justify-content-between mb-2">
@@ -203,6 +186,7 @@
 </div>
 
 {{-- Модалка подтверждения (твой старый функционал, но в стиле BS5) --}}
+{{-- Модалка подтверждения (твой старый функционал, но в стиле BS5) --}}
 <div class="modal fade" id="orderConfirmModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow rounded-4">
@@ -211,8 +195,15 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body py-4">
-        Вы действительно хотите оформить заказ на сумму <span class="fw-bold text-primary h5">{{ number_format(session()->get('cart')->totalWithMargine(), 0, '', ' ') }} ₸</span>?
-      </div>
+    @if(session()->has('cart') && is_object(session()->get('cart')))
+        Вы действительно хотите оформить заказ на сумму 
+        <span class="fw-bold text-primary h5">
+            {{ number_format(session()->get('cart')->totalWithMargine(), 0, '.', ' ') }} ₸
+        </span>
+    @else
+        Вы действительно хотите оформить заказ?
+    @endif
+</div>
       <div class="modal-footer border-0 pt-0">
         <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Отмена</button>
         <button type="button" class="btn btn-primary rounded-pill px-4" id="order-confirm-btn">Да, заказываю</button>
