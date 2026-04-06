@@ -52,26 +52,44 @@
                                 </a>
                             </div>
 
-                            <div class="col-md-5 mt-4 mt-md-0">
-                                <div id="prodCarousel" class="carousel slide border rounded bg-white shadow-sm overflow-hidden" data-bs-ride="carousel" style="min-height: 250px;">
-                                    <div class="carousel-inner" id="google-images-container">
-                                        {{-- Начальное состояние --}}
-                                        <div class="carousel-item active text-center py-5">
-                                            <div class="py-4">
-                                                <i class="fas fa-image fa-3x text-light mb-3"></i>
-                                                <p class="small text-muted">Фотография детали по артикулу</p>
-                                                <button id="load-google-images" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                                    <i class="fas fa-search-plus me-1"></i> Показать фото
-                                                </button>
+                            <div class="col-md-5 mt-4 mt-md-0 d-flex flex-column">
+                                <div id="prodCarousel" class="carousel slide border rounded bg-white shadow-sm overflow-hidden flex-grow-1" data-bs-ride="carousel" style="min-height: 250px;">
+                                    <div class="carousel-inner h-100" id="google-images-container">
+                                        
+                                        {{-- Презентабельная заглушка (Исправленная) --}}
+                                        <div class="carousel-item active h-100 text-center">
+                                            {{-- Темный фон с коллажем --}}
+                                            <div class="position-relative d-flex align-items-center justify-content-center bg-dark h-100" style="min-height: 250px; overflow: hidden;">
+                                                
+                                                {{-- Фоновое фото: теперь оно растянуто НА ВЕСЬ темный блок --}}
+                                                <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&q=60&w=500" 
+                                                    class="position-absolute w-100 h-100 top-0 start-0 opacity-25" 
+                                                    style="object-fit: cover; filter: blur(2px);" 
+                                                    alt="Запчасти">
+                                                
+                                                {{-- Контент поверх фона: центрирован --}}
+                                                <div class="position-relative z-index-1 p-3 w-100">
+                                                    <div class="mb-3">
+                                                        <i class="fas fa-camera-retro fa-3x text-white-50"></i>
+                                                    </div>
+                                                    <h6 class="text-white fw-bold mb-1 text-truncate">{{ $product->brand }} {{ $product->article }}</h6>
+                                                    <p class="extra-small text-white-50 mb-3">Оригинальное качество и аналоги</p>
+                                                    
+                                                    <button id="load-google-images" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm">
+                                                        <i class="fas fa-search-plus me-1"></i> Показать фото
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
                                 
-                                <div id="image-disclaimer" class="mt-2 text-center" style="display: none;">
-                                    <p class="text-muted" style="font-size: 0.65rem; line-height: 1.2;">
-                                        <i class="fas fa-info-circle me-1"></i> 
-                                        Изображения найдены автоматически. Реальный вид детали может отличаться.
+                                {{-- Дисклеймер под блоком --}}
+                                <div id="image-disclaimer" class="mt-auto pt-2 text-center">
+                                    <p class="text-muted mb-0" style="font-size: 0.65rem; line-height: 1.2; opacity: 0.8;">
+                                        <i class="fas fa-info-circle me-1 text-primary"></i> 
+                                        Изображения подобраны автоматически. Реальный вид детали может отличаться.
                                     </p>
                                 </div>
                             </div>
@@ -246,7 +264,10 @@
   "@context": "https://schema.org/",
   "@type": "Product",
   "name": "{{ $product->name }} {{ $product->brand }} ({{ $product->article }})",
-  "description": "Купить {{ $product->name }} артикул {{ $product->article }} бренда {{ $product->brand }} в Казахстане.",
+  "image": [
+    "https://shop.globalparts.kz/images/logo1.png" 
+  ],
+  "description": "Купить {{ $product->name }} артикул {{ $product->article }} бренда {{ $product->brand }} в Казахстане. Цена: {{ number_format($product->retail_price, 0, '', '') }} ₸. В наличии и под заказ.",
   "sku": "{{ $product->article }}",
   "brand": {
     "@type": "Brand",
@@ -254,49 +275,66 @@
   },
   "offers": {
     "@type": "Offer",
+    "url": "{{ url()->current() }}",
     "priceCurrency": "KZT",
-    "price": "{{ $product->price }}", 
-    "availability": "https://schema.org/InStock"
+    "price": "{{ number_format($product->retail_price, 0, '', '') }}", 
+    "itemCondition": "https://schema.org/NewCondition",
+    "availability": "https://schema.org/InStock",
+    "seller": {
+      "@type": "Organization",
+      "name": "Global Parts Astana"
+    }
   }
 }
 </script>
-<script>
-    
-    document.getElementById('load-google-images')?.addEventListener('click', function() {
-    const btn = this;
-    const container = document.getElementById('google-images-container');
-    const disclaimer = document.getElementById('image-disclaimer');
-    
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-    fetch(`/api/get-product-images?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`)
-    .then(response => response.json())
-    .then(links => {
-        if (links.length > 0) {
-            let html = '';
-            links.forEach((link, index) => {
-                html += `
-                <div class="carousel-item ${index === 0 ? 'active' : ''}">
-                    <img src="${link}" class="d-block w-100 p-2" style="height: 250px; object-fit: contain;" 
-                         onerror="this.src='https://via.placeholder.com/400x300?text=Ошибка+загрузки'">
-                </div>`;
-            });
-            container.innerHTML = html;
-            disclaimer.style.display = 'block';
-            
-            // Если фото больше одного, добавляем стрелки управления (опционально)
-            // Инициализируем карусель Bootstrap снова если нужно
-        } else {
-            btn.innerHTML = 'Фото не найдено';
-        }
-    })
-    .catch(err => {
-        btn.innerHTML = 'Ошибка';
-        btn.disabled = false;
-    });
-});
-   document.getElementById('start-api-search').addEventListener('click', function() {
+<script>
+// Функция для отрисовки ОДНОЙ строки таблицы (используем везде)
+function renderOfferRow(offer) {
+    const qty = parseInt(offer.qty) || 0;
+    const priceDisplay = Number(offer.priceWithMargine || 0).toLocaleString();
+    
+    let delivery = offer.delivery_time || offer.deliveryStart || '1-2 дня';
+    if (delivery.includes('T')) delivery = delivery.split('T')[0];
+
+    const isAstana = offer.supplier_city.toLowerCase() === 'ast' || delivery.includes('часа');
+    const rowClass = isAstana ? 'table-success' : '';
+    const badgeClass = isAstana ? 'bg-success' : 'bg-light text-dark border';
+
+    return `
+    <tr class="${rowClass} animate__animated animate__fadeIn">
+        <td class="ps-4 py-3">
+            <div class="fw-bold text-primary text-uppercase">${offer.brand}</div>
+            <div class="small text-muted fw-bold">${offer.article}</div>
+            <div class="extra-small text-muted" style="font-size: 0.7rem; max-width: 300px;">
+                ${offer.name || ''}
+            </div>
+        </td>
+        <td class="text-center align-middle">
+            <span class="badge ${badgeClass}">${isAstana ? 'В наличии: Астана' : delivery}</span>
+            <div class="small text-muted" style="font-size: 0.65rem;">${offer.supplier_city || ''}</div>
+        </td>
+        <td class="text-center align-middle">
+            <span class="badge ${qty > 0 ? 'bg-success' : 'bg-secondary'}">${qty} шт.</span>
+        </td>
+        <td class="align-middle fw-bold h5 text-primary">${priceDisplay} ₸</td>
+        <td class="pe-4 text-end">
+            <button class="btn ${isAstana ? 'btn-success' : 'btn-primary'} btn-sm rounded-pill px-3 shadow-sm api-buy-btn"
+                data-brand="${offer.brand}" 
+                data-article="${offer.article}" 
+                data-qty="${qty}" 
+                data-name="${offer.name || 'Автозапчасть'}" 
+                data-price="${offer.price || 0}" 
+                data-price-margine="${offer.priceWithMargine}"
+                data-delivery="${delivery}"
+                data-supplier="${offer.supplier_city || 'Склад'}">
+                Купить
+            </button>
+        </td>
+    </tr>`;
+}
+
+document.getElementById('start-api-search')?.addEventListener('click', function() {
     const article = "{{ $product->article }}";
     const brand = "{{ $product->brand }}";
     const btn = this;
@@ -305,88 +343,46 @@
     const content = document.getElementById('api-offers-content');
     const tbody = document.getElementById('api-offers-tbody');
 
-    // 1. Состояние "Загрузка"
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Ищем...';
     
     placeholder.style.display = 'none';
-    content.style.display = 'none';
     loader.style.display = 'block';
+    tbody.innerHTML = ''; // Очищаем старое
 
-    // article и brand у тебя уже должны быть объявлены выше в скрипте
+    // ШАГ 1: Основной быстрый поиск
     fetch(`/api/search-prices?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`)
-    .then(response => {
-        if (!response.ok) throw new Error('Ошибка сервера (500)');
-        return response.json();
-    })
+    .then(res => res.json())
     .then(json => {
-        // Внутри .then(json => {
-    loader.style.display = 'none';
-    content.style.display = 'block';
-    
-    let html = '';
-    const offers = json.offers || [];
+        loader.style.display = 'none';
+        content.style.display = 'block';
+        
+        let html = '';
+        if (json.offers && json.offers.length > 0) {
+            json.offers.forEach(offer => html += renderOfferRow(offer));
+            tbody.innerHTML = html;
+        }
 
-    if (offers.length > 0) {
-        offers.forEach(offer => {
-            const qty = parseInt(offer.qty) || 0;
-            const priceDisplay = Number(offer.priceWithMargine || 0).toLocaleString();
-            
-            // Чистим дату доставки
-            let delivery = offer.delivery_time || offer.deliveryStart || '1-2 дня';
-            if (delivery.includes('T')) delivery = delivery.split('T')[0];
-
-            // Проверяем, есть ли товар в Астане (локальное наличие)
-            const isAstana = offer.supplier_city.toLowerCase() === 'ast' || delivery.includes('часа');
-            const rowClass = isAstana ? 'table-success' : ''; // Подсветим строку зеленым если Астана
-            const badgeClass = isAstana ? 'bg-success' : 'bg-light text-dark border';
-
-            html += `
-            <tr class="${rowClass}">
-                <td class="ps-4 py-3">
-                    <div class="fw-bold text-primary text-uppercase">${offer.brand}</div>
-                    <div class="small text-muted fw-bold">${offer.article}</div>
-                    <div class="extra-small text-muted" style="font-size: 0.7rem; max-width: 300px;">
-                        ${offer.name || ''}
-                    </div>
-                </td>
-                <td class="text-center align-middle">
-                    <span class="badge ${badgeClass}">${isAstana ? 'В наличии: Астана' : delivery}</span>
-                    <div class="small text-muted" style="font-size: 0.65rem;">${offer.supplier_city || ''}</div>
-                </td>
-                <td class="text-center align-middle">
-                    <span class="badge ${qty > 0 ? 'bg-success' : 'bg-secondary'}">${qty} шт.</span>
-                </td>
-                <td class="align-middle fw-bold h5 text-primary">${priceDisplay} ₸</td>
-                <td class="pe-4 text-end">
-                    <button class="btn ${isAstana ? 'btn-success' : 'btn-primary'} btn-sm rounded-pill px-3 shadow-sm api-buy-btn"
-                        data-brand="${offer.brand}" 
-                        data-article="${offer.article}" 
-                        data-name="${offer.name || 'Автозапчасть'}" 
-                        data-price="${offer.price || 0}" 
-                        data-price-margine="${offer.priceWithMargine}"
-                        data-delivery="${delivery}"
-                        data-supplier="${offer.supplier_city || 'Склад'}">
-                        Купить
-                    </button>
-                </td>
-            </tr>`;
-        });
-        tbody.innerHTML = html;
-        btn.innerHTML = 'Обновлено';
-    } else {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5">Нет предложений.</td></tr>';
-        btn.innerHTML = 'Повторить';
-        btn.disabled = false;
-    }
+        // ШАГ 2: Догружаем Rossko (запускаем сразу после отрисовки первых данных)
+        console.log('Запрашиваем Rossko...');
+        fetch(`/api/search-rossko?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`)
+        .then(res => res.json())
+        .then(rosskoData => {
+            if (rosskoData.offers && rosskoData.offers.length > 0) {
+                let rosskoHtml = '';
+                rosskoData.offers.forEach(offer => rosskoHtml += renderOfferRow(offer));
+                // Добавляем в начало, если Астана, или в конец
+                tbody.insertAdjacentHTML('afterbegin', rosskoHtml); 
+                console.log('Rossko добавлен');
+            }
+            btn.innerHTML = 'Обновлено';
+        })
+        .catch(err => console.error('Rossko error:', err));
     })
     .catch(err => {
-        console.error(err);
         loader.style.display = 'none';
-        placeholder.style.display = 'block';
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Ошибка. Повторить?';
-        //alert('Сервер не успел ответить (Timeout). Нажмите кнопку еще раз.');
+        btn.innerHTML = 'Ошибка. Повторить?';
     });
 });
 </script>

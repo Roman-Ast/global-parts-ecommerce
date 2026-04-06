@@ -20,12 +20,13 @@
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
         <link href="{{ URL::asset('css/user/login.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/user/login-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/user/registration-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/user/verify-email.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/header.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/header-mini.css') }}" rel="stylesheet">
+        
+        
         <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
@@ -41,7 +42,7 @@
         <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/searchCatalog-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/registerForm.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/footer-bar-mini.css') }}" rel="stylesheet">
+        
         <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/notfound.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/nothingFoundStub.css') }}" rel="stylesheet">

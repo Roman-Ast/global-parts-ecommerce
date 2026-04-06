@@ -246,37 +246,61 @@ $('.cart-item-delete img').on('click', function () {
    });
 });
 //изменение кол-ва в корзине
-$('.cart-qty-change').on('input', function () {
-   if ($(this).val() < 1) {
-      $(this).css({'border': '1px solid red'});
-      return;
-   }
-   $(this).css({'border': '1px solid #ccc'})
-   let data = {
-      'article': $(this).parent().prev().prev().prev().prev().text(),
-      'qty': $(this).val()
-   };
-   
-   if ($(this).parent().prev().children().first().hasClass('newPriceWithMargine')) {
-      $(this).parent().next().text($(this).val() * $(this).parent().prev().children().first().val());
-   } else {
-      $(this).parent().next().text($(this).val() * $(this).parent().prev().children().first().text());
-   }
+$(document).on('input', '.cart-qty-change', function () {
+    const input = $(this);
+    const article = input.data('article'); // Берем из data-article
+    const qty = input.val();
+    
+    // Валидация визуальная
+    if (qty < 1) {
+        input.css({'border': '1px solid red'});
+        return;
+    }
+    input.css({'border': '1px solid #ccc'});
 
-   $.ajax({
-      data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
-      url: "/cart/update",
-      type: "POST",
-      dataType: 'json',
-      success: function (data) {
-         $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + ' шт');
-         $('#header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
-         $('#cart-header-sum').text(new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 2}).format(data.total,) + ' T');
-      },
-      error: function (error) {
-         console.log(error);
-      }
-   });
+    // Логика расчета суммы строки (Subtotal)
+    // Ищем цену: либо в инпуте (для админа), либо в span (для клиента) внутри той же строки
+    let priceElement = input.closest('tr').find('.newPriceWithMargine, span');
+    let price = 0;
+    
+    if (priceElement.is('input')) {
+        price = parseFloat(priceElement.val()) || 0;
+    } else {
+        // Убираем пробелы из текста цены, если они есть (например "20 899")
+        price = parseFloat(priceElement.text().replace(/\s/g, '')) || 0;
+    }
+
+    // Обновляем текст итоговой суммы строки (ищем по классу в этой же строке)
+    const subtotal = (qty * price);
+    input.closest('tr').find('.item-subtotal-display').text(new Intl.NumberFormat('ru-RU').format(subtotal) + ' ₸');
+    $('#cart-total-checkout').html(new Intl.NumberFormat('ru-RU').format(subtotal) + ' ₸');
+    $('.header-cart-sum').html(new Intl.NumberFormat('ru-RU').format(subtotal) + ' ₸')
+
+    // Формируем объект data, как ждет твой контроллер
+    let requestData = {
+        'article': article,
+        'qty': qty
+    };
+
+    $.ajax({
+        // Отправляем в обертке data: requestData, чтобы в PHP пришло $request->data['article']
+        data: {
+            '_token': $('meta[name="csrf-token"]').attr('content'), 
+            'data': requestData 
+        },
+        url: "/cart/update",
+        type: "POST",
+        dataType: 'json',
+        success: function (data) {
+            // Обновляем шапку и итог корзины
+            $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + ' шт');
+            $('#header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' ₸');
+            $('.h4.fw-bold.text-dark span, #cart-header-sum div').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' ₸');
+        },
+        error: function (error) {
+            console.log('Ошибка обновления корзины:', error);
+        }
+    });
 });
 
 //изменение цены товара в корзине
@@ -987,3 +1011,68 @@ function addToCartFromApi(button, itemData) {
         }
     });
 }
+
+$(document).on('click', '.api-buy-btn', function() {
+    const btn = $(this);
+    
+    // Получаем данные напрямую через .attr или .data()
+    // Важно: если в HTML написано data-qty, в .data() это будет qty
+    const brand = btn.attr('data-brand');
+    const article = btn.attr('data-article');
+    const priceMargine = btn.attr('data-price-margine');
+    const stockQty = parseInt(btn.attr('data-qty')) || 0; 
+    const name = btn.attr('data-name');
+    const supplier = btn.attr('data-supplier');
+    const delivery = btn.attr('data-delivery');
+    const priceBase = btn.attr('data-price');
+
+    // Отладка: нажми F12 в браузере и посмотри, что выведет при клике
+    console.log('Пытаемся добавить:', {brand, article, stockQty});
+
+    // 1. Проверка количества
+    if (stockQty <= 0) {
+        alert('К сожалению, этого товара нет в наличии на выбранном складе.');
+        return;
+    }
+
+    // Блокируем кнопку
+    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+
+    fetch('/cart/add-api', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        body: JSON.stringify({
+            brand: brand,
+            article: article,
+            name: name,
+            price: priceBase,
+            retail_price: priceMargine,
+            supplier: supplier,
+            delivery: delivery,
+            quantity: 1
+        })
+    })
+    .then(res => res.json())
+    .then(json => {
+        if (json.success) {
+            // Обновляем кругляшок корзины в хедере
+            if ($('#header-cart-qty').length) {
+                $('#header-cart-qty').text(json.cart_count).show();
+            }
+            
+            btn.removeClass('btn-primary btn-success')
+               .addClass('btn-outline-secondary')
+               .html('<i class="fas fa-check"></i> В корзине');
+        } else {
+            alert('Ошибка при добавлении: ' + (json.message || 'неизвестная ошибка'));
+            btn.prop('disabled', false).text('Купить');
+        }
+    })
+    .catch(err => {
+        console.error('Ошибка fetch:', err);
+        btn.prop('disabled', false).text('Ошибка');
+    });
+});

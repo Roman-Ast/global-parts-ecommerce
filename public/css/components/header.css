@@ -77,12 +77,7 @@
     height: 80px;
     width: 100%;
 }
-#input-searchbtn-wrapper{
-    display: flex;
-    flex-direction: row;
-    width: 90%;
-    margin-bottom: 5px;
-}
+
 #search-button-container{
     display: flex;
     justify-content: center;

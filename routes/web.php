@@ -93,6 +93,9 @@ Route::get('china/sportage21-25', function() {
 Route::get('/product/{brand}/{article}', [GlobalProductController::class, 'show'])->name('product.show');
 // Добавляем /api/ в начало пути прямо здесь
 Route::get('/api/search-prices', [App\Http\Controllers\GlobalProductController::class, 'getApiPrices']);
+Route::get('/api/search-rossko', [GlobalProductController::class, 'getRosskoApi']);
+
+Route::post('/cart/add-api', [GlobalProductController::class, 'addToCartApi']);
 
 Route::middleware('guest')->group(function() {
     Route::get('register', [UserController::class, 'create'])->name('register');

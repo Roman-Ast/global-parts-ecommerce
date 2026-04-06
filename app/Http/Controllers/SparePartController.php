@@ -1044,6 +1044,108 @@ class SparePartController extends Controller
         return;
     }
 
+    public function getRosskoPricesOnly(String $brand, String $partNumber)
+    {
+        $connect = [
+            'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
+            'options' => ['connection_timeout' => 5, 'trace' => true]
+        ];
+        
+        try {
+            $query = new \SoapClient($connect['wsdl'], $connect['options']);
+            
+            // 1. Сначала ищем GUID (точно так же)
+            $paramSearch = [
+                'KEY1' => self::API_KEY1_ROSSKO,
+                'KEY2' => self::API_KEY2_ROSSKO,
+                'text' => $partNumber,
+                'delivery_id' => '000000001',
+                'address_id'  => '229881'
+            ];
+
+            $searchResult = $query->GetSearch($paramSearch);
+            $searchData = json_decode(json_encode($searchResult), true);
+            
+            if (!isset($searchData['SearchResult']['PartsList']['Part'])) return [];
+
+            $partsFound = $searchData['SearchResult']['PartsList']['Part'];
+            $targetGuid = null;
+
+            // Определяем GUID основного товара (сверяем бренд)
+            if (isset($partsFound['guid'])) {
+                if (strtoupper($partsFound['brand']) === strtoupper($brand)) $targetGuid = $partsFound['guid'];
+            } else {
+                foreach ($partsFound as $p) {
+                    if (strtoupper($p['brand']) === strtoupper($brand)) {
+                        $targetGuid = $p['guid'];
+                        break;
+                    }
+                }
+            }
+
+            if (!$targetGuid) return [];
+
+            // 2. Запрос за полным списком (товары + кроссы) по GUID
+            $paramFull = [
+                'KEY1' => self::API_KEY1_ROSSKO,
+                'KEY2' => self::API_KEY2_ROSSKO,
+                'text' => $targetGuid,
+                'delivery_id' => '000000001',
+                'address_id'  => '229881'
+            ];
+
+            $finalResult = $query->GetSearch($paramFull);
+            $finalData = json_decode(json_encode($finalResult), true);
+            
+            $allOffers = [];
+            $mainPart = $finalData['SearchResult']['PartsList']['Part'] ?? null;
+
+            if (!$mainPart) return [];
+
+            // --- Внутренняя функция для сбора стоков (чтобы не дублировать код) ---
+            $collectFromPart = function($part) use (&$allOffers) {
+                if (!isset($part['stocks']['stock'])) return;
+                
+                $stocks = $part['stocks']['stock'];
+                if (isset($stocks['id'])) $stocks = [$stocks]; // Если один склад
+
+                foreach ($stocks as $stock) {
+                    $isAstana = str_contains($stock['description'] ?? '', 'Астана') || str_contains($stock['description'] ?? '', 'Акжол');
+                    
+                    $allOffers[] = [
+                        'brand'   => (string)$part['brand'],
+                        'article' => (string)$part['partnumber'],
+                        'name'    => (string)($part['name'] ?? 'Запчасть'),
+                        'qty'     => (int)($stock['count'] ?? 0),
+                        'price'   => $stock['price'],
+                        'priceWithMargine' => $this->setPrice($stock['price']),
+                        'delivery_time'    => $isAstana ? '1.5-2 часа' : ($stock['deliveryEnd'] ?? '3-5 дней'),
+                        'supplier_city'    => $isAstana ? 'ast' : ($stock['description'] ?? 'РФ/Склад')
+                    ];
+                }
+            };
+
+            // 3. Собираем основной товар
+            $collectFromPart($mainPart);
+
+            // 4. Собираем кроссы (аналоги)
+            if (isset($mainPart['crosses']['Part'])) {
+                $crosses = $mainPart['crosses']['Part'];
+                // Если кросс всего один — превращаем в массив
+                if (isset($crosses['guid'])) $crosses = [$crosses];
+
+                foreach ($crosses as $crossPart) {
+                    $collectFromPart($crossPart);
+                }
+            }
+
+            return $allOffers;
+
+        } catch (\Throwable $th) {
+            return [];
+        }
+    }
+
     public function searchArmtek(String $brand, String $partnumber)
     {
         //$start = microtime(true);
