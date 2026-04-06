@@ -3,46 +3,22 @@
         display: none;
     }
     #footer-bar-mini{
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background-color: #d8e6eb;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: nowrap;
-        padding-top: 9px;
-        padding-bottom: 10px;
+        position: fixed; 
+        bottom: 0; 
+        left: 0; 
+        right: 0; 
+        background: #fff; 
+        border-top: 1px solid #eee; 
+        display: flex; 
+        justify-content: space-around; 
+        align-items: center; 
+        height: 65px; 
+        z-index: 10; 
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        padding-bottom: env(safe-area-inset-bottom);
+        
     }
-    #header-cart-qty{
-        display: none;
-        font-size: 0.8em;
-    }
-    #footer-bar-logo{
-        display: flex;
-        justify-content: flex-start;
-        max-width: 33%;
-    }
-    #logo-img{
-        width: 70%;
-    }
-    #cart-wrapper{
-        display: flex;
-        flex-wrap: nowrap;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-    }
-    #auth-buttons-container{
-        display: flex;
-        justify-content: flex-start;
-        align-items: center ;
-    }
-    .dropdown-item{
-        font-size: 0.9em !important;
-        border-bottom: 1px solid #ccc !important;
-    }
+    
 }
 
 

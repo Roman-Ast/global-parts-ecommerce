@@ -108,7 +108,7 @@ Route::middleware('guest')->group(function() {
         return view('user.forgot-password');
     })->name('password.request');
 
-    Route::post('forgot-password', [USerController::class, 'forgotPasswordStore'])->name('password.email')->middleware('throttle:3,1');
+    Route::post('forgot-password', [UserController::class, 'forgotPasswordStore'])->name('password.email')->middleware('throttle:3,1');
 
     Route::get('reset-password/{token}', function(string $token) {
         return view('user.reset-password', ['token' => $token]);

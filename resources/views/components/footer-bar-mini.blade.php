@@ -1,4 +1,4 @@
-<div id="footer-bar-mini" style="position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; height: 65px; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); padding-bottom: env(safe-area-inset-bottom);">
+<div id="footer-bar-mini" style="">
     
     {{-- Главная --}}
     <div id="footer-bar-logo" style="flex: 1; text-align: center;">

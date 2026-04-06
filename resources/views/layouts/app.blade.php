@@ -17,6 +17,7 @@
         <title>@yield('title')</title>
         <link rel="icon" href="{{ URL::asset('images/favicon-32x32.png') }}">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+        <link rel="canonical" href="{{ url()->current() }}" />
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
@@ -42,7 +43,7 @@
         <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/searchCatalog-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/registerForm.css') }}" rel="stylesheet">
-        
+        <link href="{{ URL::asset('css/components/footer-bar-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/notfound.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/nothingFoundStub.css') }}" rel="stylesheet">
