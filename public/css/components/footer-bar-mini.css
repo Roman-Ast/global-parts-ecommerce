@@ -18,6 +18,22 @@
         padding-bottom: env(safe-area-inset-bottom);
         
     }
+
+    
+    /* ... твои старые стили ... */
+
+    @media (max-width: 768px) {
+        .main-wrapper {
+            /* 180px снизу дадут достаточно места, чтобы кнопка 
+               WhatsApp не перекрывала кнопку "Оформить заказ" */
+            padding-bottom: 200px !important; 
+        }
+        
+        /* Немного отодвинем кнопку WhatsApp повыше, если она все еще мешает */
+        .whatsapp-button {
+            bottom: 90px !important; /* Поднимаем чуть выше уровня footer-bar-mini */
+        }
+    }
     
 }
 

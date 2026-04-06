@@ -222,83 +222,94 @@ $('.stock-item-cart-btn').on('click', function () {
 });
 
 //удаление товара из корзины
-$('.cart-item-delete img').on('click', function () {
-   $(this).css({'transform': 'scale(0.7)'});
-
-   let data = {
-      'article': $(this).parent().prev().prev().prev().prev().prev().prev().text()
-   };
-   $(this).parent().parent().remove();
-
-   $.ajax({
-      data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
-      url: "/cart/delete",
-      type: "POST",
-      dataType: 'json',
-      success: function (data) {
-         $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + "шт");
-         $('.header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + 'T');
-         $('#cart-header-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' T');
-      },
-      error: function (error) {
-         console.log(error);
-      }
-   });
-});
-//изменение кол-ва в корзине
-$(document).on('input', '.cart-qty-change', function () {
-    const input = $(this);
-    const article = input.data('article'); // Берем из data-article
-    const qty = input.val();
+$(document).on('click', '.cart-item-delete', function (e) {
+    e.preventDefault();
+    let btn = $(this);
+    let article = btn.data('article'); // Берем артикул прямо из атрибута кнопки
     
-    // Валидация визуальная
-    if (qty < 1) {
-        input.css({'border': '1px solid red'});
-        return;
-    }
-    input.css({'border': '1px solid #ccc'});
-
-    // Логика расчета суммы строки (Subtotal)
-    // Ищем цену: либо в инпуте (для админа), либо в span (для клиента) внутри той же строки
-    let priceElement = input.closest('tr').find('.newPriceWithMargine, span');
-    let price = 0;
-    
-    if (priceElement.is('input')) {
-        price = parseFloat(priceElement.val()) || 0;
-    } else {
-        // Убираем пробелы из текста цены, если они есть (например "20 899")
-        price = parseFloat(priceElement.text().replace(/\s/g, '')) || 0;
-    }
-
-    // Обновляем текст итоговой суммы строки (ищем по классу в этой же строке)
-    const subtotal = (qty * price);
-    input.closest('tr').find('.item-subtotal-display').text(new Intl.NumberFormat('ru-RU').format(subtotal) + ' ₸');
-    $('#cart-total-checkout').html(new Intl.NumberFormat('ru-RU').format(subtotal) + ' ₸');
-    $('.header-cart-sum').html(new Intl.NumberFormat('ru-RU').format(subtotal) + ' ₸')
-
-    // Формируем объект data, как ждет твой контроллер
-    let requestData = {
-        'article': article,
-        'qty': qty
-    };
+    // Эффект нажатия на иконку внутри
+    btn.find('i').css({'transform': 'scale(0.7)', 'transition': '0.2s'});
 
     $.ajax({
-        // Отправляем в обертке data: requestData, чтобы в PHP пришло $request->data['article']
-        data: {
-            '_token': $('meta[name="csrf-token"]').attr('content'), 
-            'data': requestData 
-        },
-        url: "/cart/update",
+        url: "/cart/delete",
         type: "POST",
         dataType: 'json',
+        data: {
+            '_token': $('meta[name="csrf-token"]').attr('content'),
+            'data': { 'article': article } // Передаем структуру, которую ждет контроллер
+        },
         success: function (data) {
-            // Обновляем шапку и итог корзины
-            $('#header-cart-qty').text(new Intl.NumberFormat('ru-RU').format(data.count) + ' шт');
-            $('#header-cart-sum').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' ₸');
-            $('.h4.fw-bold.text-dark span, #cart-header-sum div').text(new Intl.NumberFormat('ru-RU').format(data.total) + ' ₸');
+            // 1. Удаляем строку из таблицы или карточку на мобилке
+            btn.closest('.cart-item-row').fadeOut(300, function() { 
+                $(this).remove(); 
+                
+                // 2. Если товаров не осталось — перезагружаем, чтобы показать "Корзина пуста"
+                if (data.count == 0) {
+                    location.reload();
+                }
+            });
+
+            // 3. Обновляем все цифры на странице
+            let formattedTotal = new Intl.NumberFormat('ru-RU').format(data.total) + ' ₸';
+            
+            $('#header-cart-qty').text(data.count + " шт");
+            $('.header-cart-sum').text(formattedTotal);
+            $('.cart-total-display').text(formattedTotal); // Тот самый класс, что мы вводили
+            $('#cart-total-checkout').text(formattedTotal);
         },
         error: function (error) {
-            console.log('Ошибка обновления корзины:', error);
+            console.log("Ошибка удаления:", error);
+        }
+    });
+});
+//изменение кол-ва в корзине
+$(document).on('change', '.cart-qty-change', function() {
+    let input = $(this);
+    let qty = parseInt(input.val()) || 1;
+    let price = parseInt(input.data('price')) || 0;
+    let article = input.data('article');
+
+    if (qty < 1) { qty = 1; input.val(1); }
+
+    // 1. Находим ближайшего родителя (хоть TR, хоть DIV)
+    let parent = input.closest('.cart-item-row');
+    
+    // 2. Считаем сумму этой позиции
+    let itemSubtotal = qty * price;
+    
+    // 3. Обновляем текст суммы строки (красивый формат)
+    parent.find('.item-subtotal-display').text(new Intl.NumberFormat('ru-RU').format(itemSubtotal) + ' ₸');
+
+    // 4. Пересчитываем ОБЩИЙ ИТОГ всей корзины
+    let totalCartSum = 0;
+    
+    // Важно: берем только из видимых блоков (чтобы не дублировать десктоп + мобилку)
+    let visibleRows = $('.d-none.d-md-block').is(':visible') ? $('.d-md-block .item-subtotal-display') : $('.d-md-none .item-subtotal-display');
+    
+    visibleRows.each(function() {
+        let val = $(this).text().replace(/[^0-9]/g, '');
+        totalCartSum += parseInt(val) || 0;
+    });
+
+    // 5. Выводим итоговую сумму во все блоки с этим классом
+    let finalFormatted = new Intl.NumberFormat('ru-RU').format(totalCartSum) + ' ₸';
+    
+    // Обновляем везде: и в модалке, и в боковой панели, и в мобильном блоке
+    $('.cart-total-display').html(finalFormatted);
+    $('#cart-total-checkout').html(finalFormatted);
+    $('.header-cart-sum').html(finalFormatted);
+
+    // 6. Отправляем на сервер, чтобы сессия обновилась
+    $.ajax({
+        url: '/cart/update',
+        method: 'POST',
+        data: {
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            article: article,
+            qty: qty
+        },
+        success: function(response) {
+            console.log('Корзина обновлена в сессии');
         }
     });
 });
