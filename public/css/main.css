@@ -111,7 +111,7 @@ ul{
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
-  z-index: 500;
+  z-index: 1500;
 }
 #social-media-container-close{
   display: none;

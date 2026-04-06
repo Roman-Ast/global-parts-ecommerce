@@ -1,4 +1,4 @@
-<div id="footer-bar-mini" style="">
+<div id="footer-bar-mini" style="z-index:1500;">
     
     {{-- Главная --}}
     <div id="footer-bar-logo" style="flex: 1; text-align: center;">
