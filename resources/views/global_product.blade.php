@@ -241,7 +241,27 @@
 </div>
 
 {{-- Скрипт подгрузки цен --}}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ $product->name }} {{ $product->brand }} ({{ $product->article }})",
+  "description": "Купить {{ $product->name }} артикул {{ $product->article }} бренда {{ $product->brand }} в Казахстане.",
+  "sku": "{{ $product->article }}",
+  "brand": {
+    "@type": "Brand",
+    "name": "{{ $product->brand }}"
+  },
+  "offers": {
+    "@type": "Offer",
+    "priceCurrency": "KZT",
+    "price": "{{ $product->price }}", 
+    "availability": "https://schema.org/InStock"
+  }
+}
+</script>
 <script>
+    
     document.getElementById('load-google-images')?.addEventListener('click', function() {
     const btn = this;
     const container = document.getElementById('google-images-container');
