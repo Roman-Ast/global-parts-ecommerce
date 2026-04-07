@@ -1,4 +1,4 @@
-<header id="main-header" class="fixed-top shadow bg-white">
+<header id="main-header" class="fixed-top shadow bg-white" style="z-index: 9 !important;">
     {{-- Твой старый ID для логики закрытия баннера --}}
     <div id="kaspi-wrapper" class="bg-dark text-white py-1 d-none d-md-block overflow-hidden" style="max-height: 40px;">
         <div class="container" style="max-width: 85%;">
@@ -33,11 +33,6 @@
             <div id="search-bar-wrapper" class="flex-grow-1 mx-lg-4">
                 <form action="/getCatalog" method="GET" id="search-bar-container" class="position-relative">
                     <div id="input-searchbtn-wrapper" class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden border border-2 border-primary">
-                        <div id="search-button-container">
-                            <button type="submit" class="btn btn-white border-0 ps-3" id="search-btn">
-                                <img src="/images/lupa-24.png" alt="search" style="width: 20px;">
-                            </button>
-                        </div>
                         <input type="text" name="partNumber" id="searchBarInput" 
                                class="form-control border-0 py-2 shadow-none fw-medium" 
                                style="font-size: 1rem;"

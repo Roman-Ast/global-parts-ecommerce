@@ -1722,6 +1722,26 @@ class SparePartController extends Controller
                     } else {
                         array_push($this->finalArr['brands'], $item->vendor);
                         //dd($item);
+                        // 1. Сначала готовим безопасные параметры
+                        $params = $item->param ?? [];
+                        $infoParams = [];
+
+                        // Проверяем, что в массиве хотя бы 4 элемента для OEM
+                        if (count($params) >= 4 && isset($params[3])) {
+                            $infoParams = [
+                                'OEM' => explode(',', $params[3]),
+                                'suitable_to' => '',
+                                'tech_info' => '',
+                                'sizes' => [
+                                    // Проверяем наличие каждого индекса отдельно, чтобы не поймать Undefined Key
+                                    'width' => isset($params[6]) ? $params[6] : 'нет информации',
+                                    'height' => isset($params[5]) ? $params[5] : 'нет информации',
+                                    'depth' => isset($params[4]) ? $params[4] : 'нет информации',
+                                ]
+                            ];
+                        }
+
+                        // 2. Теперь вставляем это в твой основной массив
                         array_push($this->finalArr['crosses_on_stock'], [
                             'brand' => $item->vendor,
                             'article' => $item->vendorCode,
@@ -1732,20 +1752,7 @@ class SparePartController extends Controller
                             'delivery_time' => "1.5-2 часа",
                             'info' => [
                                 'pictures' => $item->picture ?? 0,
-                                'params' => count($item->param) <=3 ? [] : [
-                                    'OEM' => explode(',', $item->param[3]),
-                                    'suitable_to' => '',
-                                    'tech_info' => '',
-                                    'sizes' => count($item->param) > 4 ?[
-                                        'width' => $item->param[6],
-                                        'height' => $item->param[5],
-                                        'depth' => $item->param[4]
-                                    ] : [
-                                        'width' => 'нет информации',
-                                        'height' => 'нет информации',
-                                        'depth' => 'нет информации'
-                                    ]
-                                ],
+                                'params' => $infoParams, // Вставляем уже подготовленный массив
                             ],
                             'stocks' => [
                                 [
@@ -1757,7 +1764,7 @@ class SparePartController extends Controller
                             'supplier_name' => 'grt',
                             'supplier_city' => 'Астана',
                             'supplier_color' => '#feed00'
-                        ]); 
+                        ]);
                     }
                 }
             }
