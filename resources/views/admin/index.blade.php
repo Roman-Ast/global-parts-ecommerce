@@ -1573,7 +1573,7 @@
                                         <select name="from_stock" class="order_product_item_supplier">
                                             <option disabled selected>Выбери поставщика</option>
                                             @foreach ($suppliers as $supplier)
-                                                <option value="{{ $supplier['id'] }}">{{ $supplier['name'] }}</option>
+                                                <option value="{{ $supplier['name'] }}">{{ $supplier['name'] }}</option>
                                             @endforeach
                                         </select>
                                         <input type="date" class="form-control" name="deliveryTime" value="{{ date('Y-m-d') }}" required>

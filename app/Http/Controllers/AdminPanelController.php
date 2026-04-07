@@ -65,11 +65,8 @@ class AdminPanelController extends Controller
 			$start = $end->copy()->subMonth()->addDay()->startOfDay(); // 8 число в 00:00:00
 		}
 
-		//$orders = Order::whereBetween('date', [$start, $end])->orderBy('date', 'desc')->get();
-        $orders = Order::whereBetween('created_at', [
-            Carbon::parse('2026-02-01')->startOfDay(),
-            Carbon::parse('2026-03-25')->endOfDay(),
-        ])->orderBy('date','desc')->get();
+		$orders = Order::whereBetween('date', [$start, $end])->orderBy('date', 'desc')->get();
+        
         $user = auth()->user();
         //$settlements = Setlement::all();
         $users = User::all();
@@ -916,15 +913,15 @@ class AdminPanelController extends Controller
             ]
         );
 
-        if (!$newCustomer->name && $customerName) {
+        /*if (!$newCustomer->name && $customerName) {
             $newCustomer->update([
                 'name' => $customerName
             ]);
-        }
+        }*/
 
         $order = Order::create([
             'user_id' => $request->data['orderInfo'][0],
-            'customer_id' => $newCustomer->id,
+            //'customer_id' => $newCustomer->id ?? null,
             'date' => $request->data['orderInfo'][1],
             'time' => date('H:i:s'),
             'sum' => $orderSum,
@@ -963,14 +960,14 @@ class AdminPanelController extends Controller
         ]);*/
 
         foreach ($request->data['products'] as $product) {
-            $supplierId = (int)$product[6];
+            /*$supplierId = (int)$product[6];
             $supplierCode = Suppliers::find($supplierId)?->code;
 
-            $supplier = Suppliers::find($supplierId);
+            $supplier = Suppliers::find($supplierId);*/
 
             $orderProduct = OrderProduct::create([
                 'order_id' => $order->id,
-                'supplier_id' => $supplierId ?: null,
+                //'supplier_id' => $supplierId ?: null,
                 'article' => $product[0],
                 'brand' => $product[1],
                 'name' => $product[2],
@@ -980,10 +977,10 @@ class AdminPanelController extends Controller
                 'item_sum' => (float)$product[4] * (int)$product[3],
                 'itemSumWithMargine' => (float)$product[5] * (int)$product[3],
                 'searched_number' => '',
-                'fromStock' => $supplierCode,
+                'fromStock' => $product[6],
                 'deliveryTime' => $product[7],
-                'payment_policy_snapshot' => $supplier?->payment_policy,
-                'payment_delay_days_snapshot' => $supplier?->payment_delay_days ?? 0,
+                //'payment_policy_snapshot' => $supplier?->payment_policy,
+                //'payment_delay_days_snapshot' => $supplier?->payment_delay_days ?? 0,
                 'status' => 'payment_waiting'
             ]);
             $paymentDueDate = null;
@@ -1003,12 +1000,12 @@ class AdminPanelController extends Controller
             SupplierSettlement::create([
                 'order_id' => $order->id,
                 'product_id' => $orderProduct->id,
-                'supplier' => $supplierCode,
-                'supplier_id' => $supplierId ?: null,
+                'supplier' => $product[6],
+                //'supplier_id' => $supplierId ?: null,
                 'sum' => -((float)$product[4] * (int)$product[3]),
                 'date' => $request->data['orderInfo'][1],
                 'operation' => 'realization',
-                'payment_due_date' => $paymentDueDate,
+                //'payment_due_date' => $paymentDueDate,
             ]);
         }
 
