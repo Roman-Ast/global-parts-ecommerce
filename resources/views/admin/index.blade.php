@@ -238,106 +238,106 @@
                                             </div>
 
                                         {{-- Кредиторка --}}
-<div class="row g-3 mb-4">
+                                        <div class="row g-3 mb-4">
 
-    {{-- Кредиторка всего --}}
-    <div class="col-12 col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small mb-1">Кредиторка всего</div>
-                <div class="fs-3 fw-bold text-dark">
-                    {{ number_format($totalSupplierDebt ?? 0, 0, '.', ' ') }} ₸
-                </div>
-                <div class="small text-muted mt-2">Общая сумма долга поставщикам</div>
-            </div>
-        </div>
-    </div>
+                                            {{-- Кредиторка всего --}}
+                                            <div class="col-12 col-md-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <div class="text-muted small mb-1">Кредиторка всего</div>
+                                                        <div class="fs-3 fw-bold text-dark">
+                                                            {{ number_format($totalSupplierDebt ?? 0, 0, '.', ' ') }} ₸
+                                                        </div>
+                                                        <div class="small text-muted mt-2">Общая сумма долга поставщикам</div>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-    {{-- Переплата поставщикам --}}
-    <div class="col-12 col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small mb-1">Переплата поставщикам</div>
-                <div class="fs-3 fw-bold text-success">
-                    {{ number_format($totalSupplierOverpayment ?? 0, 0, '.', ' ') }} ₸
-                </div>
-                <div class="small text-muted mt-2">Авансы и переплаты</div>
-            </div>
-        </div>
-    </div>
+                                            {{-- Переплата поставщикам --}}
+                                            <div class="col-12 col-md-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <div class="text-muted small mb-1">Переплата поставщикам</div>
+                                                        <div class="fs-3 fw-bold text-success">
+                                                            {{ number_format($totalSupplierOverpayment ?? 0, 0, '.', ' ') }} ₸
+                                                        </div>
+                                                        <div class="small text-muted mt-2">Авансы и переплаты</div>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-    {{-- Просроченная кредиторка --}}
-    <div class="col-12 col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small mb-1">Просроченная кредиторка</div>
-                <div class="fs-3 fw-bold text-danger">
-                    {{ number_format($overdueSupplierDebt ?? 0, 0, '.', ' ') }} ₸
-                </div>
-                <div class="small text-muted mt-2">Просроченная часть текущего долга</div>
-            </div>
-        </div>
-    </div>
+                                            {{-- Просроченная кредиторка --}}
+                                            <div class="col-12 col-md-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <div class="text-muted small mb-1">Просроченная кредиторка</div>
+                                                        <div class="fs-3 fw-bold text-danger">
+                                                            {{ number_format($overdueSupplierDebt ?? 0, 0, '.', ' ') }} ₸
+                                                        </div>
+                                                        <div class="small text-muted mt-2">Просроченная часть текущего долга</div>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-    {{-- Поставщиков с долгом --}}
-    <div class="col-12 col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted small mb-1">Поставщиков с долгом</div>
-                <div class="fs-3 fw-bold text-primary">
-                    {{ $suppliersWithDebtCount ?? 0 }}
-                </div>
-                <div class="small text-muted mt-2">Активные обязательства</div>
-            </div>
-        </div>
-    </div>
+                                            {{-- Поставщиков с долгом --}}
+                                            <div class="col-12 col-md-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <div class="text-muted small mb-1">Поставщиков с долгом</div>
+                                                        <div class="fs-3 fw-bold text-primary">
+                                                            {{ $suppliersWithDebtCount ?? 0 }}
+                                                        </div>
+                                                        <div class="small text-muted mt-2">Активные обязательства</div>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-</div>
+                                        </div>
 
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white border-0 pb-0">
-        <h2 class="h5 mb-1">Кредиторка по поставщикам</h2>
-        <p class="text-muted small mb-0">Текущая задолженность, переплаты и просроченная часть по поставщикам</p>
-    </div>
+                                        <div class="card border-0 shadow-sm mb-4">
+                                            <div class="card-header bg-white border-0 pb-0">
+                                                <h2 class="h5 mb-1">Кредиторка по поставщикам</h2>
+                                                <p class="text-muted small mb-0">Текущая задолженность, переплаты и просроченная часть по поставщикам</p>
+                                            </div>
 
-    <div class="card-body p-0">
-        @if(($supplierBalancesTable ?? collect())->count())
-            <div class="table-responsive" style="max-height: 260px; overflow-y: auto;">
-                <table class="table align-middle mb-0">
-                    <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
-                        <tr>
-                            <th>Поставщик</th>
-                            <th class="text-end">Баланс</th>
-                            <th class="text-end">Просрочено</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($supplierBalancesTable as $row)
-                            <tr>
-                                <td class="fw-semibold">{{ $row->supplier }}</td>
+                                            <div class="card-body p-0">
+                                                @if(($supplierBalancesTable ?? collect())->count())
+                                                    <div class="table-responsive" style="max-height: 260px; overflow-y: auto;">
+                                                        <table class="table align-middle mb-0">
+                                                            <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                                                                <tr>
+                                                                    <th>Поставщик</th>
+                                                                    <th class="text-end">Баланс</th>
+                                                                    <th class="text-end">Просрочено</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach($supplierBalancesTable as $row)
+                                                                    <tr>
+                                                                        <td class="fw-semibold">{{ $row->supplier }}</td>
 
-                                <td class="text-end fw-bold {{ $row->balance < 0 ? 'text-success' : 'text-dark' }}">
-                                    @if($row->balance < 0)
-                                        +{{ number_format(abs($row->balance), 0, '.', ' ') }} ₸
-                                    @else
-                                        {{ number_format($row->balance, 0, '.', ' ') }} ₸
-                                    @endif
-                                </td>
+                                                                        <td class="text-end fw-bold {{ $row->balance < 0 ? 'text-success' : 'text-dark' }}">
+                                                                            @if($row->balance < 0)
+                                                                                +{{ number_format(abs($row->balance), 0, '.', ' ') }} ₸
+                                                                            @else
+                                                                                {{ number_format($row->balance, 0, '.', ' ') }} ₸
+                                                                            @endif
+                                                                        </td>
 
-                                <td class="text-end fw-bold {{ ($row->overdue_balance ?? 0) > 0 ? 'text-danger' : 'text-muted' }}">
-                                    {{ number_format($row->overdue_balance ?? 0, 0, '.', ' ') }} ₸
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @else
-            <div class="p-3 text-muted">Нет данных по взаиморасчетам с поставщиками.</div>
-        @endif
-    </div>
-</div>
-</div>
+                                                                        <td class="text-end fw-bold {{ ($row->overdue_balance ?? 0) > 0 ? 'text-danger' : 'text-muted' }}">
+                                                                            {{ number_format($row->overdue_balance ?? 0, 0, '.', ' ') }} ₸
+                                                                        </td>
+                                                                    </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                @else
+                                                    <div class="p-3 text-muted">Нет данных по взаиморасчетам с поставщиками.</div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        </div>
 
                                            
                             {{-- Второй ряд KPI --}}
@@ -505,7 +505,7 @@
                     <div id="admin-panel-orders-by-channel" status="closed">
                         <table class="table table-striped">
                             <thead>
-                                <th>Канал продаж</th>
+                                <th>Канал продажжжж</th>
                                 <th>Сумма</th>
                                 <th>С/С</th>
                                 <th>Маржа грязная</th>
@@ -513,7 +513,7 @@
                                 <th>Кол-во продаж</th>
                                 <th>Средний чек</th>
                                 <th>% от общих продаж</th>
-                                <th>Комиссия</th>
+                                
                                 <th>Маржа чистая</th>.
                                 <th>Маржа чистая, %</th>
                             </thead>
@@ -526,13 +526,10 @@
                                 <td>{{ $data['totalSalesSum'] ? round(100 - (($data['totalSalesPrimeCostSum'] * 100) / $data['totalSalesSum']), 2) : 0 }}%</td>
                                 <td>{{ $data['countOfSales'] }}</td>
                                 <td>{{ $data['countOfSales'] ? round($data['totalSalesSum'] / $data['countOfSales']) : 0 }}</td>
+                                
                                 <td>{{ $totalSalesSum ? round(($data['totalSalesSum'] * 100) /  $totalSalesSum, 2) : 0 }}</td>
-                                <td>{{ round(($data['totalSalesSum'] * 3) /  100) }}</td>
-                                <td>
-                                    @if($sale_channel == 'kaspi')
-                                    {{ ($data['totalSalesSum'] * 12) /  100 }}
-                                    @endif
-                                </td>
+                                
+                                
                                 <td>
                                     @if($sale_channel == 'kaspi')
                                     {{ round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100) - ($data['totalSalesSum'] * 12) /  100) }}
