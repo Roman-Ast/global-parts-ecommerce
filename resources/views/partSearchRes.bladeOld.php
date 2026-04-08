@@ -73,11 +73,6 @@
                 @if (count($finalArr['searchedNumber']) > 0)
                     @foreach ($finalArr['searchedNumber'] as $searchItem)
                         <div class="requestPartNumberContainer-item">
-                            @if(auth()->user()->user_role == "admin")
-                                <div class="form-check">
-                                    <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
-                                </div>
-                            @endif
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
                                 @auth
                                     @if (auth()->user()->user_role == "admin")
@@ -155,13 +150,6 @@
             <div id="crossesContainer-on-stock">
                 @foreach ($finalArr['crosses_in_office'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
-
-                    @if(auth()->user()->user_role == "admin")
-                        <div class="form-check">
-                            <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
-                        </div>
-                    @endif
-                    
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
                         @auth
                             @if (auth()->user()->user_role == "admin")
@@ -235,13 +223,6 @@
             <div id="crossesContainer-on-stock">
                 @foreach ($finalArr['crosses_on_stock'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
-
-                    @if(auth()->user()->user_role == "admin")
-                        <div class="form-check">
-                            <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
-                        </div>
-                    @endif
-
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
                         @auth
                             @if (auth()->user()->user_role == "admin")
@@ -435,13 +416,6 @@
             <div id="crossesContainer-to-order">
                 @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
-
-                    @if(auth()->user()->user_role == "admin")
-                        <div class="form-check">
-                            <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
-                        </div>
-                    @endif
-
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
                         @auth
                             @if (auth()->user()->user_role == "admin")
@@ -587,13 +561,7 @@
     </div>
 </div>
 
-<div id="copy_text_wrapper">
-    <button id="copy_text_btn" class="btn btn-primary">
-        Копировать текст
-    </button>
-</div>
 
-<textarea id="clipboard-buffer" style="position: absolute; left: -9999px;"></textarea>
 
 @include('components.footer-bar-mini')
 @include('components.footer')

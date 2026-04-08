@@ -177,7 +177,7 @@
     }
     .requestPartNumberContainer-item{
         display: grid;
-        grid-template-columns: 7% 13% 12% 26% 10% 5% 7% 10% 10%;
+        grid-template-columns: 2% 7% 13% 12% 26% 10% 5% 7% 10% 10%;
         grid-template-rows: minmax(80px, flex);
         background-color: #fff;
         padding-left: 5px;
@@ -305,6 +305,12 @@
     .sticky {
         position: sticky;
         top: 0;
+    }
+    #copy_text_wrapper{
+        display: none;
+        position: fixed;
+        right: 10%;
+        bottom: 20%;
     }
 }
 

@@ -1087,3 +1087,72 @@ $(document).on('click', '.api-buy-btn', function() {
         btn.prop('disabled', false).text('Ошибка');
     });
 });
+
+$(document).on('change', '.copy_text', function() {
+   // Считаем, сколько чекбоксов с классом .copy_text сейчас отмечено
+   let checkedCount = $('.copy_text:checked').length;
+
+   if (checkedCount > 0) {
+      // Если есть хотя бы один — показываем обертку с кнопкой
+      $('#copy_text_wrapper').show(); 
+      console.log("Выбрано позиций: " + checkedCount);
+   } else {
+      // Если 0 — скрываем
+      $('#copy_text_wrapper').fadeOut();
+      console.log("Ничего не выбрано");
+   }
+});
+
+$(document).on('click', '#copy_text_btn', function() {
+    let selectedText = "";
+    
+    // 1. Ищем все отмеченные чекбоксы
+    let checkedBoxes = $('.copy_text:checked');
+
+    if (checkedBoxes.length === 0) {
+        alert("Сначала выберите хотя бы одну запчасть!");
+        return;
+    }
+
+    // 2. Проходимся по каждой строке, где стоит галочка
+    checkedBoxes.each(function(index) {
+        // Находим родительский контейнер всей строки
+        let row = $(this).closest('.requestPartNumberContainer-item');
+        
+        // Вытаскиваем данные (используем твои классы)
+        let brand = row.find('.requestPartNumber-brand').text().trim();
+        let price = row.find('.requestPartNumber-price').text().trim();
+        let delivery = row.find('.requestPartNumber-delivery').text().trim();
+
+        // Если это первый чекбокс в списке (index === 0), берем название
+        if (index === 0) {
+            mainName = row.find('.requestPartNumber-name').text().trim();
+            selectedText += `⚙️ *${mainName}*\n\n`; // Заголовок жирным шрифтом
+        }
+
+        selectedText += `✔ ${brand} — Цена: ${price} ₸\n`;
+        //selectedText += ` | 📦 Срок: ${delivery}\n\n`;
+    });
+
+    // Добавим финальную подпись
+    selectedText += "\nGlobal Parts Astana — Запчасти в наличии и на заказ.";
+
+    // 3. Копируем в буфер обмена
+    let buffer = $('#clipboard-buffer');
+    buffer.val(selectedText).select();
+    
+    try {
+        document.execCommand('copy');
+        
+        // Визуальное подтверждение для менеджера
+        let originalText = $(this).html();
+        $(this).removeClass('btn-primary').addClass('btn-success').html('✅ Скопировано!');
+        
+        setTimeout(() => {
+            $(this).removeClass('btn-success').addClass('btn-primary').html(originalText);
+        }, 2000);
+        
+    } catch (err) {
+        alert('Ошибка при копировании. Попробуйте вручную.');
+    }
+});
