@@ -1,42 +1,44 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
+        <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-16870370925');
+        </script>
 
-  gtag('config', 'AW-16870370925');
-</script>
-        <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+
         <title>@yield('title')</title>
-        <link rel="icon" href="{{ URL::asset('images/favicon-32x32.png') }}">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+        <meta name="description" content="@yield('description', 'Запчасти в Астане от Global Parts. Огромный каталог, наличие и быстрый подбор.')">
         <link rel="canonical" href="{{ url()->current() }}" />
-        <!-- Fonts -->
+
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        
+        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-        <link href="{{ URL::asset('css/user/login.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/user/login-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/user/registration-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/user/verify-email.css') }}" rel="stylesheet">
-        
-        <link href="{{ URL::asset('css/components/header-mini.css') }}" rel="stylesheet">
+
+        <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
+        <link href="{{ URL::asset('css/main-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/header.css') }}" rel="stylesheet">
-        
-        <link href="{{ URL::asset('css/components/header.css') }}" rel="stylesheet">
+
 
         <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/main-mini.css') }}" rel="stylesheet">
-        
+
+        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
+
         <link href="{{ URL::asset('css/orders.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/orders-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/admin.css') }}" rel="stylesheet">
@@ -57,6 +59,8 @@
         <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <link rel="icon" href="{{ URL::asset('images/favicon-32x32.png') }}"
     </head>
     <body>
         @yield('content')
@@ -184,7 +188,7 @@
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>-->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        
+        <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
     </body>
 </html>
 

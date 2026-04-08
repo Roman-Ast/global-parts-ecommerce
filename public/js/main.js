@@ -1156,3 +1156,28 @@ $(document).on('click', '#copy_text_btn', function() {
         alert('Ошибка при копировании. Попробуйте вручную.');
     }
 });
+
+$(document).ready(function(){
+    $('.recommended-slider').slick({
+        dots: false,
+        infinite: true,
+        speed: 500,
+        slidesToShow: 5,
+        slidesToScroll: 1,
+        autoplay: true,
+        autoplaySpeed: 3000,
+        arrows: true,
+        prevArrow: '<button type="button" class="slick-prev shadow-sm">←</button>',
+        nextArrow: '<button type="button" class="slick-next shadow-sm">→</button>',
+        responsive: [
+            {
+                breakpoint: 1024,
+                settings: { slidesToShow: 3 }
+            },
+            {
+                breakpoint: 600,
+                settings: { slidesToShow: 2 }
+            }
+        ]
+    });
+});

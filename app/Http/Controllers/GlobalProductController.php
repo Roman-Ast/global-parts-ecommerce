@@ -38,7 +38,13 @@ class GlobalProductController extends Controller
 
         $product->retail_price = $retailPrice;
 
-        return view('global_product', compact('product'));
+        $recommended = GlobalCatalog::where('brand', $brand)
+            ->where('article', '!=', $article)
+            ->inRandomOrder()                  
+            ->take(10)                         
+            ->get();
+
+        return view('global_product', compact('product', 'recommended'));
     }
     
     public function getProductImages(Request $request)

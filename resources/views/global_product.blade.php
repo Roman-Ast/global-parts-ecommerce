@@ -1,6 +1,9 @@
 @extends('layouts.app')
 
-@section('title', "Купить " . $product->name . " " . $product->brand . " (" . $product->article . ") в Казахстане - Цена, Наличие")
+@section('title', "Купить " . $product->name . " " . $product->brand . " (" . $product->article . ") в Казахстане — Цена, Наличие")
+
+@section('description', "Купить " . $product->name . " " . $product->brand . " (арт. " . $product->article . ") в Астане за " . number_format($product->price, 0, '.', ' ') . " ₸. В наличии в Global Parts, быстрая доставка по Казахстану.")
+
 @section('content')
 {{-- Основной контейнер с отступом сверху, чтобы не заезжать под хедер --}}
 <div class="main-wrapper d-flex flex-column" style="min-height: 100vh; padding-top: 100px;">
@@ -53,32 +56,32 @@
                             </div>
 
                             <div class="col-md-5 mt-4 mt-md-0 d-flex flex-column">
-                                <div id="prodCarousel" class="carousel slide border rounded bg-white shadow-sm overflow-hidden flex-grow-1" data-bs-ride="carousel" style="min-height: 250px;">
+                                <div id="prodCarousel" class="carousel slide border rounded bg-white shadow-sm overflow-hidden flex-grow-1" data-bs-ride="carousel" style="min-height: 280px;">
                                     <div class="carousel-inner h-100" id="google-images-container">
                                         
-                                        {{-- Презентабельная заглушка (Исправленная) --}}
-                                        <div class="carousel-item active h-100 text-center">
-                                            {{-- Темный фон с коллажем --}}
-                                            <div class="position-relative d-flex align-items-center justify-content-center bg-dark h-100" style="min-height: 250px; overflow: hidden;">
+                                        {{-- Светлая презентабельная заглушка в едином стиле --}}
+                                        <div class="carousel-item active h-100">
+                                            <div class="d-flex flex-column align-items-center justify-content-center h-100 p-4 bg-white" style="min-height: 280px;">
                                                 
-                                                {{-- Фоновое фото: теперь оно растянуто НА ВЕСЬ темный блок --}}
-                                                <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&q=60&w=500" 
-                                                    class="position-absolute w-100 h-100 top-0 start-0 opacity-25" 
-                                                    style="object-fit: cover; filter: blur(2px);" 
-                                                    alt="Запчасти">
-                                                
-                                                {{-- Контент поверх фона: центрирован --}}
-                                                <div class="position-relative z-index-1 p-3 w-100">
-                                                    <div class="mb-3">
-                                                        <i class="fas fa-camera-retro fa-3x text-white-50"></i>
-                                                    </div>
-                                                    <h6 class="text-white fw-bold mb-1 text-truncate">{{ $product->brand }} {{ $product->article }}</h6>
-                                                    <p class="extra-small text-white-50 mb-3">Оригинальное качество и аналоги</p>
+                                                {{-- Иконка из твоего хелпера (100% видимость, без прозрачности) --}}
+                                                <div class="mb-3">
+                                                    <img src="{{ $product->getPlaceholder() }}" 
+                                                        alt="placeholder" 
+                                                        style="max-height: 120px; width: auto;"
+                                                        onerror="this.onerror=null; this.src='{{ asset('images/placeholders/default_gear.jpeg') }}'">
+                                                </div>
+
+                                                {{-- Информация о товаре --}}
+                                                <div class="text-center w-100">
+                                                    <h5 class="fw-bold text-dark mb-1">{{ $product->brand }}</h5>
+                                                    <p class="text-muted small mb-3">{{ $product->article }}</p>
                                                     
-                                                    <button id="load-google-images" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm">
-                                                        <i class="fas fa-search-plus me-1"></i> Показать фото
+                                                    {{-- Твоя кнопка поиска в Google --}}
+                                                    <button id="load-google-images" class="btn btn-outline-primary btn-sm rounded-pill px-4 shadow-sm fw-bold">
+                                                        <i class="fas fa-search-plus me-1"></i> Показать реальное фото
                                                     </button>
                                                 </div>
+
                                             </div>
                                         </div>
 
@@ -87,9 +90,9 @@
                                 
                                 {{-- Дисклеймер под блоком --}}
                                 <div id="image-disclaimer" class="mt-auto pt-2 text-center">
-                                    <p class="text-muted mb-0" style="font-size: 0.65rem; line-height: 1.2; opacity: 0.8;">
-                                        <i class="fas fa-info-circle me-1 text-primary"></i> 
-                                        Изображения подобраны автоматически. Реальный вид детали может отличаться.
+                                    <p class="text-muted mb-0" style="font-size: 0.7rem; line-height: 1.2;">
+                                        <i class="fas fa-info-circle me-1 text-primary text-opacity-75"></i> 
+                                        Изображение подобрано автоматически. Реальный вид детали может отличаться.
                                     </p>
                                 </div>
                             </div>
@@ -251,6 +254,41 @@
         </div>
     </div>
 
+    {{-- Рекомендации для вас--}}
+    <div class="container my-5">
+        <h5 class="fw-bold mb-4"><i class="bi bi-gear-wide-connected me-2"></i>Похожие товары ({{ $product->brand }})</h5>
+        <div class="recommended-slider">
+            @foreach($recommended as $item)
+                <div class="px-2">
+                    <a href="/product/{{ $item->brand }}/{{ $item->article }}" class="text-decoration-none">
+                        <div class="card h-100 border-0 shadow-sm text-center p-3 hover-card">
+                            
+                            <div class="product-img-container mb-2 d-flex align-items-center justify-content-center" 
+                                style="height: 100px; background: #f8f9fa; border-radius: 8px; overflow: hidden;">
+                                
+                                <img src="{{ $item->getPlaceholder() }}" 
+                                    class="img-fluid" 
+                                    style="max-height: 80px; width: auto;"
+                                    onerror="this.onerror=null; this.src='{{ asset('images/placeholders/default_gear.jpeg') }}'">
+                            </div>
+
+                            <div class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">
+                                {{ $item->article }}
+                            </div>
+
+                            <div class="fw-bold text-dark small text-truncate" style="max-width: 100%;">
+                                {{ $item->name }}
+                            </div>
+
+                            <div class="text-primary fw-bold mt-1">
+                                {{ number_format($item->price, 0, '.', ' ') }} ₸
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            @endforeach
+        </div>
+    </div>
     {{-- Футер будет всегда внизу благодаря flex-grow-1 выше --}}
     <div class="mt-auto">
         @include('components.footer-bar-mini')
