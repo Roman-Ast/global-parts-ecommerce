@@ -73,11 +73,13 @@
                 @if (count($finalArr['searchedNumber']) > 0)
                     @foreach ($finalArr['searchedNumber'] as $searchItem)
                         <div class="requestPartNumberContainer-item">
+							@auth
                             @if(auth()->user()->user_role == "admin")
                                 <div class="form-check">
                                     <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
                                 </div>
                             @endif
+							@endauth
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
                                 @auth
                                     @if (auth()->user()->user_role == "admin")
@@ -235,13 +237,13 @@
             <div id="crossesContainer-on-stock">
                 @foreach ($finalArr['crosses_on_stock'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
-
+                   @auth
                     @if(auth()->user()->user_role == "admin")
                         <div class="form-check">
                             <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
                         </div>
                     @endif
-
+                    @endauth
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
                         @auth
                             @if (auth()->user()->user_role == "admin")
@@ -435,13 +437,13 @@
             <div id="crossesContainer-to-order">
                 @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
-
+                   @auth
                     @if(auth()->user()->user_role == "admin")
                         <div class="form-check">
                             <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
                         </div>
                     @endif
-
+                    @endauth
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
                         @auth
                             @if (auth()->user()->user_role == "admin")

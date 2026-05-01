@@ -2,11 +2,36 @@
 
 @section('title', "Купить " . $product->name . " " . $product->brand . " (" . $product->article . ") в Казахстане — Цена, Наличие")
 
+@section('canonical')
+    <link rel="canonical" href="{{ $canonicalUrl }}" />
+@endsection
+
 @section('description', "Купить " . $product->name . " " . $product->brand . " (арт. " . $product->article . ") в Астане за " . number_format($product->price, 0, '.', ' ') . " ₸. В наличии в Global Parts, быстрая доставка по Казахстану.")
 
 @section('content')
+<style>
+    /* 1. Сначала сбрасываем всё для мобилок */
+    .main-wrapper {
+        padding-top: 0px !important;
+        margin-top: 0px !important;
+    }
+
+    /* 2. Для планшетов и компов возвращаем 100px */
+    @media (min-width: 992px) {
+        .main-wrapper {
+            padding-top: 100px !important;
+        }
+    }
+    
+    /* Дополнительно убираем отступы у контейнера на мобилках */
+    @media (max-width: 991px) {
+        .container.my-5 {
+            margin-top: 1rem !important;
+        }
+    }
+</style>
 {{-- Основной контейнер с отступом сверху, чтобы не заезжать под хедер --}}
-<div class="main-wrapper d-flex flex-column" style="min-height: 100vh; padding-top: 100px;">
+<div class="main-wrapper d-flex flex-column" style="min-height: 100vh;">
     
     @include('components.header')
     @include('components.header-mini')
@@ -65,7 +90,7 @@
                                                 
                                                 {{-- Иконка из твоего хелпера (100% видимость, без прозрачности) --}}
                                                 <div class="mb-3">
-                                                    <img src="{{ $product->getPlaceholder() }}" 
+                                                    <img src="{{ $product->placeholder_url }}" 
                                                         alt="placeholder" 
                                                         style="max-height: 120px; width: auto;"
                                                         onerror="this.onerror=null; this.src='{{ asset('images/placeholders/default_gear.jpeg') }}'">

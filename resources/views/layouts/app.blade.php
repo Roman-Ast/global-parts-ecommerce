@@ -2,12 +2,12 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
-        <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'AW-16870370925');
-        </script>
+		<script>
+		  window.dataLayer = window.dataLayer || [];
+		  function gtag(){dataLayer.push(arguments);}
+		  gtag('js', new Date());
+		  gtag('config', 'AW-16870370925');
+		</script>
 
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -164,6 +164,7 @@
             </a>
 
             <a href="#"
+                onclick="gtag('event', 'conversion', {'send_to': 'AW-16870370925/M3NOCJe9iqQcEO3ctew-'});"
                 class="whatsapp-fixed-btn"
                 aria-label="Написать в WhatsApp">
                 <div class="pulse-ring"></div>

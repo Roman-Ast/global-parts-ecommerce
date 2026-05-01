@@ -30,6 +30,9 @@ use App\Http\Controllers\SparePartRequestController;
 use App\Http\Controllers\AISimpleSearchController;
 use App\Http\Controllers\CustomerReturnController;
 use App\Http\Controllers\FinanceDashboardController;
+use App\Http\Controllers\WhatsAppWebhookController;
+use App\Http\Controllers\Admin\WhatsappController;
+use App\Http\Controllers\Admin\KanbanController;
 
 
 /*Route::get('/home', function() {
@@ -90,7 +93,16 @@ Route::get('china/sportage21-25', function() {
     return view('korean-cars.sportage21-25');
 });
 
-Route::get('/product/{brand}/{article}', [GlobalProductController::class, 'show'])->name('product.show');
+Route::get('/product/{brand}/{article}', [GlobalProductController::class, 'show'])
+    ->name('product.show')
+    ->where('brand', '.*')   // Позволяет бренду содержать слэши (как Hyundai/Kia)
+    ->where('article', '.*'); // Позволяет артикулу содержать всё что угодно
+
+Route::fallback(function () {
+    return redirect('/', 301); 
+    // Или на конкретную страницу: return redirect('https://shop.globalparts.kz/');
+});
+    
 // Добавляем /api/ в начало пути прямо здесь
 Route::get('/api/search-prices', [App\Http\Controllers\GlobalProductController::class, 'getApiPrices']);
 Route::get('/api/search-rossko', [GlobalProductController::class, 'getRosskoApi']);
@@ -119,6 +131,7 @@ Route::middleware('guest')->group(function() {
 
 Route::middleware(['auth', 'verified'])->group(function() {
     Route::post('/make-cashflow-transaction', [AdminPanelController::class, 'makeCashflowTransaction'])->name('make-cashflow-transaction');
+    Route::get('/checkout', [OrderController::class, 'checkout'])->name('checkout');
     Route::post('/makeorder', [OrderController::class, 'store']);
     Route::get('orders', [OrderController::class, 'index']);
     Route::get('settlements', [SettlementController::class, 'index']);
@@ -152,7 +165,7 @@ Route::middleware(['auth', 'verified'])->group(function() {
     Route::get('/dashboard/finance', [FinanceDashboardController::class, 'index'])
     ->name('dashboard.finance');
 
-    
+    Route::post('/whatsapp/webhook', [WhatsAppWebhookController::class, 'handle']);
 
 });
 
@@ -191,6 +204,18 @@ Route::middleware('auth')->group(function() {
     Route::post('/cart/updatePrice', [CartController::class, 'updatePrice']);
     Route::post('/add_new_good_in_office', [AdminPanelController::class, 'addNewGoodInOffice']);
     Route::post('/delete_good_in_office', [AdminPanelController::class, 'destroy']);
+});
+
+Route::prefix('admin/whatsapp')->group(function () {
+    Route::get('/', [WhatsappController::class, 'index'])->name('admin.whatsapp.index');
+    Route::get('/{lead}', [WhatsappController::class, 'show'])->name('admin.whatsapp.show');
+    
+    
+});
+
+Route::prefix('admin')->group(function () {
+    Route::get('/kanban', [KanbanController::class, 'index'])->name('admin.kanban');
+    Route::post('/kanban/update-status', [KanbanController::class, 'updateStatus'])->name('admin.kanban.update');
 });
 
 

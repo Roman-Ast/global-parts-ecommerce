@@ -21,9 +21,11 @@ use Illuminate\Http\Request;
 use App\Models\OfficePrice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use App\Traits\HasCustomerLogic;
 
 class AdminPanelController extends Controller
 {
+    use HasCustomerLogic;
     /**
      * Display a listing of the resource.
      */
@@ -893,6 +895,12 @@ class AdminPanelController extends Controller
 
         $phone = preg_replace('/\D+/', '', $request->data['orderInfo'][3]);
 
+        $phoneRaw = $request->data['orderInfo'][3];
+        $customerName = $request->data['orderInfo'][2] ?? null;
+
+        // Пытаемся найти/создать клиента
+        $customer = $this->getOrCreateCustomer($phoneRaw, $customerName);
+
         if (strlen($phone) === 11 && $phone[0] === '8') {
             $phone[0] = '7';
         }
@@ -921,13 +929,13 @@ class AdminPanelController extends Controller
 
         $order = Order::create([
             'user_id' => $request->data['orderInfo'][0],
-            //'customer_id' => $newCustomer->id ?? null,
+            'customer_id' => $customer?->id, // Теперь заказ связан с клиентом!
             'date' => $request->data['orderInfo'][1],
             'time' => date('H:i:s'),
             'sum' => $orderSum,
             'sum_with_margine' => $orderSumWithMargine,
             'status' => 'заказано',
-            'customer_phone' => $phone,
+            'customer_phone' => $customer?->phone ?? $phoneRaw,
             'sale_channel' => $request->data['orderInfo'][4]
         ]);
 

@@ -4,48 +4,106 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\GlobalCatalog;
+use Illuminate\Support\Facades\DB;
 
 class GlobalProductController extends Controller
 {
     /**
      * Отображение карточки товара для SEO и НЧ-запросов
      */
-    public function show($brand, $article)
-    {
-        $cleanArticle = trim(urldecode($article));
-        $cleanBrand = trim(urldecode($brand));
+   public function show($brand, $article)
+	{
+		$rawArticle = $article; // сохраняем для логов или виртуалки
+		$searchArticle = preg_replace('/[^A-Za-z0-9]/', '', urldecode($article));
+		$cleanBrand = trim(urldecode($brand));
 
-        $product = GlobalCatalog::where('brand', $cleanBrand)
-            ->where(function($query) use ($cleanArticle) {
-                $query->where('article', $cleanArticle)
-                    ->orWhere('article', 'LIKE', $cleanArticle . '%');
-            })
-            ->first();
-
-        if (!$product) abort(404);
-
-        $sparePartCtrl = new \App\Http\Controllers\SparePartController();
-        
-        // ОТЛАДКА: Посмотрим, что заходит и что выходит
-        $basePrice = $product->price;
-        $retailPrice = $sparePartCtrl->setPrice($basePrice);
-
-        // Если ты видишь то же самое число, значит setPrice внутри не срабатывает.
-        // Давай "силой" проверим наценку, если метод вдруг вернул оригинал:
-        if ($retailPrice == $basePrice) {
-            $retailPrice = $basePrice * 1.25; // Принудительные +25% для теста
-        }
-
-        $product->retail_price = $retailPrice;
-
-        $recommended = GlobalCatalog::where('brand', $brand)
-            ->where('article', '!=', $article)
-            ->inRandomOrder()                  
-            ->take(10)                         
-            ->get();
-
-        return view('global_product', compact('product', 'recommended'));
+		// 2. Ищем в базе
+		$product = GlobalCatalog::where(DB::raw('UPPER(TRIM(brand))'), strtoupper($cleanBrand))
+			->where('clean_article', $searchArticle)
+			->first();
+	   // Если нашли реальный товар в базе
+if ($product && isset($product->clean_article)) {
+    
+    // Сравниваем то, что пришло в URL, с тем, как должно быть (clean_article)
+    // Мы декодируем входящий артикул, чтобы убрать %2F и прочее для сравнения
+    $currentArticle = urldecode($article);
+    
+    if ($currentArticle !== $product->clean_article) {
+        // Делаем редирект 301 на чистую ссылку
+        return redirect()->route('product.show', [
+            'brand' => $product->brand,
+            'article' => $product->clean_article
+        ], 301);
     }
+}
+
+		// 3. Резервный поиск (если по clean_article не нашли)
+		if (!$product) {
+			$product = \App\Models\GlobalCatalog::where(DB::raw('UPPER(TRIM(brand))'), strtoupper($cleanBrand))
+				->where(function($query) use ($searchArticle) {
+					// Очищаем колонку article от пробелов, тире и слэшей прямо в базе
+					$query->where(DB::raw("REPLACE(REPLACE(REPLACE(article, ' ', ''), '-', ''), '/', '')"), $searchArticle)
+						  // И на всякий случай ищем по началу артикула
+						  ->orWhere('article', 'LIKE', $searchArticle . '%');
+				})
+				->first();
+		}
+
+		// --- РЕДИРЕКТ: Если нашли товар, но ссылка "грязная" ---
+		if ($product && $article !== $product->clean_article) {
+			return redirect()->route('product.show', [
+				'brand' => $product->brand,
+				'article' => $product->clean_article
+			], 301);
+		}
+
+	                   // --- РЕДИРЕКТ 301 ДЛЯ ГУГЛА ---
+        // Если товар найден и это не "заглушка"
+        if ($product && !isset($product->is_virtual)) {
+            // Получаем текущий путь из браузера (декодируем, чтобы видеть / вместо %2F)
+            $currentPath = urldecode(request()->path()); 
+            // Формируем правильный путь, который должен быть
+            $correctPath = "product/" . $product->brand . "/" . $product->clean_article;
+
+            // Если пути не совпадают — гоним Гугл на правильный адрес
+            if ($currentPath !== $correctPath) {
+                return redirect()->to($correctPath, 301);
+            }
+        }
+	   
+		// 4. Если всё равно не нашли — создаем виртуальный объект
+		if (!$product) {
+			$product = new \stdClass();
+			$product->brand = $cleanBrand;
+			$product->article = $rawArticle;
+			$product->name = "Запчасть " . $cleanBrand . " " . $rawArticle;
+			$product->price = 0;
+			$product->qty = 0;
+			$product->is_virtual = true;
+			$product->placeholder_url = "https://shop.globalparts.kz/images/placeholders/default_gear.jpeg";
+		} else {
+			$product->is_virtual = false;
+		}
+
+		// --- ЦЕНЫ ---
+		$sparePartCtrl = new \App\Http\Controllers\SparePartController();
+		$basePrice = $product->price;
+		$retailPrice = $sparePartCtrl->setPrice($basePrice);
+
+		if ($retailPrice == $basePrice && $basePrice > 0) {
+			$retailPrice = $basePrice * 1.25; 
+		}
+		$product->retail_price = $retailPrice;
+
+		// Рекомендации
+		$recommended = GlobalCatalog::where('brand', $cleanBrand)
+			->where('clean_article', '!=', $searchArticle)
+			->inRandomOrder()                  
+			->take(10)                         
+			->get();
+
+		return view('global_product', compact('product', 'recommended'));
+	}
     
     public function getProductImages(Request $request)
     {

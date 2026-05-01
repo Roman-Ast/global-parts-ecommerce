@@ -11,9 +11,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderPlaced;
 use Laravel\Ui\Presets\React;
+use App\Traits\HasCustomerLogic;
 
 class OrderController extends Controller
 {
+    use HasCustomerLogic;
     /**
      * Display a listing of the resource.
      */
@@ -47,18 +49,34 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
+        $request->validate([
+            'customer_phone' => [
+                'required',
+                // Регулярка проверяет формат +7 (7xx) xxx-xx-xx
+                'regex:/^\+7\s\(\d{3}\)\s\d{3}-\d{2}-\d{2}$/'
+            ],
+            'name' => 'required|string|max:255',
+            'city' => 'required|string',
+            'address' => 'required|string',
+        ], [
+            'customer_phone.regex' => 'Введите номер телефона в формате +7 (7xx) xxx-xx-xx',
+        ]);
         $cart = $request->session()->get('cart');
-        
+
+        $customer = $this->getOrCreateCustomer($request->customer_phone, $request->name);
+
         $order = Order::create([
-            'user_id' => $request->user_id,
+            'user_id' => auth()->id(),
+            'customer_id' => $customer?->id, // Привязка к CRM
             'date' => date('d.m.Y'),
             'time' => date('H:i:s'),
             'sum' => $cart->total(),
             'sum_with_margine' => $cart->totalWithMargine(),
             'status' => 'заказано',
-            'customer_phone' => $request->customer_phone,
+            'customer_phone' => $customer?->phone ?? $request->customer_phone,
             'sale_channel' => 'site'
         ]);
+
         
         foreach ($cart->content() as $cartItem) {
             $orderProduct = OrderProduct::create([
@@ -140,5 +158,19 @@ class OrderController extends Controller
     public function destroy(Order $order)
     {
         //
+    }
+
+    public function checkout(Request $request)
+    {
+        $cart = $request->session()->get('cart');
+        
+        if (!$cart || $cart->count() == 0) {
+            return redirect()->route('cart.index');
+        }
+
+        // Предзаполняем данные, если клиент залогинен
+        $user = auth()->user();
+        
+        return view('checkout', compact('cart', 'user'));
     }
 }

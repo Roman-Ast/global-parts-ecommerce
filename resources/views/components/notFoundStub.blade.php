@@ -40,23 +40,16 @@
 
                     {{-- CTA кнопки --}}
                     <div class="d-flex flex-wrap gap-2 mb-3">
-                        <button type="button"
-                                class="btn btn-primary"
-                                data-bs-toggle="modal"
-                                data-bs-target="#partRequestModal">
-                            Запросить подбор (15 минут)
-                        </button>
-
-                        <a href="{{ $waUrl }}"
-                           class="btn btn-success"
+                        <a href="https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта."
+                            onclick="gtag('event', 'conversion', {'send_to': 'AW-16870370925/M3NOCJe9iqQcEO3ctew-'});"
+                           class="btn btn-success wa-top-container"
                            target="_blank" rel="noopener">
                             Написать в WhatsApp
                         </a>
 
-                        <a href="#"
-                           class="btn btn-outline-secondary"
-                           onclick="window.history.back(); return false;">
-                            Вернуться назад
+                        <a href="/"
+                           class="btn btn-outline-secondary">
+                            На главную
                         </a>
                     </div>
 

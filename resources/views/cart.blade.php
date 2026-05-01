@@ -141,10 +141,9 @@
                                 @csrf
                                 @auth
                                     <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
-                                    <button type="button" class="btn btn-primary btn-lg w-100 rounded-pill shadow-sm py-3 fw-bold" 
-                                            data-bs-toggle="modal" data-bs-target="#confirmOrderModal">
-                                        Оформить заказ
-                                    </button>
+                                    <a href="{{ route('checkout') }}" class="col-lg-4 btn btn-primary btn-lg w-100 rounded-pill shadow-sm py-3 fw-bold">
+                                        Перейти к оформлению
+                                    </a>
                                 @else
                                     <a href="{{ route('login') }}" class="btn btn-dark btn-lg w-100 rounded-pill py-3 fw-bold">Войти</a>
                                 @endauth

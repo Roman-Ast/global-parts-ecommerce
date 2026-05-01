@@ -3,41 +3,46 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\GlobalCatalog;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
 class GenerateSitemap extends Command
 {
     protected $signature = 'sitemap:generate';
-    protected $description = 'Генерация раздельных Sitemap для 184к товаров';
+    protected $description = 'Генерация раздельных Sitemap для 184к товаров с использованием чистых артикулов';
 
     public function handle()
     {
-        $this->info('Начинаю генерацию карты сайта...');
+        $this->info('Начинаю генерацию карты сайта на основе clean_article...');
 
         // Настройки
-        $chunkSize = 40000; // По сколько ссылок в одном файле
-        $baseUrl = config('app.url'); // Твой домен из .env
+        $chunkSize = 40000; 
+        $baseUrl = config('app.url'); 
         $sitemaps = [];
 
-        // Берем только уникальные Артикул + Бренд, чтобы не плодить дубли
+        // Берем article (для подстраховки), clean_article и brand
+        // Добавляем фильтр, чтобы не брать совсем пустые записи
         $query = DB::table('global_catalog')
-            ->select('article', 'brand')
+            ->select('article', 'clean_article', 'brand')
+            ->whereNotNull('article')
             ->distinct();
 
-        $count = 0;
         $fileNum = 1;
 
-        // Используем chunkById или просто chunk для экономии памяти
-        $query->orderBy('article')->chunk($chunkSize, function ($products) use (&$sitemaps, &$fileNum, $baseUrl) {
+        // Сортируем по id или бренду для стабильности чанков
+        $query->orderBy('brand')->chunk($chunkSize, function ($products) use (&$sitemaps, &$fileNum, $baseUrl) {
             $fileName = "sitemap_products_{$fileNum}.xml";
             $xml = '<?xml version="1.0" encoding="UTF-8"?>';
             $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
             foreach ($products as $product) {
-                // Формируем ссылку по нашему роуту /product/{brand}/{article}
-                $url = $baseUrl . '/product/' . urlencode($product->brand) . '/' . urlencode($product->article);
+                // ПРИОРpriority: используем clean_article, если он есть
+                $finalArticle = !empty($product->clean_article) 
+                    ? $product->clean_article 
+                    : preg_replace('/[^A-Za-z0-9]/', '', $product->article);
+
+                // Формируем ЧИСТУЮ ссылку без мусора
+                $url = $baseUrl . '/product/' . urlencode($product->brand) . '/' . urlencode($finalArticle);
+                
                 $xml .= '<url>';
                 $xml .= '<loc>' . htmlspecialchars($url) . '</loc>';
                 $xml .= '<changefreq>weekly</changefreq>';
@@ -47,18 +52,16 @@ class GenerateSitemap extends Command
 
             $xml .= '</urlset>';
             
-            // Сохраняем файл в папку public
             file_put_contents(public_path($fileName), $xml);
             
             $sitemaps[] = $fileName;
-            $this->info("Создан файл: {$fileName}");
+            $this->info("Создан файл: {$fileName} (ссылки очищены)");
             $fileNum++;
         });
 
-        // Создаем главный индексный файл sitemap.xml
         $this->generateIndex($sitemaps, $baseUrl);
 
-        $this->info('Готово! Все файлы созданы в папке public.');
+        $this->info('Готово! Теперь все ссылки в сайтмапе канонические и без тире.');
     }
 
     private function generateIndex($sitemaps, $baseUrl)

@@ -36,7 +36,10 @@
             <div class="d-flex flex-row justify-content-center align-items-center gap-2 mb-3 col-12 align-items-stretch" >
                 <a href="#vin-form" class="btn btn-success btn-lg px-4" id="scroll-to-form">Подобрать по VIN</a>
 
-                <a href="#" class="btn btn-outline-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
+                <a href="https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта." 
+				   class="btn btn-outline-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container"
+				   onclick="gtag('event', 'conversion', {'send_to': 'AW-16870370925/M3NOCJe9iqQcEO3ctew-'});"
+				   >
                     Подбор в WhatsApp
                 </a>
             </div>
@@ -158,7 +161,9 @@
                                 Подберём нужное для вашего авто в 1 клик — напишите нам в чат
                             </div>
 
-                            <a href="#" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
+                            <a href="https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта." 
+							   onclick="gtag('event', 'conversion', {'send_to': 'AW-16870370925/M3NOCJe9iqQcEO3ctew-'});"
+							   class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
                                 Получить подбор в WhatsApp
                             </a>
 
@@ -214,7 +219,9 @@
                                 </div>
 
                                 <div class="d-flex flex-column flex-sm-row gap-2 mt-3">
-                                    <a href="#" class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
+                                    <a href="https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта." 
+									   onclick="gtag('event', 'conversion', {'send_to': 'AW-16870370925/M3NOCJe9iqQcEO3ctew-'});"
+									   class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
                                         Купить по WhatsApp
                                     </a>
                                     <a href="tel:+77087172549" class="btn btn-outline-secondary btn-lg flex-fill">

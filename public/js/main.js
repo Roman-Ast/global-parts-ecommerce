@@ -54,6 +54,18 @@ $(window).on('load', function () {
       $('.whatsapp-fixed-btn').attr('href', 'https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта.');
       $('.wa-top-container').attr('href', 'https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта.')
    }
+	
+	//показ wa-qr
+   $('.whatsapp-fixed-btn, .wa-top-container').on('click', function (e) {
+      // Если экран больше 580, показываем QR и ОТМЕНЯЕМ переход по ссылке
+      if ($(window).width() > 580) {
+         e.preventDefault(); // Вот это остановит переход на ватсап на ПК
+         $('#shadow-main').fadeIn();
+         $('#shadow-main').css({'background-color': 'rgba(0, 0, 0, .8)'});
+      }
+      // Если меньше 580, e.preventDefault() не сработает, 
+      // и браузер просто перейдет по ссылке из href (откроет WhatsApp)
+   });
 });
 //открытие блока соцсетей и контактов
 $('.whatsapp-fixed-btn-only-to-open-block').on('click', function () {

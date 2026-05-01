@@ -261,15 +261,17 @@ class SparePartController extends Controller
             return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
         });
 
-        $finalArrEmpty = false;
+        // ПРОВЕРКА: Если оба массива (прямые предложения и кроссы) пусты
+        $finalArrEmpty = empty($this->finalArr['parts_to_order']) && empty($this->finalArr['crosses_to_order']);
 
-        
         if ($finalArrEmpty) {
             return view('components.notFoundStub', [
-                'article' => $this->finalArr['originNumber']
+                // Используем номер, который искали
+                'article' => $this->partNumber 
             ]);
         }
-        //dd($this->finalArr);
+
+        // Если данные есть, показываем результат
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
             'searchedPartNumber' => $this->partNumber,
@@ -1667,7 +1669,7 @@ class SparePartController extends Controller
         //$start = microtime(true);old anchor 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php'
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/storage_astana.php');
+        curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
         curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
