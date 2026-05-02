@@ -5,7 +5,7 @@
 
     RewriteEngine On
 	
-	# Самый простой способ: все 404 ошибки перенаправляем на главную или на поиск
+	# Самый простой способ: все 404 ошибки перенаправляем на главную
 	ErrorDocument 404 https://shop.globalparts.kz/
 
     # Handle Authorization Header
