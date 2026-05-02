@@ -116,70 +116,45 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
         function initKanban() {
-        // Ищем все элементы с классом .kanban-column, даже если они внутри грида
-        const columns = document.querySelectorAll('.kanban-column');
-        
-        columns.forEach(el => {
-            // Удаляем старый экземпляр, если он был
-            if (Sortable.get(el)) {
-                Sortable.get(el).destroy();
-            }
-
-            new Sortable(el, {
-                group: 'leads_pipeline', // Общая группа для всех-всех колонок
-                animation: 250,
-                ghostClass: 'bg-blue-50',
-                draggable: ".kanban-card", // Четко указываем, что таскаем
-                onEnd: function (evt) {
-                    const leadId = evt.item.getAttribute('data-id');
-                    const newStatus = evt.to.getAttribute('data-status');
-                    
-                    if (evt.from !== evt.to) {
-                        // Магия Livewire: вызываем метод обновления
-                        @this.call('updateLeadStatus', leadId, newStatus);
-                    }
-                }
-            });
-        });
-    }
-
-    // Инициализация при всех возможных событиях Livewire
-    document.addEventListener('livewire:initialized', initKanban);
-    document.addEventListener('livewire:navigated', initKanban);
-    
-    // Самое важное: перепривязка после poll (каждые 10 сек)
-    document.addEventListener('livewire:load', () => {
-        Livewire.hook('morph.updated', (el, component) => {
-            initKanban();
-        });
-    });
-
-    // Резервный запуск
-    initKanban();
-        function initSortable() {
             const columns = document.querySelectorAll('.kanban-column');
+            
             columns.forEach(el => {
-                if (Sortable.get(el)) Sortable.get(el).destroy();
+                // Обязательно уничтожаем старый экземпляр перед созданием нового
+                const oldInstance = Sortable.get(el);
+                if (oldInstance) {
+                    oldInstance.destroy();
+                }
+
                 new Sortable(el, {
                     group: 'leads_pipeline',
                     animation: 250,
                     ghostClass: 'bg-blue-50',
-                    onEnd: (evt) => {
+                    draggable: ".kanban-card",
+                    onEnd: function (evt) {
                         const leadId = evt.item.getAttribute('data-id');
                         const newStatus = evt.to.getAttribute('data-status');
+                        
                         if (evt.from !== evt.to) {
-                            @this.updateLeadStatus(leadId, newStatus);
+                            // Используем корректный метод вызова Livewire
+                            @this.call('updateLeadStatus', leadId, newStatus);
                         }
                     }
                 });
             });
         }
-        document.addEventListener('livewire:initialized', initSortable);
-        document.addEventListener('livewire:navigated', initSortable);
-        document.addEventListener('DOMContentLoaded', initSortable);
-        document.addEventListener('livewire:load', () => {
-            Livewire.hook('morph.updated', () => initSortable());
+
+        // Запуск при первой загрузке
+        document.addEventListener('livewire:initialized', () => {
+            initKanban();
+
+            // Слушаем обновления DOM от Livewire (важно для wire:poll)
+            Livewire.hook('morph.updated', (el, component) => {
+                initKanban();
+            });
         });
+
+        // Резерв для навигации (если используешь wire:navigate)
+        document.addEventListener('livewire:navigated', initKanban);
     </script>
 
     {{-- Шторка --}}

@@ -11,7 +11,7 @@ class GlobalProductController extends Controller
     /**
      * Отображение карточки товара для SEO и НЧ-запросов
      */
-   public function show($brand, $article)
+    public function show($brand, $article)
 	{
 		$rawArticle = $article; // сохраняем для логов или виртуалки
 		$searchArticle = preg_replace('/[^A-Za-z0-9]/', '', urldecode($article));
@@ -22,20 +22,20 @@ class GlobalProductController extends Controller
 			->where('clean_article', $searchArticle)
 			->first();
 	   // Если нашли реальный товар в базе
-if ($product && isset($product->clean_article)) {
-    
-    // Сравниваем то, что пришло в URL, с тем, как должно быть (clean_article)
-    // Мы декодируем входящий артикул, чтобы убрать %2F и прочее для сравнения
-    $currentArticle = urldecode($article);
-    
-    if ($currentArticle !== $product->clean_article) {
-        // Делаем редирект 301 на чистую ссылку
-        return redirect()->route('product.show', [
-            'brand' => $product->brand,
-            'article' => $product->clean_article
-        ], 301);
-    }
-}
+        if ($product && isset($product->clean_article)) {
+            
+            // Сравниваем то, что пришло в URL, с тем, как должно быть (clean_article)
+            // Мы декодируем входящий артикул, чтобы убрать %2F и прочее для сравнения
+            $currentArticle = urldecode($article);
+            
+            if ($currentArticle !== $product->clean_article) {
+                // Делаем редирект 301 на чистую ссылку
+                return redirect()->route('product.show', [
+                    'brand' => $product->brand,
+                    'article' => $product->clean_article
+                ], 301);
+            }
+        }
 
 		// 3. Резервный поиск (если по clean_article не нашли)
 		if (!$product) {
@@ -102,7 +102,12 @@ if ($product && isset($product->clean_article)) {
 			->take(10)                         
 			->get();
 
-		return view('global_product', compact('product', 'recommended'));
+        $canonicalUrl = route('product.show', [
+            'brand' => $product->brand,
+            'article' => $product->clean_article ?? $product->article
+        ]);
+
+		return view('global_product', compact('product', 'recommended', 'canonicalUrl'));
 	}
     
     public function getProductImages(Request $request)

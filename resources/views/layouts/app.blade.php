@@ -8,13 +8,53 @@
 		  gtag('js', new Date());
 		  gtag('config', 'AW-16870370925');
 		</script>
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <script type="application/ld+json">
+        {
+        "@context": "https://schema.org",
+        "@type": "AutoPartsStore",
+        "name": "Global Parts Astana",
+        "image": "https://shop.globalparts.kz/images/logo1.png",
+        "@id": "https://shop.globalparts.kz",
+        "url": "https://shop.globalparts.kz",
+        "telephone": "+77087172549",
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "мкрн Целинный 5/1, 2 этаж",
+            "addressLocality": "Astana",
+            "postalCode": "010000",
+            "addressCountry": "KZ"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 51.157169,
+            "longitude": 71.450894
+        },
+        "openingHoursSpecification": {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday"
+            ],
+            "opens": "10:00",
+            "closes": "19:00"
+        }
+        }
+        </script>
 
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>@yield('title')</title>
-        <meta name="description" content="@yield('description', 'Запчасти в Астане от Global Parts. Огромный каталог, наличие и быстрый подбор.')">
+        <title>Global Parts — Автозапчасти в Астане и по всему Казахстану | VIN-подбор</title>
+        <meta name="description" content="@yield('description', 'Купить запчасти по выгодным ценам в Астане и с доставкой по РК. Подбор по VIN за 5 минут. Оригиналы и дубликаты: Hyundai, Kia, Toyota, Nissan, BMW, Mercedes. Работаем в городах: Астана, Алматы, Караганда, Шымкент, Павлодар, Усть-Каменогорск, Костанай и др.')">
+        <meta name="keywords" content="запчасти астана, автозапчасти казахстан, вин код подбор, магазин запчастей, запчасти хюндай, запчасти киа, купить запчасти">
         <link rel="canonical" href="{{ url()->current() }}" />
 
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -38,7 +78,7 @@
 
         <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
         <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
-
+        
         <link href="{{ URL::asset('css/orders.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/orders-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/admin.css') }}" rel="stylesheet">
@@ -60,7 +100,8 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        <link rel="icon" href="{{ URL::asset('images/favicon-32x32.png') }}"
+       
+        <link rel="icon" type="image/png" href="https://shop.globalparts.kz/images/favicon-32x32.png">
     </head>
     <body>
         @yield('content')
