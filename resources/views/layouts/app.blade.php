@@ -51,8 +51,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>@yield('title')</title>
-        <title>Global Parts — Автозапчасти в Астане и по всему Казахстану | VIN-подбор</title>
+        <title>@yield('title', 'Global Parts — Автозапчасти в Астане и по всему Казахстану')</title>
+        
         <meta name="description" content="@yield('description', 'Купить запчасти по выгодным ценам в Астане и с доставкой по РК. Подбор по VIN за 5 минут. Оригиналы и дубликаты: Hyundai, Kia, Toyota, Nissan, BMW, Mercedes. Работаем в городах: Астана, Алматы, Караганда, Шымкент, Павлодар, Усть-Каменогорск, Костанай и др.')">
         <meta name="keywords" content="запчасти астана, автозапчасти казахстан, вин код подбор, магазин запчастей, запчасти хюндай, запчасти киа, купить запчасти">
         <link rel="canonical" href="{{ url()->current() }}" />

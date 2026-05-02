@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Главная')
+@section('title', 'Global Parts — Автозапчасти в Астане и по всему Казахстану | VIN-подбор')
     
 @section('content')
     @include('components.header')
