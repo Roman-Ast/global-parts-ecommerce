@@ -261,12 +261,13 @@ class SparePartController extends Controller
             return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
         });
 
-        // ПРОВЕРКА: Если оба массива (прямые предложения и кроссы) пусты
-        $finalArrEmpty = empty($this->finalArr['parts_to_order']) && empty($this->finalArr['crosses_to_order']);
+        $finalArrEmpty = empty($this->finalArr['crosses_in_office']) 
+            && empty($this->finalArr['crosses_on_stock']) 
+            && empty($this->finalArr['searchedPartNumber']) 
+            && empty($this->finalArr['crosses_to_order']);
 
         if ($finalArrEmpty) {
             return view('components.notFoundStub', [
-                // Используем номер, который искали
                 'article' => $this->partNumber 
             ]);
         }
