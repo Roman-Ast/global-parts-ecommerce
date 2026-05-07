@@ -25,7 +25,7 @@
         <section class="gp-hero shadow-sm">
 
             <h1 class="gp-h1 fw-bold mb-4" style="text-align:center">
-                Автозапчасти в Астане — Подбор по VIN и доставка по Казахстану
+                Автозапчасти в Астане — Подбор по VIN и доставка по Казахстану!
             </h1>
 
             <p class="gp-muted mb-4" style="text-align:center">
