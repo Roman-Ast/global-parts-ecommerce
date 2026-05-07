@@ -113,23 +113,20 @@
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            {{-- Если цена 0, или пустая, или объект помечен как виртуальный --}}
+                        <div class="mb-4" style="min-height: 50px;">
                             @if(empty($product->retail_price) || $product->retail_price <= 0 || (isset($product->is_virtual) && $product->is_virtual))
-                                {{-- Желтый баджик --}}
-                                <div class="alert alert-warning border-0 shadow-sm p-3 mb-0" style="background-color: #fff3cd; border-left: 4px solid #ffc107 !important;">
-                                    <small class="text-muted d-block mb-1">Статус наличия:</small>
-                                    <div class="d-flex align-items-center">
+                                {{-- Прямой стиль без надежды на внешние CSS --}}
+                                <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 2px solid #ffeeba;">
+                                    <div style="display: flex; align-items: center; margin-bottom: 5px;">
                                         <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
-                                        <h4 class="h6 fw-bold mb-0" style="color: #856404;">Поиск на удаленных складах...</h4>
+                                        <strong style="font-size: 1.1rem;">Поиск на удаленных складах...</strong>
                                     </div>
-                                    <p class="small mt-2 mb-0" style="color: #856404;">
-                                        Прямых остатков по бренду <strong>{{ $product->brand }}</strong> не найдено. 
-                                        Пожалуйста, дождитесь завершения поиска ниже.
+                                    <p style="margin: 0; font-size: 0.9rem;">
+                                        Прямых остатков для <strong>{{ $product->brand }}</strong> не найдено. 
+                                        Пожалуйста, дождитесь результатов опроса складов ниже.
                                     </p>
                                 </div>
                             @else
-                                {{-- Обычная цена --}}
                                 <small class="text-muted d-block">Цена:</small>
                                 <h2 class="fw-bold text-dark">{{ number_format($product->retail_price, 0, '.', ' ') }} ₸</h2>
                             @endif
