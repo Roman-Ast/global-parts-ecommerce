@@ -73,10 +73,9 @@ class GlobalProductController extends Controller
         }
 	   
 		// 4. Если всё равно не нашли — создаем виртуальный объект
-		if (!$product) {
-            // Сообщаем браузеру и гуглу, что страницы на самом деле нет (статус 404),
-            // но продолжаем выполнение, чтобы показать страницу с рекомендациями.
-            response()->status(404); 
+        if (!$product) {
+            // Устанавливаем статус 404, но продолжаем
+            http_response_code(404); 
 
             $product = new \stdClass();
             $product->brand = $cleanBrand;
@@ -85,10 +84,23 @@ class GlobalProductController extends Controller
             $product->price = 0;
             $product->qty = 0;
             $product->is_virtual = true;
-            $product->supplier_name = null; // Защита от Undefined Property 
+            $product->supplier_name = null; 
+            $product->clean_article = $searchArticle; // Добавь это, чтобы каноническая ссылка не упала
             $product->placeholder_url = "https://shop.globalparts.kz/images/placeholders/default_gear.jpeg";
+            
+            $product->retail_price = 0; // Для виртуалки цена всегда 0
         } else {
             $product->is_virtual = false;
+
+            // Считаем цену ТОЛЬКО для реального товара
+            $sparePartCtrl = new \App\Http\Controllers\SparePartController();
+            $basePrice = $product->price;
+            $retailPrice = $sparePartCtrl->setPrice($basePrice);
+
+            if ($retailPrice == $basePrice && $basePrice > 0) {
+                $retailPrice = $basePrice * 1.25; 
+            }
+            $product->retail_price = $retailPrice;
         }
 
 		// --- ЦЕНЫ ---
@@ -102,11 +114,14 @@ class GlobalProductController extends Controller
 		$product->retail_price = $retailPrice;
 
 		// Рекомендации
-		$recommended = GlobalCatalog::where('brand', $cleanBrand)
-			->where('clean_article', '!=', $searchArticle)
-			->inRandomOrder()                  
-			->take(10)                         
-			->get();
+		// Рекомендации выносим отдельно
+        $recommended = \App\Models\GlobalCatalog::where('brand', $cleanBrand)
+            ->when(isset($product->clean_article), function($q) use ($product) {
+                return $q->where('clean_article', '!=', $product->clean_article);
+            })
+            ->inRandomOrder()                  
+            ->take(10)                         
+            ->get();
 
         $canonicalUrl = route('product.show', [
             'brand' => $product->brand,
