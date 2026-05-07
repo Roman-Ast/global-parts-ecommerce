@@ -128,7 +128,11 @@ class GlobalProductController extends Controller
             return response()->json($response->json()['items'] ?? []);
         }
 
-        return response()->json(['error' => 'Ошибка API'], 500);
+        return response()->json([
+            'error' => 'Ошибка API',
+            'status' => $response->status(),
+            'body'   => $response->json(), // ← вот тут увидишь что именно Google говорит
+        ], 500);
     }
     
     public function getApiPrices(Request $request)

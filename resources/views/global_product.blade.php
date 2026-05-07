@@ -10,6 +10,25 @@
 
 @section('content')
 <style>
+    .pulse-badge {
+        animation: pulse-animation 2s infinite;
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+
+    @keyframes pulse-animation {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+        }
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+        }
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+        }
+    }
     /* 1. Сначала сбрасываем всё для мобилок */
     .main-wrapper {
         padding-top: 0px !important;
@@ -69,8 +88,16 @@
             <div class="card-body p-4">
                 <div class="row align-items-center">
                     <div class="col-md-7">
-                        <h1 class="h2 fw-bold mb-3">{{ $product->name }}</h1>
-                        
+                        <h1 class="h2 fw-bold mb-3">
+                            {{ $product->name }}
+                            {{-- Проверка наличия в офисе --}}
+                            @if($product->supplier_name == 'is_in_office')
+                                <span class="badge rounded-pill bg-success pulse-badge ms-2" style="font-size: 0.5em; vertical-align: middle;">
+                                    В наличии в офисе
+                                </span>
+                            @endif
+                        </h1>
+
                         <div class="row g-3 mb-4">
                             <div class="col-6">
                                 <div class="p-2 border-start border-4 border-primary bg-light">
@@ -380,6 +407,7 @@
 </script>
 
 <script>
+    
 // Функция для отрисовки ОДНОЙ строки таблицы (используем везде)
 function renderOfferRow(offer) {
     const qty = parseInt(offer.qty) || 0;
@@ -480,8 +508,7 @@ document.getElementById('start-api-search')?.addEventListener('click', function(
         btn.innerHTML = 'Ошибка. Повторить?';
     });
 });
-</script>
-<script>
+
 function handleMobileApiSearch(btn) {
     // 1. Блокировка и лоадер
     btn.disabled = true;
@@ -526,7 +553,6 @@ function handleMobileApiSearch(btn) {
         }
     }, 20000);
 }
-
 
 </script>
 
