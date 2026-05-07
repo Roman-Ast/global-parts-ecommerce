@@ -13,68 +13,39 @@ class GlobalProductController extends Controller
      * Отображение карточки товара для SEO и НЧ-запросов
      */
     public function show($brand, $article)
-	{
-		$rawArticle = $article; // сохраняем для логов или виртуалки
-		$searchArticle = preg_replace('/[^A-Za-z0-9]/', '', urldecode($article));
-		$cleanBrand = trim(urldecode($brand));
+    {
+        $rawArticle = $article; 
+        $searchArticle = preg_replace('/[^A-Za-z0-9]/', '', urldecode($article));
+        $cleanBrand = trim(urldecode($brand));
 
-		// 2. Ищем в базе
-		$product = GlobalCatalog::where(DB::raw('UPPER(TRIM(brand))'), strtoupper($cleanBrand))
-			->where('clean_article', $searchArticle)
-			->first();
-	   // Если нашли реальный товар в базе
-        if ($product && isset($product->clean_article)) {
-            
-            // Сравниваем то, что пришло в URL, с тем, как должно быть (clean_article)
-            // Мы декодируем входящий артикул, чтобы убрать %2F и прочее для сравнения
-            $currentArticle = urldecode($article);
-            
-            if ($currentArticle !== $product->clean_article) {
-                // Делаем редирект 301 на чистую ссылку
-                return redirect()->route('product.show', [
-                    'brand' => $product->brand,
-                    'article' => $product->clean_article
-                ], 301);
-            }
+        // 1. Поиск в базе (основной)
+        $product = GlobalCatalog::where(DB::raw('UPPER(TRIM(brand))'), strtoupper($cleanBrand))
+            ->where('clean_article', $searchArticle)
+            ->first();
+
+        // 2. Резервный поиск (если по clean_article не нашли)
+        if (!$product) {
+            $product = \App\Models\GlobalCatalog::where(DB::raw('UPPER(TRIM(brand))'), strtoupper($cleanBrand))
+                ->where(function($query) use ($searchArticle) {
+                    $query->where(DB::raw("REPLACE(REPLACE(REPLACE(article, ' ', ''), '-', ''), '/', '')"), $searchArticle)
+                        ->orWhere('article', 'LIKE', $searchArticle . '%');
+                })
+                ->first();
         }
 
-		// 3. Резервный поиск (если по clean_article не нашли)
-		if (!$product) {
-			$product = \App\Models\GlobalCatalog::where(DB::raw('UPPER(TRIM(brand))'), strtoupper($cleanBrand))
-				->where(function($query) use ($searchArticle) {
-					// Очищаем колонку article от пробелов, тире и слэшей прямо в базе
-					$query->where(DB::raw("REPLACE(REPLACE(REPLACE(article, ' ', ''), '-', ''), '/', '')"), $searchArticle)
-						  // И на всякий случай ищем по началу артикула
-						  ->orWhere('article', 'LIKE', $searchArticle . '%');
-				})
-				->first();
-		}
-
-		// --- РЕДИРЕКТ: Если нашли товар, но ссылка "грязная" ---
-		if ($product && $article !== $product->clean_article) {
-			return redirect()->route('product.show', [
-				'brand' => $product->brand,
-				'article' => $product->clean_article
-			], 301);
-		}
-
-	                   // --- РЕДИРЕКТ 301 ДЛЯ ГУГЛА ---
-        // Если товар найден и это не "заглушка"
-        if ($product && !isset($product->is_virtual)) {
-            // Получаем текущий путь из браузера (декодируем, чтобы видеть / вместо %2F)
+        // 3. РЕДИРЕКТЫ (только если товар РЕАЛЬНЫЙ)
+        if ($product) {
             $currentPath = urldecode(request()->path()); 
-            // Формируем правильный путь, который должен быть
             $correctPath = "product/" . $product->brand . "/" . $product->clean_article;
 
-            // Если пути не совпадают — гоним Гугл на правильный адрес
             if ($currentPath !== $correctPath) {
                 return redirect()->to($correctPath, 301);
             }
         }
-	   
-		// 4. Если всё равно не нашли — создаем виртуальный объект
+
+        // 4. ОБРАБОТКА РЕЗУЛЬТАТА (Виртуалка vs Реальный товар)
         if (!$product) {
-            // Устанавливаем статус 404, но продолжаем
+            // Устанавливаем статус 404 для поисковиков
             http_response_code(404); 
 
             $product = new \stdClass();
@@ -84,15 +55,15 @@ class GlobalProductController extends Controller
             $product->price = 0;
             $product->qty = 0;
             $product->is_virtual = true;
-            $product->supplier_name = null; 
-            $product->clean_article = $searchArticle; // Добавь это, чтобы каноническая ссылка не упала
+            $product->supplier_name = null; // Защита для твоего Blade-баджика
+            $product->clean_article = $searchArticle; 
             $product->placeholder_url = "https://shop.globalparts.kz/images/placeholders/default_gear.jpeg";
-            
-            $product->retail_price = 0; // Для виртуалки цена всегда 0
+            $product->retail_price = 0; 
         } else {
             $product->is_virtual = false;
 
             // Считаем цену ТОЛЬКО для реального товара
+            // Создаем контроллер внутри только здесь, чтобы не грузить память зря
             $sparePartCtrl = new \App\Http\Controllers\SparePartController();
             $basePrice = $product->price;
             $retailPrice = $sparePartCtrl->setPrice($basePrice);
@@ -103,18 +74,10 @@ class GlobalProductController extends Controller
             $product->retail_price = $retailPrice;
         }
 
-		// --- ЦЕНЫ ---
-		$sparePartCtrl = new \App\Http\Controllers\SparePartController();
-		$basePrice = $product->price;
-		$retailPrice = $sparePartCtrl->setPrice($basePrice);
+        // !!! ВАЖНО: Весь старый блок "// --- ЦЕНЫ ---", который шел здесь, УДАЛЕН.
+        // Теперь расчет цены не вызывается для виртуальных объектов.
 
-		if ($retailPrice == $basePrice && $basePrice > 0) {
-			$retailPrice = $basePrice * 1.25; 
-		}
-		$product->retail_price = $retailPrice;
-
-		// Рекомендации
-		// Рекомендации выносим отдельно
+        // 5. Рекомендации (оптимизировано)
         $recommended = \App\Models\GlobalCatalog::where('brand', $cleanBrand)
             ->when(isset($product->clean_article), function($q) use ($product) {
                 return $q->where('clean_article', '!=', $product->clean_article);
@@ -128,8 +91,8 @@ class GlobalProductController extends Controller
             'article' => $product->clean_article ?? $product->article
         ]);
 
-		return view('global_product', compact('product', 'recommended', 'canonicalUrl'));
-	}
+        return view('global_product', compact('product', 'recommended', 'canonicalUrl'));
+    }
     
     public function fetchGoogleImages(Request $request)
     {
