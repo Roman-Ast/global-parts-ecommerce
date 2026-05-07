@@ -114,23 +114,22 @@
                         </div>
 
                         <div class="mb-4">
-                            @if($product->is_virtual)
-                                {{-- Желтый баджик для виртуальных товаров (без WhatsApp) --}}
+                            {{-- Проверка: либо флаг is_virtual, либо цена равна 0 (запасной вариант) --}}
+                            @if((isset($product->is_virtual) && $product->is_virtual) || ($product->retail_price <= 0))
+                                {{-- Желтый баджик --}}
                                 <div class="alert alert-warning border-0 shadow-sm p-3 mb-0">
                                     <small class="text-muted d-block mb-1">Статус наличия:</small>
                                     <div class="d-flex align-items-center">
-                                        <div class="spinner-border spinner-border-sm text-warning me-2" role="status">
-                                            <span class="visually-hidden">Загрузка...</span>
-                                        </div>
+                                        <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
                                         <h4 class="h6 fw-bold mb-0">Поиск на удаленных складах...</h4>
                                     </div>
                                     <p class="small mt-2 mb-0 text-dark">
                                         Прямых остатков по бренду <strong>{{ $product->brand }}</strong> не найдено. 
-                                        Пожалуйста, подождите завершения автоматического поиска ниже.
+                                        Пожалуйста, дождитесь завершения поиска ниже.
                                     </p>
                                 </div>
                             @else
-                                {{-- Обычный вывод цены, если товар реальный --}}
+                                {{-- Обычная цена --}}
                                 <small class="text-muted d-block">Цена:</small>
                                 <h2 class="fw-bold text-dark">{{ number_format($product->retail_price, 0, '.', ' ') }} ₸</h2>
                             @endif

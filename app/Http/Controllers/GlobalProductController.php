@@ -91,6 +91,10 @@ class GlobalProductController extends Controller
             'article' => $product->clean_article ?? $product->article
         ]);
 
+        if (isset($product->is_virtual) && $product->is_virtual) {
+            return response()->view('global_product', compact('product', 'recommended', 'canonicalUrl'), 404);
+        }
+
         return view('global_product', compact('product', 'recommended', 'canonicalUrl'));
     }
     
