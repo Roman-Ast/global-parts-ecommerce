@@ -160,7 +160,7 @@
     {{-- ДЕСКТОПНАЯ КНОПКА: Скрыта на мобилках (d-none d-lg-block) --}}
     <div class="row mb-3 mt-4 d-none d-lg-block">
         <div class="col-12">
-            <button id="start-api-search" class="btn btn-primary btn-lg w-100 py-3 shadow fw-bold pulse-animation rounded-3 border-0">
+            <button id="start-api-search" class="btn btn-primary btn-lg w-100 py-3 shadow fw-bold pulse-animation rounded-3 border-0 start-api-search">
                 <div class="h5 mb-0 text-uppercase">
                     <i class="fas fa-sync-alt me-2"></i> Получить актуальные предложения
                 </div>
@@ -172,12 +172,12 @@
     </div>
 
     <!-- Скрытая кнопка-дублер для мобильной логики (всегда в DOM для работы JS) -->
-    <button id="start-api-search" class="d-none"></button>
+    <button id="start-api-search" class="d-none start-api-search"></button>
 
     <div class="row">
         <div class="col-12">
             <div class="card shadow-sm border-0 mb-5">
-                <div class="card-header bg-dark text-white py-3">
+                <div class="card-header bg-dark text-white py-3" id="api-searchres-header">
                     <h6 class="mb-0 fw-bold small text-uppercase">
                         <i class="fas fa-boxes me-2 text-warning"></i> Результаты опроса складов
                     </h6>
@@ -427,8 +427,8 @@ function renderOfferRow(offer) {
 }
 
 document.getElementById('start-api-search')?.addEventListener('click', function() {
-    const article = "{{ $product->article }}";
-    const brand = "{{ $product->brand }}";
+    const brand = {!! json_encode($product->brand) !!};
+    const article = {!! json_encode($product->article) !!};
     const btn = this;
     const placeholder = document.getElementById('api-offers-placeholder');
     const loader = document.getElementById('api-offers-loader');
@@ -443,11 +443,11 @@ document.getElementById('start-api-search')?.addEventListener('click', function(
     tbody.innerHTML = ''; // Очищаем старое
 
     // ШАГ 1: Основной быстрый поиск
-    fetch(`/api/search-prices?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`,
+    fetch(`/api/search-prices?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`, {
         headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-    }
-    )
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
     .then(res => res.json())
     .then(json => {
         loader.style.display = 'none';
@@ -582,7 +582,7 @@ function handleMobileApiSearch(btn) {
                     });
             };
         }
-    });
+    }); // Закрываем DOMContentLoaded
 </script>
 
 @endsection

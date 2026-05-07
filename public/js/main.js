@@ -122,6 +122,11 @@ $('#scroll-to-form').on('click', function () {
    el.scrollIntoView({behavior: "smooth", 'block': 'start'}); 
 });
 
+$('.start-api-search').on('click', function () {
+   const el = document.getElementById('api-searchres-header');
+   el.scrollIntoView({behavior: "smooth", 'block': 'start'}); 
+});
+
 //показывать еще товар когда список большой
 $('#show-other-items').on('click', function () {
    let counter1 = Number($(this).attr('counter'));
