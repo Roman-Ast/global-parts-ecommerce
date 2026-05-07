@@ -113,20 +113,20 @@
                             </div>
                         </div>
 
-                        <div class="mb-4" style="min-height: 50px;">
+                        <div class="mb-4">
                             @if(empty($product->retail_price) || $product->retail_price <= 0 || (isset($product->is_virtual) && $product->is_virtual))
-                                {{-- Прямой стиль без надежды на внешние CSS --}}
-                                <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 2px solid #ffeeba;">
-                                    <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                                        <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
-                                        <strong style="font-size: 1.1rem;">Поиск на удаленных складах...</strong>
+                                {{-- Лаконичный желтый блок без спиннера --}}
+                                <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba; text-align: center;">
+                                    <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">
+                                        <i class="fas fa-search me-2"></i> Деталь не найдена в наличии
                                     </div>
-                                    <p style="margin: 0; font-size: 0.9rem;">
-                                        Прямых остатков для <strong>{{ $product->brand }}</strong> не найдено. 
-                                        Пожалуйста, дождитесь результатов опроса складов ниже.
+                                    <p style="margin: 0; font-size: 0.95rem; line-height: 1.4;">
+                                        Прямых остатков для <strong>{{ $product->brand }}</strong> сейчас нет. <br>
+                                        Пожалуйста, <strong>нажмите синюю кнопку ниже</strong>, чтобы проверить склады поставщиков.
                                     </p>
                                 </div>
                             @else
+                                {{-- Отображение цены для реального товара --}}
                                 <small class="text-muted d-block">Цена:</small>
                                 <h2 class="fw-bold text-dark">{{ number_format($product->retail_price, 0, '.', ' ') }} ₸</h2>
                             @endif
