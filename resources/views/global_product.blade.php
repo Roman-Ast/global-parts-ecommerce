@@ -91,10 +91,6 @@
                             <h2 class="fw-bold text-dark">{{ number_format($product->retail_price, 0, '.', ' ') }} ₸</h2>
                         </div>
 
-                        <a href="https://wa.me/77087172549?text=Интересует {{ $product->brand }} {{ $product->article }}" 
-                           class="btn btn-success btn-lg w-100 shadow-sm py-3 mb-3">
-                            <i class="fab fa-whatsapp me-2"></i> Заказать через WhatsApp
-                        </a>
                         {{-- МОБИЛЬНАЯ КНОПКА: Показывается только на смартфонах (d-lg-none) --}}
                         <div class="d-block d-lg-none mb-4">
                             <button class="btn btn-primary btn-lg w-100 py-3 shadow fw-bold pulse-animation rounded-3 border-0" 
@@ -105,7 +101,10 @@
                             </button>
                         </div>
 
-                        
+                        <a href="https://wa.me/77087172549?text=Интересует {{ $product->brand }} {{ $product->article }}" 
+                           class="btn btn-success btn-lg w-100 shadow-sm py-3 mb-3">
+                            <i class="fab fa-whatsapp me-2"></i> Заказать через WhatsApp
+                        </a>
                     </div>
 
                     <div class="col-md-5 mt-4 mt-md-0 d-flex flex-column">
