@@ -113,22 +113,17 @@
                             </div>
                         </div>
 
-                        <div class="mb-4">
+                        <div class="mb-3">
                             @if(empty($product->retail_price) || $product->retail_price <= 0 || (isset($product->is_virtual) && $product->is_virtual))
-                                {{-- Лаконичный желтый блок без спиннера --}}
-                                <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba; text-align: center;">
-                                    <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 5px;">
-                                        <i class="fas fa-search me-2"></i> Деталь не найдена в наличии
-                                    </div>
-                                    <p style="margin: 0; font-size: 0.95rem; line-height: 1.4;">
-                                        Прямых остатков для <strong>{{ $product->brand }}</strong> сейчас нет. <br>
-                                        Пожалуйста, <strong>нажмите синюю кнопку ниже</strong>, чтобы проверить склады поставщиков.
-                                    </p>
+                                {{-- Ультра-компактный блок в одну строку --}}
+                                <div style="background: #fff3cd; color: #856404; padding: 10px 15px; border-radius: 8px; border: 1px solid #ffeeba; font-size: 0.85rem;">
+                                    <i class="fas fa-search me-2"></i> 
+                                    <strong>Нет в наличии и/или неверные данные:</strong> нажмите ниже для поиска
                                 </div>
                             @else
-                                {{-- Отображение цены для реального товара --}}
+                                {{-- Обычная цена --}}
                                 <small class="text-muted d-block">Цена:</small>
-                                <h2 class="fw-bold text-dark">{{ number_format($product->retail_price, 0, '.', ' ') }} ₸</h2>
+                                <h2 class="fw-bold text-dark mb-0">{{ number_format($product->retail_price, 0, '.', ' ') }} ₸</h2>
                             @endif
                         </div>
 
