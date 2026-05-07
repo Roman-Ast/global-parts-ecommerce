@@ -91,7 +91,7 @@
                         <h1 class="h2 fw-bold mb-3">
                             {{ $product->name }}
                             {{-- Проверка наличия в офисе --}}
-                            @if($product->supplier_name == 'is_in_office')
+                            @if(($product?->supplier_name) === 'is_in_office')
                                 <span class="badge rounded-pill bg-success pulse-badge ms-2" style="font-size: 0.5em; vertical-align: middle;">
                                     В наличии в офисе
                                 </span>
@@ -140,7 +140,7 @@
                                 <div class="carousel-item active h-100">
                                     <div class="d-flex flex-column align-items-center justify-content-center h-100 p-4 bg-white" style="min-height: 280px;">
                                         <div class="mb-3">
-                                            <img src="{{ $product->placeholder_url }}" alt="placeholder" style="max-height: 120px; width: auto;">
+                                            <img src="{{ asset('images/placeholders/default_gear.jpeg') }}" alt="placeholder" style="max-height: 120px; width: auto;">
                                         </div>
                                         <div class="text-center w-100">
                                             <h5 class="fw-bold text-dark mb-1">{{ $product->brand }}</h5>
@@ -407,7 +407,7 @@
 </script>
 
 <script>
-    
+
 // Функция для отрисовки ОДНОЙ строки таблицы (используем везде)
 function renderOfferRow(offer) {
     const qty = parseInt(offer.qty) || 0;

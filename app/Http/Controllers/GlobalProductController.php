@@ -74,17 +74,22 @@ class GlobalProductController extends Controller
 	   
 		// 4. Если всё равно не нашли — создаем виртуальный объект
 		if (!$product) {
-			$product = new \stdClass();
-			$product->brand = $cleanBrand;
-			$product->article = $rawArticle;
-			$product->name = "Запчасть " . $cleanBrand . " " . $rawArticle;
-			$product->price = 0;
-			$product->qty = 0;
-			$product->is_virtual = true;
-			$product->placeholder_url = "https://shop.globalparts.kz/images/placeholders/default_gear.jpeg";
-		} else {
-			$product->is_virtual = false;
-		}
+            // Сообщаем браузеру и гуглу, что страницы на самом деле нет (статус 404),
+            // но продолжаем выполнение, чтобы показать страницу с рекомендациями.
+            response()->status(404); 
+
+            $product = new \stdClass();
+            $product->brand = $cleanBrand;
+            $product->article = $rawArticle;
+            $product->name = "Запчасть " . $cleanBrand . " " . $rawArticle;
+            $product->price = 0;
+            $product->qty = 0;
+            $product->is_virtual = true;
+            $product->supplier_name = null; // Защита от Undefined Property 
+            $product->placeholder_url = "https://shop.globalparts.kz/images/placeholders/default_gear.jpeg";
+        } else {
+            $product->is_virtual = false;
+        }
 
 		// --- ЦЕНЫ ---
 		$sparePartCtrl = new \App\Http\Controllers\SparePartController();
