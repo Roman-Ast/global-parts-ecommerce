@@ -6,6 +6,9 @@ class SetPrice
 {
     public static function setPriceForAdmin($price)
     {
+        // 1. Инициализируем переменную нулем по умолчанию
+        $priceWithMargin = 0; 
+
         if ($price > 0 && $price <= 900) {
             $priceWithMargin = $price * 3.5; 
         } else if ($price > 900 && $price <= 3000) {
@@ -40,6 +43,7 @@ class SetPrice
             $priceWithMargin = $price * 1.218;
         }
 
-        return $priceWithMargin;
+        // 2. Округлим результат, чтобы не было копеек (по желанию)
+        return round($priceWithMargin);
     }
 }

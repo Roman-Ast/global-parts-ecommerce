@@ -33,8 +33,6 @@ use App\Http\Controllers\FinanceDashboardController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\Admin\WhatsappController;
 use App\Http\Controllers\Admin\KanbanController;
-
-
 /*Route::get('/home', function() {
     (new AdilPhaetonPrice())->importToDb();
     dd('done');
@@ -44,6 +42,7 @@ Route::get('/test-host-error', function () {
     return view('components.hostError');
 });
 
+Route::get('/fetch-images', [GlobalProductController::class, 'fetchGoogleImages'])->name('product.fetchImages');
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::redirect('/home', '/', 301);
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);

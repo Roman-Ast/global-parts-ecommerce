@@ -371,3 +371,7 @@
     width: 60%;
 }
 
+#accordionFlushExample .accordion-collapse {
+    visibility: visible !important;
+}
+

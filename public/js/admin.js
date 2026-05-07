@@ -8,7 +8,7 @@ $.ajaxSetup({
 $('.close-flash').on('click', function () {
     $(this).parent().slideUp();
 });
-$('.menu-item-container').on('click', function () {
+$(document).on('click', '.menu-item-container', function () {
     let id = $(this).attr('target');
    
     $('#content').children().each(function () {
@@ -17,7 +17,7 @@ $('.menu-item-container').on('click', function () {
         }
     });
 
-    $(`#${$(this).attr('target')}`).css({'display': 'block'});
+    $(`#${id}`).css({'display': 'block'});
 });
 
 $('#orders-filter-user').on('change', function () {

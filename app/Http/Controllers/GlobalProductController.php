@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\GlobalCatalog;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class GlobalProductController extends Controller
 {
@@ -110,25 +111,24 @@ class GlobalProductController extends Controller
 		return view('global_product', compact('product', 'recommended', 'canonicalUrl'));
 	}
     
-    public function getProductImages(Request $request)
+    public function fetchGoogleImages(Request $request)
     {
-        $article = $request->query('article');
-        $brand = $request->query('brand');
-        
-        // Тут твоя логика запроса к Google Custom Search
-        // Пока для теста можешь вернуть массив фейковых ссылок
-        /*
-        $apiKey = '...';
-        $cx = '...';
-        $response = Http::get("https://www.googleapis.com/customsearch/v1", [...]);
-        return response()->json($links);
-        */
-        
-        // Тестовая заглушка
-        return response()->json([
-            "https://via.placeholder.com/400x300?text=Google+Image+1",
-            "https://via.placeholder.com/400x300?text=Google+Image+2"
+        $query = $request->query('q');
+
+        // Делаем запрос к Google API
+        $response = Http::get("https://www.googleapis.com/customsearch/v1", [
+            'key' => env('GOOGLE_SEARCH_API_KEY'),
+            'cx'  => env('GOOGLE_SEARCH_CX'),
+            'q'   => $query . ' auto part', // Добавляем контекст запчастей
+            'searchType' => 'image',
+            'num' => 5 // Берем 5 картинок
         ]);
+
+        if ($response->successful()) {
+            return response()->json($response->json()['items'] ?? []);
+        }
+
+        return response()->json(['error' => 'Ошибка API'], 500);
     }
     
     public function getApiPrices(Request $request)

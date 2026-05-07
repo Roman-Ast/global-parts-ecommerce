@@ -27,22 +27,18 @@
                         <div class="accordion-body menu-item-container" target="dashboard">Дашборд</div>
                     </div>
                 </div>
-                <div class="accordion-item" >
+                <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
+                        <button class="accordion-button collapsed fw-semibold" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" 
+                                aria-expanded="false">
                             Заказы
                         </button>
                     </h2>
                     <div id="flush-collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
                         <div class="accordion-body menu-item-container" target="orders">Список заказов</div>
-                    </div>
-                    <div id="flush-collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
                         <div class="accordion-body menu-item-container" target="manually-order">Создать заказ</div>
-                    </div>
-                    <div id="flush-collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
                         <div class="accordion-body menu-item-container" target="make_customer_return">Создать возврат</div>
-                    </div>
-                    <div id="flush-collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
                         <div class="accordion-body menu-item-container" target="customer_returns_list">Список возвратов</div>
                     </div>
                 </div>
