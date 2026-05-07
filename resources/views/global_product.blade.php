@@ -114,16 +114,16 @@
                         </div>
 
                         <div class="mb-4">
-                            {{-- Проверка: либо флаг is_virtual, либо цена равна 0 (запасной вариант) --}}
-                            @if((isset($product->is_virtual) && $product->is_virtual) || ($product->retail_price <= 0))
+                            {{-- Если цена 0, или пустая, или объект помечен как виртуальный --}}
+                            @if(empty($product->retail_price) || $product->retail_price <= 0 || (isset($product->is_virtual) && $product->is_virtual))
                                 {{-- Желтый баджик --}}
-                                <div class="alert alert-warning border-0 shadow-sm p-3 mb-0">
+                                <div class="alert alert-warning border-0 shadow-sm p-3 mb-0" style="background-color: #fff3cd; border-left: 4px solid #ffc107 !important;">
                                     <small class="text-muted d-block mb-1">Статус наличия:</small>
                                     <div class="d-flex align-items-center">
                                         <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
-                                        <h4 class="h6 fw-bold mb-0">Поиск на удаленных складах...</h4>
+                                        <h4 class="h6 fw-bold mb-0" style="color: #856404;">Поиск на удаленных складах...</h4>
                                     </div>
-                                    <p class="small mt-2 mb-0 text-dark">
+                                    <p class="small mt-2 mb-0" style="color: #856404;">
                                         Прямых остатков по бренду <strong>{{ $product->brand }}</strong> не найдено. 
                                         Пожалуйста, дождитесь завершения поиска ниже.
                                     </p>
