@@ -264,10 +264,7 @@
         max-width: 70%;
         margin-left: 5px;
     }
-    .parts-on-stock{
-        background-color: rgb(168, 249, 86);
-        color: #363636;
-    }
+    
     #show-other-items{
         display: none;
     }

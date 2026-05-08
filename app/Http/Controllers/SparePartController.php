@@ -18,8 +18,10 @@ use App\Models\VoltagePrice;
 use App\Models\BlueStarPrice;
 use App\Models\InterkomPrice;
 use App\Models\AdilPhaetonPrice;
+use App\Models\ZakazautoPrice;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Pool;
+use Carbon;
 use Collator;
 
 class SparePartController extends Controller
@@ -218,6 +220,7 @@ class SparePartController extends Controller
         }
         $this->searchArmtek($request->brand, $partNumber);
         $this->searchStockInOffice($request->brand, $partNumber);
+        $this->searchZakazauto_kst($request->brand, $partNumber);
         $this->searchGerat($request->brand, $partNumber);
         $this->searchShatem($request->brand, $partNumber);
         $this->searchPhaeton($request->brand, $partNumber);
@@ -271,7 +274,7 @@ class SparePartController extends Controller
                 'article' => $this->partNumber 
             ]);
         }
-
+        //dd($this->finalArr);
         // Если данные есть, показываем результат
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
@@ -2002,6 +2005,52 @@ class SparePartController extends Controller
             ]);  
         }
         
+        return;
+    }
+
+    public function searchZakazauto_kst(String $brand, String $partnumber)
+    {
+        // Очищаем номер от лишних символов для поиска по clean_article
+        $cleanPartnumber = preg_replace('/[^A-Za-z0-9]/', '', $partnumber);
+
+        // Последовательный поиск: oem -> article -> clean_article
+        $searchedPart = ZakazautoPrice::where('oem', $partnumber)
+            ->orWhere('article', $partnumber)
+            ->orWhere('clean_article', $cleanPartnumber)
+            ->get();
+
+        if ($searchedPart->isEmpty()) {
+            return;
+        }
+
+        foreach ($searchedPart as $item) {
+            // Добавляем бренд в общий список брендов
+            if (!in_array($item->brand, $this->finalArr['brands'])) {
+                array_push($this->finalArr['brands'], $item->brand);
+            }
+
+            array_push($this->finalArr['crosses_to_order'], [
+                'brand' => $item->brand,
+                'article' => $item->oem ?? $item->article, // Берем OEM, если пусто - артикул
+                'name' => $item->name,
+                'stock_legend' => '',
+                'qty' => $item->qty,
+                'price' => $item->price,
+                'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                'delivery_time' => Carbon::now()->addDays(4),
+                'stocks' => [
+                    [
+                        'qty' => $item->qty,
+                        'price' => $item->price,
+                        'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                    ]
+                ],
+                'supplier_name' => 'zkzt_kst',
+                'supplier_city' => 'Костанай',
+                'supplier_color' => '#00cceb', // Желтый цвет (bootstrap warning)
+            ]);
+        }
+
         return;
     }
 
