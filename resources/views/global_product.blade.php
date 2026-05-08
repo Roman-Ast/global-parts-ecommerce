@@ -113,6 +113,33 @@
                             </div>
                         </div>
 
+                        {{-- Блок дополнительных OEM номеров для SEO --}}
+                        @php
+                            // Разбиваем строку OEM по разделителю |, убираем лишние пробелы
+                            $oemList = !empty($product->oem) ? explode('|', $product->oem) : [];
+                            $oemList = array_map('trim', $oemList);
+                            
+                            // Фильтруем: оставляем только те, что не совпадают с текущим артикулом и не пустые
+                            $filteredOems = array_filter($oemList, function($oem) use ($product) {
+                                return !empty($oem) && $oem !== $product->article && $oem !== $product->clean_article;
+                            });
+                            // Убираем дубликаты
+                            $filteredOems = array_unique($filteredOems);
+                        @endphp
+
+                        @if(count($filteredOems) > 0)
+                            <div class="mb-4">
+                                <small class="text-muted d-block mb-1"><i class="fas fa-fingerprint me-1"></i> Дополнительные кросс-номера (OEM):</small>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach($filteredOems as $oemItem)
+                                        <span class="badge bg-white text-dark border fw-normal" style="font-size: 0.85rem;">
+                                            {{ $oemItem }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="mb-3">
                             @if(empty($product->retail_price) || $product->retail_price <= 0 || (isset($product->is_virtual) && $product->is_virtual))
                                 {{-- Ультра-компактный блок в одну строку --}}
