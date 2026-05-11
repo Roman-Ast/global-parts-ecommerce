@@ -65,25 +65,22 @@
         <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/main-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/header.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/orders.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/orders-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/admin.css') }}" rel="stylesheet">
+        
+        
+        
         <link href="{{ URL::asset('css/garage.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/settlements-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/settlements.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/searchCatalog-mini.css') }}" rel="stylesheet">
+        
         <link href="{{ URL::asset('css/components/registerForm.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/footer-bar-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/notfound.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/nothingFoundStub.css') }}" rel="stylesheet">
+        
         <link href="{{ asset('/css/korean-cars/index.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/index.mini.css') }}" rel="stylesheet">
-        <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
-        <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
+        
+        @stack('styles')
     </head>
     <body>
         @yield('content')

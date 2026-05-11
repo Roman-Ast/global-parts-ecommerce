@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link href="{{ URL::asset('css/orders.css') }}" rel="stylesheet">
+    <link href="{{ URL::asset('css/orders-mini.css') }}" rel="stylesheet">
+@endpush
+
 @section('title', 'Заказы')
    
 @section('content')

@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
+    <link href="{{ URL::asset('css/components/searchCatalog-mini.css') }}" rel="stylesheet">
+@endpush
+
 @section('title', 'Выберите каталог')
    
 @section('content')

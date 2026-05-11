@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}" rel="stylesheet">
+    <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
+@endpush
+
 @section('title', 'Результат поиска')
    
 @section('content')

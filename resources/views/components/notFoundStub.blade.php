@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link href="{{ URL::asset('css/components/nothingFoundStub.css') }}" rel="stylesheet">
+@endpush
+
 @section('title', 'Ничего не найдено')
    
 @section('content')

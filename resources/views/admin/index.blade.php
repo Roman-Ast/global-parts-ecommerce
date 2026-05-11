@@ -5,6 +5,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 @endpush
 
+@push('styles')
+    <link href="{{ URL::asset('css/admin.css') }}" rel="stylesheet">
+@endpush
+
 @section('title', 'Панель администратора')
 
 @section('content')

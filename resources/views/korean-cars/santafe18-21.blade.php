@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
+    <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
+@endpush
+
 @section('title', 'Santafe18-21')
 
 @section('content')
