@@ -266,19 +266,20 @@ class SparePartController extends Controller
 
         $finalArrEmpty = empty($this->finalArr['crosses_in_office']) 
             && empty($this->finalArr['crosses_on_stock']) 
-            && empty($this->finalArr['searchedPartNumber']) 
+            && empty($this->finalArr['searchedNumber']) 
             && empty($this->finalArr['crosses_to_order']);
 
+        //dd($finalArrEmpty);
         if ($finalArrEmpty) {
             return view('components.notFoundStub', [
                 'article' => $this->partNumber 
             ]);
         }
-        //dd($this->finalArr);
+        dd($this->finalArr);
         // Если данные есть, показываем результат
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
-            'searchedPartNumber' => $this->partNumber,
+            'searchedNumber' => $this->partNumber,
             'chosenBrand' => $request->brand,
             'brands' => $arr
         ]);
