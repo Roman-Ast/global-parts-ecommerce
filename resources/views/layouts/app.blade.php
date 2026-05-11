@@ -10,16 +10,9 @@
         <meta name="keywords" content="запчасти астана, автозапчасти казахстан, вин код подбор, магазин запчастей, запчасти хюндай, запчасти киа, купить запчасти">
         <link rel="canonical" href="{{ url()->current() }}" />
         <link rel="icon" type="image/png" href="https://shop.globalparts.kz/images/favicon-32x32.png">
-
-        {{-- Google Ads — async, не блокирует --}}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'AW-16870370925');
-        </script>
-
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://cdn.jsdelivr.net">
+        
         <script type="application/ld+json">
         {
             "@context": "https://schema.org",
@@ -65,21 +58,18 @@
         <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/main-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/header.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
+        
         <link href="{{ URL::asset('css/garage.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/settlements-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/settlements.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/searchCatalog-mini.css') }}" rel="stylesheet">
+        
+        
         <link href="{{ URL::asset('css/components/registerForm.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/footer-bar-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/notfound.css') }}" rel="stylesheet">
-        <link href="{{ asset('/css/korean-cars/index.css') }}" rel="stylesheet">
-        <link href="{{ asset('/css/korean-cars/index.mini.css') }}" rel="stylesheet">
+        
         <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
+        @stack('styles')
     </head>
     <body>
         @yield('content')
@@ -202,8 +192,8 @@
 
         {{-- JS: один jQuery, дублей нет --}}
         {{-- bootstrap и jquery — без defer (нужны сразу для accordion и др.) --}}
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-        <script src="{{ URL::asset('js/jquery.min.js') }}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
+        <script src="{{ URL::asset('js/jquery.min.js') }}" defer></script>
 
         {{-- admin и korean-cars — голый код вне ready, без defer --}}
         <script src="{{ URL::asset('js/korean-cars.js') }}"></script>
@@ -211,5 +201,14 @@
         {{-- main.js — весь код внутри ready/load, defer безопасен --}}
         <script src="{{ URL::asset('js/main.js') }}" defer></script>    
         @stack('scripts')
+
+        {{-- Google Ads — async, не блокирует --}}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-16870370925');
+        </script>
     </body>
 </html>

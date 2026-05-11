@@ -1,9 +1,12 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link href="{{ URL::asset('css/components/settlements-mini.css') }}" rel="stylesheet">
+    <link href="{{ URL::asset('css/components/settlements.css') }}" rel="stylesheet">   
+@endpush
+
 @section('title', 'Взаиморасчеты')
     
-
-
 @section('content')
     @include('components.header')
     @include('components.header-mini')
