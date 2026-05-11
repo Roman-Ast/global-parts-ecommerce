@@ -14,7 +14,7 @@
 
 @section('canonical')
     <link rel="canonical" href="{{ $canonicalUrl }}" />
-@endsection
+@endsectionп
 
 @section('description', "Купить " . $product->name . " " . $product->brand . " (арт. " . $product->article . ") в Астане за " . number_format($product->price, 0, '.', ' ') . " ₸. В наличии в Global Parts, быстрая доставка по Казахстану.")
 
