@@ -151,7 +151,8 @@
                         <div class="ratio ratio-21x9 rounded-4 overflow-hidden bg-light">
                             <img src="images/i.webp"
                                 alt="Склад"
-                                style="width:100%;height:100%;object-fit:cover;">
+                                style="width:100%;height:100%;object-fit:cover;"
+                                loading="lazy">
                         </div>
 
                         <div class="mt-3">
@@ -178,7 +179,7 @@
                 {{-- Справа: карточки отзывов + "Нашли дешевле" --}}
                 <div class="col-12 col-lg-6" id="reviews-card-container">
                   <div id="review-card-header">
-                    <img src="images/2gis-logo.png" style="width:36px" class="mb-3"> 4.8 ★ в 2ГИС • 68 оценок
+                    <img src="images/2gis-logo.png" style="width:36px" class="mb-3" loading="lazy"> 4.8 ★ в 2ГИС • 68 оценок
                   </div>
                     <div class="row g-3">
                         @foreach($reviews as $r)
@@ -186,7 +187,7 @@
                                 <div class="gp-review-card shadow-sm">
                                     <div class="d-flex align-items-center justify-content-between">
                                         <div class="d-flex align-items-center gap-2">
-                                            <img class="gp-review-avatar" src="{{ $r['avatar'] }}" alt="{{ $r['name'] }}">
+                                            <img loading="lazy" class="gp-review-avatar" src="{{ $r['avatar'] }}" alt="{{ $r['name'] }}">
                                             <div>
                                                 <div class="fw-bold">{{ $r['author'] }}</div>
                                                 <div class="small gp-muted">
@@ -464,21 +465,21 @@
                 
               
                 <a href="/hyundai" class="category-card">
-                  <img src="/images/hyundai/Hyundai_KIA_log.png" alt="Hyundai/Kia">
+                  <img src="/images/hyundai/Hyundai_KIA_log.png" alt="Hyundai/Kia" loading="lazy">
                   <h3>Модели Hyundai / Kia</h3>
                   <p>Elantra, Tucson, Rio, Sorento и другие.</p>
                 </a>
 
               
                 <a href="/chinacars" class="category-card">
-                  <img src="/images/chinacars/chinese-logos.png" alt="Китайские авто">
+                  <img src="/images/chinacars/chinese-logos.png" alt="Китайские авто" loading="lazy">
                   <h3>Модели китайских авто</h3>
                   <p>Chery, Haval, Geely, JAC, Exeed и др.(в разработке)</p>
                 </a>
 
                 
                 <a href="#" class="category-card">
-                  <img src="/images/car-from-parts.png" alt="Все авто">
+                  <img src="/images/car-from-parts.png" alt="Все авто" loading="lazy">
                   <h3>Все популярные авто</h3>
                   <p>Выберите марку и модель для подбора запчастей. (в разработке)</p>
                 </a>

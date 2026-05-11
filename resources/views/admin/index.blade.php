@@ -1,7 +1,12 @@
 @extends('layouts.app')
 
+@push('scripts')
+    <script src="{{ URL::asset('js/admin.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+@endpush
+
 @section('title', 'Панель администратора')
-    
+
 @section('content')
     <div id="admin-main-container">
         <div id="container-header">

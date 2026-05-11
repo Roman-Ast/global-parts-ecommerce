@@ -1,84 +1,72 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
-		<script>
-		  window.dataLayer = window.dataLayer || [];
-		  function gtag(){dataLayer.push(arguments);}
-		  gtag('js', new Date());
-		  gtag('config', 'AW-16870370925');
-		</script>
-        <script src="https://cdn.tailwindcss.com"></script>
-
-        <script type="application/ld+json">
-        {
-        "@context": "https://schema.org",
-        "@type": "AutoPartsStore",
-        "name": "Global Parts Astana",
-        "image": "https://shop.globalparts.kz/images/logo1.png",
-        "@id": "https://shop.globalparts.kz",
-        "url": "https://shop.globalparts.kz",
-        "telephone": "+77087172549",
-        "address": {
-            "@type": "PostalAddress",
-            "streetAddress": "мкрн Целинный 5/1, 2 этаж",
-            "addressLocality": "Astana",
-            "postalCode": "010000",
-            "addressCountry": "KZ"
-        },
-        "geo": {
-            "@type": "GeoCoordinates",
-            "latitude": 51.157169,
-            "longitude": 71.450894
-        },
-        "openingHoursSpecification": {
-            "@type": "OpeningHoursSpecification",
-            "dayOfWeek": [
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday"
-            ],
-            "opens": "10:00",
-            "closes": "19:00"
-        }
-        }
-        </script>
-
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>@yield('title', 'Global Parts — Автозапчасти в Астане и по всему Казахстану')</title>
-        
         <meta name="description" content="@yield('description', 'Купить запчасти по выгодным ценам в Астане и с доставкой по РК. Подбор по VIN за 5 минут. Оригиналы и дубликаты: Hyundai, Kia, Toyota, Nissan, BMW, Mercedes. Работаем в городах: Астана, Алматы, Караганда, Шымкент, Павлодар, Усть-Каменогорск, Костанай и др.')">
         <meta name="keywords" content="запчасти астана, автозапчасти казахстан, вин код подбор, магазин запчастей, запчасти хюндай, запчасти киа, купить запчасти">
         <link rel="canonical" href="{{ url()->current() }}" />
+        <link rel="icon" type="image/png" href="https://shop.globalparts.kz/images/favicon-32x32.png">
 
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        {{-- Google Ads — async, не блокирует --}}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-16870370925');
+        </script>
+
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "AutoPartsStore",
+            "name": "Global Parts Astana",
+            "image": "https://shop.globalparts.kz/images/logo1.png",
+            "@id": "https://shop.globalparts.kz",
+            "url": "https://shop.globalparts.kz",
+            "telephone": "+77087172549",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "мкрн Целинный 5/1, 2 этаж",
+                "addressLocality": "Astana",
+                "postalCode": "010000",
+                "addressCountry": "KZ"
+            },
+            "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 51.157169,
+                "longitude": 71.450894
+            },
+            "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+                "opens": "10:00",
+                "closes": "19:00"
+            }
+        }
+        </script>
+
+        {{-- Bootstrap CSS --}}
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-        
-        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
 
+        {{-- Font Awesome --}}
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+        {{-- Fonts --}}
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet">
+
+        {{-- Локальные CSS --}}
         <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/main-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/header.css') }}" rel="stylesheet">
-
-
         <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/main-mini.css') }}" rel="stylesheet">
-
-        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
-        
         <link href="{{ URL::asset('css/orders.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/orders-mini.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/admin.css') }}" rel="stylesheet">
@@ -92,118 +80,113 @@
         <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/notfound.css') }}" rel="stylesheet">
         <link href="{{ URL::asset('css/components/nothingFoundStub.css') }}" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link href="{{ asset('/css/korean-cars/index.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/index.mini.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-       
-        <link rel="icon" type="image/png" href="https://shop.globalparts.kz/images/favicon-32x32.png">
     </head>
     <body>
         @yield('content')
+
         <div id="shadow" class="position-fixed">
             <div class="d-flex justify-content-center">
                 <div class="spinner-border text-primary" style="width: 6rem; height: 6rem;" role="status">
-                <span class="visually-hidden">Loading...</span>
+                    <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
             <div id="loading" class="d-flex justify-content-center mt-5 pouring">
                 Выполняется проценка складов... это может занять несколько секунд, пожалуйста ожидайте...
             </div>
         </div>
+
         <div id="shadow-main">
             <div id="modal-qr" class="container">
                 <img src="images/whatsapp_qr_77087172549.png" alt="wa-qr">
                 Для перехода в Whatsapp отсканируйте QR-код с камеры мобильного телефона
             </div>
         </div>
+
         <div id="main-mini-shadow" style="position: fixed;width:100%;height:100vh;top:0;left:0;"></div>
 
-    <div id="side-bar-right-mini" style="position:fixed;">
-        <div id="side-bar-right-mini-close-wrapper">
-            <div id="side-bar-right-mini-close-container">
-                <img src="/images/close-x-24.png" alt="close-x">
+        <div id="side-bar-right-mini" style="position:fixed;">
+            <div id="side-bar-right-mini-close-wrapper">
+                <div id="side-bar-right-mini-close-container">
+                    <img src="/images/close-x-24.png" alt="close-x">
+                </div>
+            </div>
+            <div class="accordion" id="accordionExample">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                            Контакты
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div id="side-bar-right-min-contacts">
+                                <div class="side-bar-right-min-contacts-item">
+                                    <img src="/images/phone24.png" alt="phone">
+                                    <a href="tel:+77087172549" style="text-decoration: none; color:#111; font-size: 0.8em; margin-left: 10px;">+77087172549</a>
+                                </div>
+                                <div class="side-bar-right-min-contacts-item">
+                                    <img src="/images/whatsapp24.png" alt="wa">
+                                    <a href="https://wa.me/+77087172549?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+77087172549</a>
+                                </div>
+                                <div class="side-bar-right-min-contacts-item">
+                                    <img src="/images/phone24.png" alt="phone">
+                                    <a href="tel:+77058443458" style="text-decoration: none; color:#111; font-size: 0.8em; margin-left: 10px;">+77058443458</a>
+                                </div>
+                                <div class="side-bar-right-min-contacts-item">
+                                    <img src="/images/whatsapp24.png" alt="wa">
+                                    <a href="https://wa.me/+77058443458?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+77058443458</a>
+                                </div>
+                                <div class="side-bar-right-min-contacts-item">
+                                    <img src="/images/adress.png" alt="address">
+                                    <a href="https://go.2gis.com/8z5h5" target="_blank" style="text-decoration: none;color:#111; font-size: 0.8em; margin-left: 10px;">
+                                        Астана, мкрн Целинный 5/1 <i>(2gis)</i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            Оформление заказов
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            После оформления заказа с Вами свяжется наш менеджер и уточнит детали. Если товар в наличии в г.Астана, то доставка со склада в пункт выдачи заказов (ПВЗ) занимает <strong>от 1 до 2,5 часов</strong>. По городу можем отправить запчасти через яндекс/индрайвер за отдельную плату по их тарифу. Если же позиция(-ии) заказные, время поставки в ПВЗ указано на сайте при поиске на каждую позицию отдельно, после поступления запчастей в ПВЗ в г.Астана, запчасти можно забрать как самовывозом так и отправкой через агрегаторы такси, если же Вы с другого города, после поступления в ПВЗ в г. Астана также можем отправить через такси (Indrive), можете вызвать курьера любой траспортной компании.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                            Возврат/обмен запчастей
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            Возврат товара надлежащего качества возможен в течение <strong>14 дней</strong> с момента поступления в пункт выдачи заказов (ПВЗ) в г. Астана, при условии сохранения товарного вида, упаковки и полной комплектности, а так же без следов установки (при условии, что не было оговорено заранее, что позиция является невозвратной). Возврат товара по гарантии возможен при наличии заказ-наряда с автосервиса, где происходила установка, и акта дефектовки с печатью автосервиса и подписью мастера и директора.
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="accordion" id="accordionExample">
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingOne">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                    Контакты
-                </button>
-                </h2>
-                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-                <div class="accordion-body">
-                    <div id="side-bar-right-min-contacts">
-                <div class="side-bar-right-min-contacts-item">
-                    <img src="/images/phone24.png" alt="phone">
-                    <a href="tel:+77087172549" style="text-decoration: none; color:#111; font-size: 0.8em; margin-left: 10px;">+77087172549</a>
-                </div>
-                <div class="side-bar-right-min-contacts-item">
-                    <img src="/images/whatsapp24.png" alt="wa">
-                    <a href="https://wa.me/+77087172549?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+77087172549</a>
-                </div>
-                <div class="side-bar-right-min-contacts-item">
-                    <img src="/images/phone24.png" alt="phone">
-                    <a href="tel:+77058443458" style="text-decoration: none; color:#111; font-size: 0.8em; margin-left: 10px;">+77058443458</a>
-                </div>
-                <div class="side-bar-right-min-contacts-item">
-                    <img src="/images/whatsapp24.png" alt="wa">
-                    <a href="https://wa.me/+77058443458?text=Здравствуйте%20пишу%20вам%20с%20сайта!" style="text-decoration: none; color:#111;font-size: 0.8em; margin-left: 10px;">+77058443458</a>
-                </div>
-                <div class="side-bar-right-min-contacts-item">
-                    <img src="/images/adress.png" alt="address">
-                    <a href="https://go.2gis.com/8z5h5" target="_blank" style="text-decoration: none;color:#111; font-size: 0.8em; margin-left: 10px;">
-                        Астана, мкрн Целинный 5/1 <i>(2gis)</i>
-                    </a>
-                </div>
-            </div>
-                </div>
-                </div>
-            </div>
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingTwo">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                    Оформление заказов
-                </button>
-                </h2>
-                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
-                <div class="accordion-body">
-                    После оформления заказа с Вами свяжется наш менеджер и уточнит детали. Если товар в наличии в г.Астана, то доставка со склада в пункт выдачи заказов (ПВЗ) занимает <strong>от 1 до 2,5 часов</strong>. По городу можем отправить запчасти через яндекс/индрайвер за отдельную плату по их тарифу. Если же позиция(-ии) заказные, время поставки в ПВЗ указано на сайте при поиске на каждую позицию отдельно, после поступления запчастей в ПВЗ в г.Астана, запчасти можно забрать как самовывозом так и отправкой через агрегаторы такси, если же Вы с другого города, после поступления в ПВЗ в г. Астана также можем отправить через такси (Indrive), можете вызвать курьера любой траспортной компании.
-                </div>
-                </div>
-            </div>
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingThree">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                    Возврат/обмен запчастей
-                </button>
-                </h2>
-                <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
-                <div class="accordion-body">
-                    Возврат товара надлежащего качества возможен в течение <strong>14 дней</strong> с момента поступления в пункт выдачи заказов (ПВЗ) в г. Астана, при условии сохранения товарного вида, упаковки и полной комплектности, а так же без следов установки (при условии, что не было оговорено заранее, что позиция является невозвратной). Возврат товара по гарантии возможен при наличии заказ-наряда с автосервиса, где происходила установка, и акта дефектовки с печатью автосервиса и подписью мастера и директора.
-                </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="social-media-container">
+
+        <div id="social-media-container">
             <a href="https://www.instagram.com/global_parts_astana?igsh=Yjg2ZXphN2Rkb2E2" target="_blank" class="social-media-links">
                 <img src="/images/color-instagram-48.png" alt="instagram">
             </a>
-
             <a href="https://go.2gis.com/BjDJe" target="_blank" class="social-media-links">
                 <img src="/images/color-location1-48.png" alt="location">
             </a>
-
             <a href="tel:+77087172549" class="social-media-links">
                 <img src="/images/color-phone-48.png" alt="location">
             </a>
-
             <a href="#"
                 onclick="gtag('event', 'conversion', {'send_to': 'AW-16870370925/M3NOCJe9iqQcEO3ctew-'});"
                 class="whatsapp-fixed-btn"
@@ -211,40 +194,26 @@
                 <div class="pulse-ring"></div>
                 <i class="bi bi-whatsapp"></i>
             </a>
-    </div>
-
-    <div id="social-media-container-open">
-        <img src="images/arrow-down-blue.png" id="social-media-container-close">
-        <div
-            class="whatsapp-fixed-btn-only-to-open-block"
-            aria-label="Написать в WhatsApp">
-            <div class="pulse-ring"></div>
-            <i class="bi bi-whatsapp"></i>
         </div>
-    </div>
+
+        <div id="social-media-container-open">
+            <img src="images/arrow-down-blue.png" id="social-media-container-close">
+            <div class="whatsapp-fixed-btn-only-to-open-block" aria-label="Написать в WhatsApp">
+                <div class="pulse-ring"></div>
+                <i class="bi bi-whatsapp"></i>
+            </div>
+        </div>
+
+        {{-- JS: один jQuery, дублей нет --}}
+        {{-- bootstrap и jquery — без defer (нужны сразу для accordion и др.) --}}
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
         <script src="{{ URL::asset('js/jquery.min.js') }}"></script>
-        <script src="{{ URL::asset('js/main.js') }}"></script>
-        <script src="{{ URL::asset('js/admin.js') }}"></script>
+
+        {{-- admin и korean-cars — голый код вне ready, без defer --}}
         <script src="{{ URL::asset('js/korean-cars.js') }}"></script>
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>-->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+
+        {{-- main.js — весь код внутри ready/load, defer безопасен --}}
+        <script src="{{ URL::asset('js/main.js') }}" defer></script>    
+        @stack('scripts')
     </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

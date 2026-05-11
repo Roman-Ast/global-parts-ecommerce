@@ -1,5 +1,15 @@
 @extends('layouts.app')
 
+@push('scripts')
+    <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+@endpush
+
+@push('styles')
+    {{-- Slick --}}
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
+@endpush
+
 @section('title', "Купить " . $product->name . " " . $product->brand . " (" . $product->article . ") в Казахстане — Цена, Наличие")
 
 @section('canonical')
