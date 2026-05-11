@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link href="{{ asset('css/main.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/main-mini.css') }}" rel="stylesheet">
+@endpush
+
 @section('title', 'Global Parts — Автозапчасти в Астане и по всему Казахстану | VIN-подбор')
     
 @section('content')
