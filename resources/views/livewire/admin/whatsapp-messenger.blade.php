@@ -74,18 +74,33 @@
                     class="flex-1 overflow-y-auto p-6 bg-[#f0f2f5] space-y-4 custom-scrollbar"
                 >
                     @foreach($activeLead->messages as $msg)
-                        <div class="flex {{ $msg->is_incoming ? 'justify-start' : 'justify-end' }}">
+                        <div class="flex {{ $msg->is_incoming ? 'justify-start' : 'justify-end' }} mb-3">
                             <div class="max-w-[85%] rounded-lg p-3 shadow-sm relative {{ $msg->is_incoming ? 'bg-white text-gray-800 rounded-tl-none' : 'bg-[#dcf8c6] text-gray-800 rounded-tr-none' }}">
                                 
-                                @if($msg->file_url && (str_contains($msg->type, 'image') || str_contains($msg->message_text, '.jpg') || str_contains($msg->message_text, '.png')))
+                                {{-- 1. ЛОГИКА ДЛЯ ИЗОБРАЖЕНИЙ --}}
+                                @if($msg->file_url && (str_contains($msg->type, 'image') || preg_match('/\.(jpg|jpeg|png|webp|gif)$/i', $msg->file_url)))
                                     <div class="mb-2">
                                         <a href="{{ $msg->file_url }}" target="_blank">
                                             <img src="{{ $msg->file_url }}" class="rounded-lg max-h-80 w-full object-contain bg-gray-50 shadow-inner" alt="Фото">
                                         </a>
                                     </div>
-                                @endif
 
-                                @if($msg->file_url && str_contains($msg->type, 'audio'))
+                                {{-- 2. ЛОГИКА ДЛЯ PDF И ДОКУМЕНТОВ --}}
+                                @elseif($msg->file_url && (str_contains($msg->type, 'document') || str_ends_with(strtolower($msg->file_url), '.pdf')))
+                                    <div class="mb-2 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-red-100 flex items-center justify-center rounded text-red-600">
+                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"></path></svg>
+                                        </div>
+                                        <div class="flex-1 overflow-hidden">
+                                            <p class="text-xs font-bold truncate text-gray-700">Техпаспорт / PDF</p>
+                                            <a href="{{ $msg->file_url }}" target="_blank" class="text-[11px] text-blue-600 hover:underline font-semibold">
+                                                ОТКРЫТЬ ФАЙЛ
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                {{-- 3. ЛОГИКА ДЛЯ АУДИО --}}
+                                @elseif($msg->file_url && str_contains($msg->type, 'audio'))
                                     <div class="mb-2 min-w-[200px]">
                                         <audio controls class="w-full h-8">
                                             <source src="{{ $msg->file_url }}" type="audio/mpeg">

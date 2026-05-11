@@ -45,10 +45,10 @@ class WhatsAppWebhookController extends Controller
                 ]
             );
 
-            // --- ЛОГИКА ДЛЯ ТЕКСТА И ФАЙЛОВ ---
+            // --- ЛОГИКА ДЛЯ ТЕКСТА И ФАЙЛОВ (ИСПРАВЛЕННАЯ) ---
             $messageData = $data['messageData'] ?? [];
             $typeMessage = $messageData['typeMessage'] ?? 'chat';
-            $text = 'Media file';
+            $text = '';
             $fileUrl = null;
 
             if ($typeMessage === 'textMessage') {
@@ -57,11 +57,33 @@ class WhatsAppWebhookController extends Controller
             elseif ($typeMessage === 'extendedTextMessage') {
                 $text = $messageData['extendedTextMessageData']['text'] ?? '';
             } 
-            // Обработка картинок, аудио и документов
-            elseif (in_array($typeMessage, ['imageMessage', 'audioMessage', 'videoMessage', 'documentMessage'])) {
-                $fileUrl = $messageData['fileMessageData']['downloadUrl'] ?? null;
-                $text = $messageData['fileMessageData']['caption'] ?? 
-                        ($typeMessage === 'audioMessage' ? 'Голосовое сообщение' : 'Файл: ' . ($messageData['fileMessageData']['fileName'] ?? 'Без названия'));
+            // Обработка картинок
+            elseif ($typeMessage === 'imageMessage') {
+                $fileUrl = $messageData['imageMessageData']['downloadUrl'] ?? null;
+                $caption = $messageData['imageMessageData']['caption'] ?? null;
+                $text = $caption ? "Фото: $caption" : "Изображение";
+            }
+            // Обработка документов (PDF и прочее)
+            elseif ($typeMessage === 'documentMessage') {
+                $fileUrl = $messageData['documentMessageData']['downloadUrl'] ?? null;
+                $fileName = $messageData['documentMessageData']['fileName'] ?? 'Документ';
+                $caption = $messageData['documentMessageData']['caption'] ?? null;
+                $text = $caption ? "Файл ($fileName): $caption" : "Файл: $fileName";
+            }
+            // Обработка аудио/голосовых
+            elseif ($typeMessage === 'audioMessage') {
+                $fileUrl = $messageData['audioMessageData']['downloadUrl'] ?? null;
+                $text = 'Голосовое сообщение';
+            }
+            // Обработка видео
+            elseif ($typeMessage === 'videoMessage') {
+                $fileUrl = $messageData['videoMessageData']['downloadUrl'] ?? null;
+                $text = 'Видео файл';
+            }
+
+            // Если это неизвестный файл, но ссылка есть (на всякий случай)
+            if (!$fileUrl && isset($messageData['fileMessageData']['downloadUrl'])) {
+                $fileUrl = $messageData['fileMessageData']['downloadUrl'];
             }
 
             $lead->messages()->updateOrCreate(

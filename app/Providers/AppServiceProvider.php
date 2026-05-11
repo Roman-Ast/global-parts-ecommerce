@@ -24,5 +24,7 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') !== 'local') {
             URL::forceScheme('https');
         }
+
+        \App\Models\WhatsappMessage::observe(\App\Observers\WhatsappMessageObserver::class);
     }
 }

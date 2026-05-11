@@ -1,200 +1,298 @@
+/* ============================================================
+   ПЛАНШЕТ  768px – 1023px
+   ============================================================ */
+@media (max-width: 1023px) {
 
-@media (max-width: 580px) {
-    #search-res-main-container{
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        align-items: stretch;
-        min-height: 55vh;
-        background-color: #eeeeee;
-        padding-bottom: 20px;
-        margin-bottom: 80px;
+    #search-res-main-container {
+        margin-top: 120px;
     }
-    #search-res-main-wrapper{
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        justify-content: space-between;
-        align-items: baseline;
+
+    /* фильтр — узкая боковая колонка */
+    #search-res-filter {
+        width: 22%;
+        font-size: 0.8em;
     }
-    #search-res-filter{
-        width: 16%;
-        max-height: 60vh;
-        overflow: scroll;
-        display: none;
+
+    #search-part-main-container {
+        width: 76%;
     }
-    #search-part-main-container{
-        width: 100%;
+
+    /* шапка колонок: убираем жёсткие проценты десктопа */
+    #search-res-part-header {
+        grid-template-columns: 60% 14% 8% 18%;
     }
-    #search-res-header{
-        font-size: 1.1em;
-        display: flex;
-        flex-direction: row;
-        justify-content: flex-start;
-        align-items: center;
-        padding: 10px;
-        font-weight: 500;   
-        height: 80px;
-    }
-    #search-res-part-header{
-        display: none;
-    }
-    .search-res-part-header-item{
-        padding: 10px;
-        display: flex;
-        align-items: flex-end;
-    }
-    
-    .searchResForRequestPartNumberHeader{
-        background-color: #f2efe9;
-        width: 100%;
-        display: flex;
-        justify-content: flex-start;
-        align-items: center;
-        padding-left: 10px;
-        height: 50px;
-    }
-    #requestPartNumberContainer,
-    #crossContainer {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        align-items: stretch;
-    }
-    .requestPartNumberContainer-item{
-        display: grid;
-        grid-template-columns: 11% 27% 32% 30%;
-        grid-template-rows: minmax(80px, flex) minmax(80px, flex);
-        background-color: #fff;
-        padding-left: 5px;
-        margin-bottom: 7px;
-        padding-bottom: 5px;
-    }
-    .requestPartNumberContainer-item-entity {
-        margin-top: 9px;
-    }
-    .requestPartNumber-supplier{
-        font-style: italic;
-        color: #aaa;
-        font-size: 0.5em;
-        word-wrap: break-word;
-    }
-    .requestPartNumber-brand{
-        font-size: 0.77em;
-        text-align: left;
-        font-weight: bold;
-        color: #363636;
-        padding-left: 10px;
-        display: flex;
-        flex-direction: row;
-        justify-content: flex-start;
-        align-items: baseline;
-        word-wrap: break-word;
-    }
-    .requestPartNumber-partnumber{
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: baseline;
-        font-size: 12px;
-        color: #808080;
-    }
-    .requestPartNumber-name{
-        text-align: left;
-        word-wrap: break-word; 
-        font-size: 0.7em;
-    }
-    .requestPartNumber-info{
-        display: none;
-    }
-    .requestPartNumber-delivery{
-        text-align: center;
-        color: #111;
-        font-size: 0.77em;
-    }
-    .requestPartNumber-count{
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 12px;
-        color: #92b6c8;
-    }
-    .requestPartNumber-price{
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .stock-item-price{
-        text-align: left;
-        font-weight: bold;
-        font-size: 15px;
-        color: #646464;
-    }
-    .requestPartNumber-cart{
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .cross-item-countable{
-        display: flex;
-        flex-direction: column;
-        justify-content: baseline;
-        align-items: center;
-    }
-    .stock-item-cart{
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: flex-start;
-    }
-    .stock-item-cart-qty input{
-        max-width: 70%;
-        margin-left: 5px;
-    }
-    .parts-on-stock{
-        background-color: rgb(168, 249, 86);
-        color: #363636;
-    }
-    #show-other-items{
-        display: none;
-    }
-    #show-other-items a{
-        font-style: italic;
-        font-size: 10px;
-        margin-top: 10px;
-        margin-left: 5px;
-        margin-bottom: 10px;
-    }
-    .pagination-nav{
-        flex-direction: row;
-        justify-content: flex-end;
-        align-items: baseline;
-        margin-right: 10px;
-        display: none;
-    }
-    .page-item{
-        cursor: pointer;
-    }
-    #crossesContainer-on-stock{
-        padding-bottom: 10px;
-    }
-    #search-res-filter{
-        font-size: 0.9em;
-        letter-spacing: 1px;
-        background-color: #fff;
-        padding: 5px;
-    }
-    .search-res-filter-item-header{
-        background-color: #eeeeee;
-        font-weight: 600;
-        margin-bottom: 20px;
-    }
-    .sticky {
-        position: sticky;
-        top: 0;
+
+    /* строка товара */
+    .requestPartNumberContainer-item {
+        grid-template-columns: 3% 8% 14% 13% 22% 9% 5% 8% 9% 9%;
+        grid-template-rows: minmax(70px, auto);
     }
 }
 
+
+/* ============================================================
+   МОБИЛКА  ≤ 767px   — карточка вариант А
+   ============================================================ */
+@media (max-width: 767px) {
+
+    /* --- контейнер страницы --- */
+    #search-res-main-container {
+        margin-top: 80px;
+        margin-bottom: 80px;
+        padding: 0 8px 16px;
+        background-color: #eeeeee;
+    }
+
+    /* --- скрываем то, что не нужно на мобилке --- */
+    #search-res-filter,
+    #search-res-part-header {
+        display: none;
+    }
+
+    /* --- враппер: одна колонка --- */
+    #search-res-main-wrapper {
+        flex-direction: column;
+    }
+
+    #search-part-main-container {
+        width: 100%;
+    }
+
+    /* --- заголовок результатов --- */
+    #search-res-header {
+        font-size: 1em;
+        height: auto;
+        padding: 10px 4px;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    /* --- секционный заголовок (Запрошенный артикул / Аналоги ...) --- */
+    .searchResForRequestPartNumber {
+        margin-top: 12px;
+    }
+
+    .searchResForRequestPartNumberHeader {
+        height: 36px;
+        font-size: 0.85em;
+        border-radius: 8px;
+        margin-bottom: 4px;
+    }
+
+    /* ---- КАРТОЧКА ТОВАРА ---- */
+    .requestPartNumberContainer-item {
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border-radius: 10px;
+        border: 0.5px solid #ddd;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+        padding: 10px 12px;
+        margin-bottom: 6px;
+        gap: 0;
+    }
+
+    /* строка 1: бренд + артикул + бейдж доставки */
+    .requestPartNumberContainer-item::before {
+        content: '';
+    }
+
+    /* скрываем чекбокс (для admin) в отдельном div — он встроится в flex */
+    .requestPartNumberContainer-item .form-check {
+        display: none;
+    }
+
+    /* все ячейки — сброс десктопных стилей */
+    .requestPartNumberContainer-item-entity {
+        margin-top: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    /* --- строка 1: бренд + артикул --- */
+    .requestPartNumber-brand {
+        font-size: 11px;
+        font-weight: 600;
+        background: #f0f0f0;
+        color: #444;
+        padding: 1px 7px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        order: 1;
+    }
+
+    .requestPartNumber-partnumber {
+        font-size: 11px;
+        color: #999;
+        font-family: monospace;
+        order: 2;
+        margin-left: 6px;
+    }
+
+    /* поставщик (город) — мелко, серый, после артикула */
+    .requestPartNumber-supplier {
+        font-size: 11px;
+        color: #aaa;
+        font-style: italic;
+        order: 3;
+        margin-left: auto;
+    }
+
+    /* --- строка 2: название --- */
+    .requestPartNumber-name {
+        font-size: 13px;
+        color: #222;
+        line-height: 1.4;
+        order: 4;
+        margin-top: 6px;
+        margin-bottom: 6px;
+    }
+
+    /* info-иконка — скрываем, на мобилке не нужна */
+    .requestPartNumber-info {
+        display: none;
+    }
+
+    /* --- разделитель перед нижней строкой --- */
+    .requestPartNumber-delivery {
+        order: 5;
+        margin-left: auto;
+        text-align: right;
+        font-size: 11px;
+        color: inherit;
+    }
+
+    /* --- строка 3: кол-во + цена + корзина --- */
+    .requestPartNumber-count {
+        font-size: 13px;
+        color: #92b6c8;
+        order: 6;
+        flex-direction: row;
+        justify-content: flex-start;
+    }
+
+    .requestPartNumber-price {
+        order: 7;
+        margin-left: auto;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .stock-item-price {
+        font-size: 15px;
+        font-weight: 700;
+        color: #333;
+    }
+
+    .requestPartNumber-cart {
+        order: 8;
+        margin-left: 10px;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    /* вспомогательный разделитель между названием и нижней строкой */
+    .requestPartNumber-name::after {
+        content: '';
+        display: block;
+        height: 0.5px;
+        background: #e5e5e5;
+        margin-top: 8px;
+        width: 100%;
+    }
+
+    /* --- корзина --- */
+    .stock-item-cart {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 5px;
+        border: 0.5px solid #ccc;
+        border-radius: 8px;
+        padding: 4px 8px;
+        background: #f7f7f7;
+    }
+
+    .stock-item-cart-img {
+        width: 18px;
+        height: 18px;
+    }
+
+    .stock-item-cart-qty input,
+    .stock-item-cart-qty .form-control {
+        width: 32px !important;
+        max-width: 32px !important;
+        text-align: center;
+        padding: 2px 4px;
+        font-size: 12px;
+        margin-left: 4px;
+        border-radius: 4px;
+    }
+
+    /* --- бейджи доставки --- */
+    /* зелёный (1.5-2 часа / в офисе) — Bootstrap success */
+    .requestPartNumber-delivery .badge.bg-success {
+        background-color: #198754 !important;
+        color: #fff !important;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 20px;
+        min-width: auto;
+    }
+
+    /* дата — жёлтый warning */
+    .requestPartNumber-delivery .text-muted {
+        background-color: #fff3cd;
+        color: #856404 !important;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 20px;
+        border: 0.5px solid #ffc107;
+    }
+
+    /* уточняйте */
+    .requestPartNumber-delivery .small {
+        font-size: 11px;
+        color: #aaa !important;
+    }
+
+    /* бейдж с цветом поставщика (crosses) */
+    .requestPartNumber-delivery .badge:not(.bg-success):not(.bg-light) {
+        font-size: 11px;
+        padding: 3px 9px;
+        border-radius: 20px;
+        min-width: auto;
+    }
+
+    /* светлый бейдж (bg-light) → тоже в стиль warning */
+    .requestPartNumber-delivery .badge.bg-light {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+        border: 0.5px solid #ffc107;
+        font-size: 11px;
+        padding: 3px 9px;
+        border-radius: 20px;
+        min-width: auto;
+    }
+
+    /* --- пагинация и прочее --- */
+    .pagination-nav {
+        display: flex !important;
+        justify-content: center;
+        margin-top: 12px;
+    }
+
+    #show-other-items {
+        display: block;
+        text-align: center;
+        padding: 8px 0;
+    }
+
+    #show-other-items a {
+        font-size: 13px;
+        font-style: normal;
+    }
+}
