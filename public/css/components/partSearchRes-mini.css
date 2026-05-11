@@ -111,11 +111,11 @@
 
     /* --- строка 1: бренд + артикул --- */
     .requestPartNumber-brand {
-        font-size: 11px;
-        font-weight: 600;
+        font-size: 14px;
+        font-weight: 700;
         background: #f0f0f0;
-        color: #444;
-        padding: 1px 7px;
+        color: #222;
+        padding: 2px 9px;
         border-radius: 4px;
         display: inline-flex;
         align-items: center;
@@ -180,14 +180,15 @@
     }
 
     .stock-item-price {
-        font-size: 15px;
+        font-size: 19px;
         font-weight: 700;
-        color: #333;
+        color: #222;
     }
 
     .requestPartNumber-cart {
         order: 8;
         margin-left: 10px;
+        flex: 1;
         flex-direction: row;
         align-items: center;
     }
@@ -207,10 +208,12 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 5px;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
         border: 0.5px solid #ccc;
         border-radius: 8px;
-        padding: 4px 8px;
+        padding: 6px 10px;
         background: #f7f7f7;
     }
 
@@ -278,9 +281,8 @@
         min-width: auto;
     }
 
-    /* --- пагинация и прочее --- */
+    /* --- пагинация — display не трогаем, JS управляет видимостью --- */
     .pagination-nav {
-        display: flex !important;
         justify-content: center;
         margin-top: 12px;
     }
