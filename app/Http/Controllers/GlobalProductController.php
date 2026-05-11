@@ -14,16 +14,18 @@ class GlobalProductController extends Controller
      */
     public function show($brand, $article)
     {
-        $rawArticle = $article; 
-        $searchArticle = preg_replace('/[^A-Za-z0-9]/', '', urldecode($article));
+        // 1. Очистка входных данных
+        // Убираем всё кроме букв и цифр для поиска и формирования правильного URL
         $cleanBrand = trim(urldecode($brand));
+        $searchArticle = preg_replace('/[^A-Za-z0-9]/', '', urldecode($article));
 
-        // 1. Поиск в базе (основной)
+        // 2. Поиск товара в базе
+        // Сначала ищем по заранее подготовленному полю clean_article (если оно есть в БД)
         $product = GlobalCatalog::where(DB::raw('UPPER(TRIM(brand))'), strtoupper($cleanBrand))
             ->where('clean_article', $searchArticle)
             ->first();
 
-        // 2. Резервный поиск (если по clean_article не нашли)
+        // Резервный поиск, если по чистому артикулу ничего не найдено
         if (!$product) {
             $product = \App\Models\GlobalCatalog::where(DB::raw('UPPER(TRIM(brand))'), strtoupper($cleanBrand))
                 ->where(function($query) use ($searchArticle) {
@@ -33,68 +35,55 @@ class GlobalProductController extends Controller
                 ->first();
         }
 
-        // 3. РЕДИРЕКТЫ (только если товар РЕАЛЬНЫЙ)
+        // 3. ПРОВЕРКА URL И РЕДИРЕКТ (Борьба с дублями)
         if ($product) {
-            $currentPath = urldecode(request()->path()); 
-            $correctPath = "product/" . $product->brand . "/" . $product->clean_article;
+            // Формируем "идеальный" путь: бренд как в базе / артикул без знаков
+            // Используем rawurlencode для бренда на случай знаков '/' или пробелов
+            $correctPath = "product/" . rawurlencode($product->brand) . "/" . $product->clean_article;
+            $currentPath = request()->path();
 
-            if ($currentPath !== $correctPath) {
-                return redirect()->to($correctPath, 301);
+            // Сравниваем текущий путь в браузере с идеальным. 
+            // Если они разные (например, зашли по ссылке с дефисом) — перенаправляем 301 редиректом.
+            if (urldecode($currentPath) !== urldecode($correctPath)) {
+                return redirect()->to(url($correctPath), 301);
             }
         }
 
-        // 4. ОБРАБОТКА РЕЗУЛЬТАТА (Виртуалка vs Реальный товар)
-        if (!$product) {
-            // Устанавливаем статус 404 для поисковиков
-            http_response_code(404); 
+        // 4. ПОДГОТОВКА ДАННЫХ ДЛЯ ШАБЛОНА
+        
+        // Формируем каноническую ссылку для тега <link rel="canonical">
+        $canonicalUrl = $product 
+            ? route('product.show', ['brand' => $product->brand, 'article' => $product->clean_article])
+            : url()->current();
 
-            $product = new \stdClass();
-            $product->brand = $cleanBrand;
-            $product->article = $rawArticle;
-            $product->name = "Запчасть " . $cleanBrand . " " . $rawArticle;
-            $product->price = 0;
-            $product->qty = 0;
-            $product->is_virtual = true;
-            $product->supplier_name = null; // Защита для твоего Blade-баджика
-            $product->clean_article = $searchArticle; 
-            $product->placeholder_url = "https://shop.globalparts.kz/images/placeholders/default_gear.jpeg";
-            $product->retail_price = 0; 
-        } else {
-            $product->is_virtual = false;
-
-            // Считаем цену ТОЛЬКО для реального товара
-            // Создаем контроллер внутри только здесь, чтобы не грузить память зря
+        // Расчет цены (только если товар не виртуальный)
+        if ($product && !isset($product->is_virtual)) {
             $sparePartCtrl = new \App\Http\Controllers\SparePartController();
             $basePrice = $product->price;
             $retailPrice = $sparePartCtrl->setPrice($basePrice);
 
+            // Наценка по умолчанию, если цена из API пришла без изменений
             if ($retailPrice == $basePrice && $basePrice > 0) {
                 $retailPrice = $basePrice * 1.25; 
             }
             $product->retail_price = $retailPrice;
         }
 
-        // !!! ВАЖНО: Весь старый блок "// --- ЦЕНЫ ---", который шел здесь, УДАЛЕН.
-        // Теперь расчет цены не вызывается для виртуальных объектов.
-
-        // 5. Рекомендации (оптимизировано)
+        // 5. РЕКОМЕНДАЦИИ
         $recommended = \App\Models\GlobalCatalog::where('brand', $cleanBrand)
-            ->when(isset($product->clean_article), function($q) use ($product) {
+            ->when($product, function($q) use ($product) {
                 return $q->where('clean_article', '!=', $product->clean_article);
             })
-            ->inRandomOrder()                  
-            ->take(10)                         
+            ->inRandomOrder()
+            ->take(10)
             ->get();
 
-        $canonicalUrl = route('product.show', [
-            'brand' => $product->brand,
-            'article' => $product->clean_article ?? $product->article
-        ]);
-
-        if (isset($product->is_virtual) && $product->is_virtual) {
+        // Если товар не найден или помечен как виртуальный (для 404 страниц)
+        if (!$product || (isset($product->is_virtual) && $product->is_virtual)) {
             return response()->view('global_product', compact('product', 'recommended', 'canonicalUrl'), 404);
         }
 
+        // Возвращаем основной вид
         return view('global_product', compact('product', 'recommended', 'canonicalUrl'));
     }
     

@@ -8,7 +8,7 @@
         <title>@yield('title', 'Global Parts — Автозапчасти в Астане и по всему Казахстану')</title>
         <meta name="description" content="@yield('description', 'Купить запчасти по выгодным ценам в Астане и с доставкой по РК. Подбор по VIN за 5 минут. Оригиналы и дубликаты: Hyundai, Kia, Toyota, Nissan, BMW, Mercedes. Работаем в городах: Астана, Алматы, Караганда, Шымкент, Павлодар, Усть-Каменогорск, Костанай и др.')">
         <meta name="keywords" content="запчасти астана, автозапчасти казахстан, вин код подбор, магазин запчастей, запчасти хюндай, запчасти киа, купить запчасти">
-        <link rel="canonical" href="{{ url()->current() }}" />
+        @yield('canonical', '<link rel="canonical" href="' . url()->current() . '" />')
         <link rel="icon" type="image/png" href="https://shop.globalparts.kz/images/favicon-32x32.png">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://cdn.jsdelivr.net">
