@@ -549,71 +549,71 @@
     </div>
 </div>
 
-{{-- Скрипт подгрузки цен --}}
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org/",
-  "@type": "Product",
-  "name": "{{ $product->name }} {{ $product->brand }} ({{ $product->article }})",
-  "image": [
-    "https://shop.globalparts.kz/images/logo1.png" 
-  ],
-  "description": "Купить {{ $product->name }} артикул {{ $product->article }} бренда {{ $product->brand }} в Казахстане. Цена: {{ number_format($product->retail_price, 0, '', '') }} ₸. В наличии и под заказ.",
-  "sku": "{{ $product->article }}",
-  "brand": {
-    "@type": "Brand",
-    "name": "{{ $product->brand }}"
-  },
-  "offers": {
-    "@type": "Offer",
-    "url": "{{ url()->current() }}",
-    "priceCurrency": "KZT",
-    "price": "{{ number_format($product->retail_price, 0, '', '') }}", 
-    "itemCondition": "https://schema.org/NewCondition",
-    "availability": "https://schema.org/InStock",
-    "seller": {
-      "@type": "Organization",
-      "name": "Global Parts Astana"
+    {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": "{{ $product->name }} {{ $product->brand }} ({{ $product->article }})",
+        "image": [
+            "https://shop.globalparts.kz/images/logo1.png" 
+        ],
+        "description": "Купить {{ $product->name }} артикул {{ $product->article }} бренда {{ $product->brand }} в Казахстане. Цена: {{ number_format($product->retail_price, 0, '', '') }} ₸. В наличии и под заказ.",
+        "sku": "{{ $product->article }}",
+        "brand": {
+            "@type": "Brand",
+            "name": "{{ $product->brand }}"
+        },
+        "offers": {
+            "@type": "Offer",
+            "url": "{{ url()->current() }}",
+            "priceCurrency": "KZT",
+            "price": "{{ number_format($product->retail_price, 0, '', '') }}", 
+            "itemCondition": "https://schema.org/NewCondition",
+            "availability": "https://schema.org/InStock",
+            "seller": {
+            "@type": "Organization",
+            "name": "Global Parts Astana"
+            }
+        }
     }
-  }
-}
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [{
+            "@type": "Question",
+            "name": "Оригинал ли это {{ $product->brand }} или аналог?",
+            "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Бренд {{ $product->brand }} является проверенным производителем. Мы в Global Parts гарантируем качество детали {{ $product->article }}."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Как проверить совместимость детали {{ $product->article }}?",
+            "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Рекомендуем отправить VIN-код менеджеру в WhatsApp для точного подтверждения применимости."
+            }
+        }]
+    }
 </script>
 <script>
     $(document).ready(function(){
+        // Инициализация слайдера рекомендаций
         $('.recommended-slider').slick({
-            dots: false, // Точки снизу обычно мешают в рекомендациях
-            infinite: false, // Останавливаем на последнем товаре
-            speed: 300,
-            slidesToShow: 4, // Показываем 4 товара на десктопе
+            infinite: false,
+            slidesToShow: 4,
             slidesToScroll: 1,
-            autoplay: true,
-            autoplaySpeed: 3000,
+            arrows: true,
+            dots: false,
             responsive: [
-                {
-                    breakpoint: 1024,
-                    settings: {
-                        slidesToShow: 3,
-                    }
-                },
-                {
-                    breakpoint: 768,
-                    settings: {
-                        slidesToShow: 2,
-                    }
-                },
-                {
-                    breakpoint: 480,
-                    settings: {
-                        slidesToShow: 1, // На телефонах по одному
-                        arrows: false // Убираем стрелки на мобилках для удобства
-                    }
-                }
+                { breakpoint: 1024, settings: { slidesToShow: 3 } },
+                { breakpoint: 768, settings: { slidesToShow: 2 } },
+                { breakpoint: 480, settings: { slidesToShow: 1 } }
             ]
         });
     });
-</script>
-<script>
-// Функция для отрисовки ОДНОЙ строки таблицы (используем везде)
+
     function renderOfferRow(offer) {
         const qty = parseInt(offer.qty) || 0;
         const priceDisplay = Number(offer.priceWithMargine || 0).toLocaleString();
@@ -759,9 +759,6 @@
         }, 20000);
     }
 
-</script>
-
-<script>
     document.addEventListener('DOMContentLoaded', function() {
         const btn = document.getElementById('load-google-images');
         const container = document.getElementById('google-images-container');
@@ -811,30 +808,7 @@
                     });
             };
         }
-    }); // Закрываем DOMContentLoaded
-</script>
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [{
-    "@type": "Question",
-    "name": "Оригинал ли это {{ $product->brand }} или аналог?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Бренд {{ $product->brand }} является проверенным производителем. Мы в Global Parts гарантируем качество детали {{ $product->article }}."
-    }
-  },
-  {
-    "@type": "Question",
-    "name": "Как проверить совместимость детали {{ $product->article }}?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Рекомендуем отправить VIN-код менеджеру в WhatsApp для точного подтверждения применимости."
-    }
-  }]
-}
+    });
 </script>
 
 @endsection

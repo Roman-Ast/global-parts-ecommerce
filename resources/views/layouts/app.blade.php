@@ -196,19 +196,12 @@
                 <i class="bi bi-whatsapp"></i>
             </div>
         </div>
-        <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-        {{-- JS: один jQuery, дублей нет --}}
-        {{-- bootstrap и jquery — без defer (нужны сразу для accordion и др.) --}}
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
-        <script src="{{ URL::asset('js/jquery.min.js') }}" ></script>
-
-        {{-- admin и korean-cars — голый код вне ready, без defer --}}
-        <script src="{{ URL::asset('js/korean-cars.js') }}"></script>
-
-        {{-- main.js — весь код внутри ready/load, defer безопасен --}}
-        <script src="{{ URL::asset('js/main.js') }}" defer></script>    
         
-        {{-- Google Ads — async, не блокирует --}}
+        <script src="{{ URL::asset('js/jquery.min.js') }}" ></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
+        <script src="{{ URL::asset('js/korean-cars.js') }}"></script>
+        <script src="{{ URL::asset('js/main.js') }}" defer></script>    
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
         <script>
             window.dataLayer = window.dataLayer || [];
