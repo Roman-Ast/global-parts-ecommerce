@@ -14,6 +14,31 @@
 
 @section('content')
 <style>
+    .hover-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+    }
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Стили для стрелок Slick (чтобы они были видны на светлом фоне) */
+    .slick-prev, .slick-next {
+        z-index: 10;
+        width: 40px;
+        height: 40px;
+        background: #fff !important;
+        border-radius: 50%;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .slick-prev:before, .slick-next:before {
+        color: #333 !important; /* Цвет стрелочек */
+        font-size: 24px;
+    }
+    .slick-prev { left: -20px; }
+    .slick-next { right: -20px; }
+
     .faq-section {
         background: #ffffff;
         border-radius: 12px;
@@ -553,7 +578,40 @@
   }
 }
 </script>
-
+<script>
+    $(document).ready(function(){
+        $('.recommended-slider').slick({
+            dots: false, // Точки снизу обычно мешают в рекомендациях
+            infinite: false, // Останавливаем на последнем товаре
+            speed: 300,
+            slidesToShow: 4, // Показываем 4 товара на десктопе
+            slidesToScroll: 1,
+            autoplay: true,
+            autoplaySpeed: 3000,
+            responsive: [
+                {
+                    breakpoint: 1024,
+                    settings: {
+                        slidesToShow: 3,
+                    }
+                },
+                {
+                    breakpoint: 768,
+                    settings: {
+                        slidesToShow: 2,
+                    }
+                },
+                {
+                    breakpoint: 480,
+                    settings: {
+                        slidesToShow: 1, // На телефонах по одному
+                        arrows: false // Убираем стрелки на мобилках для удобства
+                    }
+                }
+            ]
+        });
+    });
+</script>
 <script>
 // Функция для отрисовки ОДНОЙ строки таблицы (используем везде)
     function renderOfferRow(offer) {
