@@ -49,41 +49,44 @@ class GlobalProductController extends Controller
             }
         }
 
-        // 4. ПОДГОТОВКА ДАННЫХ ДЛЯ ШАБЛОНА
-        
-        // Формируем каноническую ссылку для тега <link rel="canonical">
-        $canonicalUrl = $product 
-            ? route('product.show', ['brand' => $product->brand, 'article' => $product->clean_article])
-            : url()->current();
+        // 4. ОБРАБОТКА (только если товар найден)
+        $canonicalUrl = url()->current(); // Значение по умолчанию
 
-        // Расчет цены (только если товар не виртуальный)
-        if ($product && !isset($product->is_virtual)) {
-            $sparePartCtrl = new \App\Http\Controllers\SparePartController();
-            $basePrice = $product->price;
-            $retailPrice = $sparePartCtrl->setPrice($basePrice);
+        if ($product) {
+            // Расчет цены
+            if (!isset($product->is_virtual)) {
+                $sparePartCtrl = new \App\Http\Controllers\SparePartController();
+                $basePrice = $product->price;
+                $retailPrice = $sparePartCtrl->setPrice($basePrice);
 
-            // Наценка по умолчанию, если цена из API пришла без изменений
-            if ($retailPrice == $basePrice && $basePrice > 0) {
-                $retailPrice = $basePrice * 1.25; 
+                if ($retailPrice == $basePrice && $basePrice > 0) {
+                    $retailPrice = $basePrice * 1.25; 
+                }
+                $product->retail_price = $retailPrice;
             }
-            $product->retail_price = $retailPrice;
+
+            // Формируем правильный каноникл
+            $canonicalUrl = route('product.show', [
+                'brand' => $product->brand,
+                'article' => $product->clean_article ?? $product->article
+            ]);
         }
 
-        // 5. РЕКОМЕНДАЦИИ
+        // 5. Рекомендации (пусть ищутся по бренду из URL, даже если товар не найден)
         $recommended = \App\Models\GlobalCatalog::where('brand', $cleanBrand)
             ->when($product, function($q) use ($product) {
                 return $q->where('clean_article', '!=', $product->clean_article);
             })
-            ->inRandomOrder()
-            ->take(10)
+            ->inRandomOrder()                  
+            ->take(10)                         
             ->get();
 
-        // Если товар не найден или помечен как виртуальный (для 404 страниц)
+        // 6. ФИНАЛЬНЫЙ ВЫВОД
         if (!$product || (isset($product->is_virtual) && $product->is_virtual)) {
+            // Передаем null в компакт, чтобы вьюха знала, что показывать 404-стаб
             return response()->view('global_product', compact('product', 'recommended', 'canonicalUrl'), 404);
         }
 
-        // Возвращаем основной вид
         return view('global_product', compact('product', 'recommended', 'canonicalUrl'));
     }
     
