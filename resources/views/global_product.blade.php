@@ -20,6 +20,42 @@
 
 @section('content')
 <style>
+    .faq-section {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .faq-title {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: #333;
+        margin-bottom: 20px;
+        padding-left: 10px;
+        border-left: 4px solid #ffc107; /* Твой фирменный желтый */
+    }
+
+    .accordion-flush .accordion-item {
+        border-bottom: 1px solid #f1f1f1;
+    }
+
+    .accordion-button:not(.collapsed) {
+        background-color: rgba(255, 193, 7, 0.05); /* Легкий желтый фон при открытии */
+        color: #664d03;
+        box-shadow: none;
+    }
+
+    .accordion-button:focus {
+        box-shadow: none;
+        border-color: rgba(255, 193, 7, 0.1);
+    }
+
+    .accordion-body {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: #555;
+    }
     .pulse-badge {
         animation: pulse-animation 2s infinite;
         box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
@@ -380,6 +416,67 @@
         </div>
     </div>
 
+    {{-- FAQ --}}
+    <div class="container mt-5 mb-5">
+        <div class="faq-section">
+            <h3 class="faq-title">Часто задаваемые вопросы о {{ $product->brand }} {{ $product->article }}</h3>
+            <div class="accordion accordion-flush" id="productFaqAccordion">
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-1">
+                            Оригинал ли это {{ $product->brand }} или аналог?
+                        </button>
+                    </h2>
+                    <div id="faq-1" class="accordion-collapse collapse" data-bs-parent="#productFaqAccordion">
+                        <div class="accordion-body">
+                            Бренд <strong>{{ $product->brand }}</strong> является проверенным производителем автозапчастей. В нашем магазине Global Parts мы гарантируем подлинность продукции. Деталь с артикулом <strong>{{ $product->article }}</strong> проходит строгий контроль качества перед отправкой.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-2">
+                            Как точно узнать, подходит ли {{ $product->article }} на мой автомобиль?
+                        </button>
+                    </h2>
+                    <div id="faq-2" class="accordion-collapse collapse" data-bs-parent="#productFaqAccordion">
+                        <div class="accordion-body">
+                            Лучший способ проверить совместимость — подбор по VIN-коду. Вы можете нажать на кнопку WhatsApp, отправить нам техпаспорт, и наши менеджеры подтвердят применимость детали именно для вашего авто в течение 5-10 минут.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-3">
+                            Как осуществляется доставка по Казахстану?
+                        </button>
+                    </h2>
+                    <div id="faq-3" class="accordion-collapse collapse" data-bs-parent="#productFaqAccordion">
+                        <div class="accordion-body">
+                            По Астане возможна доставка "день в день". В Алматы, Шымкент, Караганду и другие города РК мы отправляем заказы через надежные курьерские службы или транспортные компании. Срок доставки обычно составляет от 2 до 5 рабочих дней.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-4">
+                            Можно ли вернуть деталь, если она не подошла?
+                        </button>
+                    </h2>
+                    <div id="faq-4" class="accordion-collapse collapse" data-bs-parent="#productFaqAccordion">
+                        <div class="accordion-body">
+                            Да, согласно законодательству РК, вы можете вернуть товар в течение 14 дней, если деталь не устанавливалась, сохранена заводская упаковка и товарный вид.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
     {{-- Рекомендации для вас--}}
     <div class="container my-5">
         <h5 class="fw-bold mb-4"><i class="bi bi-gear-wide-connected me-2"></i>Похожие товары ({{ $product->brand }})</h5>
@@ -453,155 +550,153 @@
 </script>
 
 <script>
-
 // Функция для отрисовки ОДНОЙ строки таблицы (используем везде)
-function renderOfferRow(offer) {
-    const qty = parseInt(offer.qty) || 0;
-    const priceDisplay = Number(offer.priceWithMargine || 0).toLocaleString();
-    
-    let delivery = offer.delivery_time || offer.deliveryStart || '1-2 дня';
-    if (delivery.includes('T')) delivery = delivery.split('T')[0];
-
-    const isAstana = offer.supplier_city.toLowerCase() === 'ast' || delivery.includes('часа');
-    const rowClass = isAstana ? 'table-success' : '';
-    const badgeClass = isAstana ? 'bg-success' : 'bg-light text-dark border';
-
-    return `
-    <tr class="${rowClass} animate__animated animate__fadeIn">
-        <td class="ps-4 py-3">
-            <div class="fw-bold text-primary text-uppercase">${offer.brand}</div>
-            <div class="small text-muted fw-bold">${offer.article}</div>
-            <div class="extra-small text-muted" style="font-size: 0.7rem; max-width: 300px;">
-                ${offer.name || ''}
-            </div>
-        </td>
-        <td class="text-center align-middle">
-            <span class="badge ${badgeClass}">${isAstana ? 'В наличии: Астана' : delivery}</span>
-            <div class="small text-muted" style="font-size: 0.65rem;">${offer.supplier_city || ''}</div>
-        </td>
-        <td class="text-center align-middle">
-            <span class="badge ${qty > 0 ? 'bg-success' : 'bg-secondary'}">${qty} шт.</span>
-        </td>
-        <td class="align-middle fw-bold h5 text-primary">${priceDisplay} ₸</td>
-        <td class="pe-4 text-end">
-            <button class="btn ${isAstana ? 'btn-success' : 'btn-primary'} btn-sm rounded-pill px-3 shadow-sm api-buy-btn"
-                data-brand="${offer.brand}" 
-                data-article="${offer.article}" 
-                data-qty="${qty}" 
-                data-name="${offer.name || 'Автозапчасть'}" 
-                data-price="${offer.price || 0}" 
-                data-price-margine="${offer.priceWithMargine}"
-                data-delivery="${delivery}"
-                data-supplier="${offer.supplier_city || 'Склад'}">
-                Купить
-            </button>
-        </td>
-    </tr>`;
-}
-
-document.getElementById('start-api-search')?.addEventListener('click', function() {
-    const brand = {!! json_encode($product->brand) !!};
-    const article = {!! json_encode($product->article) !!};
-    const btn = this;
-    const placeholder = document.getElementById('api-offers-placeholder');
-    const loader = document.getElementById('api-offers-loader');
-    const content = document.getElementById('api-offers-content');
-    const tbody = document.getElementById('api-offers-tbody');
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Ищем...';
-    
-    placeholder.style.display = 'none';
-    loader.style.display = 'block';
-    tbody.innerHTML = ''; // Очищаем старое
-
-    // ШАГ 1: Основной быстрый поиск
-    fetch(`/api/search-prices?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`, {
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(res => res.json())
-    .then(json => {
-        loader.style.display = 'none';
-        content.style.display = 'block';
+    function renderOfferRow(offer) {
+        const qty = parseInt(offer.qty) || 0;
+        const priceDisplay = Number(offer.priceWithMargine || 0).toLocaleString();
         
-        let html = '';
-        if (json.offers && json.offers.length > 0) {
-            json.offers.forEach(offer => html += renderOfferRow(offer));
-            tbody.innerHTML = html;
-        }
+        let delivery = offer.delivery_time || offer.deliveryStart || '1-2 дня';
+        if (delivery.includes('T')) delivery = delivery.split('T')[0];
 
-        // ШАГ 2: Догружаем Rossko (запускаем сразу после отрисовки первых данных)
-        console.log('Запрашиваем Rossko...');
-        fetch(`/api/search-rossko?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`)
-        .then(res => res.json())
-        .then(rosskoData => {
-            if (rosskoData.offers && rosskoData.offers.length > 0) {
-                let rosskoHtml = '';
-                rosskoData.offers.forEach(offer => rosskoHtml += renderOfferRow(offer));
-                // Добавляем в начало, если Астана, или в конец
-                tbody.insertAdjacentHTML('afterbegin', rosskoHtml); 
-                console.log('Rossko добавлен');
-            }
-            btn.innerHTML = 'Обновлено';
-        })
-        .catch(err => console.error('Rossko error:', err));
-    })
-    .catch(err => {
-        loader.style.display = 'none';
-        btn.disabled = false;
-        btn.innerHTML = 'Ошибка. Повторить?';
-    });
-});
+        const isAstana = offer.supplier_city.toLowerCase() === 'ast' || delivery.includes('часа');
+        const rowClass = isAstana ? 'table-success' : '';
+        const badgeClass = isAstana ? 'bg-success' : 'bg-light text-dark border';
 
-function handleMobileApiSearch(btn) {
-    // 1. Блокировка и лоадер
-    btn.disabled = true;
-    btn.classList.remove('pulse-animation');
-    btn.style.opacity = '0.8';
-
-    const textBlock = document.getElementById('btn-text-mobile');
-    const loaderBlock = document.getElementById('btn-loader-mobile');
-    
-    if (textBlock) textBlock.style.display = 'none';
-    if (loaderBlock) loaderBlock.style.display = 'block';
-
-    // 2. ЖЕСТКИЙ СКРОЛЛ (Прямой расчет)
-    setTimeout(() => {
-        const resultsBlock = document.getElementById('api-search-container');
-        if (resultsBlock) {
-            // Вычисляем точное расстояние от верха страницы до блока
-            const yOffset = -20; // Небольшой отступ сверху, чтобы заголовок не прилипал
-            const y = resultsBlock.getBoundingClientRect().top + window.pageYOffset + yOffset;
-
-            window.scrollTo({
-                top: y,
-                behavior: 'smooth'
-            });
-        }
-    }, 150); // Увеличили задержку до 150мс для стабильности на мобилках
-
-    // 3. Запуск основного поиска
-    const mainBtn = document.getElementById('start-api-search');
-    if (mainBtn) {
-        mainBtn.click();
+        return `
+        <tr class="${rowClass} animate__animated animate__fadeIn">
+            <td class="ps-4 py-3">
+                <div class="fw-bold text-primary text-uppercase">${offer.brand}</div>
+                <div class="small text-muted fw-bold">${offer.article}</div>
+                <div class="extra-small text-muted" style="font-size: 0.7rem; max-width: 300px;">
+                    ${offer.name || ''}
+                </div>
+            </td>
+            <td class="text-center align-middle">
+                <span class="badge ${badgeClass}">${isAstana ? 'В наличии: Астана' : delivery}</span>
+                <div class="small text-muted" style="font-size: 0.65rem;">${offer.supplier_city || ''}</div>
+            </td>
+            <td class="text-center align-middle">
+                <span class="badge ${qty > 0 ? 'bg-success' : 'bg-secondary'}">${qty} шт.</span>
+            </td>
+            <td class="align-middle fw-bold h5 text-primary">${priceDisplay} ₸</td>
+            <td class="pe-4 text-end">
+                <button class="btn ${isAstana ? 'btn-success' : 'btn-primary'} btn-sm rounded-pill px-3 shadow-sm api-buy-btn"
+                    data-brand="${offer.brand}" 
+                    data-article="${offer.article}" 
+                    data-qty="${qty}" 
+                    data-name="${offer.name || 'Автозапчасть'}" 
+                    data-price="${offer.price || 0}" 
+                    data-price-margine="${offer.priceWithMargine}"
+                    data-delivery="${delivery}"
+                    data-supplier="${offer.supplier_city || 'Склад'}">
+                    Купить
+                </button>
+            </td>
+        </tr>`;
     }
 
-    // Резервный таймер разблокировки
-    setTimeout(() => {
-        if (btn.disabled) {
+    document.getElementById('start-api-search')?.addEventListener('click', function() {
+        const brand = {!! json_encode($product->brand) !!};
+        const article = {!! json_encode($product->article) !!};
+        const btn = this;
+        const placeholder = document.getElementById('api-offers-placeholder');
+        const loader = document.getElementById('api-offers-loader');
+        const content = document.getElementById('api-offers-content');
+        const tbody = document.getElementById('api-offers-tbody');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Ищем...';
+        
+        placeholder.style.display = 'none';
+        loader.style.display = 'block';
+        tbody.innerHTML = ''; // Очищаем старое
+
+        // ШАГ 1: Основной быстрый поиск
+        fetch(`/api/search-prices?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(json => {
+            loader.style.display = 'none';
+            content.style.display = 'block';
+            
+            let html = '';
+            if (json.offers && json.offers.length > 0) {
+                json.offers.forEach(offer => html += renderOfferRow(offer));
+                tbody.innerHTML = html;
+            }
+
+            // ШАГ 2: Догружаем Rossko (запускаем сразу после отрисовки первых данных)
+            console.log('Запрашиваем Rossko...');
+            fetch(`/api/search-rossko?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`)
+            .then(res => res.json())
+            .then(rosskoData => {
+                if (rosskoData.offers && rosskoData.offers.length > 0) {
+                    let rosskoHtml = '';
+                    rosskoData.offers.forEach(offer => rosskoHtml += renderOfferRow(offer));
+                    // Добавляем в начало, если Астана, или в конец
+                    tbody.insertAdjacentHTML('afterbegin', rosskoHtml); 
+                    console.log('Rossko добавлен');
+                }
+                btn.innerHTML = 'Обновлено';
+            })
+            .catch(err => console.error('Rossko error:', err));
+        })
+        .catch(err => {
+            loader.style.display = 'none';
             btn.disabled = false;
-            btn.classList.add('pulse-animation');
-            btn.style.opacity = '1';
-            if (textBlock) textBlock.style.display = 'block';
-            if (loaderBlock) loaderBlock.style.display = 'none';
+            btn.innerHTML = 'Ошибка. Повторить?';
+        });
+    });
+
+    function handleMobileApiSearch(btn) {
+        // 1. Блокировка и лоадер
+        btn.disabled = true;
+        btn.classList.remove('pulse-animation');
+        btn.style.opacity = '0.8';
+
+        const textBlock = document.getElementById('btn-text-mobile');
+        const loaderBlock = document.getElementById('btn-loader-mobile');
+        
+        if (textBlock) textBlock.style.display = 'none';
+        if (loaderBlock) loaderBlock.style.display = 'block';
+
+        // 2. ЖЕСТКИЙ СКРОЛЛ (Прямой расчет)
+        setTimeout(() => {
+            const resultsBlock = document.getElementById('api-search-container');
+            if (resultsBlock) {
+                // Вычисляем точное расстояние от верха страницы до блока
+                const yOffset = -20; // Небольшой отступ сверху, чтобы заголовок не прилипал
+                const y = resultsBlock.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+                window.scrollTo({
+                    top: y,
+                    behavior: 'smooth'
+                });
+            }
+        }, 150); // Увеличили задержку до 150мс для стабильности на мобилках
+
+        // 3. Запуск основного поиска
+        const mainBtn = document.getElementById('start-api-search');
+        if (mainBtn) {
+            mainBtn.click();
         }
-    }, 20000);
-}
+
+        // Резервный таймер разблокировки
+        setTimeout(() => {
+            if (btn.disabled) {
+                btn.disabled = false;
+                btn.classList.add('pulse-animation');
+                btn.style.opacity = '1';
+                if (textBlock) textBlock.style.display = 'block';
+                if (loaderBlock) loaderBlock.style.display = 'none';
+            }
+        }, 20000);
+    }
 
 </script>
-
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -654,6 +749,29 @@ function handleMobileApiSearch(btn) {
             };
         }
     }); // Закрываем DOMContentLoaded
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [{
+    "@type": "Question",
+    "name": "Оригинал ли это {{ $product->brand }} или аналог?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Бренд {{ $product->brand }} является проверенным производителем. Мы в Global Parts гарантируем качество детали {{ $product->article }}."
+    }
+  },
+  {
+    "@type": "Question",
+    "name": "Как проверить совместимость детали {{ $product->article }}?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Рекомендуем отправить VIN-код менеджеру в WhatsApp для точного подтверждения применимости."
+    }
+  }]
+}
 </script>
 
 @endsection

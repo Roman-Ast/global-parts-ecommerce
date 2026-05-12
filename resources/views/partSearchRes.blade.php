@@ -10,6 +10,9 @@
 @section('content')
 
 <div id="search-res-main-container" class="container">
+    
+
+
     @include('components.header')
     @include('components.header-mini')
 
@@ -493,7 +496,7 @@
                         @if ($crossItem['supplier_color']) 
                             <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
                                 <span class="badge" style="
-                                    background-color: {{ $crossItem['supplier_color'] }}; 
+                                    background-color:  rgba({{ $crossItem['supplier_color'] }}, 0.15); 
                                     color: #fff; {{-- Темный текст для читаемости на светлом фоне --}}
                                     padding: 5px 10px; 
                                     border-radius: 6px; 
@@ -502,6 +505,7 @@
                                     display: inline-block;
                                     min-width: 80px;
                                     text-align: center;
+                                    border: 1px solid {{ $crossItem['supplier_color'] }}
                                 ">
                                     {{ date('d.m.y', strtotime($crossItem['delivery_time'])) }}
                                 </span>

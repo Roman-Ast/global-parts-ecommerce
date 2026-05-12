@@ -1864,7 +1864,7 @@ class SparePartController extends Controller
                         'deliveryEnd' => '',
                         'supplier_name' => 'atptr',
                         "supplier_city" => $item['Region'],
-                        'supplier_color' => '#ffc107'
+                        'supplier_color' => '255, 193, 7'
                     ]);
                 }
             } else {
@@ -1875,7 +1875,7 @@ class SparePartController extends Controller
                     'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
                     'priceWithMargine' => round($this->setPrice($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
                     'qty' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
-                    'supplier_color' => '#ffc107',
+                    'supplier_color' => '255, 193, 7',
                     'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                     'deliveryEnd' => '',
                     'supplier_name' => 'atptr',
@@ -1930,7 +1930,7 @@ class SparePartController extends Controller
                         "delivery_time" => $item['DeliveryDate'],
                         "supplier_name" => 'atptr',
                         "supplier_city" => $item['Region'],
-                        'supplier_color' => '#ffc107'
+                        'supplier_color' => '255, 193, 7'
                     ]);
                 }
             }
@@ -1962,7 +1962,7 @@ class SparePartController extends Controller
                     ],
                     "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                     "supplier_name" => 'atptr',
-                    'supplier_color' => '#ffc107',
+                    'supplier_color' => '255, 193, 7',
                     'supplier_city' => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
                 ]);
             }
