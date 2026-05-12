@@ -5,7 +5,6 @@
 @endpush
 
 @push('styles')
-    {{-- Slick --}}
     <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
     <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
 @endpush
@@ -14,7 +13,7 @@
 
 @section('canonical')
     <link rel="canonical" href="{{ $canonicalUrl }}" />
-@endsectionп
+@endsection
 
 @section('description', "Купить " . $product->name . " " . $product->brand . " (арт. " . $product->article . ") в Астане за " . number_format($product->price, 0, '.', ' ') . " ₸. В наличии в Global Parts, быстрая доставка по Казахстану.")
 

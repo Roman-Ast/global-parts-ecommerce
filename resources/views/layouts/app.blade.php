@@ -74,6 +74,7 @@
         <link href="{{ asset('/css/korean-cars/index.mini.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
+        @stack('styles')
     </head>
     <body>
         @yield('content')
@@ -204,8 +205,7 @@
 
         {{-- main.js — весь код внутри ready/load, defer безопасен --}}
         <script src="{{ URL::asset('js/main.js') }}" defer></script>    
-        @stack('scripts')
-
+        
         {{-- Google Ads — async, не блокирует --}}
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16870370925"></script>
         <script>
@@ -214,5 +214,6 @@
             gtag('js', new Date());
             gtag('config', 'AW-16870370925');
         </script>
+        @stack('scripts')
     </body>
 </html>
