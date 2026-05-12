@@ -1,12 +1,16 @@
 @extends('layouts.app')
 
-@section('title', "Купить " . $product->name . " " . $product->brand . " (" . $product->article . ") в Казахстане — Цена, Наличие")
+@section('title', $product 
+    ? "Купить " . $product->name . " " . $product->brand . " (" . $product->article . ") в Казахстане — Цена, Наличие" 
+    : "Товар не найден — Global Parts")
+
+@section('description', $product 
+    ? "Купить " . $product->name . " " . $product->brand . " (арт. " . $product->article . ") в Астане за " . number_format($product->price, 0, '.', ' ') . " ₸." 
+    : "К сожалению, запрашиваемый товар не найден в нашем каталоге.")
 
 @section('canonical')
     <link rel="canonical" href="{{ $canonicalUrl }}" />
 @endsection
-
-@section('description', "Купить " . $product->name . " " . $product->brand . " (арт. " . $product->article . ") в Астане за " . number_format($product->price, 0, '.', ' ') . " ₸. В наличии в Global Parts, быстрая доставка по Казахстану.")
 
 @section('content')
 <style>
@@ -107,6 +111,17 @@
     
     @include('components.header')
     @include('components.header-mini')
+
+    @if(!$product)
+        {{-- Код для страницы 404 --}}
+        <div class="container text-center mt-5">
+            <div class="alert alert-warning">
+                <h3>Товар не найден</h3>
+                <p>К сожалению, запчасть с артикулом {{ request()->route('article') }} не найдена.</p>
+                <a href="/" class="btn btn-primary">Вернуться на главную</a>
+            </div>
+        </div>  
+    @endif
 
     <div class="container flex-grow-1 my-5">
         {{-- Хлебные крошки --}}
