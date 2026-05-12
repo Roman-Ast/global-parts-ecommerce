@@ -74,6 +74,8 @@
         <link href="{{ asset('/css/korean-cars/index.mini.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
         <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
         @stack('styles')
     </head>
     <body>
@@ -194,7 +196,7 @@
                 <i class="bi bi-whatsapp"></i>
             </div>
         </div>
-
+        <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
         {{-- JS: один jQuery, дублей нет --}}
         {{-- bootstrap и jquery — без defer (нужны сразу для accordion и др.) --}}
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
@@ -214,6 +216,7 @@
             gtag('js', new Date());
             gtag('config', 'AW-16870370925');
         </script>
+        
         @stack('scripts')
     </body>
 </html>
