@@ -535,7 +535,98 @@
       </section>
 
   </div>
+    {{-- FAQ--}}
+      <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="faq-section p-4 bg-white shadow-sm" style="border-radius: 15px;">
+                    <h2 class="fw-bold mb-4" style="font-size: 1.5rem; border-left: 5px solid #ffc107; padding-left: 15px;">
+                        Часто задаваемые вопросы о Global Parts
+                    </h2>
+                    
+                    <div class="accordion accordion-flush" id="homeFaq">
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#home-faq-1">
+                                    Как заказать автозапчасти в Астане с доставкой?
+                                </button>
+                            </h2>
+                            <div id="home-faq-1" class="accordion-collapse collapse" data-bs-parent="#homeFaq">
+                                <div class="accordion-body text-muted">
+                                    Вы можете найти нужную деталь через поиск по артикулу на нашем сайте или оставить заявку на подбор по VIN-коду. Мы осуществляем оперативную доставку по Астане в течение 2 часов, а также отправляем заказы во все регионы Казахстана (Алматы, Шымкент, Караганда и др.).
+                                </div>
+                            </div>
+                        </div>
 
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#home-faq-2">
+                                    Вы продаете оригинальные запчасти или дубликаты?
+                                </button>
+                            </h2>
+                            <div id="home-faq-2" class="accordion-collapse collapse" data-bs-parent="#homeFaq">
+                                <div class="accordion-body text-muted">
+                                    В нашем каталоге представлены как оригинальные запчасти от ведущих мировых производителей (Hyundai, Kia, Toyota), так и качественные сертифицированные аналоги (SAT, LYNXauto и др.). Мы всегда честно указываем производителя и помогаем выбрать оптимальный вариант под ваш бюджет.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#home-faq-3">
+                                    Можно ли вернуть запчасть, если она не подошла?
+                                </button>
+                            </h2>
+                            <div id="home-faq-3" class="accordion-collapse collapse" data-bs-parent="#homeFaq">
+                                <div class="accordion-body text-muted">
+                                    Да, в соответствии с законодательством РК, возврат или обмен товара возможен в течение 14 дней с момента покупки, при условии сохранения товарного вида, упаковки и отсутствия следов установки.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#home-faq-4">
+                                    Как работает подбор запчастей по VIN-коду?
+                                </button>
+                            </h2>
+                            <div id="home-faq-4" class="accordion-collapse collapse" data-bs-parent="#homeFaq">
+                                <div class="accordion-body text-muted">
+                                    Это самый надежный способ. Вы нажимаете на кнопку WhatsApp на нашем сайте, отправляете VIN-код вашего авто и список нужных деталей. Наши менеджеры используют профессиональные каталоги, чтобы исключить ошибку и предложить вам 100% подходящие варианты.
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- JSON-LD Микроразметка для главной --}}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{
+        "@type": "Question",
+        "name": "Как заказать автозапчасти в Астане с доставкой?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Заказ можно оформить через сайт или WhatsApp. Доставка по Астане — от 2 часов, по Казахстану — от 2 дней."
+        }
+      }, {
+        "@type": "Question",
+        "name": "Оригиналы или дубликаты?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "В наличии оригиналы и качественные аналоги для большинства марок авто."
+        }
+      }]
+    }
+    </script>
+    
     @include('components.footer-bar-mini')
     @include('components.footer')
 @endsection
