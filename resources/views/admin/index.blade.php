@@ -916,77 +916,85 @@
                 
 
                 @foreach ($orders as $orderItem)
-    <div class="order-card shadow-sm">
-        <div class="order-header">
-            <div class="order-id">#{{ $orderItem->id }}</div>
-            <div class="order-user">
-                <i class="bi bi-person-circle me-1"></i> {{ $orderItem->user->name }}
-                <span class="text-muted ms-2 small">{{ $orderItem->customer_phone }}</span>
-            </div>
-            
-            <div class="order-meta">
-                <div class="small text-muted">
-                    <i class="bi bi-calendar3 me-1"></i> {{ $orderItem->date->format('d.m.y') }} 
-                    <span class="ms-1 fw-bold">{{ $orderItem->sale_channel }}</span>
+                <div class="admin-order-item-wrapper">
+                    <div class="order-item-header">
+                       <div class="order-item-id">
+                            {{ $orderItem->id }}
+                       </div>
+                       <div class="order-item-user-name">
+                            <span>{{ $orderItem->user->name }}</span> 
+                            <span style="font-size: 0.7em">{{ $orderItem->customer_phone }}</span> 
+                       </div>
+                       <div class="order-item-status">
+                            {{ $orderItem->status }} <img src="/images/clock-wait-16.png">
+                       </div>
+                       <div class="order-item-date">
+                            {{ $orderItem->date->format('d.m.y') }}
+                       </div>
+                       <div class="order-item-time">
+                            {{ $orderItem->sale_channel }}
+                       </div>
+                       
+                       <div class="admin-order-item-sum">
+                            <span style="font-weight: 600;color:green">{{ number_format($orderItem->sum_with_margine, 2, ',', ' ') }}</span>
+                            <span style="font-style: italic;color:red;font-size: 0.7em">
+                                {{ number_format($orderItem->sum, 2, ',', ' ') }}
+                                @if ($orderItem->sum_with_margine != 0)
+                                %{{ number_format(($orderItem->sum_with_margine - $orderItem->sum) * 100 / $orderItem->sum_with_margine, 2, ',', ' ') }}
+                                @endif
+                            </span>
+                        </div>
+                    </div>
+                    <div class="order-item-products-wrapper">
+                        @foreach ($orderItem->products as $product)
+                        <div class="admin-order-item-products-content">
+                            <div class="order-products-searched_number">
+                                {{ $product->searched_number }}
+                            </div>
+                            <div class="order-products-article">
+                                {{ $product->article }}
+                            </div>
+                            <div class="order-products-brand">
+                                {{ $product->brand }}
+                            </div>
+                            <div class="order-products-name">
+                                {{ mb_strimwidth($product->name, 0, 50, '...') }}
+                            </div>
+                            <div class="order-products-qty">
+                                {{ $product->qty }}
+                            </div>
+                            <div class="order-products-price">
+                                {{ number_format($product->priceWithMargine, 0, ',', ' ') }}
+                            </div>
+                            <div class="order-products-item_sum">
+                                {{ number_format($product->itemSumWithMargine, 0, ',', ' ') }}
+                            </div>
+                            <div class="order-products-fromStock">
+                                {{ $product->fromStock }}
+                            </div>
+                            <div class="order-products-deliveryTime">
+                                {{ $product->deliveryTime }}
+                            </div>
+                            <div class="order-products-status">
+                                <select name="order_product_status" class="order_product_status form-select">
+                                    @foreach ($statuses as $key => $status)
+                                        @if ($key != $product->status)
+                                            <option value="{{ $key }}">{{ $status }}</option>
+                                        @else
+                                            <option value="{{ $key }}" selected disabled>{{ $status }}</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="change_status">
+                                <input type="hidden" value="{{ $product->id }}">
+                                <button class="btn btn-sm btn-info change_status_submit">Сменить</button>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
                 </div>
-                
-                <div class="status-badge status-wait">
-                    {{ $orderItem->status }} <i class="bi bi-clock-history ms-1"></i>
-                </div>
-
-                <div class="text-end" style="min-width: 120px;">
-                    <div class="price-main">{{ number_format($orderItem->sum_with_margine, 0, '.', ' ') }} ₸</div>
-                    <div class="price-sub">{{ number_format($orderItem->sum, 0, '.', ' ') }} ₸</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table order-products-table">
-                <thead>
-                    <tr>
-                        <th>Запчасть</th>
-                        <th>Бренд / Артикул</th>
-                        <th>Склад</th>
-                        <th>Срок</th>
-                        <th width="200">Статус детали</th>
-                        <th>Действие</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($orderItem->order_products as $product)
-                    <tr>
-                        <td>
-                            <div class="fw-bold">{{ $product->name }}</div>
-                        </td>
-                        <td>
-                            <span class="badge bg-light text-dark border">{{ $product->brand }}</span>
-                            <code class="ms-1">{{ $product->article }}</code>
-                        </td>
-                        <td class="text-muted small">{{ $product->fromStock }}</td>
-                        <td>{{ $product->deliveryTime }}</td>
-                        <td>
-                            <select name="order_product_status" class="form-select form-select-sm order_product_status">
-                                @foreach ($statuses as $key => $status)
-                                    <option value="{{ $key }}" {{ $key == $product->status ? 'selected' : '' }}>
-                                        {{ $status }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </td>
-                        <td>
-                            <input type="hidden" value="{{ $product->id }}">
-                            <button class="btn btn-sm btn-primary change_status_submit">
-                                <i class="bi bi-save"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-    @endforeach
+                @endforeach
             </div>
             <div id="make_customer_return" class="container admin-content-item">
                 <form method="POST" action="/makeCustomerReturn" id="customer-return-form">
