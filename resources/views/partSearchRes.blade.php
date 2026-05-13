@@ -116,18 +116,23 @@
                                 @endif
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-delivery">
-                                @if ($searchItem['deliveryStart'] == 'в офисе' || (strtotime($searchItem['deliveryStart']) && date('d.m.y', strtotime($searchItem['deliveryStart'])) == date('d.m.y')))
-                                    {{-- Зеленый баджик для того, что можно забрать сегодня --}}
-                                    <span class="badge bg-success" style="padding: 5px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-block; min-width: 80px; text-align: center;">
-                                        {{ $searchItem['deliveryStart'] == 'в офисе' ? 'в офисе' : '1.5-2 часа' }}
+                                @php
+                                    $ds = $searchItem['deliveryStart'] ?? '';
+                                    $color = $searchItem['supplier_color'] ?? '#6c757d';
+                                    $isToday = strtotime($ds) && date('d.m.y', strtotime($ds)) == date('d.m.y');
+                                    $isGreen = $ds == 'в офисе' || $ds == '1.5-2 часа' || $isToday;
+                                    $isDate  = !$isGreen && strtotime($ds) && strtotime($ds) > 0;
+                                @endphp
+
+                                @if ($isGreen)
+                                    <span class="badge bg-success" style="padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;display:inline-block;min-width:80px;text-align:center;">
+                                        {{ $ds == 'в офисе' ? 'в офисе' : '1.5-2 часа' }}
                                     </span>
-                                @elseif (!empty($searchItem['deliveryStart']) && strtotime($searchItem['deliveryStart']) && strtotime($searchItem['deliveryStart']) > 0)
-                                    {{-- Выводим дату, только если она существует и корректна --}}
-                                    <span class="text-muted" style="font-weight: 600;">
-                                        {{ date('d.m.y', strtotime($searchItem['deliveryStart'])) }}
+                                @elseif ($isDate)
+                                    <span class="badge" style="background-color:{{ $color }};color:#fff;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;display:inline-block;min-width:80px;text-align:center;">
+                                        {{ date('d.m.y', strtotime($ds)) }}
                                     </span>
                                 @else
-                                    {{-- Если данных о доставке нет вообще, пишем уточнение или оставляем прочерк --}}
                                     <span class="text-muted small">уточняйте</span>
                                 @endif
                             </div>
@@ -496,7 +501,7 @@
                         @if ($crossItem['supplier_color']) 
                             <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
                                 <span class="badge" style="
-                                    background-color:  rgba({{ $crossItem['supplier_color'] }}, 0.15); 
+                                    background-color: {{ $crossItem['supplier_color'] }}; 
                                     color: #fff; {{-- Темный текст для читаемости на светлом фоне --}}
                                     padding: 5px 10px; 
                                     border-radius: 6px; 

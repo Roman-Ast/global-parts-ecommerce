@@ -42,11 +42,13 @@ Route::get('/test-host-error', function () {
     return view('components.hostError');
 });
 
+//Route::get('/search/other-json', [SparePartController::class, 'getSearchedPartAndCrossesOtherJson']);
+Route::post('/getPart', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
+
 Route::get('/fetch-images', [GlobalProductController::class, 'fetchGoogleImages'])->name('product.fetchImages');
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::redirect('/home', '/', 301);
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);
-Route::post('/getPart/', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
 
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add', [CartController::class, 'store'])->name('cart.add');

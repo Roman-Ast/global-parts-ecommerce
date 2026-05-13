@@ -21,6 +21,7 @@ use App\Models\AdilPhaetonPrice;
 use App\Models\ZakazautoPrice;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Pool;
+use Illuminate\Http\JsonResponse;
 use Carbon;
 use Collator;
 
@@ -210,37 +211,25 @@ class SparePartController extends Controller
         }
     }
 
-    public function getSearchedPartAndCrosses (Request $request)
+    public function getSearchedPartAndCrossesFast (Request $request)
     {
         $this->finalArr['originNumber'] = $request->partnumber;
         $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
         
-        if($request->rossko_need_to_search) {
-            $this->searchRossko($request->brand,  $partNumber, $request->guid);
-        }
-        $this->searchArmtek($request->brand, $partNumber);
         $this->searchStockInOffice($request->brand, $partNumber);
         $this->searchZakazauto_kst($request->brand, $partNumber);
-        $this->searchGerat($request->brand, $partNumber);
-        $this->searchShatem($request->brand, $partNumber);
-        $this->searchPhaeton($request->brand, $partNumber);
-        $this->searchTreid($request->brand, $partNumber);
-        $this->searchTiss($request->brand, $partNumber);
-        $this->searchKulan($request->brand, $partNumber);
-        $this->searchFebest($request->brand, $partNumber);
-        $this->searchForumAuto($request->brand, $partNumber);
-        $this->searchIngvar($request->brand, $partNumber);
         $this->searchVoltage($request->brand, $partNumber);
         $this->searchBlueStar($request->brand, $partNumber);
         $this->searchInterkom($request->brand, $partNumber);
         $this->searchAdilPhaeton($request->brand, $partNumber);
 
-        if (!$request->only_on_stock) {
-            $this->searchAutopiter($request->brand, $request->partnumber);
+        if($request->rossko_need_to_search) {
+            $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
 
         $arr = array_unique($this->finalArr['brands']);
 
+        
         usort($arr, function($a, $b) {
             if ($a == $b) {
                 return 0;
@@ -285,6 +274,548 @@ class SparePartController extends Controller
         ]);
     }
     
+    public function getSearchedPartAndCrossesOtherJson(Request $request)
+    {
+        $brand      = $request->brand;
+        $partnumber = $this->removeAllUnnecessaries(trim($request->partnumber));
+
+        $t = microtime(true);
+        try { $this->searchArmtek($brand, $partnumber); } catch (\Throwable $e) {}
+        \Log::info('Armtek: ' . round(microtime(true) - $t, 2) . 's');
+
+        $t = microtime(true);
+        try { $this->searchAutopiter($brand, $partnumber); } catch (\Throwable $e) {}
+        \Log::info('Autopiter: ' . round(microtime(true) - $t, 2) . 's');
+
+        $t = microtime(true);
+        $this->runParallelSuppliers($brand, $partnumber);
+        \Log::info('Pool (все HTTP параллельно): ' . round(microtime(true) - $t, 2) . 's');
+
+        usort($this->finalArr['crosses_on_stock'], fn($a, $b) =>
+            $a['priceWithMargine'] <=> $b['priceWithMargine']
+        );
+        usort($this->finalArr['crosses_to_order'], fn($a, $b) =>
+            $a['priceWithMargine'] <=> $b['priceWithMargine']
+        );
+
+        return response()->json([
+            'crosses_on_stock' => $this->utf8ize($this->finalArr['crosses_on_stock'] ?? []),
+            'crosses_to_order' => $this->utf8ize($this->finalArr['crosses_to_order'] ?? []),
+            'brands'           => $this->utf8ize(array_values(array_unique($this->finalArr['brands'] ?? []))),
+        ]);
+        return response()->json([
+            'crosses_on_stock' => $this->finalArr['crosses_on_stock'] ?? [],
+            'crosses_to_order' => $this->finalArr['crosses_to_order'] ?? [],
+            'brands'           => array_values(array_unique($this->finalArr['brands'] ?? [])),
+        ]);
+    }
+
+    private function utf8ize(mixed $data): mixed
+    {
+        if (is_array($data)) {
+            return array_map(fn($v) => $this->utf8ize($v), $data);
+        }
+        if (is_string($data)) {
+            // Если уже валидный UTF-8 — не трогаем
+            if (mb_check_encoding($data, 'UTF-8')) return $data;
+            // Пробуем конвертировать из windows-1251
+            $converted = mb_convert_encoding($data, 'UTF-8', 'windows-1251');
+            return mb_check_encoding($converted, 'UTF-8') ? $converted : mb_convert_encoding($data, 'UTF-8', 'ISO-8859-1');
+        }
+        return $data;
+    }
+
+    private function runParallelSuppliers(string $brand, string $partnumber): void
+    {
+        // Определяем все HTTP-запросы которые надо выполнить параллельно
+        // Каждый элемент: ['url' => ..., 'method' => 'GET'|'POST', 'data' => [...], 'parser' => 'methodName']
+        $tasks = [];
+
+        // --- Phaeton (Sources=1, Астана склад) ---
+        $tasks[] = [
+            'key'    => 'phaeton_ast',
+            'url'    => 'https://api.phaeton.kz/api/Search?' . http_build_query([
+                'Article'        => $partnumber,
+                'Brand'          => $brand,
+                'Sources[]'      => '1',
+                'UserGuid'       => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
+                'ApiKey'         => '0UKIrpU3W3AnAfDf97Nr',
+                'includeAnalogs' => 'true',
+            ]),
+            'method' => 'GET',
+            'parser' => 'parsePhaeton',
+        ];
+
+        // --- Phaeton (Sources=2, локальные поставщики) ---
+        $tasks[] = [
+            'key'    => 'phaeton_local',
+            'url'    => 'https://api.phaeton.kz/api/Search?' . http_build_query([
+                'Article'        => $partnumber,
+                'Brand'          => $brand,
+                'Sources[]'      => '2',
+                'UserGuid'       => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
+                'ApiKey'         => 'LnxrDfpQVZz1ncuoI14e',
+                'includeAnalogs' => 'true',
+            ]),
+            'method' => 'GET',
+            'parser' => 'parsePhaetonLocal',
+        ];
+
+        // --- ForumAuto ---
+        $tasks[] = [
+            'key'    => 'forumauto',
+            'url'    => 'https://api.forum-auto.kz/v2/listGoods?' . http_build_query([
+                'login' => '432537_popadinets_roman',
+                'pass'  => '0xJcsnuE69xI',
+                'art'   => $partnumber,
+                'cross' => 1,
+                'br'    => $brand,
+            ]),
+            'method' => 'GET',
+            'parser' => 'parseForumAuto',
+        ];
+
+        // --- Tiss ---
+        $tasks[] = [
+            'key'    => 'tiss',
+            'url'    => 'api.tiss.parts/api/StockByArticle?' . http_build_query([
+                'JSONparameter' => "{'Brand': '{$brand}', 'Article': '{$partnumber}', 'is_main_warehouse': 1}",
+            ]),
+            'method' => 'GET',
+            'parser' => 'parseTiss',
+            'headers' => ['Authorization: Bearer ' . self::TISS_API_KEY],
+        ];
+
+        // --- Kulan (productCart) ---
+        $tasks[] = [
+            'key'    => 'kulan_main',
+            'url'    => 'https://connect.adkulan.kz/api/request/api/v2/catalog/article/productCart?' . http_build_query([
+                'article' => $partnumber,
+                'brand'   => $brand,
+            ]),
+            'method'  => 'GET',
+            'parser'  => 'parseKulanMain',
+            'headers' => ['token: ' . self::KULAN_API_KEY, 'Content-Type: application/json'],
+        ];
+
+        // --- Kulan (analogues) ---
+        $tasks[] = [
+            'key'    => 'kulan_analogs',
+            'url'    => 'https://connect.adkulan.kz/api/request/api/v2/catalog/article/analogues?' . http_build_query([
+                'article'  => $partnumber,
+                'brand'    => $brand,
+                'order_by' => 'price_asc',
+            ]),
+            'method'  => 'GET',
+            'parser'  => 'parseKulanAnalogs',
+            'headers' => ['token: ' . self::KULAN_API_KEY, 'Content-Type: application/json'],
+        ];
+
+        // --- Febest ---
+        $tasks[] = [
+            'key'    => 'febest',
+            'url'    => 'https://febest.kz/api/v1/search/{pHgK46xXxD3pxbeyTtWJ}/' . $partnumber,
+            'method' => 'GET',
+            'parser' => 'parseFebest',
+        ];
+
+        // --- Gerat ---
+        $tasks[] = [
+            'key'    => 'gerat',
+            'url'    => 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php',
+            'method' => 'GET',
+            'parser' => 'parseGerat',
+            'partnumber_for_parser' => $partnumber, // Gerat нужно фильтровать по артикулу на нашей стороне
+        ];
+
+        // ── curl_multi — запускаем все параллельно ──────────────────────────────
+        $mh      = curl_multi_init();
+        $handles = [];
+
+        foreach ($tasks as $i => $task) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $task['url']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+            curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
+            curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+
+            if (!empty($task['headers'])) {
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $task['headers']);
+            }
+
+            curl_multi_add_handle($mh, $ch);
+            $handles[$i] = ['ch' => $ch, 'task' => $task];
+        }
+
+        // Выполняем все запросы параллельно
+        $running = null;
+        $startTotal = microtime(true);
+do {
+            curl_multi_exec($mh, $running);
+            curl_multi_select($mh);
+        } while ($running > 0);
+\Log::info('curl_multi pool выполнен за: ' . round(microtime(true) - $startTotal, 2) . 's');
+
+        // Собираем результаты
+        foreach ($handles as $i => $item) {
+            $ch   = $item['ch'];
+            $task = $item['task'];
+
+            $raw = curl_multi_getcontent($ch);
+            curl_multi_remove_handle($mh, $ch);
+            curl_close($ch);
+
+            if (!$raw) continue;
+
+            try {
+                $data = json_decode($raw);
+                if (!$data) continue;
+
+                // Вызываем нужный парсер
+                $parser = $task['parser'];
+                $extraArg = $task['partnumber_for_parser'] ?? null;
+                $this->$parser($data, $brand, $partnumber, $extraArg);
+
+            } catch (\Throwable $e) {
+                \Log::error("Parser {$task['parser']} failed: " . $e->getMessage());
+            }
+        }
+
+        curl_multi_close($mh);
+
+        $t = microtime(true);
+        try { $this->searchShatem($brand, $partnumber); } catch (\Throwable $e) {}
+        \Log::info('Shatem: ' . round(microtime(true) - $t, 2) . 's');
+
+        $t = microtime(true);
+        try { $this->searchTreid($brand, $partnumber); } catch (\Throwable $e) {}
+        \Log::info('Treid: ' . round(microtime(true) - $t, 2) . 's');
+            }
+
+    private function parsePhaeton($data, string $brand, string $partnumber, $extra = null): void
+    {
+        if (!$data || $data->IsError) return;
+
+        foreach ($data->Items as $item) {
+            if ($item->Warehouse !== 'Астана') continue;
+
+            if (strtolower($this->removeAllUnnecessaries($item->Article)) === strtolower($partnumber)) {
+                array_push($this->finalArr['brands'], $item->Brand);
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand'          => $item->Brand,
+                    'article'        => $item->Article,
+                    'name'           => substr($item->Name, 0, 60),
+                    'price'          => $item->Price,
+                    'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                    'qty'            => $item->AvailableCount,
+                    'multiplicity'   => '',
+                    'type'           => '',
+                    'delivery'       => '',
+                    'extra'          => '',
+                    'description'    => 'phtn',
+                    'deliveryStart'  => date('d.m.Y'),
+                    'deliveryEnd'    => date('d.m.Y'),
+                    'supplier_name'  => 'phtn',
+                    'supplier_city'  => 'ast',
+                    'supplier_color' => '#feed00',
+                ]);
+            } else {
+                array_push($this->finalArr['brands'], $item->Brand);
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand'          => $item->Brand,
+                    'article'        => $item->Article,
+                    'name'           => substr($item->Name, 0, 60),
+                    'qty'            => $item->AvailableCount,
+                    'stocks'         => [[
+                        'qty'              => $item->AvailableCount,
+                        'price'            => $item->Price,
+                        'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                    ]],
+                    'price'          => $item->Price,
+                    'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                    'supplier_name'  => 'phtn',
+                    'delivery_date'  => '',
+                    'delivery_time'  => '1.5-2 часа',
+                    'supplier_city'  => $item->Warehouse,
+                    'supplier_color' => '#feed00',
+                ]);
+            }
+        }
+    }
+
+    private function parsePhaetonLocal($data, string $brand, string $partnumber, $extra = null): void
+    {
+        if (!$data || $data->IsError) return;
+
+        foreach ($data->Items as $item) {
+            array_push($this->finalArr['brands'], $item->Brand);
+            array_push($this->finalArr['crosses_to_order'], [
+                'brand'          => $item->Brand,
+                'article'        => $item->Article,
+                'name'           => substr($item->Name, 0, 60),
+                'qty'            => $item->AvailableCount,
+                'price'          => $item->Price,
+                'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                'delivery_time'  => date('d.m.Y', strtotime('+' . $item->GuaranteedDelivery . 'day')),
+                'stocks'         => [[
+                    'qty'              => $item->AvailableCount,
+                    'price'            => $item->Price,
+                    'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
+                ]],
+                'supplier_name'  => 'phtn',
+                'supplier_city'  => $item->Warehouse,
+                'supplier_color' => '#feed00',
+            ]);
+        }
+    }
+
+    private function parseForumAuto($data, string $brand, string $partnumber, $extra = null): void
+    {
+        if (!$data || (gettype($data) === 'object' && property_exists($data, 'errors'))) return;
+
+        foreach ($data as $item) {
+            if ($item->whse !== 'AST') continue;
+
+            if (strtolower($this->removeAllUnnecessaries($item->art)) === strtolower($partnumber)) {
+                array_push($this->finalArr['brands'], $item->brand);
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand'          => $item->brand,
+                    'article'        => $item->art,
+                    'name'           => substr($item->name, 0, 60),
+                    'price'          => $item->price,
+                    'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                    'qty'            => $item->num,
+                    'multiplicity'   => '',
+                    'type'           => '',
+                    'delivery'       => '',
+                    'extra'          => '',
+                    'description'    => 'frmt',
+                    'deliveryStart'  => date('d.m.Y'),
+                    'deliveryEnd'    => date('d.m.Y'),
+                    'supplier_name'  => 'frmt',
+                    'supplier_city'  => 'Астана',
+                    'supplier_color' => '#333',
+                ]);
+            } else {
+                array_push($this->finalArr['brands'], $item->brand);
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand'          => $item->brand,
+                    'article'        => $item->art,
+                    'name'           => substr($item->name, 0, 60),
+                    'qty'            => $item->num,
+                    'price'          => $item->price,
+                    'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                    'supplier_name'  => 'frmt',
+                    'delivery_date'  => '',
+                    'delivery_time'  => '2-2.5 часа',
+                    'supplier_city'  => 'Астана',
+                    'supplier_color' => '#333',
+                ]);
+            }
+        }
+    }
+
+    private function parseTiss($data, string $brand, string $partnumber, $extra = null): void
+    {
+        if (empty($data)) return;
+
+        foreach ($data as $item) {
+            if (strtolower($item->article) === strtolower($this->finalArr['originNumber'])) {
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand'            => $item->brand,
+                    'article'          => $item->article,
+                    'name'             => $item->article_name,
+                    'price'            => $item->min_price,
+                    'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
+                    'qty'              => $item->warehouse_offers[0]->quantity,
+                    'supplier_name'    => 'tss',
+                    'supplier_city'    => 'ast',
+                    'supplier_color'   => '#7bafcf',
+                    'deliveryStart'    => date('d.m.Y'),
+                ]);
+            } else {
+                $stocks = [];
+                foreach ($item->warehouse_offers as $offer) {
+                    $stocks[] = [
+                        'qty'              => $offer->quantity,
+                        'price'            => $offer->price,
+                        'priceWithMargine' => round($this->setPrice($offer->price), self::ROUND_LIMIT),
+                    ];
+                }
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand'            => $item->brand,
+                    'article'          => $item->article,
+                    'name'             => $item->article_name,
+                    'qty'              => $item->warehouse_offers[0]->quantity,
+                    'price'            => $item->min_price,
+                    'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
+                    'stocks'           => $stocks,
+                    'supplier_name'    => 'tss',
+                    'stock_legend'     => $item->warehouse_offers[0]->warehouse_name,
+                    'delivery_time'    => '1.5-2 часа',
+                    'supplier_city'    => 'ast',
+                    'supplier_color'   => '#7bafcf',
+                ]);
+            }
+        }
+    }
+
+    private function parseKulanMain($data, string $brand, string $partnumber, $extra = null): void
+    {
+        if (!$data || property_exists($data, 'messages') || empty($data->data)) return;
+
+        foreach ($data->data as $item) {
+            foreach ($item->remains as $store) {
+                if ($store->store_id !== self::KULAN_ASTSTORE_ID) continue;
+
+                array_push($this->finalArr['brands'], $item->manufacturer);
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand'            => $item->manufacturer,
+                    'article'          => $item->article,
+                    'name'             => $item->name,
+                    'price'            => $store->price,
+                    'priceWithMargine' => round($this->setPrice($store->price), self::ROUND_LIMIT),
+                    'qty'              => $store->quantity,
+                    'supplier_city'    => 'ast',
+                    'supplier_name'    => 'kln',
+                    'supplier_color'   => 'green',
+                    'deliveryStart'    => date('d-m-Y'),
+                ]);
+            }
+        }
+    }
+
+    private function parseKulanAnalogs($data, string $brand, string $partnumber, $extra = null): void
+    {
+        if (empty($data) || !$data || (gettype($data) === 'object' && property_exists($data, 'messages'))) return;
+
+        foreach ($data as $item) {
+            foreach ($item->remains as $store) {
+                if ($store->id !== self::KULAN_ASTSTORE_ID) continue;
+
+                array_push($this->finalArr['brands'], $item->manufacturer);
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand'            => $item->manufacturer,
+                    'article'          => $item->article,
+                    'name'             => $item->name,
+                    'stock_legend'     => $store->store,
+                    'qty'              => $store->quantity,
+                    'price'            => $store->price,
+                    'priceWithMargine' => round($this->setPrice($store->price), self::ROUND_LIMIT),
+                    'delivery_time'    => '1.5-2 часа',
+                    'stocks'           => [[
+                        'qty'              => $store->quantity,
+                        'price'            => $store->price,
+                        'priceWithMargine' => round($this->setPrice($store->price), self::ROUND_LIMIT),
+                    ]],
+                    'supplier_name'    => 'kln',
+                    'supplier_city'    => 'ast',
+                    'supplier_color'   => '#0000ff',
+                ]);
+            }
+        }
+    }
+
+    private function parseFebest($data, string $brand, string $partnumber, $extra = null): void
+    {
+        if (!$data || (gettype($data) === 'object' && property_exists($data, 'error'))) return;
+
+        foreach ($data as $item) {
+            array_push($this->finalArr['crosses_on_stock'], [
+                'brand'            => $item->manufacturer,
+                'article'          => $item->code,
+                'name'             => $item->name,
+                'price'            => $item->price,
+                'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                'qty'              => $item->amount,
+                'supplier_name'    => 'fbst',
+                'stock_legend'     => 'Астана',
+                'delivery_time'    => '2-2.5 часа',
+                'supplier_city'    => 'ast',
+                'supplier_color'   => '#a27745',
+            ]);
+        }
+    }
+
+    private function parseGerat($data, string $brand, string $partnumber, $extra = null): void
+    {
+        if (!$data || !isset($data->shop->offers->offer)) return;
+
+        foreach ($data->shop->offers->offer as $item) {
+            $cross_numbers = explode(', ', $item->description);
+
+            foreach ($cross_numbers as $cross_number) {
+                $articleMatch = strtolower($this->removeAllUnnecessaries((string)$item->vendorCode)) === strtolower($partnumber);
+                $crossMatch   = strtolower($cross_number) === strtolower($partnumber);
+
+                if (!$articleMatch && !$crossMatch) continue;
+
+                $params     = $item->param ?? [];
+                $infoParams = [];
+                if (count($params) >= 4 && isset($params[3])) {
+                    $infoParams = [
+                        'OEM'        => explode(',', $params[3]),
+                        'suitable_to'=> '',
+                        'tech_info'  => '',
+                        'sizes'      => [
+                            'width'  => $params[6] ?? 'нет информации',
+                            'height' => $params[5] ?? 'нет информации',
+                            'depth'  => $params[4] ?? 'нет информации',
+                        ],
+                    ];
+                }
+
+                array_push($this->finalArr['brands'], $item->vendor);
+
+                if ($articleMatch) {
+                    array_push($this->finalArr['searchedNumber'], [
+                        'brand'            => $item->vendor,
+                        'article'          => $item->vendorCode,
+                        'name'             => substr($item->model, 0, 60),
+                        'price'            => $item->price,
+                        'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                        'qty'              => $item->count,
+                        'supplier_name'    => 'grt',
+                        'supplier_city'    => 'Астана',
+                        'supplier_color'   => '#7bafcf',
+                        'deliveryStart'    => '1.5-2 часа',
+                        'info'             => [
+                            'pictures' => $item->picture ?? '',
+                            'params'   => $infoParams,
+                        ],
+                    ]);
+                } else {
+                    array_push($this->finalArr['crosses_on_stock'], [
+                        'brand'            => $item->vendor,
+                        'article'          => $item->vendorCode,
+                        'name'             => substr($item->model, 0, 60),
+                        'qty'              => $item->count,
+                        'price'            => $item->price,
+                        'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                        'delivery_time'    => '1.5-2 часа',
+                        'info'             => [
+                            'pictures' => $item->picture ?? 0,
+                            'params'   => $infoParams,
+                        ],
+                        'stocks'           => [[
+                            'qty'              => $item->count,
+                            'price'            => $item->price,
+                            'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                        ]],
+                        'supplier_name'    => 'grt',
+                        'supplier_city'    => 'Астана',
+                        'supplier_color'   => '#feed00',
+                    ]);
+                }
+                break; // нашли совпадение по этому item — дальше не ищем
+            }
+        }
+    }
+
+
+
+    //старые методы
     public function searchPhaeton(String $brand, String $partnumber) 
     {
         //$start = microtime(true);
@@ -358,7 +889,7 @@ class SparePartController extends Controller
                         'delivery_date' => '',
                         'delivery_time' => '1.5-2 часа',
                         'supplier_city' => $item->Warehouse,
-                        'supplier_color' => '#feed00'
+                        'supplier_color' => '#34689e'
                     ]);
                 }           
             } else {
@@ -493,7 +1024,7 @@ class SparePartController extends Controller
                         'deliveryEnd' => date('d.m.Y'),
                         'supplier_name' => 'frmt',
                         'supplier_city' => 'Астана',
-                        'supplier_color' => '#333'
+                        'supplier_color' => '#feed00'
                     ]); 
                 } else {
                     array_push($this->finalArr['brands'], $item->brand);
@@ -509,7 +1040,7 @@ class SparePartController extends Controller
                         'delivery_date' => '',
                         'delivery_time' => '2-2.5 часа',
                         'supplier_city' => 'Астана',
-                        'supplier_color' => '#333'
+                        'supplier_color' => '#34689e'
                     ]);
                 }           
             }
@@ -599,7 +1130,7 @@ class SparePartController extends Controller
                                     'deliveryEnd' => date('d.m.Y'),
                                     'supplier_name' => 'trd',
                                     'supplier_city' => 'ast',
-                                    'supplier_color' => '#0c529c'
+                                    'supplier_color' => '#34689e'
                                 ]);
                             }
                         }
@@ -1561,7 +2092,7 @@ class SparePartController extends Controller
                         'qty' => $store->quantity,
                         'supplier_city' => 'ast',
                         'supplier_name' => 'kln',
-                        'supplier_color' => '#0000ff',
+                        'supplier_color' => 'green',
                         'deliveryStart' => date('d-m-Y'),
                     ]);
                 }
@@ -1616,7 +2147,7 @@ class SparePartController extends Controller
                         ],
                         'supplier_name' => 'kln',
                         'supplier_city' => 'ast',
-                        'supplier_color' => '#0000ff',
+                        'supplier_color' => 'green',
                     ]);
                 }
             }
@@ -1864,7 +2395,7 @@ class SparePartController extends Controller
                         'deliveryEnd' => '',
                         'supplier_name' => 'atptr',
                         "supplier_city" => $item['Region'],
-                        'supplier_color' => '#f2123b'
+                        'supplier_color' => '255, 193, 7'
                     ]);
                 }
             } else {
@@ -1875,7 +2406,7 @@ class SparePartController extends Controller
                     'price' => round($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']),
                     'priceWithMargine' => round($this->setPrice($result2['GetPriceIdResult']['PriceSearchModel']['SalePrice']), self::ROUND_LIMIT),
                     'qty' => $result2['GetPriceIdResult']['PriceSearchModel']['NumberOfAvailable'],
-                    'supplier_color' => '#f2123b',
+                    'supplier_color' => '255, 193, 7',
                     'deliveryStart' => $result2['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                     'deliveryEnd' => '',
                     'supplier_name' => 'atptr',
@@ -1930,7 +2461,7 @@ class SparePartController extends Controller
                         "delivery_time" => $item['DeliveryDate'],
                         "supplier_name" => 'atptr',
                         "supplier_city" => $item['Region'],
-                        'supplier_color' => '#f2123b'
+                        'supplier_color' => '255, 193, 7'
                     ]);
                 }
             }
@@ -1962,7 +2493,7 @@ class SparePartController extends Controller
                     ],
                     "delivery_time" => $result3['GetPriceIdResult']['PriceSearchModel']['DeliveryDate'],
                     "supplier_name" => 'atptr',
-                    'supplier_color' => '#f2123b',
+                    'supplier_color' => '255, 193, 7',
                     'supplier_city' => $result3['GetPriceIdResult']['PriceSearchModel']['Region']
                 ]);
             }
