@@ -94,7 +94,7 @@ Route::get('china/sportage21-25', function() {
     return view('korean-cars.sportage21-25');
 });
 
-Route::get('/product/{brand}/{rest}', [ProductController::class, 'show'])
+Route::get('/product/{brand}/{rest}', [GlobalProductController::class, 'show'])
     ->where('rest', '.*')
     ->name('product.show');
 
