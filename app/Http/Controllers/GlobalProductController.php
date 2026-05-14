@@ -96,12 +96,18 @@ class GlobalProductController extends Controller
         if (!$product || (isset($product->is_virtual) && $product->is_virtual)) {
             if (!$product) {
                 $product = new \stdClass();
-                $product->name        = "Запчасть " . $decodedRest;
-                $product->brand       = $decodedBrand;
-                $product->article     = $decodedRest;
+                $product->name          = "Запчасть " . $decodedRest;
+                $product->brand         = $decodedBrand;
+                $product->article       = $decodedRest;
                 $product->clean_article = preg_replace('/[^A-Za-z0-9]/', '', $decodedRest);
-                $product->price       = 0;
-                $product->is_virtual  = true;
+                $product->price         = 0;
+                $product->retail_price  = 0;
+                $product->supplier_name = null;
+                $product->image         = null;
+                $product->description   = null;
+                $product->category      = null;
+                $product->weight        = null;
+                $product->is_virtual    = true;
             }
             return response()->view('global_product', compact('product', 'recommended', 'canonicalUrl'), 404);
         }
