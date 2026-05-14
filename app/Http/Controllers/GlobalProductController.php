@@ -14,20 +14,32 @@ class GlobalProductController extends Controller
      */
     public function show($brand, $article)
     {
-        // 1. Очистка входных данных
-        // Убираем всё кроме букв и цифр для поиска и формирования правильного URL
-        $cleanBrand = trim(urldecode($brand));
-        $searchArticle = preg_replace('/[^A-Za-z0-9]/', '', urldecode($article));
+        // 1. ДЕКОДИРОВАНИЕ И ПЕРВИЧНАЯ ОЧИСТКА
+        // Расшифровываем символы типа %2F (слэш) и %20 (пробел)
+        $decodedBrand = trim(urldecode($brand));
+        $decodedArticle = trim(urldecode($article));
+        
+        // Чистый артикул для надежного поиска (только буквы и цифры)
+        $searchArticle = preg_replace('/[^A-Za-z0-9]/', '', $decodedArticle);
 
-        // 2. Поиск товара в базе
-        // Сначала ищем по заранее подготовленному полю clean_article (если оно есть в БД)
-        $product = GlobalCatalog::where(DB::raw('UPPER(TRIM(brand))'), strtoupper($cleanBrand))
+        // Подготовка бренда для поиска: пробуем заменить дефисы на слэши (для Hyundai-Kia -> Hyundai/Kia)
+        $brandWithSlash = str_replace('-', '/', $decodedBrand);
+
+        // 2. ПОИСК ТОВАРА В БАЗЕ
+        // Ищем по бренду в разных вариациях (как в URL и как возможно в БД)
+        $product = GlobalCatalog::where(function($q) use ($decodedBrand, $brandWithSlash) {
+                $q->where(DB::raw('UPPER(TRIM(brand))'), strtoupper($decodedBrand))
+                ->orWhere(DB::raw('UPPER(TRIM(brand))'), strtoupper($brandWithSlash));
+            })
             ->where('clean_article', $searchArticle)
             ->first();
 
-        // Резервный поиск, если по чистому артикулу ничего не найдено
+        // Резервный поиск по маске (старая добрая логика)
         if (!$product) {
-            $product = \App\Models\GlobalCatalog::where(DB::raw('UPPER(TRIM(brand))'), strtoupper($cleanBrand))
+            $product = GlobalCatalog::where(function($q) use ($decodedBrand, $brandWithSlash) {
+                    $q->where(DB::raw('UPPER(TRIM(brand))'), strtoupper($decodedBrand))
+                    ->orWhere(DB::raw('UPPER(TRIM(brand))'), strtoupper($brandWithSlash));
+                })
                 ->where(function($query) use ($searchArticle) {
                     $query->where(DB::raw("REPLACE(REPLACE(REPLACE(article, ' ', ''), '-', ''), '/', '')"), $searchArticle)
                         ->orWhere('article', 'LIKE', $searchArticle . '%');
@@ -35,55 +47,63 @@ class GlobalProductController extends Controller
                 ->first();
         }
 
-        // 3. ПРОВЕРКА URL И РЕДИРЕКТ (Борьба с дублями)
+        // 3. SEO-ФИЛЬТР И РЕДИРЕКТЫ (Лечение 404 ошибок из отчета)
         if ($product) {
-            // Формируем "идеальный" путь: бренд как в базе / артикул без знаков
-            // Используем rawurlencode для бренда на случай знаков '/' или пробелов
-            $correctPath = "product/" . rawurlencode($product->brand) . "/" . $product->clean_article;
-            $currentPath = request()->path();
+            // Формируем ИДЕАЛЬНЫЙ бренд для URL: заменяем слэши и пробелы на дефисы
+            $urlBrand = str_replace(['/', ' '], '-', $product->brand);
+            $urlBrand = preg_replace('/-+/', '-', $urlBrand); // убираем двойные дефисы
+            $urlBrand = trim($urlBrand, '-'); // убираем дефисы по краям
 
-            // Сравниваем текущий путь в браузере с идеальным. 
-            // Если они разные (например, зашли по ссылке с дефисом) — перенаправляем 301 редиректом.
-            if (urldecode($currentPath) !== urldecode($correctPath)) {
-                return redirect()->to(url($correctPath), 301);
+            $correctPath = 'product/' . $urlBrand . '/' . $product->clean_article;
+            
+            // Сравниваем текущий путь с идеальным. Если есть разница — жесткий 301 редирект.
+            // Это заставит Google переиндексировать все Hyundai/Kia в Hyundai-Kia.
+            if (urldecode(request()->path()) !== urldecode($correctPath)) {
+                return redirect($correctPath, 301);
             }
         }
 
-        // 4. ОБРАБОТКА (только если товар найден)
-        $canonicalUrl = url()->current(); // Значение по умолчанию
+        // 4. ПОДГОТОВКА ДАННЫХ (Цены и каноникал)
+        $cleanBrand = $product ? $product->brand : $decodedBrand;
 
-        if ($product) {
-            // Расчет цены
-            if (!isset($product->is_virtual)) {
-                $sparePartCtrl = new \App\Http\Controllers\SparePartController();
-                $basePrice = $product->price;
-                $retailPrice = $sparePartCtrl->setPrice($basePrice);
+        // Каноникал ВСЕГДА с дефисами. Это эталон для поисковиков.
+        $canonicalUrl = $product 
+            ? route('product.show', ['brand' => str_replace(['/', ' '], '-', $product->brand), 'article' => $product->clean_article])
+            : url()->current();
 
-                if ($retailPrice == $basePrice && $basePrice > 0) {
-                    $retailPrice = $basePrice * 1.25; 
-                }
-                $product->retail_price = $retailPrice;
+        if ($product && !isset($product->is_virtual)) {
+            // Твоя проверенная логика наценки
+            $sparePartCtrl = new \App\Http\Controllers\SparePartController();
+            $basePrice = $product->price;
+            $retailPrice = $sparePartCtrl->setPrice($basePrice);
+
+            if ($retailPrice == $basePrice && $basePrice > 0) {
+                $retailPrice = $basePrice * 1.25; 
             }
-
-            // Формируем правильный каноникл
-            $canonicalUrl = route('product.show', [
-                'brand' => $product->brand,
-                'article' => $product->clean_article ?? $product->article
-            ]);
+            $product->retail_price = $retailPrice;
         }
 
-        // 5. Рекомендации (пусть ищутся по бренду из URL, даже если товар не найден)
-        $recommended = \App\Models\GlobalCatalog::where('brand', $cleanBrand)
+        // 5. РЕКОМЕНДАЦИИ
+        $recommended = GlobalCatalog::where('brand', $cleanBrand)
             ->when($product, function($q) use ($product) {
                 return $q->where('clean_article', '!=', $product->clean_article);
             })
-            ->inRandomOrder()                  
-            ->take(10)                         
+            ->inRandomOrder()
+            ->take(10)
             ->get();
 
-        // 6. ФИНАЛЬНЫЙ ВЫВОД
+        // 6. ЛОВУШКА 404 (Виртуальный объект)
+        // Если товара нет (или он виртуальный), отдаем 404, но не ломаем страницу
         if (!$product || (isset($product->is_virtual) && $product->is_virtual)) {
-            // Передаем null в компакт, чтобы вьюха знала, что показывать 404-стаб
+            if (!$product) {
+                $product = new \stdClass();
+                $product->name = "Запчасть " . $decodedArticle;
+                $product->brand = $decodedBrand;
+                $product->article = $decodedArticle;
+                $product->clean_article = $searchArticle;
+                $product->price = 0;
+                $product->is_virtual = true;
+            }
             return response()->view('global_product', compact('product', 'recommended', 'canonicalUrl'), 404);
         }
 
