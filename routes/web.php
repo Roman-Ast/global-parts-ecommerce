@@ -94,10 +94,9 @@ Route::get('china/sportage21-25', function() {
     return view('korean-cars.sportage21-25');
 });
 
-Route::get('/product/{brand}/{article}', [GlobalProductController::class, 'show'])
-    ->name('product.show')
-    ->where('brand', '.*')   // Позволяет бренду содержать слэши (как Hyundai/Kia)
-    ->where('article', '.*'); // Позволяет артикулу содержать всё что угодно
+Route::get('/product/{brand}/{rest}', [ProductController::class, 'show'])
+    ->where('rest', '.*')
+    ->name('product.show');
 
 Route::fallback(function () {
     return redirect('/', 301); 
