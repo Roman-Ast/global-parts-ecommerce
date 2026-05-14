@@ -167,7 +167,7 @@
                         <h1 class="h2 fw-bold mb-3">
                             {{ $product->name }}
                             {{-- Проверка наличия в офисе --}}
-                            @if(($product?->supplier_name) === 'is_in_office')
+                            @if(isset($product->supplier_name) && $product->supplier_name === 'is_in_office')
                                 <span class="badge rounded-pill bg-success pulse-badge ms-2" style="font-size: 0.5em; vertical-align: middle;">
                                     В наличии в офисе
                                 </span>
