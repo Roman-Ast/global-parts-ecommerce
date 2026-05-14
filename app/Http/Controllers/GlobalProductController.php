@@ -110,6 +110,150 @@ class GlobalProductController extends Controller
         return view('global_product', compact('product', 'recommended', 'canonicalUrl'));
     }
 
+    /*
+    public function show($brand, $rest)
+    {
+        // 1. СБОРКА ПОЛНОГО ПУТИ И ДЕКОДИРОВАНИЕ
+        // $rest содержит всё после /product/{brand}/ включая возможные слеши
+        // Примеры что может прийти:
+        //   brand=Hyundai, rest=Kia/4955121000  (бренд со слешем)
+        //   brand=FILTRON, rest=AP139/2          (артикул со слешем)
+        //   brand=XYG,     rest=5370AGNCMVZ2B LFW/X (артикул со слешем и пробелом)
+
+        $decodedBrand = trim(urldecode($brand));
+        $decodedRest  = trim(urldecode($rest));
+
+        // 2. ОПРЕДЕЛЕНИЕ ТИПА URL — бренд со слешем или артикул со слешем?
+        // Стратегия: пробуем все варианты разбивки brand/article из $rest
+        $product = null;
+        $matchedBrand = null;
+        $matchedArticle = null;
+
+        // Сначала пробуем: весь $rest — это артикул (brand = $decodedBrand)
+        $candidates = $this->buildCandidates($decodedBrand, $decodedRest);
+
+        foreach ($candidates as [$tryBrand, $tryArticle]) {
+            $cleanArticle = preg_replace('/[^A-Za-z0-9]/', '', $tryArticle);
+            if (!$cleanArticle) continue;
+
+            $found = $this->findProduct($tryBrand, $cleanArticle, $tryArticle);
+            if ($found) {
+                $product = $found;
+                $matchedBrand = $tryBrand;
+                $matchedArticle = $tryArticle;
+                break;
+            }
+        }
+
+        // 3. SEO-РЕДИРЕКТ на канонический URL
+        if ($product) {
+            $canonicalBrand   = urlencode(str_replace(' ', '-', $product->brand));
+            // убираем двойные дефисы после замены / и пробелов
+            $canonicalBrand   = preg_replace('/-+/', '-', str_replace(['/', ' '], '-', $product->brand));
+            $canonicalArticle = $product->clean_article;
+            $correctPath = "product/{$canonicalBrand}/{$canonicalArticle}";
+
+            $currentPath = request()->path();
+            if (urldecode($currentPath) !== urldecode($correctPath)) {
+                return redirect($correctPath, 301);
+            }
+        }
+
+        // 4. ПОДГОТОВКА ДАННЫХ
+        $cleanBrand = $product ? $product->brand : $decodedBrand;
+        $canonicalUrl = $product
+            ? route('product.show', [
+                'brand' => str_replace(['/', ' '], '-', $product->brand),
+                'rest'  => $product->clean_article,
+            ])
+            : url()->current();
+
+        if ($product && !isset($product->is_virtual)) {
+            $sparePartCtrl = new \App\Http\Controllers\SparePartController();
+            $basePrice     = $product->price;
+            $retailPrice   = $sparePartCtrl->setPrice($basePrice);
+            if ($retailPrice == $basePrice && $basePrice > 0) {
+                $retailPrice = $basePrice * 1.25;
+            }
+            $product->retail_price = $retailPrice;
+        }
+
+        // 5. РЕКОМЕНДАЦИИ
+        $recommended = GlobalCatalog::where('brand', $cleanBrand)
+            ->when($product, fn($q) => $q->where('clean_article', '!=', $product->clean_article))
+            ->inRandomOrder()
+            ->take(10)
+            ->get();
+
+        // 6. 404 ЛОВУШКА
+        if (!$product || (isset($product->is_virtual) && $product->is_virtual)) {
+            if (!$product) {
+                $product = new \stdClass();
+                $product->name        = "Запчасть " . $decodedRest;
+                $product->brand       = $decodedBrand;
+                $product->article     = $decodedRest;
+                $product->clean_article = preg_replace('/[^A-Za-z0-9]/', '', $decodedRest);
+                $product->price       = 0;
+                $product->is_virtual  = true;
+            }
+            return response()->view('global_product', compact('product', 'recommended', 'canonicalUrl'), 404);
+        }
+
+        return view('global_product', compact('product', 'recommended', 'canonicalUrl'));
+    }
+
+    
+    private function buildCandidates(string $brand, string $rest): array
+    {
+        $candidates = [];
+        $segments = explode('/', $rest);
+
+        // Вариант 1: brand=$brand, article=весь $rest (слеши внутри артикула)
+        $candidates[] = [$brand, $rest];
+
+        // Вариант 2+: brand=$brand + первые N сегментов из $rest, article = остаток
+        // Например: brand=Hyundai, rest=Kia/4955121000 → brand=Hyundai/Kia, article=4955121000
+        for ($i = 0; $i < count($segments) - 1; $i++) {
+            $extBrand  = $brand . '/' . implode('/', array_slice($segments, 0, $i + 1));
+            $article   = implode('/', array_slice($segments, $i + 1));
+            $candidates[] = [$extBrand, $article];
+        }
+
+        // Вариант с дефисами → слеш в бренде (Hyundai-Kia → Hyundai/Kia)
+        $brandWithSlash = str_replace('-', '/', $brand);
+        if ($brandWithSlash !== $brand) {
+            $candidates[] = [$brandWithSlash, $rest];
+            for ($i = 0; $i < count($segments) - 1; $i++) {
+                $extBrand = $brandWithSlash . '/' . implode('/', array_slice($segments, 0, $i + 1));
+                $article  = implode('/', array_slice($segments, $i + 1));
+                $candidates[] = [$extBrand, $article];
+            }
+        }
+
+        return $candidates;
+    }
+
+    private function findProduct(string $brand, string $cleanArticle, string $rawArticle): ?GlobalCatalog
+    {
+        $brandUpper      = strtoupper($brand);
+        $brandSlashUpper = strtoupper(str_replace('-', '/', $brand));
+
+        $base = GlobalCatalog::where(function($q) use ($brandUpper, $brandSlashUpper) {
+            $q->where(DB::raw('UPPER(TRIM(brand))'), $brandUpper)
+            ->orWhere(DB::raw('UPPER(TRIM(brand))'), $brandSlashUpper);
+        });
+
+        // Точный поиск по clean_article
+        $found = (clone $base)->where('clean_article', $cleanArticle)->first();
+        if ($found) return $found;
+
+        // Резервный — по маске
+        return (clone $base)->where(function($q) use ($cleanArticle, $rawArticle) {
+            $q->where(DB::raw("REPLACE(REPLACE(REPLACE(article, ' ', ''), '-', ''), '/', '')"), $cleanArticle)
+            ->orWhere('article', 'LIKE', $cleanArticle . '%');
+        })->first();
+    }
+    */ 
     public function fetchGoogleImages(Request $request)
     {
         $query = $request->query('q');
