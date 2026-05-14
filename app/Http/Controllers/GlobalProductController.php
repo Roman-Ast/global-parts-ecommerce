@@ -86,6 +86,12 @@ class GlobalProductController extends Controller
             ->take(10)
             ->get();
 
+            \Log::info('SHOW DEBUG', [
+    'brand' => $decodedBrand,
+    'rest'  => $decodedRest,
+    'candidates' => $this->buildCandidates($decodedBrand, $decodedRest),
+    'found' => $product ? $product->id : null,
+]);
         // 6. 404 ЛОВУШКА
         if (!$product || (isset($product->is_virtual) && $product->is_virtual)) {
             if (!$product) {
