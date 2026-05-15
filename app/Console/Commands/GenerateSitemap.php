@@ -35,13 +35,15 @@ class GenerateSitemap extends Command
             $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
             foreach ($products as $product) {
-                // ПРИОРpriority: используем clean_article, если он есть
+                $urlBrand = str_replace(['*', '/', ' ', '_'], '-', $product->brand);
+                $urlBrand = preg_replace('/-+/', '-', $urlBrand);
+                $urlBrand = trim($urlBrand, '-');
+
                 $finalArticle = !empty($product->clean_article) 
                     ? $product->clean_article 
                     : preg_replace('/[^A-Za-z0-9]/', '', $product->article);
 
-                // Формируем ЧИСТУЮ ссылку без мусора
-                $url = $baseUrl . '/product/' . urlencode($product->brand) . '/' . urlencode($finalArticle);
+                $url = $baseUrl . '/product/' . $urlBrand . '/' . $finalArticle;
                 
                 $xml .= '<url>';
                 $xml .= '<loc>' . htmlspecialchars($url) . '</loc>';
