@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css" media="print" onload="this.media='all'">
+@endpush
+
 @section('title', $product 
     ? "Купить " . $product->name . " " . $product->brand . " (" . $product->article . ") в Казахстане — Цена, Наличие" 
     : "Товар не найден — Global Parts")

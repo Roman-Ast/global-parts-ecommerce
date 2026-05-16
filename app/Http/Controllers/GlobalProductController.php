@@ -144,7 +144,8 @@ class GlobalProductController extends Controller
     {
         $recommended = GlobalCatalog::where('brand', 'LIKE', $product->brand . '%')
             ->where('clean_article', '!=', $product->clean_article)
-            ->inRandomOrder()->take(10)->get();
+            ->limit(10) // Просто берем первые 10
+            ->get();
 
         // Прогоняем цены рекомендаций через наценку
         foreach ($recommended as $item) {
