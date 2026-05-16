@@ -1,53 +1,28 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        <script src="{{ URL::asset('js/jquery.min.js') }}"></script>
+        {{-- 1. Системные мета-теги --}}
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        {{-- 2. SEO-данные --}}
         <title>@yield('title', 'Global Parts — Автозапчасти в Астане и по всему Казахстану')</title>
-        <meta name="description" content="@yield('description', 'Купить запчасти по выгодным ценам в Астане и с доставкой по РК. Подбор по VIN за 5 минут. Оригиналы и дубликаты: Hyundai, Kia, Toyota, Nissan, BMW, Mercedes. Работаем в городах: Астана, Алматы, Караганда, Шымкент, Павлодар, Усть-Каменогорск, Костанай и др.')">
-        <meta name="keywords" content="запчасти астана, автозапчасти казахстан, вин код подбор, магазин запчастей, запчасти хюндай, запчасти киа, купить запчасти">
-        @hasSection('canonical')
-			@yield('canonical')
-		@else
-			<link rel="canonical" href="{{ url()->current() }}" />
-		@endif
-        <link rel="icon" type="image/png" href="https://shop.globalparts.kz/images/favicon-32x32.png">
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://cdn.jsdelivr.net">
+        <meta name="description" content="@yield('description', 'Купить запчасти по выгодным ценам в Астане...')">
+        <meta name="keywords" content="запчасти астана, автозапчасти казахстан, вин код подбор...">
         
+        @hasSection('canonical')
+            @yield('canonical')
+        @else
+            <link rel="canonical" href="{{ url()->current() }}" />
+        @endif
+        {{-- 3. Твой главный монолитный файл стилей (Bootstrap + твои стили + Cache Busting) --}}
+        <link href="{{ asset('css/master.css') }}?v=2" rel="stylesheet">
 
-        <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": "AutoPartsStore",
-            "name": "Global Parts Astana",
-            "image": "https://shop.globalparts.kz/images/logo1.png",
-            "@id": "https://shop.globalparts.kz",
-            "url": "https://shop.globalparts.kz",
-            "telephone": "+77087172549",
-            "address": {
-                "@type": "PostalAddress",
-                "streetAddress": "мкрн Целинный 5/1, 2 этаж",
-                "addressLocality": "Astana",
-                "postalCode": "010000",
-                "addressCountry": "KZ"
-            },
-            "geo": {
-                "@type": "GeoCoordinates",
-                "latitude": 51.157169,
-                "longitude": 71.450894
-            },
-            "openingHoursSpecification": {
-                "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
-                "opens": "10:00",
-                "closes": "19:00"
-            }
-        }
-        </script>
+        {{-- 4. Фавиконка --}}
+        <link rel="icon" type="image/png" href="https://shop.globalparts.kz/images/favicon-32x32.png">
+        
+        <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
         {{-- Bootstrap CSS
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
@@ -75,7 +50,6 @@
         <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
         <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>--}}
 
-        <link href="{{ URL::asset('css/master.css') }}" rel="stylesheet">
         @stack('styles')
     </head>
     <body>
@@ -196,14 +170,44 @@
                 <i class="bi bi-whatsapp"></i>
             </div>
         </div>
+    
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "AutoPartsStore",
+            "name": "Global Parts Astana",
+            "image": "https://shop.globalparts.kz/images/logo1.png",
+            "@id": "https://shop.globalparts.kz",
+            "url": "https://shop.globalparts.kz",
+            "telephone": "+77087172549",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "мкрн Целинный 5/1, 2 этаж",
+                "addressLocality": "Astana",
+                "postalCode": "010000",
+                "addressCountry": "KZ"
+            },
+            "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 51.157169,
+                "longitude": 71.450894
+            },
+            "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+                "opens": "10:00",
+                "closes": "19:00"
+            }
+        }
+        </script>
         
-       <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
     <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js" defer></script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
 
-    <script src="{{ URL::asset('js/master.js') }}" defer></script>
+    <script src="{{ URL::asset('js/master.js') }}?v=2" defer></script>
 
     @stack('scripts')
 
