@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -9,75 +8,89 @@ use App\Helpers\SlugHelper;
 class GenerateSitemap extends Command
 {
     protected $signature = 'sitemap:generate';
-    protected $description = 'Генерация раздельных Sitemap для 184к товаров с использованием чистых артикулов';
+    protected $description = 'Генерация раздельных Sitemap для товаров';
 
     public function handle()
     {
-        $this->info('Начинаю генерацию карты сайта на основе clean_article...');
+        $this->info('Начинаю генерацию карты сайта...');
 
-        // Настройки
-        $chunkSize = 40000; 
-        $baseUrl = config('app.url'); 
-        $sitemaps = [];
+        $chunkSize = 40000;
+        $baseUrl    = rtrim(config('app.url'), '/');
+        $sitemaps   = [];
+        $fileNum    = 1;
 
-        // Берем article (для подстраховки), clean_article и brand
-        // Добавляем фильтр, чтобы не брать совсем пустые записи
-        $query = DB::table('global_catalog')
+        // Захватываем $this явно для использования внутри chunk
+        $command = $this;
+
+        DB::table('global_catalog')
             ->select('article', 'clean_article', 'brand')
             ->whereNotNull('article')
-            ->distinct();
+            ->where('article', '!=', '')
+            ->distinct()
+            ->orderBy('brand')
+            ->chunk($chunkSize, function ($products) use (&$sitemaps, &$fileNum, $baseUrl, $command) {
 
-        $fileNum = 1;
+                $fileName = "sitemap_products_{$fileNum}.xml";
+                $filePath = public_path($fileName);
 
-        // Сортируем по id или бренду для стабильности чанков
-        $query->orderBy('brand')->chunk($chunkSize, function ($products) use (&$sitemaps, &$fileNum, $baseUrl) {
-            $fileName = "sitemap_products_{$fileNum}.xml";
-            $xml = '<?xml version="1.0" encoding="UTF-8"?>';
-            $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+                $handle = fopen($filePath, 'w');
+                fwrite($handle, '<?xml version="1.0" encoding="UTF-8"?>');
+                fwrite($handle, '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
 
-            foreach ($products as $product) {
-                $urlBrand = SlugHelper::brandToSlug($product->brand);
+                foreach ($products as $product) {
+                    $urlBrand = SlugHelper::brandToSlug($product->brand);
 
-                $finalArticle = !empty($product->clean_article) 
-                    ? $product->clean_article 
-                    : preg_replace('/[^A-Za-z0-9]/', '', $product->article);
+                    $finalArticle = !empty($product->clean_article)
+                        ? $product->clean_article
+                        : preg_replace('/[^A-Za-z0-9]/', '', $product->article ?? '');
 
-                $url = $baseUrl . '/product/' . $urlBrand . '/' . $finalArticle;
-                
-                $xml .= '<url>';
-                $xml .= '<loc>' . htmlspecialchars($url) . '</loc>';
-                $xml .= '<changefreq>weekly</changefreq>';
-                $xml .= '<priority>0.6</priority>';
-                $xml .= '</url>';
-            }
+                    // Пропускаем записи без артикула
+                    if (empty($finalArticle)) {
+                        continue;
+                    }
 
-            $xml .= '</urlset>';
-            
-            file_put_contents(public_path($fileName), $xml);
-            
-            $sitemaps[] = $fileName;
-            $this->info("Создан файл: {$fileName} (ссылки очищены)");
-            $fileNum++;
-        });
+                    $url = $baseUrl . '/product/' . $urlBrand . '/' . $finalArticle;
+
+                    fwrite($handle,
+                        '<url>' .
+                        '<loc>' . htmlspecialchars($url, ENT_XML1, 'UTF-8') . '</loc>' .
+                        '<changefreq>weekly</changefreq>' .
+                        '<priority>0.6</priority>' .
+                        '</url>'
+                    );
+                }
+
+                fwrite($handle, '</urlset>');
+                fclose($handle);
+
+                $sitemaps[] = $fileName;
+                $command->info("Создан файл: {$fileName}");
+                $fileNum++;
+            });
 
         $this->generateIndex($sitemaps, $baseUrl);
-
-        $this->info('Готово! Теперь все ссылки в сайтмапе канонические и без тире.');
+        $this->info('Готово!');
     }
 
-    private function generateIndex($sitemaps, $baseUrl)
+    private function generateIndex(array $sitemaps, string $baseUrl): void
     {
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $handle = fopen(public_path('sitemap.xml'), 'w');
+        fwrite($handle, '<?xml version="1.0" encoding="UTF-8"?>');
+        fwrite($handle, '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
 
+        $lastmod = now()->toAtomString();
         foreach ($sitemaps as $sitemap) {
-            $xml .= '<sitemap>';
-            $xml .= '<loc>' . $baseUrl . '/' . $sitemap . '</loc>';
-            $xml .= '<lastmod>' . now()->toAtomString() . '</lastmod>';
-            $xml .= '</sitemap>';
+            fwrite($handle,
+                '<sitemap>' .
+                '<loc>' . $baseUrl . '/' . $sitemap . '</loc>' .
+                '<lastmod>' . $lastmod . '</lastmod>' .
+                '</sitemap>'
+            );
         }
 
-        $xml .= '</sitemapindex>';
-        file_put_contents(public_path('sitemap.xml'), $xml);
+        fwrite($handle, '</sitemapindex>');
+        fclose($handle);
+
+        $this->info('sitemap.xml (индекс) создан.');
     }
 }
