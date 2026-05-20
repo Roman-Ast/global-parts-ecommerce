@@ -11,35 +11,37 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cashflow_transactions', function (Blueprint $table) {
-            $table->id();
+        if (!Schema::hasTable('cashflow_transactions')) {
+            Schema::create('cashflow_transactions', function (Blueprint $table) {
+                $table->id();
 
-            $table->dateTime('txn_at');
-            $table->enum('direction', ['in', 'out']);  // in = поступление, out = расход
-            $table->unsignedBigInteger('account_id');
-            $table->decimal('amount', 14, 2);
+                $table->dateTime('txn_at');
+                $table->enum('direction', ['in', 'out']);  // in = поступление, out = расход
+                $table->unsignedBigInteger('account_id');
+                $table->decimal('amount', 14, 2);
 
-            $table->string('category', 100);           // Sale / Expense / Supplier payment / Supplier refund ...
-            $table->string('subcategory', 100)->nullable(); // Fuel / Tax / Owner withdraw / Rent ...
-            $table->string('counterparty', 150)->nullable(); // клиент/поставщик/гос-во и т.д.
+                $table->string('category', 100);           // Sale / Expense / Supplier payment / Supplier refund ...
+                $table->string('subcategory', 100)->nullable(); // Fuel / Tax / Owner withdraw / Rent ...
+                $table->string('counterparty', 150)->nullable(); // клиент/поставщик/гос-во и т.д.
 
-            $table->string('related_table', 64)->nullable(); // order_payments / supplier_payments / manual ...
-            $table->unsignedBigInteger('related_id')->nullable();
+                $table->string('related_table', 64)->nullable(); // order_payments / supplier_payments / manual ...
+                $table->unsignedBigInteger('related_id')->nullable();
 
-            $table->string('comment', 500)->nullable();
-            $table->timestamps();
+                $table->string('comment', 500)->nullable();
+                $table->timestamps();
 
-            $table->index(['txn_at']);
-            $table->index(['account_id', 'txn_at']);
-            $table->index(['category', 'txn_at']);
-            $table->index(['related_table', 'related_id']);
+                $table->index(['txn_at']);
+                $table->index(['account_id', 'txn_at']);
+                $table->index(['category', 'txn_at']);
+                $table->index(['related_table', 'related_id']);
 
-            $table->foreign('account_id')
-                ->references('id')
-                ->on('accounts')
-                ->onDelete('restrict')
-                ->onUpdate('cascade');
-        });
+                $table->foreign('account_id')
+                    ->references('id')
+                    ->on('accounts')
+                    ->onDelete('restrict')
+                    ->onUpdate('cascade');
+            });
+        }
     }
 
     /**

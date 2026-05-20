@@ -6,3 +6,7 @@ use Illuminate\Support\Facades\Artisan;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
+
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('prices:fetch')->everyTenMinutes(); // проверять почту каждые 10 минут

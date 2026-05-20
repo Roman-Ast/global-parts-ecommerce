@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\SlugHelper;
 
 class GenerateSitemap extends Command
 {
@@ -35,9 +36,7 @@ class GenerateSitemap extends Command
             $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
             foreach ($products as $product) {
-                $urlBrand = str_replace(['*', '/', ' ', '_'], '-', $product->brand);
-                $urlBrand = preg_replace('/-+/', '-', $urlBrand);
-                $urlBrand = trim($urlBrand, '-');
+                $urlBrand = SlugHelper::brandToSlug($product->brand);
 
                 $finalArticle = !empty($product->clean_article) 
                     ? $product->clean_article 

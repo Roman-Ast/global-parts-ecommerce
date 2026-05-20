@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('accounts', function (Blueprint $table) {
-            $table->id();
-            $table->string('name', 100);                 // Kaspi Gold Roman / Kaspi Pay / Halyk Roman / Cash ...
-            $table->char('currency', 3)->default('KZT'); // валюта
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
+        if (!Schema::hasTable('accounts')) {
+            Schema::create('accounts', function (Blueprint $table) {
+                $table->id();
+                $table->string('name', 100);                 // Kaspi Gold Roman / Kaspi Pay / Halyk Roman / Cash ...
+                $table->char('currency', 3)->default('KZT'); // валюта
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
 
-            $table->index(['is_active']);
-        });
+                $table->index(['is_active']);
+            });
+        }
     }
 
     /**

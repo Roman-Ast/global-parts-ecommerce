@@ -7,35 +7,37 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::table('cashflow_transactions', function (Blueprint $table) {
+        if (!Schema::hasTable('cashflow_transactions')) {
+            Schema::table('cashflow_transactions', function (Blueprint $table) {
 
-            // Category of transaction
-            $table->foreignId('cashflow_category_id')
-                ->after('direction')
-                ->constrained('cashflow_categories')
-                ->restrictOnDelete();
+                // Category of transaction
+                $table->foreignId('cashflow_category_id')
+                    ->after('direction')
+                    ->constrained('cashflow_categories')
+                    ->restrictOnDelete();
 
-            // Expense category (only for expense transactions)
-            $table->foreignId('expense_category_id')
-                ->nullable()
-                ->after('cashflow_category_id')
-                ->constrained('expense_categories')
-                ->nullOnDelete();
+                // Expense category (only for expense transactions)
+                $table->foreignId('expense_category_id')
+                    ->nullable()
+                    ->after('cashflow_category_id')
+                    ->constrained('expense_categories')
+                    ->nullOnDelete();
 
-            // Supplier (optional)
-            $table->foreignId('supplier_id')
-                ->nullable()
-                ->after('expense_category_id')
-                ->constrained('suppliers')
-                ->nullOnDelete();
+                // Supplier (optional)
+                $table->foreignId('supplier_id')
+                    ->nullable()
+                    ->after('expense_category_id')
+                    ->constrained('suppliers')
+                    ->nullOnDelete();
 
-            // Employee / user who created the transaction (optional)
-            $table->foreignId('user_id')
-                ->nullable()
-                ->after('supplier_id')
-                ->constrained('users')
-                ->nullOnDelete();
-        });
+                // Employee / user who created the transaction (optional)
+                $table->foreignId('user_id')
+                    ->nullable()
+                    ->after('supplier_id')
+                    ->constrained('users')
+                    ->nullOnDelete();
+            });
+        }
     }
 
     public function down(): void

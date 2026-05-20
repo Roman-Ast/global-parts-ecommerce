@@ -8,10 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('whatsapp_messages', function (Blueprint $table) {
-            // Ставим по умолчанию true для наших сообщений и false для входящих
-            $table->boolean('is_read')->default(false)->after('message_text');
-        });
+        if (!Schema::hasTable('whatsapp_messages')) {
+            Schema::table('whatsapp_messages', function (Blueprint $table) {
+                // Ставим по умолчанию true для наших сообщений и false для входящих
+                $table->boolean('is_read')->default(false)->after('message_text');
+            });
+        }
     }
 
     public function down(): void

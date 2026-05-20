@@ -11,33 +11,35 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('order_payments', function (Blueprint $table) {
-            $table->id();
+        if (!Schema::hasTable('order_payments')) {
+            Schema::create('order_payments', function (Blueprint $table) {
+                $table->id();
 
-            $table->unsignedBigInteger('order_id');
-            $table->unsignedBigInteger('account_id');
+                $table->unsignedBigInteger('order_id');
+                $table->unsignedBigInteger('account_id');
 
-            $table->dateTime('paid_at');
-            $table->decimal('amount', 14, 2);
-            $table->string('comment', 255)->nullable();
+                $table->dateTime('paid_at');
+                $table->decimal('amount', 14, 2);
+                $table->string('comment', 255)->nullable();
 
-            $table->timestamps();
+                $table->timestamps();
 
-            $table->index(['order_id', 'paid_at']);
-            $table->index(['account_id', 'paid_at']);
+                $table->index(['order_id', 'paid_at']);
+                $table->index(['account_id', 'paid_at']);
 
-            $table->foreign('order_id')
-                ->references('id')
-                ->on('orders')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
+                $table->foreign('order_id')
+                    ->references('id')
+                    ->on('orders')
+                    ->onDelete('cascade')
+                    ->onUpdate('cascade');
 
-            $table->foreign('account_id')
-                ->references('id')
-                ->on('accounts')
-                ->onDelete('restrict')
-                ->onUpdate('cascade');
-        });
+                $table->foreign('account_id')
+                    ->references('id')
+                    ->on('accounts')
+                    ->onDelete('restrict')
+                    ->onUpdate('cascade');
+            });
+        }
     }
 
     /**

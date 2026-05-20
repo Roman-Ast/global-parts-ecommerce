@@ -53,9 +53,7 @@ class GlobalProductController extends Controller
         // 3. РЕДИРЕКТ И ЦЕНА
         if ($product) {
             // Формируем канонический бренд: все пробелы в дефисы
-            $canonicalBrand = str_replace(['/', ' '], '-', $product->brand);
-            $canonicalBrand = preg_replace('/-+/', '-', $canonicalBrand);
-            $canonicalBrand = trim($canonicalBrand, '-');
+            $canonicalBrand = SlugHelper::brandToSlug($product->brand);
             
             $correctPath = 'product/' . $canonicalBrand . '/' . $product->clean_article;
             $currentPath = urldecode(request()->path());

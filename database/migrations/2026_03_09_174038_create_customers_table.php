@@ -8,15 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('customers', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->default('rkbtyn');
-            $table->string('phone', 256)->unique();
-            $table->text('comment')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('customers')) {
+            Schema::create('customers', function (Blueprint $table) {
+                $table->id();
+                $table->string('name')->default('rkbtyn');
+                $table->string('phone', 256)->unique();
+                $table->text('comment')->nullable();
+                $table->timestamps();
 
-            $table->index('name');
-        });
+                $table->index('name');
+            });
+        }
     }
 
     public function down(): void

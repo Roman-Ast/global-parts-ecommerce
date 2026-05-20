@@ -17,38 +17,12 @@
             <link rel="canonical" href="{{ url()->current() }}" />
         @endif
         {{-- 3. Твой главный монолитный файл стилей (Bootstrap + твои стили + Cache Busting) --}}
-        <link href="{{ asset('css/master.css') }}?v=2" rel="stylesheet">
+        <link href="{{ asset('css/master.css') }}?v=3" rel="stylesheet">
 
         {{-- 4. Фавиконка --}}
         <link rel="icon" type="image/png" href="https://shop.globalparts.kz/images/favicon-32x32.png">
         
         <link rel="preconnect" href="https://cdn.jsdelivr.net">
-
-        {{-- Bootstrap CSS
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">--}}
-
-        {{-- Локальные CSS --}}
-        {{--<link href="{{ URL::asset('css/main.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/main-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/header.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/garage.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/settlements-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/settlements.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/searchCatalog-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/registerForm.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/footer-bar-mini.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/footer.css') }}" rel="stylesheet">
-        <link href="{{ URL::asset('css/components/notfound.css') }}" rel="stylesheet">
-        <link href="{{ asset('/css/korean-cars/index.css') }}" rel="stylesheet">
-        <link href="{{ asset('/css/korean-cars/index.mini.css') }}" rel="stylesheet">
-        <link href="{{ asset('/css/korean-cars/santafe18-21.css') }}" rel="stylesheet">
-        <link href="{{ asset('/css/korean-cars/santafe18-21-mini.css') }}" rel="stylesheet">
-        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>--}}
 
         @stack('styles')
     </head>
@@ -68,7 +42,7 @@
 
         <div id="shadow-main">
             <div id="modal-qr" class="container">
-                <img src="images/whatsapp_qr_77087172549.png" alt="wa-qr">
+                <img src="/images/whatsapp_qr_77087172549.png" alt="wa-qr">
                 Для перехода в Whatsapp отсканируйте QR-код с камеры мобильного телефона
             </div>
         </div>
@@ -164,7 +138,7 @@
         </div>
 
         <div id="social-media-container-open">
-            <img src="images/arrow-down-blue.png" id="social-media-container-close">
+            <img src="/images/arrow-down-blue.png" id="social-media-container-close">
             <div class="whatsapp-fixed-btn-only-to-open-block" aria-label="Написать в WhatsApp">
                 <div class="pulse-ring"></div>
                 <i class="bi bi-whatsapp"></i>
@@ -203,11 +177,8 @@
         
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
-    <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js" defer></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
-
-    <script src="{{ URL::asset('js/master.js') }}?v=2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="{{ URL::asset('js/master.js') }}?v=3"></script>
 
     @stack('scripts')
 

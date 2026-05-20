@@ -7,19 +7,21 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('expense_categories', function (Blueprint $table) {
-            $table->id();
+        if (!Schema::hasTable('expense_categories')) {
+            Schema::create('expense_categories', function (Blueprint $table) {
+                $table->id();
 
-            // machine-readable code: fuel, rent, tax, salary, marketing...
-            $table->string('code', 64)->unique();
+                // machine-readable code: fuel, rent, tax, salary, marketing...
+                $table->string('code', 64)->unique();
 
-            // human-readable name for UI
-            $table->string('name', 150);
+                // human-readable name for UI
+                $table->string('name', 150);
 
-            $table->boolean('is_active')->default(true);
+                $table->boolean('is_active')->default(true);
 
-            $table->timestamps();
-        });
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void
