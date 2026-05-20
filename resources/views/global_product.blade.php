@@ -512,40 +512,64 @@
             </div>
         </div>
     </div>
-    {{-- Рекомендации для вас--}}
+    {{-- Похожие товары --}}
     <div class="container my-5">
-        <h5 class="fw-bold mb-4"><i class="bi bi-gear-wide-connected me-2"></i>Похожие товары ({{ $product->brand }})</h5>
-        <div class="recommended-slider">
-            @foreach($recommended as $item)
-                <div class="px-2">
-                    <a href="/product/{{ $item->brand }}/{{ $item->article }}" class="text-decoration-none">
-                        <div class="card h-100 border-0 shadow-sm text-center p-3 hover-card">
-                            
-                            <div class="product-img-container mb-2 d-flex align-items-center justify-content-center" 
-                                style="height: 100px; background: #f8f9fa; border-radius: 8px; overflow: hidden;">
-                                
-                                <img src="{{ $item->getPlaceholder() }}" 
-                                    class="img-fluid" 
-                                    style="max-height: 80px; width: auto;"
-                                    onerror="this.onerror=null; this.src='{{ asset('images/placeholders/default_gear.jpeg') }}'">
-                            </div>
+        <h5 class="fw-bold mb-4">
+            <i class="bi bi-gear-wide-connected me-2"></i>Похожие товары ({{ $product->brand }})
+        </h5>
 
-                            <div class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">
-                                {{ $item->article }}
-                            </div>
+        @php
+            $chunks = $recommended->chunk(5);
+        @endphp
 
-                            <div class="fw-bold text-dark small text-truncate" style="max-width: 100%;">
-                                {{ $item->name }}
-                            </div>
+        @foreach($chunks as $chunkIndex => $chunk)
+            @php
+                $count = $chunk->count();
+                $isLastChunk = $loop->last;
+                $isIncomplete = $isLastChunk && $count < 5;
+            @endphp
 
-                            <div class="text-primary fw-bold mt-1">
-                                {{ number_format($item->price, 0, '.', ' ') }} ₸
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3
+                {{ $isIncomplete ? 'justify-content-center' : '' }} mb-3">
+
+                @foreach($chunk as $item)
+                    <div class="col">
+                        <a href="/product/{{ $item->brand }}/{{ $item->article }}"
+                        class="text-decoration-none">
+                            <div class="card h-100 border-0 shadow-sm text-center p-3 hover-card">
+
+                                <div class="product-img-container mb-2 d-flex align-items-center
+                                    justify-content-center"
+                                    style="height: 100px; background: #f8f9fa;
+                                        border-radius: 8px; overflow: hidden;">
+                                    <img src="{{ $item->getPlaceholder() }}"
+                                        class="img-fluid"
+                                        style="max-height: 80px; width: auto;"
+                                        onerror="this.onerror=null;
+                                                this.src='{{ asset('images/placeholders/default_gear.jpeg') }}'">
+                                </div>
+
+                                <div class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">
+                                    {{ $item->article }}
+                                </div>
+
+                                <div class="fw-bold text-dark small text-truncate"
+                                    style="max-width: 100%;">
+                                    {{ $item->name }}
+                                </div>
+
+                                <div class="text-primary fw-bold mt-1">
+                                    {{ number_format($item->price, 0, '.', ' ') }} ₸
+                                </div>
+
                             </div>
-                        </div>
-                    </a>
-                </div>
-            @endforeach
-        </div>
+                        </a>
+                    </div>
+                @endforeach
+
+            </div>
+        @endforeach
+
     </div>
     {{-- Футер будет всегда внизу благодаря flex-grow-1 выше --}}
     <div class="mt-auto">
@@ -605,22 +629,6 @@
     }
 </script>
 <script>
-    $(document).ready(function(){
-        // Инициализация слайдера рекомендаций
-        $('.recommended-slider').slick({
-            infinite: false,
-            slidesToShow: 4,
-            slidesToScroll: 1,
-            arrows: true,
-            dots: false,
-            responsive: [
-                { breakpoint: 1024, settings: { slidesToShow: 3 } },
-                { breakpoint: 768, settings: { slidesToShow: 2 } },
-                { breakpoint: 480, settings: { slidesToShow: 1 } }
-            ]
-        });
-    });
-
     function renderOfferRow(offer) {
         const qty = parseInt(offer.qty) || 0;
         const priceDisplay = Number(offer.priceWithMargine || 0).toLocaleString();
