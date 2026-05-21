@@ -1,16 +1,11 @@
 @extends('layouts.app')
 
-@push('styles')
-    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css" media="print" onload="this.media='all'">
-    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css" media="print" onload="this.media='all'">
-@endpush
-
 @section('title', $product 
-    ? "Купить " . $product->name . " " . $product->brand . " (" . $product->article . ") в Казахстане — Цена, Наличие" 
+    ? "Купить " . $product->name . " " . \Illuminate\Support\Str::upper($product->brand) . " (" . $product->article . ") в Казахстане — Цена, Наличие" 
     : "Товар не найден — Global Parts")
 
 @section('description', $product 
-    ? "Купить " . $product->name . " " . $product->brand . " (арт. " . $product->article . ") в Астане за " . number_format($product->price, 0, '.', ' ') . " ₸." 
+    ? "Купить " . $product->name . " " . \Illuminate\Support\Str::upper($product->brand) . " (арт. " . $product->article . ") в Астане за " . number_format($product->price, 0, '.', ' ') . " ₸." 
     : "К сожалению, запрашиваемый товар не найден в нашем каталоге.")
 
 @section('canonical')
@@ -27,23 +22,6 @@
         transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
     }
-    
-    /* Стили для стрелок Slick (чтобы они были видны на светлом фоне) */
-    .slick-prev, .slick-next {
-        z-index: 10;
-        width: 40px;
-        height: 40px;
-        background: #fff !important;
-        border-radius: 50%;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .slick-prev:before, .slick-next:before {
-        color: #333 !important; /* Цвет стрелочек */
-        font-size: 24px;
-    }
-    .slick-prev { left: -20px; }
-    .slick-next { right: -20px; }
-
     .faq-section {
         background: #ffffff;
         border-radius: 12px;
@@ -158,7 +136,7 @@
         <nav aria-label="breadcrumb" class="mb-4">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/">Главная</a></li>
-                <li class="breadcrumb-item active text-truncate" style="max-width: 200px;">{{ $product->brand }}</li>
+                <li class="breadcrumb-item active text-truncate" style="max-width: 200px;">{{ \Illuminate\Support\Str::upper($product->brand) }}</li>
             </ol>
         </nav>
 
@@ -189,7 +167,7 @@
                             <div class="col-6">
                                 <div class="p-2 border-start border-4 border-secondary bg-light">
                                     <small class="text-muted d-block">Бренд</small>
-                                    <span class="fw-bold h5 mb-0 text-uppercase">{{ $product->brand }}</span>
+                                    <span class="fw-bold h5 mb-0 text-uppercase">{{ \Illuminate\Support\Str::upper($product->brand) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -245,7 +223,7 @@
                             </button>
                         </div>
 
-                        <a href="https://wa.me/77087172549?text=Интересует {{ $product->brand }} {{ $product->article }}" 
+                        <a href="https://wa.me/77087172549?text=Интересует {{ \Illuminate\Support\Str::upper($product->brand) }} {{ $product->article }}" 
                            class="btn btn-success btn-lg w-100 shadow-sm py-3 mb-3">
                             <i class="fab fa-whatsapp me-2"></i> Заказать через WhatsApp
                         </a>
@@ -260,7 +238,7 @@
                                             <img src="{{ asset('images/placeholders/default_gear.jpeg') }}" alt="placeholder" style="max-height: 120px; width: auto;">
                                         </div>
                                         <div class="text-center w-100">
-                                            <h5 class="fw-bold text-dark mb-1">{{ $product->brand }}</h5>
+                                            <h5 class="fw-bold text-dark mb-1">{{ \Illuminate\Support\Str::upper($product->brand) }}</h5>
                                             <p class="text-muted small mb-3">{{ $product->article }}</p>
                                             <button id="load-google-images" class="btn btn-outline-primary btn-sm rounded-pill px-4 shadow-sm fw-bold">
                                                 <i class="fas fa-search-plus me-1"></i> Показать реальное фото
@@ -414,7 +392,7 @@
                                 <div class="row g-4 mb-4">
                                     <div class="col-md-6">
                                         <h6 class="fw-bold text-dark"><i class="fas fa-globe-asia me-2 text-primary"></i> География поставок</h6>
-                                        <p class="small text-muted">Мы возим запчасти напрямую из <strong>ОАЭ (Дубай), Китая и России</strong>. Это позволяет нам находить даже редкие позиции для {{ $product->brand }} в кратчайшие сроки.</p>
+                                        <p class="small text-muted">Мы возим запчасти напрямую из <strong>ОАЭ (Дубай), Китая и России</strong>. Это позволяет нам находить даже редкие позиции для {{ \Illuminate\Support\Str::upper($product->brand) }} в кратчайшие сроки.</p>
                                     </div>
                                     <div class="col-md-6">
                                         <h6 class="fw-bold text-dark"><i class="fas fa-pills me-2 text-primary"></i> Склад в Астане</h6>

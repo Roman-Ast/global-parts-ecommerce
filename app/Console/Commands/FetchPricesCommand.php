@@ -7,12 +7,11 @@ use Webklex\IMAP\Facades\Client;
 use Shuchkin\SimpleXLSX;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
-use App\Models\KaspiInitialProduct; // Убедись, что модель называется так и у неё в $fillable есть 'kaspi_code'
 
 class FetchPricesCommand extends Command
 {
     protected $signature = 'prices:fetch';
-    protected $description = 'Чтение прайсов с почты, динамический мэтчинг категорий Каспи из БД, расчет дельты изменений и синхронизация с очередью выгрузки';
+    protected $description = 'Чтение прайсов с почты, фильтрация по остаткам и минимальной цене, расчет розницы и обновление kaspi_initial_products';
 
     public function handle()
     {
@@ -35,130 +34,127 @@ class FetchPricesCommand extends Command
             return 0;
         }
 
-        // КЭШ ПРАВИЛ КАТЕГОРИЙ: Вытягиваем правила из БД один раз перед всеми циклами,
-        // чтобы не насиловать базу SQL-запросами внутри перебора сотен тысяч строк Excel
-        $categoryRules = DB::table('kaspi_category_rules')->pluck('category_code', 'keyword')->toArray();
+        $this->info("Найдено новых писем: " . $messages->count());
 
         foreach ($messages as $message) {
-            $sender = $message->getFrom()[0]->mail;
-            $this->info("--------------------------------------------------");
-            $this->info("Найдено письмо от: {$sender}");
+            $subject = $message->getSubject();
+            $this->info("Обрабатываем письмо: {$subject}");
 
-            if ($message->hasAttachments()) {
-                foreach ($message->getAttachments() as $attachment) {
-                    $filename = $attachment->getName();
-                    $lowercaseFilename = mb_strtolower($filename);
+            // Проверяем, что письмо пришло от нужного поставщика (например, Шатэм)
+            if (str_contains(mb_strtolower($subject), 'shatem') || str_contains(mb_strtolower($subject), 'шатэм')) {
+                
+                if ($message->hasAttachments()) {
+                    $attachments = $message->getAttachments();
                     
-                    // Проверяем расширение Excel
-                    if (str_ends_with($lowercaseFilename, '.xlsx') || str_ends_with($lowercaseFilename, '.xls')) {
-                        $this->info("Обнаружен файл прайса: {$filename}");
+                    foreach ($attachments as $attachment) {
+                        $filename = $attachment->getName();
                         
-                        // Сохраняем файл во временное хранилище Laravel для парсинга
-                        $localPath = 'temp_prices/' . $filename;
-                        Storage::put($localPath, $attachment->getContent());
-                        
-                        $absolutePath = Storage::path($localPath);
+                        // Обрабатываем только файлы Excel (.xlsx)
+                        if (!str_ends_with(mb_strtolower($filename), '.xlsx')) {
+                            continue;
+                        }
 
-                        if ($xlsx = SimpleXLSX::parse($absolutePath)) {
+                        $this->info("Найдено вложение: {$filename}. Скачиваем...");
+                        
+                        // Сохраняем файл во временное хранилище под Ubuntu
+                        $fileContent = $attachment->getContent();
+                        $localPath = 'tmp/' . $filename;
+                        Storage::disk('local')->put($localPath, $fileContent);
+                        $fullPath = storage_path('app/' . $localPath);
+
+                        $this->info("Парсим файл через SimpleXLSX...");
+
+                        if ($xlsx = SimpleXLSX::parse($fullPath)) {
                             $rows = $xlsx->rows();
                             
+                            // Пропускаем шапку таблицы (первую строку)
+                            unset($rows[0]);
+
                             $newCount = 0;
                             $updatedCount = 0;
-                            $queuedCount = 0;
+                            $skippedCount = 0;
 
-                            foreach ($rows as $index => $row) {
-                                if ($index === 0) continue; // Пропускаем шапку таблицы
+                            foreach ($rows as $row) {
+                                // Зависит от структуры колонок твоего поставщика. 
+                                // Предположим базовый вариант: 0 - SKU, 1 - Артикул, 2 - Бренд, 3 - Название, 4 - Цена закупа, 5 - Количество
+                                $sku          = trim($row[0] ?? '');
+                                $article      = trim($row[1] ?? '');
+                                $brand        = trim($row[2] ?? '');
+                                $title        = trim($row[3] ?? '');
+                                $price        = trim($row[4] ?? 0); // Изначальная закупочная цена
+                                $qty          = trim($row[5] ?? 0);
 
-                                // Базовая очистка данных из Excel строк
-                                $article = isset($row[0]) ? trim($row[0]) : '';
-                                $brand   = isset($row[1]) ? trim($row[1]) : '';
-                                $name    = isset($row[2]) ? trim($row[2]) : '';
-                                $price   = isset($row[3]) ? floatval($row[3]) : 0.0;
-
-                                if (empty($article) || empty($brand)) continue;
-
-                                // 1. ДИНАМИЧЕСКИЙ МЭТЧИНГ КАТЕГОРИИ
-                                $kaspiCategoryCode = null;
-                                $itemNameLower = mb_strtolower($name);
-
-                                foreach ($categoryRules as $keyword => $code) {
-                                    if (str_contains($itemNameLower, $keyword)) {
-                                        $kaspiCategoryCode = $code;
-                                        break; // Категория найдена, выходим из перебора правил для этой строки
-                                    }
-                                }
-
-                                // ЖЕСТКОЕ ОТСЕЧЕНИЕ: Категории нет в БД правил -> пропускаем товар, не спамим базу мусором
-                                if (!$kaspiCategoryCode) {
+                                // Защита от пустых строк
+                                if (empty($sku) || empty($article) || empty($brand)) {
                                     continue;
                                 }
 
-                                // 2. ПРОВЕРКА ДЕЛЬТЫ ИЗМЕНЕНИЙ (Сверяем с текущей базой KaspiInitialProduct)
-                                $existingProduct = KaspiInitialProduct::where('sku', $article)
-                                    ->where('brand', $brand)
+                                // Чистим количество от знаков типа ">", "более" и приводим к числу
+                                $qty = (int)preg_replace('/[^0-9]/', '', $qty);
+
+                                // === ПОПРАВКА №1: Если количество менее 2 штук — жестко пропускаем товар ===
+                                if ($qty < 2) {
+                                    $skippedCount++;
+                                    continue;
+                                }
+
+                                // Чистим цену закупа от пробелов и мусора
+                                $price = (float)str_replace([' ', ','], ['', '.'], $price);
+
+                                // === ПОПРАВКА №2: Если изначальная закупочная цена поставщика менее 10 000 тенге — откидываем ===
+                                if ($price < 10000) {
+                                    $skippedCount++;
+                                    continue;
+                                }
+
+                                // НАЦЕНКА: Считаем розничную цену для Каспи (твоя формула наценки, например +15%)
+                                // Можешь заменить этот расчет на свою функцию, которая у тебя использовалась
+                                $retailPrice = ceil($price * 1.15); 
+
+                                // Ищем, есть ли уже этот товар в таблице Каспи
+                                $existProduct = DB::table('kaspi_initial_products')
+                                    ->where('sku', $sku)
                                     ->first();
 
-                                if ($existingProduct) {
-                                    // Сверяем, изменилась ли цена или привязалась новая категория
-                                    $isPriceChanged = (int)$existingProduct->price !== (int)$price;
-                                    $isCategoryChanged = $existingProduct->kaspi_code !== $kaspiCategoryCode;
-
-                                    if ($isPriceChanged || $isCategoryChanged) {
-                                        // Обновляем данные в основной таблице продуктов
-                                        $existingProduct->update([
-                                            'price'      => $price,
-                                            'kaspi_code' => $kaspiCategoryCode,
-                                            'title'      => strlen($name) > strlen($existingProduct->title) ? $name : $existingProduct->title
+                                if ($existProduct) {
+                                    // Если товар уже есть — обновляем цену и остаток
+                                    DB::table('kaspi_initial_products')
+                                        ->where('id', $existProduct->id)
+                                        ->update([
+                                            'title'      => $title,
+                                            'brand'      => mb_strtolower($brand),
+                                            'price'      => $retailPrice,
+                                            'stock'      => $qty,
+                                            'updated_at' => now()
                                         ]);
-                                        $updatedCount++;
-
-                                        // СИНХРОНИЗАЦИЯ С ОЧЕРЕДЬЮ: пушим дельту на обновление в Каспи
-                                        DB::table('kaspi_update_queue')->updateOrInsert(
-                                            ['sku' => $article, 'brand' => $brand],
-                                            [
-                                                'price'      => $price,
-                                                'kaspi_code' => $kaspiCategoryCode,
-                                                'action'     => 'update',
-                                                'updated_at' => now()
-                                            ]
-                                        );
-                                        $queuedCount++;
-                                    }
+                                    $updatedCount++;
                                 } else {
-                                    // ТОВАРА НЕТ В БАЗЕ: Создаем новую уникальную карточку с категорией
-                                    KaspiInitialProduct::create([
-                                        'sku'        => $article,
-                                        'brand'      => $brand,
-                                        'title'      => $name,
-                                        'price'      => $price,
-                                        'kaspi_code' => $kaspiCategoryCode,
+                                    // Если товара нет — создаем новую запись
+                                    DB::table('kaspi_initial_products')->insert([
+                                        'sku'           => $sku,
+                                        'title'         => $title,
+                                        'brand'         => mb_strtolower($brand),
+                                        'category_code' => null, // для упрощенного XML пока пишем NULL
+                                        'price'         => $retailPrice,
+                                        'stock'         => $qty,
+                                        'preorder_days' => 0, // Обычный товар, в наличии в Астане (выдача 1.5 часа)
+                                        'created_at'    => now(),
+                                        'updated_at'    => now()
                                     ]);
                                     $newCount++;
-
-                                    // СИНХРОНИЗАЦИЯ С ОЧЕРЕДЬЮ: пушим как абсолютно новый товар для Каспи
-                                    DB::table('kaspi_update_queue')->updateOrInsert(
-                                        ['sku' => $article, 'brand' => $brand],
-                                        [
-                                            'price'      => $price,
-                                            'kaspi_code' => $kaspiCategoryCode,
-                                            'action'     => 'insert',
-                                            'updated_at' => now()
-                                        ]
-                                    );
-                                    $queuedCount++;
                                 }
                             }
                             
                             $this->info("Файл {$filename} успешно обработан!");
-                            $this->comment("Добавлено новых валидных товаров: {$newCount}");
-                            $this->comment("Обновлено цен/категорий в каталоге: {$updatedCount}");
-                            $this->comment("Отправлено измененных позиций (дельта) в kaspi_update_queue: {$queuedCount}");
+                            $this->comment("Пропущено по фильтрам (остаток < 2 или закуп < 10к): {$skippedCount}");
+                            $this->comment("Добавлено новых позиций: {$newCount}");
+                            $this->comment("Обновлено позиций: {$updatedCount}");
                             
                         } else {
                             $this->error("Ошибка парсинга SimpleXLSX: " . SimpleXLSX::parseError());
                         }
 
-                        // Удаляем временный файл прайса за собой, чтобы не засорять диск под Ubuntu
+                        // Удаляем временный файл Excel за собой, чтобы не забивать диск Ubuntu
                         Storage::delete($localPath);
                     }
                 }
@@ -169,7 +165,12 @@ class FetchPricesCommand extends Command
         }
 
         $this->info('==================================================');
-        $this->info('Импорт прайсов и синхронизация очередей завершены успешно!');
+        $this->info('Импорт прайсов завершен. Запускаем обновление XML фида...');
+        
+        // Автоматически запускаем нашу команду генерации упрощенного XML
+        \Illuminate\Support\Facades\Artisan::call('kaspi:generate-xml');
+        
+        $this->info('XML-фид для Каспи успешно перегенерирован!');
         return 0;
     }
 }

@@ -151,6 +151,9 @@ class GlobalProductController extends Controller
             $item->retail_price = $this->setPrice($item->price);
         }
 
+        if ($product && isset($product->brand)) {
+            $product->brand = \Illuminate\Support\Str::upper($product->brand);
+        }
         return response()->view('global_product', [
             'product' => $product,
             'recommended' => $recommended,

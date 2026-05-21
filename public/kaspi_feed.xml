@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kaspi_catalog date="2026-05-21 16:10" xmlns="http://kaspi.kz/kaspicatalog/3.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://kaspi.kz/kaspicatalog/3.0 http://kaspi.kz/kaspicatalog/3.0/kaspicatalog.xsd">
+ <company>Global Parts</company>
+ <merchantid>GlobalPartsKz</merchantid>
+ <offers>
+  <offer sku="100001">
+   <model>Motodor 100001 Audi 100, A6 1991-1990</model>
+   <brand>MOTODOR</brand>
+   <price>51005</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100002">
+   <model>Audi 100 C3 1982-1990 V-1,8, 1,9, 2,0 защита картера</model>
+   <brand>ALFECO</brand>
+   <price>63756</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100003">
+   <model>АвтоБРОНЯ 100003 Audi 80 1986-1994</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>63756</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100004">
+   <model>Rival 100004 Audi A1 2010-2025</model>
+   <brand>RIVAL</brand>
+   <price>42221</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100005">
+   <model>Sheriff 100005 Audi A2 2011-2012</model>
+   <brand>MOTODOR</brand>
+   <price>70840</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100006">
+   <model>Sheriff 100006 Audi A3 1996-2006</model>
+   <brand>SHERIFF</brand>
+   <price>70840</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100007">
+   <model>Sheriff 100007 Audi A3 2011-2012</model>
+   <brand>SHERIFF</brand>
+   <price>69424</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100008">
+   <model>АвтоБРОНЯ 100008 Audi A3 2020-2019</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>63756</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100009">
+   <model>ALFeco 100009 Audi, Volkswagen A4, A6, Passat 1996-2006</model>
+   <brand>ALFECO</brand>
+   <price>63756</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100010">
+   <model>Motodor 100010 Audi A4 2007-2015</model>
+   <brand>MOTODOR</brand>
+   <price>85008</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100011">
+   <model>Sheriff 100011 Audi A4, A5 2022-2021</model>
+   <brand>SHERIFF</brand>
+   <price>83592</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100012">
+   <model>АБС 100012 Audi A4, A4 Allroad 2013-2012</model>
+   <brand>АВС-ДИЗАЙН</brand>
+   <price>191268</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100013">
+   <model>Motodor 100013 Audi A5 2007-2016</model>
+   <brand>MOTODOR</brand>
+   <price>77924</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100014">
+   <model>АвтоБРОНЯ 100014 Audi A6 1997-2004</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>39671</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100015">
+   <model>ALFeco 100015 Audi A6 2004-2011</model>
+   <brand>MOTODOR</brand>
+   <price>97051</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100016">
+   <model>АБС 100016 Audi A6 2018-2025</model>
+   <brand>АВС-ДИЗАЙН</brand>
+   <price>196936</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100017">
+   <model>ALFeco 100017 Audi A8 2010-2018</model>
+   <brand>ALFECO</brand>
+   <price>82175</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100018">
+   <model>ALFeco 100018 Audi A8 2017-2025</model>
+   <brand>ALFECO</brand>
+   <price>92092</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100019">
+   <model>Sheriff 100019 Audi Kodiaq 2017-2025</model>
+   <brand>SHERIFF</brand>
+   <price>49588</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100020">
+   <model>Motodor 100020 Audi Q5 2008-2017</model>
+   <brand>MOTODOR</brand>
+   <price>99176</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100021">
+   <model>Motodor 100021 Audi Q5 2017-2025</model>
+   <brand>SHERIFF</brand>
+   <price>49588</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100022">
+   <model>АБС 100022 Audi Q60 2022-2025</model>
+   <brand>АВС-ДИЗАЙН</brand>
+   <price>219604</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100023">
+   <model>Sheriff 100023 Audi Q7 2015-2025</model>
+   <brand>SHERIFF</brand>
+   <price>164349</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100024">
+   <model>Sheriff 100024 Audi Q8 2018-2025</model>
+   <brand>SHERIFF</brand>
+   <price>137430</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100025">
+   <model>ALFeco 100025 Audi TT 2006-2014</model>
+   <brand>ALFECO</brand>
+   <price>63756</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100026">
+   <model>АБС 100026 Skoda TT 2016-2025</model>
+   <brand>ТСС</brand>
+   <price>340032</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100027">
+   <model>Motodor 100027 BMW 3-Series 316 1986-1992</model>
+   <brand>MOTODOR</brand>
+   <price>63756</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100028">
+   <model>Motodor 100028 BMW 5-Series 518, 5-Series 520, 5-Series 523, 5-Series 524, 5-Series 525, 5-Series 528, 5-Series 530, 5-Series 535, 5-Series 540, 5-Series 545, 5-Series 550 1988-1996</model>
+   <brand>MOTODOR</brand>
+   <price>49588</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100029">
+   <model>АвтоБРОНЯ 100029 BMW 5-Series 520, 5-Series 528, 5-Series 525 1995-2000</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>113344</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100030">
+   <model>ALFeco 100030 BMW 5-Series 520, 5-Series 523, 5-Series 525, 5-Series 528, 5-Series 535 2003-2010</model>
+   <brand>ALFECO</brand>
+   <price>131763</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100031">
+   <model>АБС 100031 BMW 5-Series 518 2012-2025</model>
+   <brand>АВС-ДИЗАЙН</brand>
+   <price>282794</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100032">
+   <model>АБС 100032 BMW 7-Series 730, 7-Series 740, 7-Series 728, 7-Series 745, 7-Series 760 2016-2014</model>
+   <brand>АВС-ДИЗАЙН</brand>
+   <price>305746</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100033">
+   <model>Sheriff 100033 BMW X-Series X1 2015-2021</model>
+   <brand>SHERIFF</brand>
+   <price>77924</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100034">
+   <model>Motodor 100034 BMW X-Series X3 2004-2010</model>
+   <brand>MOTODOR</brand>
+   <price>106260</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100035">
+   <model>АвтоБРОНЯ 100035 BMW X-Series X3 2016-2015</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>89967</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100036">
+   <model>Sheriff 100036 BMW X-Series X3 2017-2025</model>
+   <brand>SHERIFF</brand>
+   <price>113344</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100037">
+   <model>Sheriff 100037 BMW X-Series X5 2007-2014</model>
+   <brand>SHERIFF</brand>
+   <price>127512</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100038">
+   <model>Sheriff 100038 BMW X-Series X5 2015-2019</model>
+   <brand>SHERIFF</brand>
+   <price>338616</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100039">
+   <model>Rival 100039 BMW X-Series X7 2018-2025</model>
+   <brand>RIVAL</brand>
+   <price>338616</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100040">
+   <model>Защита картера КПП комплект крепежа Автоброня, Сталь BYD Chazor 2023-, 1.5Т, АКПП, FWD.</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>56672</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100041">
+   <model>Защита переднего электродвигателя Автоброня Сталь BYD HAN 2022-,EV, АКПП, 4WD.</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>49588</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100042">
+   <model>Защита картера и КПП BYD Song Plus 2023-, 1.5Т, АКПП, 2WD, 4WD, сталь, с комплектом крепежа</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>63756</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100043">
+   <model>Защита картера двигателя, КПП (1,8 мм, сталь) для Changan Alsvin 2023- (V = 1.5 AT FWD)</model>
+   <brand>SHERIFF</brand>
+   <price>40946</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100044">
+   <model>Защита картера + КПП (сталь) + комплект крепежа для Changan CS35, CS35 Plus 2019-2023 (V - 1.6)</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>48172</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100045">
+   <model>Защита картера и ККП крепёж подходит для CHANGAN CS55 (17-н.в) 1.5 бен., AT, FWD / Чанган 55</model>
+   <brand>NLZ</brand>
+   <price>53839</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100046">
+   <model>Защита картера двигателя, КПП (1,8 мм, сталь) Changan UNI-S 2023- н.в Changan CS55 Plus 2023</model>
+   <brand>SHERIFF</brand>
+   <price>42504</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100047">
+   <model>Защита картера двигателя, КПП (1,8 мм, сталь) для Changan UNI-K 2020- н.в (V = 2.0 AT FWD/4WD)</model>
+   <brand>SHERIFF</brand>
+   <price>39671</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100048">
+   <model>Защита картера двигателя и кпп + крепёж, для Changan UNI-V 2022- V-all/Changan Lamore 2023- н.в V-1,5 DC</model>
+   <brand>ALFECO</brand>
+   <price>42504</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100049">
+   <model>Защита картера двигателя, КПП (1,8 мм, сталь) для Chery Arrizo 8 2023- н.в (V = 1.6 AT FWD)</model>
+   <brand>SHERIFF</brand>
+   <price>39671</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100050">
+   <model>Защита и крепеж подходит для CHERY Tiggo 2 Pro (21-) 1,0T бен. CVT / Черри Тигго 2 Про</model>
+   <brand>NLZ</brand>
+   <price>53839</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100051">
+   <model>Защита топливного бака (сталь) + комплект крепежа для Chery Tiggo 4 Pro 2022-</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>49588</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100052">
+   <model>Защита картера и КПП Chery Tiggo 4/4 Pro/4new ,7 PRO/7 PRO MAX/7 PiH/7 PRO MAX NEW, Tiggo 8 NEW/8 PRO OMODA C5</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>46755</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100053">
+   <model>Защита картера двигателя, КПП (1,8 мм, сталь) для Chevrolet Aveo 2011-2015 (V = 1.6 MT/AT), Chevrole</model>
+   <brand>SHERIFF</brand>
+   <price>46755</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100054">
+   <model>Защита картера двигателя, КПП (2 мм, сталь) для Chevrolet Captiva 2011-2016</model>
+   <brand>SHERIFF</brand>
+   <price>46755</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100055">
+   <model>Усиленная защита картера двигателя и КПП (2 мм, сталь) для Chevrolet Captiva 2019- н.в</model>
+   <brand>MOTODOR</brand>
+   <price>89259</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100056">
+   <model>Ravon Nexia R3 2016- V-all защита картера и кпп (малая) (сталь 2мм)</model>
+   <brand>SHERIFF</brand>
+   <price>42504</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100057">
+   <model>Chevrolet Cruze 2001-2008 V-all защита картера и КПП (сталь 2мм) Suzuki Swift 2000-2005 V-1,3 защит</model>
+   <brand>SHERIFF</brand>
+   <price>43921</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100058">
+   <model>Защита картера КПП сталь CHEVROLET EPICA, V - 2.0, 2.5 2006-2012</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>75091</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100059">
+   <model>Защита картера двигателя, КПП (2 мм, сталь) для Chevrolet Equinox 2017-2021 (V = 2.0 AT FWD)</model>
+   <brand>SHERIFF</brand>
+   <price>42504</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100060">
+   <model>Защита картера и КПП для CHEVROLET Lacetti, 2 004-2 013, , сталь 1,8 мм</model>
+   <brand>NLZ</brand>
+   <price>45338</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100061">
+   <model>Защита картера Chevrolet Lanos c 2005 г., ЗАЗ Chance АКПП (с креплением)</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>45338</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100062">
+   <model>Chevrolet Malibu, Orlando , 2012-2016 V-all защита картера и КПП (сталь 2мм)</model>
+   <brand>SHERIFF</brand>
+   <price>45338</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100063">
+   <model>Защита картера + КПП + комплект крепежа, АвтоБРОНЯ, Сталь, Chevrolet Nexia 2020-, V-1.5/Chevrolet Av</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>36837</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100064">
+   <model>Усиленная защита картера двигателя, КПП, раздаточной коробки   Chevrolet Niva 2002-2020; Lada Niva Travel с 2021 г</model>
+   <brand>MOTODOR</brand>
+   <price>107536</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100065">
+   <model>Защита картера и КПП для Chevrolet Onix (2023-2024)</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>39671</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100066">
+   <model>Защита картера + КПП + крепеж, Сталь, Chevrolet Spark 2005-2010, V - 0.8 1.0</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>39671</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100067">
+   <model>Защита картера RAVON/CHEVROLET R2/SPARK 10-17 (крепеж в компл.)</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>39671</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100068">
+   <model>Cadillac Escalade 2006-2014 V-6.2 защита картера (2 части) (сталь 2мм) Chevrolet Tahoe 2006-2014 V</model>
+   <brand>ALFECO</brand>
+   <price>70840</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100069">
+   <model>Защита картера, Cadillac Escalade 2015-2020,V - 6.2/Chevrolet Tahoe 2014-2020,V - 6.2</model>
+   <brand>RIVAL</brand>
+   <price>85008</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100070">
+   <model>Защита алюминиевая  для картера, КПП и РК Chevrolet Tahoe V 4WD 2021-2025.</model>
+   <brand>АБС</brand>
+   <price>481712</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100071">
+   <model>Защита  (2,5 мм) для картера Chevrolet Tracker 1998-2004</model>
+   <brand>SHERIFF</brand>
+   <price>63756</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100072">
+   <model>Защита  для картера, КПП, дифференциал, РК Chevrolet TrailBlazer I 2001-2006.</model>
+   <brand>MOTODOR</brand>
+   <price>170016</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100073">
+   <model>Усиленная защита картера двигателя (3 мм, сталь) для Chevrolet TrailBlazer 2012-2015</model>
+   <brand>MOTODOR</brand>
+   <price>46755</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100074">
+   <model>Защита картера, КПП (алюминий 4 мм) для Chevrolet TrailBlazer 2020- н.в</model>
+   <brand>АБС</brand>
+   <price>140264</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100075">
+   <model>Защита картера двигателя, КПП (4 мм, алюминий) для Cadillac XT5 2016- (V = 3.6 AT AWD), Cadillac XT5</model>
+   <brand>SHERIFF</brand>
+   <price>226688</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100076">
+   <model>Защита картера и крепеж, подходит для  DAEWOO Gentra (13-15) 1,4/1,5/1,6/1,8  CHEVROLET Lacetti (02-09), (09-12)</model>
+   <brand>NLZ</brand>
+   <price>49588</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100077">
+   <model>Защита картера + КПП + комплект крепежа, /Daewoo Matiz 2000-2016,V - 0.8;  Chery Sweet (QQ) 2005-2009</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>41088</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+  <offer sku="100078">
+   <model>Защита  для картера и КПП Daewoo Nexia I рестайлинг 2008-2016.</model>
+   <brand>АВТОБРОНЯ</brand>
+   <price>40946</price>
+   <availabilities>
+    <availability available="yes" storeId="PP1" preOrder="10"/>
+   </availabilities>
+  </offer>
+ </offers>
+</kaspi_catalog>
