@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<offer_list>
+<kaspi_catalog date="2026-05-22 15:34" xmlns="kaspiShopping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="kaspiShopping http://kaspi.kz/kaspishopping.xsd">
+ <company>Global Parts</company>
+ <merchantid>GlobalPartsKz</merchantid>
  <offers>
   <offer sku="100001">
    <model>Motodor 100001 Audi 100, A6 1991-1990</model>
@@ -626,4 +628,4 @@
    </availabilities>
   </offer>
  </offers>
-</offer_list>
+</kaspi_catalog>

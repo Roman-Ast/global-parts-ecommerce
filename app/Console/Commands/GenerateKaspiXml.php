@@ -25,9 +25,12 @@ class GenerateKaspiXml extends Command
 
         $xml->startElement('kaspi_catalog');
         $xml->writeAttribute('date', now()->format('Y-m-d H:i'));
-        $xml->writeAttribute('xmlns', 'http://kaspi.kz/kaspicatalog/3.0');
+        $xml->writeAttribute('xmlns', 'kaspiShopping');
         $xml->writeAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-        $xml->writeAttribute('xsi:schemaLocation', 'http://kaspi.kz/kaspicatalog/3.0 http://kaspi.kz/kaspicatalog/3.0/kaspicatalog.xsd');
+        $xml->writeAttribute('xsi:schemaLocation', 'kaspiShopping http://kaspi.kz/kaspishopping.xsd');
+
+        $xml->writeElement('company', 'Global Parts');
+        $xml->writeElement('merchantid', 'GlobalPartsKz');
 
         $xml->startElement('offers');
 
@@ -71,7 +74,7 @@ class GenerateKaspiXml extends Command
 
         $xml->endElement(); // offers
         $xml->endElement(); // kaspi_catalog
-        $xml->endDocument();
+        $xml->endDocument(); // <- добавить
         $xml->flush();
 
         $this->info("=============================================");

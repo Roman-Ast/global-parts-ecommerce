@@ -18,5 +18,6 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
-public/sitemap*.xml
 public/robots*.xml
+sitemap.xml
+sitemap_products_*.xml
