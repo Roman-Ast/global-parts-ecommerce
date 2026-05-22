@@ -37,6 +37,10 @@ use App\Http\Controllers\Admin\KanbanController;
     (new AdilPhaetonPrice())->importToDb();
     dd('done');
 });*/
+Route::get('/robots.txt', function () {
+    $content = "User-agent: *\nAllow: /\nSitemap: " . config('app.url') . "/sitemap.xml";
+    return response($content, 200)->header('Content-Type', 'text/plain');
+});
 
 Route::get('/test-host-error', function () {
     return view('components.hostError');
