@@ -1,1 +1,4 @@
-Sitemap: https://твой-домен.kz/sitemap.xml
+User-agent: *
+Allow: /
+
+Sitemap: https://shop.globalparts.kz/sitemap.xml

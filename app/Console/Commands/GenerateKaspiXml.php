@@ -28,8 +28,6 @@ class GenerateKaspiXml extends Command
         $xml->startElement('kaspi_catalog');
         $xml->writeAttribute('date', now()->format('Y-m-d H:i'));
         $xml->writeAttribute('xmlns', 'http://kaspi.kz/kaspicatalog/3.0');
-        $xml->writeAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-        $xml->writeAttribute('xsi:schemaLocation', 'http://kaspi.kz/kaspicatalog/3.0 http://kaspi.kz/kaspicatalog/3.0/kaspicatalog.xsd');
 
         // Данные компании
         $xml->writeElement('company', 'Global Parts'); 
