@@ -18,21 +18,23 @@ class GenerateKaspiXml extends Command
         $fileName = 'kaspi_feed.xml';
         $publicPath = public_path($fileName);
 
-        // Используем XMLWriter для потоковой записи, чтобы 250к+ строк не перегрузили RAM
         $xml = new \XMLWriter();
         $xml->openURI($publicPath);
         $xml->startDocument('1.0', 'UTF-8');
         $xml->setIndent(true);
 
-        // Корневой тег Каспи прайс-листа
+        // ЖЕЛЕЗОБЕТОННЫЙ ЗАГОЛОВОК ДЛЯ ВАЛИДАТОРА КАСПИ:
         $xml->startElement('kaspi_catalog');
         $xml->writeAttribute('date', now()->format('Y-m-d H:i'));
         $xml->writeAttribute('xmlns', 'http://kaspi.kz/kaspicatalog/3.0');
+        $xml->writeAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+        $xml->writeAttribute('xsi:schemaLocation', 'http://kaspi.kz/kaspicatalog/3.0 http://kaspi.kz/kaspicatalog/3.0/kaspicatalog.xsd');
 
         // Данные компании
         $xml->writeElement('company', 'Global Parts'); 
         $xml->writeElement('merchantid', 'GlobalPartsKz'); 
 
+        // Блок предложений
         $xml->startElement('offers');
 
         $totalCount = 0;
