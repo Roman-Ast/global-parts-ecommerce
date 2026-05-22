@@ -23,10 +23,12 @@ class GenerateKaspiXml extends Command
         $xml->startDocument('1.0', 'UTF-8');
         $xml->setIndent(true);
 
-        // Корневой элемент по спецификации Каспи — offer_list
-        $xml->startElement('offer_list');
+        $xml->startElement('kaspi_catalog');
+        $xml->writeAttribute('date', now()->format('Y-m-d H:i'));
+        $xml->writeAttribute('xmlns', 'http://kaspi.kz/kaspicatalog/3.0');
+        $xml->writeAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+        $xml->writeAttribute('xsi:schemaLocation', 'http://kaspi.kz/kaspicatalog/3.0 http://kaspi.kz/kaspicatalog/3.0/kaspicatalog.xsd');
 
-        // Блок предложений
         $xml->startElement('offers');
 
         $totalCount = 0;
@@ -51,14 +53,14 @@ class GenerateKaspiXml extends Command
 
                     $xml->startElement('availability');
                     $xml->writeAttribute('available', 'yes');
-                    $xml->writeAttribute('storeId', 'PP1'); // твой storeId из кабинета
+                    $xml->writeAttribute('storeId', 'PP1');
+
                     if (isset($product->preorder_days) && $product->preorder_days > 0) {
                         $xml->writeAttribute('preOrder', $product->preorder_days);
                     }
+
                     $xml->endElement(); // availability
-
                     $xml->endElement(); // availabilities
-
                     $xml->endElement(); // offer
 
                     $totalCount++;
@@ -68,7 +70,7 @@ class GenerateKaspiXml extends Command
             });
 
         $xml->endElement(); // offers
-        $xml->endElement(); // offer_list
+        $xml->endElement(); // kaspi_catalog
         $xml->endDocument();
         $xml->flush();
 
