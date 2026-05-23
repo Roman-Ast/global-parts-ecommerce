@@ -7,11 +7,13 @@ use Webklex\IMAP\Facades\Client;
 use Shuchkin\SimpleXLSX;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Services\KaspiPriceCalculator;
 
 // Импортируем наши парсеры
 use App\Services\PriceParsers\ShatemParser;
 use App\Services\PriceParsers\PhaetonParser;
 use App\Services\PriceParsers\ZakazAutoParser;
+
 
 class FetchPricesCommand extends Command
 {
@@ -40,19 +42,32 @@ class FetchPricesCommand extends Command
         $this->info("Найдено новых писем: " . $messages->count());
 
         foreach ($messages as $message) {
+            // 1. Берем тему письма в нижнем регистре
             $subject = mb_strtolower($message->getSubject());
-            $this->info("Обрабатываем письмо: {$message->getSubject()}");
+            
+            // 2. Берем email отправителя в нижнем регистре (Безопасный дефолт, если пусто)
+            $fromEmail = '';
+            if ($message->getFrom() && $message->getFrom()->count() > 0) {
+                $fromEmail = mb_strtolower($message->getFrom()->first()->mail ?? '');
+            }
 
-            // ОПРЕДЕЛЯЕМ ПАРСЕР НА ОСНОВЕ ТЕМЫ ПИСЬМА
+            $this->info("Обрабатываем письмо: {$message->getSubject()} [От: {$fromEmail}]");
+
+            // ОПРЕДЕЛЯЕМ ПАРСЕР (И по теме, и по email отправителя!)
             $parser = null;
 
-            if (str_contains($subject, 'shatem') || str_contains($subject, 'шатэм')) {
+            // Проверка для Шатэм
+            if (str_contains($subject, 'shatem') || str_contains($subject, 'шатэм') || str_contains($fromEmail, 'shate-m.com')) {
                 $this->comment('Выбран парсер: Шатэм');
                 $parser = new ShatemParser();
-            } elseif (str_contains($subject, 'phaeton') || str_contains($subject, 'фаэтон')) {
+                
+            // Проверка для Фаэтон
+            } elseif (str_contains($subject, 'phaeton') || str_contains($subject, 'фаэтон') || str_contains($fromEmail, 'phaeton.kz')) {
                 $this->comment('Выбран парсер: Фаэтон');
                 $parser = new PhaetonParser();
-            } elseif (str_contains($subject, 'zakaz') || str_contains($subject, 'заказ')) {
+                
+            // Проверка для ЗаказАвто
+            } elseif (str_contains($subject, 'zakaz') || str_contains($subject, 'заказ') || str_contains($fromEmail, 'zakaz')) {
                 $this->comment('Выбран парсер: ЗаказАвто');
                 $parser = new ZakazAutoParser();
             }
@@ -115,7 +130,7 @@ class FetchPricesCommand extends Command
                             }
 
                             // НАЦЕНКА ДЛЯ КАСПИ (например, чистые +15% и округление вверх до целого)
-                            $retailPrice = ceil($purchasePrice * 1.15); 
+                            $retailPrice = KaspiPriceCalculator::calculate($purchasePrice);
 
                             // Ищем, есть ли уже этот товар в базе (чтобы не затереть ручные 78 позиций)
                             $existProduct = DB::table('kaspi_initial_products')

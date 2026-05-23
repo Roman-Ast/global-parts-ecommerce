@@ -5,8 +5,8 @@ namespace App\Services;
 class KaspiPriceCalculator
 {
     /**
-     * Высчитывает финальную цену для Kaspi с учетом твоей маржи,
-     * средней логистики (1700 тг) и комиссии Kaspi 12.5%
+     * Высчитывает финальную цену для Kaspi с учетом твоей чистой маржи,
+     * расходов на логистику (1700 тг), госналога (3%) и комиссии Kaspi (12%)
      */
     public static function calculate($price)
     {
@@ -14,7 +14,7 @@ class KaspiPriceCalculator
             return 0;
         }
 
-        // 1. Определяем ТВОЙ чистый процент наценки на закуп (исходя из твоих админ-цен)
+        // 1. Применяем НОВЫЕ пропорциональные правила чистой маржи (как для сайта)
         $marginPercent = 0;
 
         if ($price > 0 && $price <= 900) {
@@ -24,7 +24,7 @@ class KaspiPriceCalculator
         } else if ($price > 3000 && $price <= 6000) {
             $marginPercent = 1.10; // Наценка 110%
         } else if ($price > 6000 && $price <= 10000) {
-            $marginPercent = 0.75; // Наценка 75% (как раз при 10к дает 7500 прибыли)
+            $marginPercent = 0.75; // Наценка 75%
         } else if ($price > 10000 && $price <= 15000) {
             $marginPercent = 0.55; // Наценка 55%
         } else if ($price > 15000 && $price <= 20000) {
@@ -33,29 +33,38 @@ class KaspiPriceCalculator
             $marginPercent = 0.40; // Наценка 40%
         } else if ($price > 30000 && $price <= 40000) {
             $marginPercent = 0.38; // Наценка 38%
+        // --- СИНХРОНИЗАЦИЯ С НОВОЙ ВЕРХНЕЙ СЕТКОЙ ---
         } else if ($price > 40000 && $price <= 50000) {
-            $marginPercent = 0.36; // Наценка 36%
+            $marginPercent = 0.37;
         } else if ($price > 50000 && $price <= 60000) {
-            $marginPercent = 0.34; // Наценка 34%
+            $marginPercent = 0.35;
         } else if ($price > 60000 && $price <= 70000) {
-            $marginPercent = 0.32; // Наценка 32%
-        } else if ($price > 70000) {
-            $marginPercent = 0.30; // Наценка 30%
+            $marginPercent = 0.34;
+        } else if ($price > 70000 && $price <= 80000) {
+            $marginPercent = 0.32;
+        } else if ($price > 80000 && $price <= 90000) {
+            $marginPercent = 0.31; // Сработает для радиатора
+        } else if ($price > 90000 && $price <= 100000) {
+            $marginPercent = 0.30;
+        } else if ($price > 100000 && $price <= 120000) {
+            $marginPercent = 0.295;
+        } else if ($price > 120000) {
+            $marginPercent = 0.29; // Фиксация 29% маржи для самых дорогих позиций
         }
 
-        // Твоя чистая прибыль, которую ты закладываешь
+        // Твоя чистая прибыль (то то, что идёт тебе в карман)
         $desiredProfit = $price * $marginPercent;
 
-        // Средние расходы на логистику (1450 доставка + 250 упаковка)
+        // Расходы на логистику (1450 тенге доставка Каспи + 250 тенге коробка/упаковка)
         $logisticsCost = 1700;
 
-        // Сумма, которая должна остаться после вычета комиссии Kaspi (87.5% от цены на витрине)
-        $moneyNeededBeforeKaspi = $price + $desiredProfit + $logisticsCost;
+        // Сумма, необходимая до вычета процентов Каспи и налогов
+        $moneyNeededBeforeFees = $price + $desiredProfit + $logisticsCost;
 
-        // Финальная цена на Kaspi с защитой от ухода комиссии в минус (деление на 0.875)
-        $kaspiPrice = $moneyNeededBeforeKaspi / 0.875;
+        // Расчёт витринной цены Каспи с учётом 12% комиссии и 3% налога (Итого 15% удержаний, делим на 0.85)
+        $kaspiPrice = $moneyNeededBeforeFees / 0.85;
 
-        // Округляем до целых тенге, чтобы цена была красивой для покупателя
+        // Округляем всегда строго в большую сторону до целого тенге
         return ceil($kaspiPrice);
     }
 }
