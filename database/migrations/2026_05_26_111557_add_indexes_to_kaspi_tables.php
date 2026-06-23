@@ -8,18 +8,30 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('kaspi_initial_products', function (Blueprint $table) {
-            // составной — главный для матчинга
-            $table->index(['sku', 'brand'], 'idx_kip_sku_brand');
-            $table->index('supplier_name', 'idx_kip_supplier');
-            $table->index('kaspi_parsed', 'idx_kip_parsed');
-            $table->index('stock', 'idx_kip_stock');
-        });
+        $indexes = [
+            'kaspi_initial_products' => [
+                ['columns' => ['sku', 'brand'], 'name' => 'idx_kip_sku_brand'],
+                ['columns' => ['supplier_name'],  'name' => 'idx_kip_supplier'],
+                ['columns' => ['kaspi_parsed'],   'name' => 'idx_kip_parsed'],
+                ['columns' => ['stock'],           'name' => 'idx_kip_stock'],
+            ],
+            'kaspi_sku_test' => [
+                ['columns' => ['request_article'], 'name' => 'idx_kst_article'],
+                ['columns' => ['sku'],             'name' => 'idx_kst_sku'],
+            ],
+        ];
 
-        Schema::table('kaspi_sku_test', function (Blueprint $table) {
-            $table->index('request_article', 'idx_kst_article');
-            $table->index('sku', 'idx_kst_sku');
-        });
+        foreach ($indexes as $tableName => $tableIndexes) {
+            Schema::table($tableName, function (Blueprint $table) use ($tableName, $tableIndexes) {
+                foreach ($tableIndexes as $idx) {
+                    try {
+                        $table->index($idx['columns'], $idx['name']);
+                    } catch (\Exception $e) {
+                        // индекс уже существует — пропускаем
+                    }
+                }
+            });
+        }
     }
 
     public function down(): void
