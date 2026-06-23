@@ -219,7 +219,7 @@ class SparePartController extends Controller
         if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
-        /*$this->searchArmtek($request->brand, $partNumber);
+        $this->searchArmtek($request->brand, $partNumber);
         $this->searchStockInOffice($request->brand, $partNumber);
         $this->searchZakazauto_kst($request->brand, $partNumber);
         $this->searchGerat($request->brand, $partNumber);
@@ -234,7 +234,7 @@ class SparePartController extends Controller
         $this->searchVoltage($request->brand, $partNumber);
         $this->searchBlueStar($request->brand, $partNumber);
         $this->searchInterkom($request->brand, $partNumber);
-        $this->searchAdilPhaeton($request->brand, $partNumber);*/
+        $this->searchAdilPhaeton($request->brand, $partNumber);
 
         $this->searchAvtozakup($request->brand, $partNumber);
 
