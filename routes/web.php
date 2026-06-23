@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\URL;
 use App\Http\Controllers\AdminPanelController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SparePartController;
@@ -112,13 +113,27 @@ Route::middleware('auth')->group(function () {
     // Страница "подтвердите email"
     Route::get('verify-email', fn() => view('user.verify-email'))->name('verification.notice');
 
-    // Клик по ссылке из письма
-    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-        $request->fulfill();
-        return redirect()->route('home')
-            ->with('message', 'Email успешно подтверждён! Добро пожаловать!')
-            ->with('class', 'alert-success');
-    })->middleware('signed')->name('verification.verify');
+   Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
+    $user = App\Models\User::find($id);
+    
+    if (!$user) {
+        return 'User not found';
+    }
+    
+    if (!hash_equals(sha1($user->email), $hash)) {
+        return 'Hash mismatch: ' . sha1($user->email) . ' vs ' . $hash;
+    }
+    
+    if ($user->hasVerifiedEmail()) {
+        return 'Already verified';
+    }
+    
+    $user->markEmailAsVerified();
+    
+    return redirect()->route('home')
+        ->with('message', 'Email успешно подтверждён!')
+        ->with('class', 'alert-success');
+})->name('verification.verify');
 
     // Повторная отправка письма
     Route::post('/email/verification-notification', function (Request $request) {
