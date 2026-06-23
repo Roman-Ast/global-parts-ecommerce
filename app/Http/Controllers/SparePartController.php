@@ -236,11 +236,12 @@ class SparePartController extends Controller
         $this->searchInterkom($request->brand, $partNumber);
         $this->searchAdilPhaeton($request->brand, $partNumber);
 
-        $this->searchAvtozakup($request->brand, $partNumber);
-
-        /*if (!$request->only_on_stock) {
+        
+        if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
-        }*/
+            $this->searchAvtozakup($request->brand, $partNumber);
+
+        }
 
         $arr = array_unique($this->finalArr['brands']);
 
