@@ -9,13 +9,11 @@
    
 @section('content')
 
+@include('components.header')
+@include('components.header-mini')
+
 <div id="search-res-main-container" class="container">
     
-
-
-    @include('components.header')
-    @include('components.header-mini')
-
     <div id="curtain-grey-searchpartres"></div>
 
     <div id="search-res-main-wrapper">
