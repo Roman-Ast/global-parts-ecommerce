@@ -53,26 +53,23 @@ class GlobalProductController extends Controller
 
         // 3. РЕДИРЕКТ И ЦЕНА
         if ($product) {
-            // Формируем канонический бренд: все пробелы в дефисы
             $canonicalBrand = SlugHelper::brandToSlug($product->brand);
             
             $correctPath = 'product/' . $canonicalBrand . '/' . $product->clean_article;
             $currentPath = urldecode(request()->path());
 
-            // Если в URL есть подчеркивание там, где должен быть дефис — редиректим
-            if ($currentPath !== $correctPath) {
+            if (!empty($canonicalBrand) && $currentPath !== $correctPath) {
                 return redirect()->to(url($correctPath), 301);
             }
 
             $product->retail_price = $this->setPrice($product->price);
+            
+            return $this->renderProduct($product, 200, url($correctPath));
         }
 
-        if (!$product) {
-            $product = $this->createVirtual($cleanBrand, $cleanArticle);
-            return $this->renderProduct($product, 404);
-        }
-
-        return $this->renderProduct($product, 200);
+        // Продукт не найден — виртуальный
+        $product = $this->createVirtual($cleanBrand, $cleanArticle);
+        return $this->renderProduct($product, 404, url()->current());
     }
 
     /**

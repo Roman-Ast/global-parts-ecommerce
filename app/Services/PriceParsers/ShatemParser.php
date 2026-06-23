@@ -6,36 +6,36 @@ class ShatemParser implements ParserInterface
 {
     public function parseRow(array $row): ?array
     {
-        // Зависит от структуры Шатэма: 
-        // 0 - Внутренний код/SKU, 1 - Артикул, 2 - Бренд, 3 - Название, 4 - Цена закупа, 5 - Количество
-        $sku     = trim((string)($row[0] ?? ''));
-        $article = trim((string)($row[1] ?? ''));
-        $brand   = trim((string)($row[2] ?? ''));
-        $title   = trim((string)($row[3] ?? ''));
-        
-        // Временные сырые данные для цены и остатка
-        $rawPrice = $row[4] ?? 0;
-        $rawQty   = $row[5] ?? 0;
+        // Файл приходит в KOI8-R, конвертируем каждую ячейку
+        $row = array_map(fn($cell) => mb_convert_encoding(
+            trim((string)$cell), 'UTF-8', 'Windows-1251'
+        ), $row);
 
-        // Если базовые поля пустые или это шапка таблицы — пропускаем строку
-        if (empty($sku) || empty($article) || empty($brand) || $sku === 'Код' || $article === 'Артикул') {
+        $brand    = $row[0] ?? '';
+        $article  = $row[1] ?? '';
+        $title    = $row[2] ?? '';
+        $rawQty   = $row[3] ?? '0'; // было [4]
+        $rawPrice = $row[6] ?? '0'; // это было правильно
+
+        if (empty($brand) || empty($article) || $brand === 'Бренд') {
             return null;
         }
 
-        // Очищаем артикул для Kaspi SKU (убираем спецсимволы)
+        // Остаток может быть "10>" — убираем нецифровые символы
+        $qty   = (int)preg_replace('/[^0-9]/', '', $rawQty);
+        $price = (float)str_replace([' ', ','], ['', '.'], $rawPrice);
+
         $cleanSku = preg_replace('/[^A-Za-z0-9]/', '', $article);
-        // Если cleanSku получился пустым, используем оригинальный SKU поставщика
         if (empty($cleanSku)) {
-            $cleanSku = $sku;
+            $cleanSku = $article;
         }
 
-        // Возвращаем стандартизированный массив сырых данных
         return [
-            'sku'               => $cleanSku, // используем чистый артикул как SKU для Каспи
+            'sku'               => $cleanSku,
             'brand'             => $brand,
             'title'             => $title,
-            'price'             => $rawPrice,
-            'stock'             => $rawQty,
+            'price'             => $price,
+            'stock'             => $qty,
             'category_code'     => null,
             'description'       => null,
             'images'            => null,

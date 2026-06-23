@@ -33,10 +33,8 @@ use App\Http\Controllers\FinanceDashboardController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\Admin\WhatsappController;
 use App\Http\Controllers\Admin\KanbanController;
-/*Route::get('/home', function() {
-    (new AdilPhaetonPrice())->importToDb();
-    dd('done');
-});*/
+
+// ─── Robots.txt ───────────────────────────────────────────────────────────────
 Route::get('/robots.txt', function () {
     $content = "User-agent: *\nAllow: /\nSitemap: " . config('app.url') . "/sitemap.xml";
     return response($content, 200)->header('Content-Type', 'text/plain');
@@ -46,101 +44,91 @@ Route::get('/test-host-error', function () {
     return view('components.hostError');
 });
 
-//Route::get('/search/other-json', [SparePartController::class, 'getSearchedPartAndCrossesOtherJson']);
-Route::post('/getPart', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
-
-Route::get('/fetch-images', [GlobalProductController::class, 'fetchGoogleImages'])->name('product.fetchImages');
+// ─── Публичные роуты ──────────────────────────────────────────────────────────
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::redirect('/home', '/', 301);
+
+Route::post('/getPart', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
+Route::get('/fetch-images', [GlobalProductController::class, 'fetchGoogleImages'])->name('product.fetchImages');
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);
 
-Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-Route::post('/cart/add', [CartController::class, 'store'])->name('cart.add');
-Route::post('/cart/delete', [CartController::class, 'deleteItem'])->name('cart.delete');
-Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
-Route::get('cart/clear', [CartController::class, 'clear'])->name('cart.clear');
+Route::get('/api/search-prices', [GlobalProductController::class, 'getApiPrices']);
+Route::get('/api/search-rossko', [GlobalProductController::class, 'getRosskoApi']);
 
 Route::post('/sparepart-request', [SparePartRequestController::class, 'store']);
 Route::post('/simpleAISearchWithoutVin', [AISimpleSearchController::class, 'searchArticlesByGPT']);
 Route::post('/simpleAIVinSearch', [AISimpleSearchController::class, 'searchArticlesByGPTWithVin']);
 
-//каталог корейских авто
-Route::get('/hyundai', function() {
-    return view('korean-cars.index');
-});
-Route::get('/hyundai/santafe20-24', function() {
-    return view('korean-cars.santafe18-21');
-});
-Route::get('hyundai/sonata19-23', function() {
-    return view('korean-cars.sonata19-23');
-});
-Route::get('hyundai/k520-23', function() {
-    return view('korean-cars.k520-23');
-});
-Route::get('hyundai/sportage21-25', function() {
-    return view('korean-cars.sportage21-25');
-});
-
-//каталог корейскикитайских авто
-Route::get('/chinacars', function() {
-    return view('china-cars.index');
-});
-Route::get('/china/chery-tigo-7-pro', function() {
-    return view('china-cars.chery-tiggo-7-pro');
-});
-Route::get('china/sonata19-23', function() {
-    return view('korean-cars.sonata19-23');
-});
-Route::get('china/k520-23', function() {
-    return view('korean-cars.k520-23');
-});
-Route::get('china/sportage21-25', function() {
-    return view('korean-cars.sportage21-25');
-});
-
-Route::get('/product/{brand}/{article}', [GlobalProductController::class, 'show'])
-    ->name('product.show')
-    ->where('brand', '.*')   // Позволяет бренду содержать слэши (как Hyundai/Kia)
-    ->where('article', '.*'); // Позволяет артикулу содержать всё что угодно
-
-// СТАЛО — ловит любое количество сегментов:
-/*Route::get('/product/{brand}/{rest}', [ProductController::class, 'show'])
-    ->where('rest', '.*')
-    ->name('product.show');*/
-
-Route::fallback(function () {
-    return redirect('/', 301); 
-    // Или на конкретную страницу: return redirect('https://shop.globalparts.kz/');
-});
-    
-// Добавляем /api/ в начало пути прямо здесь
-Route::get('/api/search-prices', [App\Http\Controllers\GlobalProductController::class, 'getApiPrices']);
-Route::get('/api/search-rossko', [GlobalProductController::class, 'getRosskoApi']);
-
+// ─── Корзина (публичная) ───────────────────────────────────────────────────────
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/add', [CartController::class, 'store'])->name('cart.add');
+Route::post('/cart/delete', [CartController::class, 'deleteItem'])->name('cart.delete');
+Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::get('cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::post('/cart/add-api', [GlobalProductController::class, 'addToCartApi']);
 
-Route::middleware('guest')->group(function() {
+// ─── Каталог корейских авто ───────────────────────────────────────────────────
+Route::get('/hyundai', fn() => view('korean-cars.index'));
+Route::get('/hyundai/santafe20-24', fn() => view('korean-cars.santafe18-21'));
+Route::get('hyundai/sonata19-23', fn() => view('korean-cars.sonata19-23'));
+Route::get('hyundai/k520-23', fn() => view('korean-cars.k520-23'));
+Route::get('hyundai/sportage21-25', fn() => view('korean-cars.sportage21-25'));
+
+// ─── Каталог китайских авто ───────────────────────────────────────────────────
+Route::get('/chinacars', fn() => view('china-cars.index'));
+Route::get('/china/chery-tigo-7-pro', fn() => view('china-cars.chery-tiggo-7-pro'));
+Route::get('china/sonata19-23', fn() => view('korean-cars.sonata19-23'));
+Route::get('china/k520-23', fn() => view('korean-cars.k520-23'));
+Route::get('china/sportage21-25', fn() => view('korean-cars.sportage21-25'));
+
+// ─── Страница товара ──────────────────────────────────────────────────────────
+Route::get('/product/{brand}/{article}', [GlobalProductController::class, 'show'])
+    ->name('product.show')
+    ->where('brand', '.*')
+    ->where('article', '.*');
+
+// ─── Гость: регистрация, логин, сброс пароля ─────────────────────────────────
+Route::middleware('guest')->group(function () {
     Route::get('register', [UserController::class, 'create'])->name('register');
     Route::post('register', [UserController::class, 'store'])->name('user.store');
 
     Route::get('login', [UserController::class, 'login'])->name('login');
     Route::post('login', [UserController::class, 'authLogin'])->name('login.auth');
 
-    Route::get('forgot-password', function() {
-        return view('user.forgot-password');
-    })->name('password.request');
+    Route::get('forgot-password', fn() => view('user.forgot-password'))->name('password.request');
+    Route::post('forgot-password', [UserController::class, 'forgotPasswordStore'])
+        ->name('password.email')
+        ->middleware('throttle:3,1');
 
-    Route::post('forgot-password', [UserController::class, 'forgotPasswordStore'])->name('password.email')->middleware('throttle:3,1');
-
-    Route::get('reset-password/{token}', function(string $token) {
-        return view('user.reset-password', ['token' => $token]);
-    })->name('password.reset');
-
+    Route::get('reset-password/{token}', fn(string $token) => view('user.reset-password', ['token' => $token]))
+        ->name('password.reset');
     Route::post('reset-password', [UserController::class, 'resetPasswordUpdate'])->name('password.update');
 });
 
-Route::middleware(['auth', 'verified'])->group(function() {
-    Route::post('/make-cashflow-transaction', [AdminPanelController::class, 'makeCashflowTransaction'])->name('make-cashflow-transaction');
+// ─── Авторизован: верификация email ───────────────────────────────────────────
+Route::middleware('auth')->group(function () {
+    Route::get('logout', [UserController::class, 'logout'])->name('logout');
+
+    // Страница "подтвердите email"
+    Route::get('verify-email', fn() => view('user.verify-email'))->name('verification.notice');
+
+    // Клик по ссылке из письма
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return redirect()->route('home')
+            ->with('message', 'Email успешно подтверждён! Добро пожаловать!')
+            ->with('class', 'alert-success');
+    })->middleware('signed')->name('verification.verify');
+
+    // Повторная отправка письма
+    Route::post('/email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('message', 'Ссылка верификации отправлена на вашу почту!');
+    })->middleware('throttle:2,1')->name('verification.send');
+});
+
+// ─── Авторизован + email подтверждён ─────────────────────────────────────────
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/checkout', [OrderController::class, 'checkout'])->name('checkout');
     Route::post('/makeorder', [OrderController::class, 'store']);
     Route::get('orders', [OrderController::class, 'index']);
@@ -154,6 +142,28 @@ Route::middleware(['auth', 'verified'])->group(function() {
     Route::post('/garage/store', [GarageController::class, 'store'])->name('garage.store');
     Route::post('/garage/destroy', [GarageController::class, 'destroy']);
 
+    Route::post('/cart/updatePrice', [CartController::class, 'updatePrice']);
+    Route::post('/cart/add-api', [GlobalProductController::class, 'addToCartApi']);
+
+    Route::post('/make-cashflow-transaction', [AdminPanelController::class, 'makeCashflowTransaction'])->name('make-cashflow-transaction');
+    Route::post('/supplier/payment', [AdminPanelController::class, 'supplierPayment'])->name('supplier.payment');
+    Route::post('/orders/filter', [AdminPanelController::class, 'filter']);
+    Route::post('/orders/filter/drop', [AdminPanelController::class, 'filterDrop']);
+    Route::post('/manually_make_order', [AdminPanelController::class, 'manuallyMakeOrder']);
+    Route::post('/add_new_good_in_office', [AdminPanelController::class, 'addNewGoodInOffice']);
+    Route::post('/delete_good_in_office', [AdminPanelController::class, 'destroy']);
+    Route::get('additional-payment', [AdminPanelController::class, 'additionalPayment']);
+    Route::post('choose_products_from_order', [AdminPanelController::class, 'chooseProductsFromOrder']);
+    Route::post('makeCustomerReturn', [AdminPanelController::class, 'makeCustomerReturn']);
+
+    Route::get('/supplierRefundComplete/{customerReturn}', [CustomerReturnController::class, 'edit'])->name('supplierRefundComplete');
+    Route::put('/customer-returns/{customerReturn}', [CustomerReturnController::class, 'update'])->name('customer_returns.update');
+
+    Route::get('/dashboard/finance', [FinanceDashboardController::class, 'index'])->name('dashboard.finance');
+
+    Route::post('/whatsapp/webhook', [WhatsAppWebhookController::class, 'handle']);
+
+    // Импорт прайсов
     Route::post('import', [GmPricelistFromAdilController::class, 'store']);
     Route::post('import-in-office', [OfficePriceController::class, 'store']);
     Route::post('import-xui-poimi', [XuiPoimiPriceController::class, 'store']);
@@ -162,74 +172,21 @@ Route::middleware(['auth', 'verified'])->group(function() {
     Route::post('import-blue-star', [BlueStarPriceController::class, 'store']);
     Route::post('import-interkom', [InterkomPriceController::class, 'store']);
     Route::post('import-adil-phaeton', [AdilPhaetonPriceController::class, 'store']);
-    Route::get('additional-payment', [AdminPanelController::class, 'additionalPayment']);
-    Route::post('choose_products_from_order', [AdminPanelController::class, 'chooseProductsFromOrder']);
-    Route::post('makeCustomerReturn', [AdminPanelController::class, 'makeCustomerReturn']);
-    Route::get('/supplierRefundComplete/{customerReturn}', 
-        [CustomerReturnController::class, 'edit']
-    )->name('supplierRefundComplete');
-    Route::put('/customer-returns/{customerReturn}', 
-        [CustomerReturnController::class, 'update']
-    )->name('customer_returns.update');
-
-    Route::get('/dashboard/finance', [FinanceDashboardController::class, 'index'])
-    ->name('dashboard.finance');
-
-    Route::post('/whatsapp/webhook', [WhatsAppWebhookController::class, 'handle']);
-
 });
 
-Route::middleware('auth')->group(function() {
-    Route::get('verify-email', function(){
-        return view('user.verify-email');
-    })->name('verification.notice');
-    
-    Route::get('/email/verify/{id}/{hash}', function(EmailVerificationRequest $request){
-        $request->fulfill();
-    
-        return redirect()->route('home');
-    })->middleware('signed')->name('verification.verify');
-    
-    Route::post('/email/verification-notification', function(Request $request){
-        $request->user()->sendEmailVerificationnotification();
-    
-        return back()->with('message', 'Ссылка верификации отправлена!');
-    })->middleware('throttle:2,1')->name('verification.send');
-
-    Route::post('/makeorder', [OrderController::class, 'store']);
-    Route::get('orders', [OrderController::class, 'index']);
-    Route::get('settlements', [SettlementController::class, 'index']);
-    Route::post('order/products', [OrderController::class, 'products']);
-    Route::get('admin_panel', [AdminPanelController::class, 'index'])->name('admin_panel');
-    Route::post('/payment', [AdminPanelController::class, 'pay']);
-    Route::post('/product/change_status', [AdminPanelController::class, 'changeStatus']);
-    Route::get('/garage', [GarageController::class, 'index']);
-    Route::get('/garage/create', [GarageController::class, 'create']);
-    Route::post('/garage/store', [GarageController::class, 'store'])->name('garage.store');
-    Route::get('logout', [UserController::class, 'logout'])->name('logout');
-    Route::post('/supplier/payment', [AdminPanelController::class, 'supplierPayment'])->name('supplier.payment');
-    Route::post('/orders/filter', [AdminPanelController::class, 'filter']);
-    Route::post('/orders/filter/drop', [AdminPanelController::class, 'filterDrop']);
-    Route::post('/manually_make_order', [AdminPanelController::class, 'manuallyMakeOrder']);
-    Route::post('/cart/updatePrice', [CartController::class, 'updatePrice']);
-    Route::post('/add_new_good_in_office', [AdminPanelController::class, 'addNewGoodInOffice']);
-    Route::post('/delete_good_in_office', [AdminPanelController::class, 'destroy']);
-});
-
+// ─── Админ: WhatsApp ──────────────────────────────────────────────────────────
 Route::prefix('admin/whatsapp')->group(function () {
     Route::get('/', [WhatsappController::class, 'index'])->name('admin.whatsapp.index');
     Route::get('/{lead}', [WhatsappController::class, 'show'])->name('admin.whatsapp.show');
-    
-    
 });
 
+// ─── Админ: Kanban ────────────────────────────────────────────────────────────
 Route::prefix('admin')->group(function () {
     Route::get('/kanban', [KanbanController::class, 'index'])->name('admin.kanban');
     Route::post('/kanban/update-status', [KanbanController::class, 'updateStatus'])->name('admin.kanban.update');
 });
 
-
-
-
-
-
+// ─── Fallback — ВСЕГДА последним ─────────────────────────────────────────────
+Route::fallback(function () {
+    return redirect('/', 301);
+});

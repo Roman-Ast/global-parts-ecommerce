@@ -21,6 +21,7 @@ use App\Models\AdilPhaetonPrice;
 use App\Models\ZakazautoPrice;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Pool;
+use App\Services\Suppliers;
 use Carbon;
 use Collator;
 
@@ -218,7 +219,7 @@ class SparePartController extends Controller
         if($request->rossko_need_to_search) {
             $this->searchRossko($request->brand,  $partNumber, $request->guid);
         }
-        $this->searchArmtek($request->brand, $partNumber);
+        /*$this->searchArmtek($request->brand, $partNumber);
         $this->searchStockInOffice($request->brand, $partNumber);
         $this->searchZakazauto_kst($request->brand, $partNumber);
         $this->searchGerat($request->brand, $partNumber);
@@ -233,11 +234,13 @@ class SparePartController extends Controller
         $this->searchVoltage($request->brand, $partNumber);
         $this->searchBlueStar($request->brand, $partNumber);
         $this->searchInterkom($request->brand, $partNumber);
-        $this->searchAdilPhaeton($request->brand, $partNumber);
+        $this->searchAdilPhaeton($request->brand, $partNumber);*/
 
-        if (!$request->only_on_stock) {
+        $this->searchAvtozakup($request->brand, $partNumber);
+
+        /*if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
-        }
+        }*/
 
         $arr = array_unique($this->finalArr['brands']);
 
@@ -275,7 +278,7 @@ class SparePartController extends Controller
                 'article' => $this->partNumber 
             ]);
         }
-        
+        //dd($this->finalArr['crosses_on_stock']);
         // Если данные есть, показываем результат
         return view('partSearchRes', [
             'finalArr' => $this->finalArr,
@@ -283,6 +286,100 @@ class SparePartController extends Controller
             'chosenBrand' => $request->brand,
             'brands' => $arr
         ]);
+    }
+
+    public function searchAvtozakup(String $brand, String $partnumber)
+    {
+        $response = Http::timeout(15)->post('https://service.tradesoft.ru/3/provider/get-price-list/', [
+            'user'      => env('TRADESOFT_USER'),
+            'password'  => env('TRADESOFT_PASSWORD'),
+            'service'   => 'provider',
+            'action'    => 'getPriceList',
+            'timelimit' => 10,
+            'container' => [[
+                'provider' => 'avto_zakup',
+                'login'    => env('TRADESOFT_PROVIDER_LOGIN'),
+                'password' => env('TRADESOFT_PROVIDER_PASSWORD'),
+                'code'     => $partnumber,
+                'producer' => $brand,
+            ]],
+        ]);
+
+        if (!$response->ok()) {
+            return;
+        }
+
+        $data = $response->json();
+        //dd($data);
+        if (!empty($data['error']) || empty($data['container'][0]['data'])) {
+            return;
+        }
+
+        // Конвертация RUB → KZT (пока заглушка, потом заменишь на реальный курс)
+        $convertPrice = function(float $priceRub): float {
+            $rate = 1; // TODO: заменить на env('RUB_TO_KZT_RATE') или API курса
+            return $priceRub * $rate;
+        };
+
+        $searchArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $partnumber));
+
+        foreach ($data['container'][0]['data'] as $item) {
+            $itemArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $item['code'] ?? ''));
+            $isExact = $itemArticleClean === $searchArticleClean;
+
+            $priceKzt = $convertPrice((float)($item['price'] ?? 0));
+
+            $deliveryDaysMin = isset($item['deliverydays_min']) ? (int)$item['deliverydays_min'] : 0;
+            $deliveryDaysMax = isset($item['deliverydays_max']) ? (int)$item['deliverydays_max'] : $deliveryDaysMin;
+
+            // +5 дней доставки до Астаны от Уральска
+            $deliveryDaysMin += 5;
+            $deliveryDaysMax += 5;
+
+            $deliveryDate = date('Y-m-d', strtotime("+{$deliveryDaysMax} days"));
+            $deliveryText  = $deliveryDaysMin . '-' . $deliveryDaysMax . ' дн.';
+
+            $entry = [
+                'brand'            => $item['producer'] ?? '',
+                'article'          => $item['code'] ?? '',
+                'name'             => $item['caption'] ?? '',
+                'price'            => $priceKzt,
+                'priceWithMargine' => round($this->setPrice($priceKzt), self::ROUND_LIMIT),
+                'qty'              => $item['rest'] ?? 0,
+                'delivery_time'    => $deliveryDate,
+                'deliveryStart'    => $deliveryDate, // ← для blade searchedNumber
+                'deliverydays_min' => $deliveryDaysMin,
+                'supplier_name'    => 'avtozakup',
+                'supplier_city'    => 'msk',
+                'supplier_color'   => 'linear-gradient(135deg, #1a1a1a, #cc0000)',
+                'stocks'           => [[
+                    'qty'              => $item['rest'] ?? 0,
+                    'price'            => $priceKzt,
+                    'priceWithMargine' => round($this->setPrice($priceKzt), self::ROUND_LIMIT),
+                    'delivery_time'    => $deliveryDate,
+                    'supplier_city'    => 'msk',
+                ]],
+            ];
+
+            array_push($this->finalArr['brands'], $item['producer'] ?? '');
+
+            if ($isExact) {
+                array_push($this->finalArr['searchedNumber'], $entry);
+            } else {
+                array_push($this->finalArr['crosses_to_order'], $entry);
+            }
+        }
+
+        // Фильтрация аналогов ПОСЛЕ цикла
+        if (count($this->finalArr['crosses_to_order']) > 20) {
+            $this->finalArr['crosses_to_order'] = array_values(array_filter(
+                $this->finalArr['crosses_to_order'],
+                function($analog) {
+                    $days = $analog['deliverydays_min'] ?? $this->extractDaysFromText($analog['delivery_time'] ?? '');
+                    return (int)$days <= 14;
+                }
+            ));
+        }
     }
     
     public function searchPhaeton(String $brand, String $partnumber) 
@@ -1674,7 +1771,7 @@ class SparePartController extends Controller
         //$start = microtime(true);old anchor 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php'
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php');
+        curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/storage_astana.php');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
         curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
@@ -2433,5 +2530,11 @@ class SparePartController extends Controller
             ]);
             return $response->json()['access_token'] ?? null;
         });
+    }
+
+    private function extractDaysFromText(string $text): int
+    {
+        preg_match('/(\d+)/', $text, $matches);
+        return isset($matches[1]) ? (int)$matches[1] : 999;
     }
 } 

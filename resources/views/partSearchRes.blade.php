@@ -129,7 +129,7 @@
                                         {{ $ds == 'в офисе' ? 'в офисе' : '1.5-2 часа' }}
                                     </span>
                                 @elseif ($isDate)
-                                    <span class="badge" style="background-color:{{ $color }};color:#fff;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;display:inline-block;min-width:80px;text-align:center;">
+                                    <span class="badge" style="background:{{ $color }};color:#fff;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;display:inline-block;min-width:80px;text-align:center;">
                                         {{ date('d.m.y', strtotime($ds)) }}
                                     </span>
                                 @else
@@ -207,7 +207,7 @@
                             <img src="/images/info_unavailable.png" alt="info">
                         @endif
                     </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery" style="background-color:{{ $crossItem['supplier_color']}};color:#111">
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery" style="background:{{ $crossItem['supplier_color']}};color:#111">
                         {{ $crossItem['delivery_time'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
@@ -501,7 +501,7 @@
                         @if ($crossItem['supplier_color']) 
                             <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
                                 <span class="badge" style="
-                                    background-color: {{ $crossItem['supplier_color'] }}; 
+                                    background: {{ $crossItem['supplier_color'] }}; 
                                     color: #fff; {{-- Темный текст для читаемости на светлом фоне --}}
                                     padding: 5px 10px; 
                                     border-radius: 6px; 

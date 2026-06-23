@@ -6,7 +6,7 @@
     RewriteEngine On
 	
 	# Самый простой способ: все 404 ошибки перенаправляем на главную
-	ErrorDocument 404 https://shop.globalparts.kz/
+	ErrorDocument 404 /index.php
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

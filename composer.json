@@ -12,6 +12,9 @@
         "laravel/ui": "^4.5",
         "livewire/livewire": "^4.2",
         "nesbot/carbon": "^3.8",
+        "phpoffice/phpspreadsheet": "^5.8",
+        "shuchkin/simplecsv": "^1.0",
+        "shuchkin/simplexls": "^1.0",
         "shuchkin/simplexlsx": "^1.1",
         "webklex/laravel-imap": "^4.1"
     },

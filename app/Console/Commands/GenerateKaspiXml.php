@@ -13,72 +13,91 @@ class GenerateKaspiXml extends Command
 
     public function handle()
     {
-        $this->info('Старт генерации упрощенного XML прайса...');
+        $this->info('Старт генерации XML фида...');
 
-        $fileName = 'kaspi_feed.xml';
-        $publicPath = public_path($fileName);
+        $publicPath = public_path('kaspi_feed.xml');
 
-        $xml = new \XMLWriter();
-        $xml->openURI($publicPath);
-        $xml->startDocument('1.0', 'UTF-8');
-        $xml->setIndent(true);
+$xml = new \XMLWriter();
+$xml->openURI($publicPath);
+$xml->startDocument('1.0', 'UTF-8');
+$xml->setIndent(true);
 
-        $xml->startElement('kaspi_catalog');
-        $xml->writeAttribute('date', now()->format('Y-m-d H:i'));
-        $xml->writeAttribute('xmlns', 'kaspiShopping');
-        $xml->writeAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-        $xml->writeAttribute('xsi:schemaLocation', 'kaspiShopping http://kaspi.kz/kaspishopping.xsd');
+$xml->startElement('kaspi_catalog');
+$xml->writeAttribute('date', now()->format('Y-m-d H:i'));
+$xml->writeAttribute('xmlns', 'kaspiShopping');
+$xml->writeAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+$xml->writeAttribute('xsi:schemaLocation', 'kaspiShopping http://kaspi.kz/kaspishopping.xsd');
 
-        $xml->writeElement('company', 'Global Parts');
-        $xml->writeElement('merchantid', 'GlobalPartsKz');
+$xml->writeElement('company', 'Global Parts');
+$xml->writeElement('merchantid', 'GlobalPartsKz');
 
-        $xml->startElement('offers');
+$xml->startElement('offers');
 
-        $totalCount = 0;
+$totalCount   = 0;
+$skippedCount = 0;
 
-       DB::table('kaspi_initial_products')
-        ->where('price', '>', 0)
-        ->where('stock', '>', 0)
-        ->orderBy('id')
-        ->chunkById(1000, function ($products) use ($xml, &$totalCount) {
-            foreach ($products as $product) {
+DB::table('kaspi_feed_items')
+    ->select([
+        'kaspi_sku',
+        'kaspi_name',
+        DB::raw('MIN(price) as price'),
+        DB::raw('MAX(stock) as stock'),
+        DB::raw('MIN(preorder_days) as preorder_days'),
+        DB::raw('MAX(brand) as brand'),
+    ])
+    ->where('is_active', true)
+    ->where('stock', '>=', 2)
+    ->where('price', '>', 0)
+    ->groupBy('kaspi_sku', 'kaspi_name')
+    ->orderBy('kaspi_sku')
+    ->chunk(1000, function ($items) use ($xml, &$totalCount, &$skippedCount) {
+        foreach ($items as $item) {
 
-                $cleanTitle = str_replace(['¶', '"', "'"], '', $product->title);
-
-                $xml->startElement('offer');
-                $xml->writeAttribute('sku', $product->sku);
-
-                $xml->writeElement('model', $cleanTitle);
-                $xml->writeElement('brand', Str::upper($product->brand));
-
-                $xml->startElement('availabilities');
-                $xml->startElement('availability');
-                $xml->writeAttribute('available', 'yes');
-                $xml->writeAttribute('storeId', 'PP1');
-                if (isset($product->preorder_days) && $product->preorder_days > 0) {
-                    $xml->writeAttribute('preOrder', $product->preorder_days);
-                }
-                $xml->endElement(); // availability
-                $xml->endElement(); // availabilities
-
-                $xml->writeElement('price', number_format($product->price, 0, '.', ''));
-
-                $xml->endElement(); // offer
-
-                $totalCount++;
+            $name = trim(str_replace(['¶', '"', "'"], '', $item->kaspi_name));
+            if (empty($name)) {
+                $skippedCount++;
+                continue;
             }
 
-            $this->line("Упаковано товаров в XML: {$totalCount}...");
-        });
+            $xml->startElement('offer');
+            $xml->writeAttribute('sku', $item->kaspi_sku);
+
+            $xml->writeElement('model', $name);
+            $xml->writeElement('brand', mb_strtoupper($item->brand));
+
+            $xml->startElement('availabilities');
+            $xml->startElement('availability');
+            $xml->writeAttribute('available', 'yes');
+            $xml->writeAttribute('storeId', 'PP1');
+            
+            if ($item->preorder_days > 0) {
+                $xml->writeAttribute('preOrder', $item->preorder_days);
+            }
+            $xml->endElement(); // availability
+            $xml->endElement(); // availabilities
+
+            $xml->writeElement('price', (int) $item->price);
+
+            $xml->endElement(); // offer
+
+            $totalCount++;
+        }
+
+        $this->line("Упаковано: {$totalCount}...");
+    });
 
         $xml->endElement(); // offers
         $xml->endElement(); // kaspi_catalog
-        $xml->endDocument(); // <- добавить
+        $xml->endDocument();
         $xml->flush();
 
-        $this->info("=============================================");
-        $this->info("Успех! Сводный прайс-лист сохранен: {$publicPath}");
-        $this->info("Всего предложений отправлено на Каспи: {$totalCount}");
+        $this->info('=============================================');
+        $this->info("Фид сохранён: {$publicPath}");
+        $this->info("Товаров в фиде: {$totalCount}");
+
+        if ($skippedCount > 0) {
+            $this->warn("Пропущено (пустое название): {$skippedCount}");
+        }
 
         return 0;
     }
