@@ -62,7 +62,7 @@
                     Кол-во
                 </div>
                 <div class="search-res-part-header-item" style="text-align: center;">
-                    Цена
+                    Цена, ₸
                 </div>
             </div>
 
@@ -137,7 +137,7 @@
                                 {{ $searchItem['qty']  }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-price stock-item-price">
-                                {{ $searchItem['priceWithMargine'] }}
+                                {{ number_format($searchItem['priceWithMargine'], 0, '.', ' ') }}
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-cart">
                                 <div class="stock-item-cart">
@@ -218,7 +218,7 @@
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
                         <div class="stock-item stock-item-price">
-                            {{ $crossItem['priceWithMargine'] }}
+                            {{ number_format($searchItem['priceWithMargine'], 0, '.', ' ') }}
                         </div>
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
@@ -421,7 +421,7 @@
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
                         <div class="stock-item stock-item-price">
-                            {{ $crossItem['priceWithMargine'] }}
+                            {{ number_format($searchItem['priceWithMargine'], 0, '.', ' ') }}
                         </div>
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
@@ -499,7 +499,9 @@
                         @endphp
                         @if ($days)
                             <span class="badge" style="background:transparent;color:#6c757d;border:1px solid #dee2e6;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:500;min-width:80px;text-align:center;display:inline-block;">
-                                {{ $days }} дн.
+                                <span style="border:1px solid #212529;color:#212529;border-radius:6px;padding:4px 10px;font-size:0.85rem;">
+                                    {{ $days }} дн.
+                                </span> дн.
                             </span>
                         @else
                             <span class="text-muted small">уточняйте</span>
@@ -517,7 +519,7 @@
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item stock-item-price">
-                                {{ $crossItem['priceWithMargine'] }}
+                                {{ number_format($searchItem['priceWithMargine'], 0, '.', ' ') }} ₸
                             </div>
                         @endforeach
                     </div>
