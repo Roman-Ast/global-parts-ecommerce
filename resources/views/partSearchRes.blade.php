@@ -116,19 +116,18 @@
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-delivery">
                                 @php
                                     $ds = $searchItem['deliveryStart'] ?? '';
-                                    $color = $searchItem['supplier_color'] ?? '#6c757d';
-                                    $isToday = strtotime($ds) && date('d.m.y', strtotime($ds)) == date('d.m.y');
-                                    $isGreen = $ds == 'в офисе' || $ds == '1.5-2 часа' || $isToday;
-                                    $isDate  = !$isGreen && strtotime($ds) && strtotime($ds) > 0;
+                                    $isToday = $ds == 'в офисе' || $ds == '1.5-2 часа' || (strtotime($ds) && date('Y-m-d', strtotime($ds)) == date('Y-m-d'));
+                                    $isDate = !$isToday && strtotime($ds);
+                                    $days = $isDate ? max(1, (int) ceil((strtotime($ds) - time()) / 86400)) : 0;
                                 @endphp
 
-                                @if ($isGreen)
-                                    <span class="badge bg-success" style="padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;display:inline-block;min-width:80px;text-align:center;">
+                                @if ($isToday)
+                                    <span class="badge" style="background:#d1e7dd;color:#0a6640;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;min-width:80px;text-align:center;display:inline-block;">
                                         {{ $ds == 'в офисе' ? 'в офисе' : '1.5-2 часа' }}
                                     </span>
                                 @elseif ($isDate)
-                                    <span class="badge bg-secondary" style="padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:500;display:inline-block;min-width:80px;text-align:center;">
-                                        {{ date('d.m.y', strtotime($ds)) }}
+                                    <span class="badge" style="background:transparent;color:#6c757d;border:1px solid #dee2e6;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:500;min-width:80px;text-align:center;display:inline-block;">
+                                        {{ $days }} дн.
                                     </span>
                                 @else
                                     <span class="text-muted small">уточняйте</span>
@@ -453,13 +452,14 @@
             <div id="crossesContainer-to-order">
                 @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
                 <div class="requestPartNumberContainer-item">
-                   @auth
+                    @auth
                     @if(auth()->user()->user_role == "admin")
                         <div class="form-check">
                             <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
                         </div>
                     @endif
                     @endauth
+
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
                         @auth
                             @if (auth()->user()->user_role == "admin")
@@ -468,38 +468,44 @@
                                 {{ $crossItem['supplier_city'] }}
                             @endif
                         @else
-                        {{ $crossItem['supplier_city'] }}
+                            {{ $crossItem['supplier_city'] }}
                         @endauth
                     </div>
+
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                         {{ $crossItem['brand'] }}
                     </div>
+
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-partnumber">
                         {{ $crossItem['article'] }}
                     </div>
+
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-name">
                         {{ $crossItem['name'] }}
                     </div>
+
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                        @if(array_key_exists('info',$crossItem))
+                        @if(array_key_exists('info', $crossItem))
                             <img src="/images/info_pic.png" alt="info">
                         @else
                             <img src="/images/info_unavailable.png" alt="info">
                         @endif
                     </div>
-                        @if ($crossItem['supplier_color']) 
-                            <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
-                                <span class="badge bg-light text-secondary border" style="padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:500;display:inline-block;min-width:80px;text-align:center;">
-                                    {{ date('d.m.y', strtotime($crossItem['delivery_time'])) }}
-                                </span>
-                            </div>
+
+                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
+                        @php
+                            $dt = $crossItem['delivery_time'] ?? '';
+                            $days = strtotime($dt) ? max(1, (int) ceil((strtotime($dt) - time()) / 86400)) : null;
+                        @endphp
+                        @if ($days)
+                            <span class="badge" style="background:transparent;color:#6c757d;border:1px solid #dee2e6;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:500;min-width:80px;text-align:center;display:inline-block;">
+                                {{ $days }} дн.
+                            </span>
                         @else
-                            <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery text-muted">
-                                <span class="badge bg-light text-dark" style="padding: 5px 10px; border-radius: 6px;">
-                                    {{ date('d.m.y', strtotime($crossItem['delivery_time'])) }}
-                                </span>
-                            </div>
+                            <span class="text-muted small">уточняйте</span>
                         @endif
+                    </div>
+
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item stock-item-qty">
@@ -507,6 +513,7 @@
                             </div>
                         @endforeach
                     </div>
+
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item stock-item-price">
@@ -514,6 +521,7 @@
                             </div>
                         @endforeach
                     </div>
+
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item-cart">
