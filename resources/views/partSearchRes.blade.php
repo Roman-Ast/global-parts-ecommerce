@@ -127,7 +127,7 @@
                                         {{ $ds == 'в офисе' ? 'в офисе' : '1.5-2 часа' }}
                                     </span>
                                 @elseif ($isDate)
-                                    <span class="badge" style="background:{{ $color }};color:#fff;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;display:inline-block;min-width:80px;text-align:center;">
+                                    <span class="badge bg-secondary" style="padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:500;display:inline-block;min-width:80px;text-align:center;">
                                         {{ date('d.m.y', strtotime($ds)) }}
                                     </span>
                                 @else
@@ -411,16 +411,7 @@
                         @endif
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery parts-on-stock">
-                        <span class="badge bg-success" style="
-                            padding: 5px 10px; 
-                            border-radius: 6px; 
-                            font-size: 0.85rem; 
-                            font-weight: 600;
-                            display: inline-block;
-                            min-width: 80px;
-                            text-align: center;
-                            box-shadow: 0 2px 4px rgba(25, 135, 84, 0.2); {{-- Легкая тень для объема --}}
-                        ">
+                        <span class="badge" style="background:#d1e7dd;color:#0a6640;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;display:inline-block;min-width:80px;text-align:center;">
                             {{ $crossItem['delivery_time'] }}
                         </span>
                     </div>
@@ -498,18 +489,7 @@
                     </div>
                         @if ($crossItem['supplier_color']) 
                             <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
-                                <span class="badge" style="
-                                    background: {{ $crossItem['supplier_color'] }}; 
-                                    color: #fff; {{-- Темный текст для читаемости на светлом фоне --}}
-                                    padding: 5px 10px; 
-                                    border-radius: 6px; 
-                                    font-size: 0.85rem; 
-                                    font-weight: 600;
-                                    display: inline-block;
-                                    min-width: 80px;
-                                    text-align: center;
-                                    border: 1px solid {{ $crossItem['supplier_color'] }}
-                                ">
+                                <span class="badge bg-light text-secondary border" style="padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:500;display:inline-block;min-width:80px;text-align:center;">
                                     {{ date('d.m.y', strtotime($crossItem['delivery_time'])) }}
                                 </span>
                             </div>

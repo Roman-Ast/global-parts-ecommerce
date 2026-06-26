@@ -368,7 +368,7 @@ class SparePartController extends Controller
                     'delivery_time'    => $deliveryDate,
                     'deliveryStart'    => $deliveryDate,
                     'deliverydays_min' => $deliveryDaysMin,
-                    'supplier_name'    => 'avtozakup',
+                    'supplier_name'    => 'vtzkp',
                     'supplier_city'    => 'msk',
                     'supplier_color'   => 'linear-gradient(135deg, #1a1a1a, #cc0000)',
                     'stocks'           => [[
