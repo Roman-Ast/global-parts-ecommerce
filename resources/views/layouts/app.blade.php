@@ -15,7 +15,7 @@
             @yield('canonical')
         @else
             <link rel="canonical" href="{{ url()->current() }}" />
-        @endif
+        @endhasSection
         {{-- 3. Твой главный монолитный файл стилей (Bootstrap + твои стили + Cache Busting) --}}
         <link href="{{ asset('css/master.css') }}?v=3" rel="stylesheet">
 

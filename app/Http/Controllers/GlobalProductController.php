@@ -55,7 +55,7 @@ class GlobalProductController extends Controller
         if ($product) {
             $canonicalBrand = SlugHelper::brandToSlug($product->brand);
             
-            $correctPath = 'product/' . $canonicalBrand . '/' . $product->clean_article;
+            $correctPath = 'product/' . $canonicalBrand . '/' . strtolower($product->clean_article);
             $currentPath = urldecode(request()->path());
 
             if (!empty($canonicalBrand) && $currentPath !== $correctPath) {
@@ -136,7 +136,7 @@ class GlobalProductController extends Controller
     /**
      * Метод рендеринга (чтобы не дублировать код)
      */
-    private function renderProduct($product, $status)
+    private function renderProduct($product, $status, $canonicalUrl = null)
     {
         $recommended = GlobalCatalog::where('brand', 'LIKE', $product->brand . '%')
             ->where('clean_article', '!=', $product->clean_article)
@@ -152,9 +152,9 @@ class GlobalProductController extends Controller
             $product->brand = \Illuminate\Support\Str::upper($product->brand);
         }
         return response()->view('global_product', [
-            'product' => $product,
-            'recommended' => $recommended,
-            'canonicalUrl' => url()->current()
+            'product'      => $product,
+            'recommended'  => $recommended,
+            'canonicalUrl' => $canonicalUrl ?? url()->current()
         ], $status);
     }
 
