@@ -47,11 +47,18 @@ class RepriceKaspiCommand extends Command
         'колодки', // тормозные колодки — себестоимость = purchase_price, независимо от kaspi_qty карточки
         'Колодок',
         'ремень',
+        'лампы'
+    ];
+
+    const PAIR_KEYWORDS = [
+        'пружин',
+        'spring',
     ];
 
     public function handle(): int
     {
         $dryRun = $this->option('dry-run');
+        $this->applyQtyOverrides();
 
         $items = DB::select("
             SELECT
@@ -61,6 +68,7 @@ class RepriceKaspiCommand extends Command
                 kfi.our_article,
                 kfi.price AS current_price,
                 kfi.kaspi_qty,
+                kfi.qty_override, 
                 kfi.qty_suspicious,
                 kfi.competitors_min_price,
                 kfi.competitors_total,
@@ -94,7 +102,7 @@ class RepriceKaspiCommand extends Command
 
         foreach ($items as $item) {
             $purchase = (float) $item->purchase_price;
-            $qty      = (int)   ($item->kaspi_qty ?? 1);
+            $qty      = (int)   ($item->qty_override ?? $item->kaspi_qty ?? 1);
             $qty      = max($qty, 1);
 
             if ($this->isFixedCost($item->kaspi_name)) {
@@ -173,11 +181,15 @@ class RepriceKaspiCommand extends Command
             // Сравниваем новую рассчитанную цену со старой (текущей в фиде).
             // Если отклонение больше порога — не применяем новую цену,
             // оставляем старую и помечаем позицию на ручную проверку.
+            // Исключение: товары с qty_override (пружины и др.) — их рост цены
+            // намеренный (себестоимость пересчитана), аномалия не применяется.
             $currentPrice = (float) $item->current_price;
             $isAnomaly = false;
             $anomalyReason = null;
 
-            if ($currentPrice > 0) {
+            $isPairItem = !is_null($item->qty_override) && $this->isPairItem($item->kaspi_name);
+
+            if ($currentPrice > 0 && !$isPairItem) {
                 $deviation = abs($ourPrice - $currentPrice) / $currentPrice;
 
                 if ($deviation > self::PRICE_ANOMALY_THRESHOLD) {
@@ -207,14 +219,15 @@ class RepriceKaspiCommand extends Command
 
             $stats[$scenario] = ($stats[$scenario] ?? 0) + 1;
 
-
             if ($dryRun) {
                 $anomalyMark = $isAnomaly ? ' ⚠️ANOMALY' : '';
+                $pairMark    = $isPairItem ? ' [×2]' : '';
                 $this->line(sprintf(
-                    "[%s|%s]%s %s | закуп: %s | эталон: %s | мин: %s | итог: %s | маржа: %.1f%% (%s) | конк: %d | завтра: %d",
+                    "[%s|%s]%s%s %s | закуп: %s | эталон: %s | мин: %s | итог: %s | маржа: %.1f%% (%s) | конк: %d | завтра: %d",
                     $scenario,
                     $flag,
                     $anomalyMark,
+                    $pairMark,
                     mb_strimwidth($item->kaspi_name, 0, 40, '…'),
                     number_format($cost, 0, '.', ' '),
                     number_format($etalonPrice, 0, '.', ' '),
@@ -283,6 +296,48 @@ class RepriceKaspiCommand extends Command
     }
 
     /**
+     * Автоматически проставляет qty_override = 2 для товаров, которые
+     * всегда продаются парами (пружины), но у которых kaspi_qty = 1 (дефолт).
+     * Также сбрасывает price_review_needed чтобы репрайс не пропустил их.
+     */
+    private function applyQtyOverrides(): void
+    {
+        // Проставляем qty_override = 2 где его ещё нет
+        $updated = DB::table('kaspi_feed_items')
+            ->where('kaspi_qty', 1)
+            ->whereNull('qty_override')
+            ->where('is_active', 1)
+            ->where(function ($q) {
+                foreach (self::PAIR_KEYWORDS as $kw) {
+                    $q->orWhereRaw('LOWER(kaspi_name) LIKE ?', ['%' . mb_strtolower($kw) . '%']);
+                }
+            })
+            ->update(['qty_override' => 2]);
+
+        if ($updated > 0) {
+            $this->info("🔧 qty_override=2 проставлен для {$updated} пружин (kaspi_qty=1)");
+        }
+
+        // Сбрасываем блокировку репрайса для пружин — ВСЕГДА,
+        // т.к. их цена была занижена и рост >30% это корректное исправление
+        $unblocked = DB::table('kaspi_feed_items')
+            ->where('price_review_needed', 1)
+            ->where(function ($q) {
+                foreach (self::PAIR_KEYWORDS as $kw) {
+                    $q->orWhereRaw('LOWER(kaspi_name) LIKE ?', ['%' . mb_strtolower($kw) . '%']);
+                }
+            })
+            ->update([
+                'price_review_needed'     => 0,
+                'price_review_reason'     => null,
+                'price_review_calculated' => null,
+            ]);
+
+        if ($unblocked > 0) {
+            $this->info("🔓 Снята блокировка price_review для {$unblocked} пружин");
+        }
+    }
+    /**
      * Записывает список аномальных позиций в лог-файл для разбора.
      */
     private function logAnomalies(array $anomalies): void
@@ -331,6 +386,17 @@ class RepriceKaspiCommand extends Command
         $titleLower = mb_strtolower($title);
         foreach (self::FIXED_COST_KEYWORDS as $keyword) {
             if (str_contains($titleLower, mb_strtolower($keyword))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function isPairItem(string $title): bool
+    {
+        $titleLower = mb_strtolower($title);
+        foreach (self::PAIR_KEYWORDS as $kw) {
+            if (str_contains($titleLower, mb_strtolower($kw))) {
                 return true;
             }
         }

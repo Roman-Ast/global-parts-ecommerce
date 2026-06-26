@@ -381,6 +381,8 @@ class SparePartController extends Controller
                 }
             ));
         }
+
+        //dd($this->finalArr);
     }
     
     public function searchPhaeton(String $brand, String $partnumber) 
