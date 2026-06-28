@@ -110,6 +110,9 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('logout', [UserController::class, 'logout'])->name('logout');
 
+    Route::get('verify-email', fn() => view('user.verify-email'))
+    ->name('verification.notice')
+    ->withoutMiddleware(['auth']);
     // Страница "подтвердите email"
     Route::get('verify-email', fn() => view('user.verify-email'))->name('verification.notice');
 

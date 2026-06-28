@@ -42,7 +42,7 @@
 @push('styles')
 <style>
     #verify-email-wrapper {
-        min-height: calc(100vh - 200px);
+        min-height: auto;
         display: flex;
         align-items: center;
         justify-content: center;
