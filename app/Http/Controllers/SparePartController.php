@@ -291,13 +291,6 @@ class SparePartController extends Controller
 
     public function searchAvtozakup(String $brand, String $partnumber)
     {
-        \Log::info('Avtozakup start', [
-            'brand' => $brand,
-            'partnumber' => $partnumber,
-            'user' => env('TRADESOFT_USER'),
-            'login' => env('TRADESOFT_PROVIDER_LOGIN'),
-        ]);
-
         try {
             $response = Http::timeout(15)->post('https://service.tradesoft.ru/3/provider/get-price-list/', [
                 'user'      => env('TRADESOFT_USER'),

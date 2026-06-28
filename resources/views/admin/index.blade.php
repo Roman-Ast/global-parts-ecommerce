@@ -510,7 +510,7 @@
                 <div id="orders-filter">
                     
                 </div>
-                <div id="admin-panel-orders-total-wrapper">
+                <div id="admin-panel-orders-total-wrapper" style="width:80% !important">
                     <div id="admin-panel-orders-by-channel-header">
                         <div>Показать статистику</div>
                         <img src="/images/plus-24.png" alt="open/close table" id="show-close-admin-panel-statistic-wrapper">
