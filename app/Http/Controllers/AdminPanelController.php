@@ -110,9 +110,9 @@ class AdminPanelController extends Controller
             ->where('sale_channel', 'kaspi')
             ->sum('sum_with_margine') * 12.5 / 100;
 
-        $tax = round($totalSalesSum * 4 / 100); // налог УСН 4%
+        
 
-        $marginClear = round($totalSalesSum - $totalPrimeCostSum - $kaspiComission - $tax);
+        $marginClear = round($totalSalesSum - $totalPrimeCostSum - $kaspiComission);
 
         // Сортировка по доле в продажах
         uasort($sales_statistics, function($a, $b) use ($totalSalesSum) {

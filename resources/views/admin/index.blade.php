@@ -548,9 +548,9 @@
                                     // Чистая маржа: для kaspi вычитаем комиссию 12.5% + налог 4%
                                     // для остальных только налог 4%
                                     if ($channel === 'kaspi') {
-                                        $netMargin = round($gross - ($revenue * 12.5 / 100) - ($revenue * 4 / 100));
+                                        $netMargin = round($gross - ($revenue * 12.5 / 100));
                                     } else {
-                                        $netMargin = round($gross - ($revenue * 4 / 100));
+                                        $netMargin = round($gross);
                                     }
                                     $netPct = $revenue > 0 ? round($netMargin / $revenue * 100, 1) : 0;
 
@@ -623,11 +623,6 @@
                                     <tr class="table-warning">
                                         <td colspan="9">Комиссия Kaspi (12.5%)</td>
                                         <td class="text-end text-danger">-{{ number_format(round($kaspiComission), 0, '.', ' ') }}</td>
-                                        <td></td>
-                                    </tr>
-                                    <tr class="table-warning">
-                                        <td colspan="9">Налог УСН (4%)</td>
-                                        <td class="text-end text-danger">-{{ number_format($tax, 0, '.', ' ') }}</td>
                                         <td></td>
                                     </tr>
                                 </tfoot>
