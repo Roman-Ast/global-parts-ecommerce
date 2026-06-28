@@ -87,6 +87,15 @@ Route::get('/product/{brand}/{article}', [GlobalProductController::class, 'show'
     ->name('product.show')
     ->where('brand', '.*')
     ->where('article', '.*');
+// ─── Публичные роуты ──────────────────────────────────────────────────────────
+Route::get('forgot-password', fn() => view('user.forgot-password'))->name('password.request');
+Route::post('forgot-password', [UserController::class, 'forgotPasswordStore'])
+    ->name('password.email')
+    ->middleware('throttle:3,1');
+
+Route::get('reset-password/{token}', fn(string $token) => view('user.reset-password', ['token' => $token]))
+    ->name('password.reset');
+Route::post('reset-password', [UserController::class, 'resetPasswordUpdate'])->name('password.update');
 
 // ─── Гость: регистрация, логин, сброс пароля ─────────────────────────────────
 Route::middleware('guest')->group(function () {
@@ -95,15 +104,6 @@ Route::middleware('guest')->group(function () {
 
     Route::get('login', [UserController::class, 'login'])->name('login');
     Route::post('login', [UserController::class, 'authLogin'])->name('login.auth');
-
-    Route::get('forgot-password', fn() => view('user.forgot-password'))->name('password.request');
-    Route::post('forgot-password', [UserController::class, 'forgotPasswordStore'])
-        ->name('password.email')
-        ->middleware('throttle:3,1');
-
-    Route::get('reset-password/{token}', fn(string $token) => view('user.reset-password', ['token' => $token]))
-        ->name('password.reset');
-    Route::post('reset-password', [UserController::class, 'resetPasswordUpdate'])->name('password.update');
 });
 
 // ─── Авторизован: верификация email ───────────────────────────────────────────
