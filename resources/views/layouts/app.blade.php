@@ -11,7 +11,11 @@
         <meta name="description" content="@yield('description', 'Купить запчасти по выгодным ценам в Астане...')">
         <meta name="keywords" content="запчасти астана, автозапчасти казахстан, вин код подбор...">
         
-        @yield('canonical', '<link rel="canonical" href="' . url()->current() . '" />')
+        @hasSection('canonical')
+            @yield('canonical')
+        @else
+            <link rel="canonical" href="{{ url()->current() }}" />
+        @endif
         {{-- 3. Твой главный монолитный файл стилей (Bootstrap + твои стили + Cache Busting) --}}
         <link href="{{ asset('css/master.css') }}?v=3" rel="stylesheet">
 
