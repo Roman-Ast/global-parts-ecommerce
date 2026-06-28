@@ -33,18 +33,19 @@
                 </div>
 
                 <div class="col-12 col-md-8">
-                    <h4 class="mb-2 fw-bold">
+                    <h4 class="mb-3 fw-bold">
                         По этому номеру сейчас нет предложений
                     </h4>
 
-                    <div class="mb-3 p-2 bg-light rounded d-inline-flex gap-3 align-items-center">
+                    <div class="mb-3 d-inline-flex align-items-center gap-2 px-3 py-2 rounded-3 border" 
+                        style="background:#f8f9fa; font-size:1.05em; letter-spacing:.03em">
                         @if(!empty($brand))
-                            <span class="fw-semibold text-secondary" style="font-size:.8em">БРЕНД</span>
+                            <span class="text-muted" style="font-size:.75em; text-transform:uppercase; letter-spacing:.1em">Бренд</span>
                             <span class="fw-bold">{{ strtoupper($brand) }}</span>
-                            <span class="text-muted">·</span>
+                            <span class="text-muted mx-1">·</span>
                         @endif
-                        <span class="fw-semibold text-secondary" style="font-size:.8em">АРТИКУЛ</span>
-                        <span class="fw-bold font-monospace">{{ strtoupper($article ?? $q ?? '') }}</span>
+                        <span class="text-muted" style="font-size:.75em; text-transform:uppercase; letter-spacing:.1em">Артикул</span>
+                        <span class="fw-bold font-monospace" style="font-size:1.1em">{{ strtoupper($article) }}</span>
                     </div>
 
                     <p class="mb-3 text-muted">
