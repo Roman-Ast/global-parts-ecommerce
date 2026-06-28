@@ -630,7 +630,7 @@
                             </div>
                     </div>
                 </div>
-                <div id="stats_graphics">
+                <div id="stats_graphics" style="width:80% !important">
                     <div id="stats_graphics_header">
                         <span>График</span>
                         <img src="/images/plus-24.png" alt="open/close table" id="show-close-admin-panel-graphics">
