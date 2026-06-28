@@ -42,11 +42,11 @@
 @push('styles')
 <style>
     #verify-email-wrapper {
-        min-height: auto;
+        min-height: calc(100vh - 130px);
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 40px 16px;
+        padding: 20px 16px;
         background: #f5f7fa;
     }
 
@@ -122,7 +122,11 @@
         margin-top: 4px;
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 580px) {
+        #verify-email-wrapper {
+            min-height: calc(100vh - 65px);
+            padding: 16px;
+        }
         .verify-card {
             padding: 32px 20px 28px;
         }
