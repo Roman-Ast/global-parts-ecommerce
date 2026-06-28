@@ -20,7 +20,7 @@
 
             @if (session('status'))
                 <div class="auth-alert auth-alert-success">
-                    {{ session('status') }}
+                    ✅ Ссылка для сброса пароля отправлена на вашу почту!
                 </div>
             @endif
 
@@ -35,7 +35,9 @@
                     @enderror
                 </div>
 
-                <button type="submit" class="auth-btn">Восстановить пароль</button>
+                <button type="submit" class="auth-btn" id="submit-btn">
+                    Восстановить пароль
+                </button>
                 <a href="{{ route('login') }}" class="auth-link">← Вернуться ко входу</a>
             </form>
         </div>
@@ -186,5 +188,31 @@
             font-size: 1.3rem;
         }
     }
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255,255,255,0.4);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        vertical-align: middle;
+        margin-right: 6px;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
+<script>
+document.getElementById('login-form') ?? document.querySelector('form');
+document.querySelector('form').addEventListener('submit', function() {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Отправляем...';
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = 'Восстановить пароль';
+    }, 10000);
+});
+</script>
 @endpush
