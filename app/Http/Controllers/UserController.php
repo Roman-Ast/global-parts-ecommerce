@@ -69,6 +69,7 @@ class UserController extends Controller
 
     public function authLogin(Request $request)
     {
+        dd(Auth::check(), Auth::user()->hasVerifiedEmail());
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required']
