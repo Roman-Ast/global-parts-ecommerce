@@ -125,7 +125,9 @@
     @media (max-width: 580px) {
         #verify-email-wrapper {
             min-height: calc(100vh - 65px);
-            padding: 16px;
+            padding: 8px 16px;
+            align-items: flex-start;
+            padding-top: 12px;
         }
         .verify-card {
             padding: 32px 20px 28px;
