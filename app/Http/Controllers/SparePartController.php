@@ -2497,37 +2497,37 @@ class SparePartController extends Controller
         $priceWithMargin = 0;
 
         if ($price > 0 && $price <= 900) {
-            $priceWithMargin = $price * 3.3;
+            $priceWithMargin = $price * 3.35;
         } else if ($price > 900 && $price <= 3000) {
-            $priceWithMargin = $price * 2.3;
+            $priceWithMargin = $price * 2.32;
         } else if ($price > 3000 && $price <= 6000) {
-            $priceWithMargin = $price * 1.95;
+            $priceWithMargin = $price * 1.97;
         } else if ($price > 6000 && $price <= 10000) {
-            $priceWithMargin = $price * 1.6;
+            $priceWithMargin = $price * 1.62;
         } else if ($price > 10000 && $price <= 15000) {
-            $priceWithMargin = $price * 1.46;
+            $priceWithMargin = $price * 1.47;
         } else if ($price > 15000 && $price <= 20000) {
-            $priceWithMargin = $price * 1.42;
+            $priceWithMargin = $price * 1.43;
         } else if ($price > 20000 && $price <= 30000) {
-            $priceWithMargin = $price * 1.36;
-        } else if ($price > 30000 && $price <= 40000) {
             $priceWithMargin = $price * 1.37;
+        } else if ($price > 30000 && $price <= 40000) {
+            $priceWithMargin = $price * 1.38;
         } else if ($price > 40000 && $price <= 50000) {
-            $priceWithMargin = $price * 1.35;
+            $priceWithMargin = $price * 1.36;
         } else if ($price > 50000 && $price <= 60000) {
-            $priceWithMargin = $price * 1.33;
+            $priceWithMargin = $price * 1.34;
         } else if ($price > 60000 && $price <= 70000) {
-            $priceWithMargin = $price * 1.31;
+            $priceWithMargin = $price * 1.32;
         } else if ($price > 70000 && $price <= 80000) {
-            $priceWithMargin = $price * 1.28;
+            $priceWithMargin = $price * 1.29;
         } else if ($price > 80000 && $price <= 90000) {
-            $priceWithMargin = $price * 1.25;
+            $priceWithMargin = $price * 1.27;
         } else if ($price > 90000 && $price <= 100000) {
-            $priceWithMargin = $price * 1.23;
+            $priceWithMargin = $price * 1.25;
         } else if ($price > 100000 && $price <= 120000) {
-            $priceWithMargin = $price * 1.22;
+            $priceWithMargin = $price * 1.23;
         } else if ($price > 120000) {
-            $priceWithMargin = $price * 1.225;
+            $priceWithMargin = $price * 1.23;
         }
 
         if (Auth()->user() && Auth()->user()->user_role == 'common') {
