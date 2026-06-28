@@ -37,6 +37,16 @@
                         По этому номеру сейчас нет предложений
                     </h4>
 
+                    <div class="mb-3 p-2 bg-light rounded d-inline-flex gap-3 align-items-center">
+                        @if(!empty($brand))
+                            <span class="fw-semibold text-secondary" style="font-size:.8em">БРЕНД</span>
+                            <span class="fw-bold">{{ strtoupper($brand) }}</span>
+                            <span class="text-muted">·</span>
+                        @endif
+                        <span class="fw-semibold text-secondary" style="font-size:.8em">АРТИКУЛ</span>
+                        <span class="fw-bold font-monospace">{{ strtoupper($article ?? $q ?? '') }}</span>
+                    </div>
+
                     <p class="mb-3 text-muted">
                         Это не значит, что детали нет. Мы можем быстро проверить аналоги и поставки “под заказ”
                         у других каналов (в т.ч. Китай/Корея/Европа) и подсказать лучший вариант по сроку и цене.
