@@ -516,122 +516,123 @@
                         <img src="/images/plus-24.png" alt="open/close table" id="show-close-admin-panel-statistic-wrapper">
                     </div>
                     <div id="admin-panel-orders-by-channel" status="closed">
-                        <table class="table table-striped">
-                            <thead>
-                                <th>Канал продажжжж</th>
-                                <th>Сумма</th>
-                                <th>С/С</th>
-                                <th>Маржа грязная</th>
-                                <th>Маржа грязная, %</th>
-                                <th>Кол-во продаж</th>
-                                <th>Средний чек</th>
-                                <th>% от общих продаж</th>
-                                
-                                <th>Маржа чистая</th>.
-                                <th>Маржа чистая, %</th>
-                            </thead>
-                            @foreach ($sales_statistics as $sale_channel => $data)
-                            <tr>
-                                <td>{{ $sale_channel }}</td>
-                                <td>{{ $data['totalSalesSum'] }}</td>
-                                <td>{{ $data['totalSalesPrimeCostSum'] }}</td>
-                                <td>{{ $data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] }}</td>
-                                <td>{{ $data['totalSalesSum'] ? round(100 - (($data['totalSalesPrimeCostSum'] * 100) / $data['totalSalesSum']), 2) : 0 }}%</td>
-                                <td>{{ $data['countOfSales'] }}</td>
-                                <td>{{ $data['countOfSales'] ? round($data['totalSalesSum'] / $data['countOfSales']) : 0 }}</td>
-                                
-                                <td>{{ $totalSalesSum ? round(($data['totalSalesSum'] * 100) /  $totalSalesSum, 2) : 0 }}</td>
-                                
-                                
-                                <td>
-                                    @if($sale_channel == 'kaspi')
-                                    {{ round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100) - ($data['totalSalesSum'] * 12) /  100) }}
-                                    @else
-                                    {{ round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100)) }}
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($sale_channel == 'kaspi')
-                                        @if($data['totalSalesSum'] > 0)
-                                            {{ 100 - round(100 - ((round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100) - ($data['totalSalesSum'] * 12) /  100)* 100) / $data['totalSalesSum']), 2) }}%
-                                        @else
-                                            0
-                                        @endif
-                                    @else
-                                        @if($data['totalSalesSum'] > 0)
-                                            {{ 100 - round(100 - ((round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100))* 100) / $data['totalSalesSum']), 2) }}%
-                                        @else
-                                            0
-                                        @endif
-                                    @endif
-                                </td>
-                            </tr>
-                            @endforeach
-                            <tr>
-                                <td></td>
-                                <td colspan="3">
-                                    <strong>Общий оборот</strong>
-                                </td>
-                                <td>{{ number_format($totalSalesSum, 0, '.', ' ') }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="3">
-                                    <strong>С/С</strong>
-                                </td>
-                                <td>{{ number_format($totalPrimeCostSum, 0, '.', ' ') }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="3">
-                                    <strong>Кол-во продаж</strong>
-                                </td>
-                                <td>{{ number_format($totalCountOfSales, 0, '.', ' ') }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="3">
-                                    <strong>Средний чек</strong>
-                                </td>
-                                <td>{{ $totalCountOfSales ? number_format(round($totalSalesSum / $totalCountOfSales), 0, '.', ' ') : 0 }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="3">
-                                    <strong>Маржа грязная</strong>
-                                </td>
-                                <td>{{ number_format($totalSalesSum - $totalPrimeCostSum, 0, '.', ' ') }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="3">
-                                    <strong>Маржа грязная, %</strong>
-                                </td>
-                                <td>{{ $totalSalesSum ? number_format(round(100 - (($totalPrimeCostSum * 100) / $totalSalesSum), 2), 2, '.', ' ') : 0 }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="3">
-                                    <strong>Комиссии</strong>
-                                </td>
-                                <td>{{ number_format($kaspiComission, 0, '.', ' ') }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="3">
-                                    <strong>Маржа чистая</strong>
-                                </td>
-                                <td>{{ number_format($marginClear, 0, '.', ' ') }}</td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="3">
-                                    <strong>Маржа чистая, %</strong>
-                                </td>
-                                <td>{{ $totalSalesSum? round((($marginClear * 100) / $totalSalesSum), 2) : 0 }}</td>
-                            </tr>
-                            
-                        </table>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-hover align-middle" style="font-size:.9em">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Канал</th>
+                                        <th class="text-end">Выручка</th>
+                                        <th class="text-end">С/С</th>
+                                        <th class="text-end">Маржа</th>
+                                        <th class="text-end">Маржа %</th>
+                                        <th class="text-end">Продаж</th>
+                                        <th class="text-end">Средний чек</th>
+                                        <th class="text-end">Доля</th>
+                                        <th class="text-end">Чистая маржа</th>
+                                        <th class="text-end">Чистая %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @php $i = 1; @endphp
+                                @foreach ($sales_statistics as $channel => $data)
+                                @php
+                                    $revenue   = $data['totalSalesSum'];
+                                    $cost      = $data['totalSalesPrimeCostSum'];
+                                    $gross     = $revenue - $cost;
+                                    $grossPct  = $revenue > 0 ? round($gross / $revenue * 100, 1) : 0;
+                                    $count     = $data['countOfSales'];
+                                    $avg       = $count > 0 ? round($revenue / $count) : 0;
+                                    $share     = $totalSalesSum > 0 ? round($revenue / $totalSalesSum * 100, 1) : 0;
+
+                                    // Чистая маржа: для kaspi вычитаем комиссию 12.5% + налог 4%
+                                    // для остальных только налог 4%
+                                    if ($channel === 'kaspi') {
+                                        $netMargin = round($gross - ($revenue * 12.5 / 100) - ($revenue * 4 / 100));
+                                    } else {
+                                        $netMargin = round($gross - ($revenue * 4 / 100));
+                                    }
+                                    $netPct = $revenue > 0 ? round($netMargin / $revenue * 100, 1) : 0;
+
+                                    $channelLabels = [
+                                        'kaspi'          => ['🛒 Kaspi',          'warning'],
+                                        '2gis'           => ['📍 2GIS',            'info'],
+                                        'olx'            => ['📦 OLX',             'secondary'],
+                                        'friends'        => ['👥 Сарафан',         'success'],
+                                        'site'           => ['🌐 Сайт',            'primary'],
+                                        'repeat_request' => ['🔁 Повторные',       'dark'],
+                                    ];
+                                    $label = $channelLabels[$channel][0] ?? $channel;
+                                    $badge = $channelLabels[$channel][1] ?? 'secondary';
+                                @endphp
+                                @if($count > 0)
+                                <tr>
+                                    <td class="text-muted">{{ $i++ }}</td>
+                                    <td><span class="badge bg-{{ $badge }}">{{ $label }}</span></td>
+                                    <td class="text-end fw-semibold">{{ number_format($revenue, 0, '.', ' ') }}</td>
+                                    <td class="text-end text-muted">{{ number_format($cost, 0, '.', ' ') }}</td>
+                                    <td class="text-end">{{ number_format($gross, 0, '.', ' ') }}</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-{{ $grossPct >= 40 ? 'success' : ($grossPct >= 30 ? 'warning' : 'danger') }}">
+                                            {{ $grossPct }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-end">{{ $count }}</td>
+                                    <td class="text-end">{{ number_format($avg, 0, '.', ' ') }}</td>
+                                    <td class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end gap-1">
+                                            <div style="width:60px;height:6px;background:#e9ecef;border-radius:3px">
+                                                <div style="width:{{ $share }}%;height:100%;background:#0d6efd;border-radius:3px"></div>
+                                            </div>
+                                            <small>{{ $share }}%</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-end fw-semibold {{ $netMargin > 0 ? 'text-success' : 'text-danger' }}">
+                                        {{ number_format($netMargin, 0, '.', ' ') }}
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge bg-{{ $netPct >= 30 ? 'success' : ($netPct >= 20 ? 'warning' : 'danger') }}">
+                                            {{ $netPct }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endif
+                                @endforeach
+                                </tbody>
+                                <tfoot class="table-light fw-bold">
+                                    <tr>
+                                        <td colspan="2">Итого</td>
+                                        <td class="text-end">{{ number_format($totalSalesSum, 0, '.', ' ') }}</td>
+                                        <td class="text-end text-muted">{{ number_format($totalPrimeCostSum, 0, '.', ' ') }}</td>
+                                        <td class="text-end">{{ number_format($totalSalesSum - $totalPrimeCostSum, 0, '.', ' ') }}</td>
+                                        <td class="text-end">
+                                            <span class="badge bg-success">
+                                                {{ $totalSalesSum > 0 ? round(($totalSalesSum - $totalPrimeCostSum) / $totalSalesSum * 100, 1) : 0 }}%
+                                            </span>
+                                        </td>
+                                        <td class="text-end">{{ $totalCountOfSales }}</td>
+                                        <td class="text-end">{{ $totalCountOfSales > 0 ? number_format(round($totalSalesSum / $totalCountOfSales), 0, '.', ' ') : 0 }}</td>
+                                        <td class="text-end">100%</td>
+                                        <td class="text-end text-success">{{ number_format($marginClear, 0, '.', ' ') }}</td>
+                                        <td class="text-end">
+                                            <span class="badge bg-success">
+                                                {{ $totalSalesSum > 0 ? round($marginClear / $totalSalesSum * 100, 1) : 0 }}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-warning">
+                                        <td colspan="9">Комиссия Kaspi (12.5%)</td>
+                                        <td class="text-end text-danger">-{{ number_format(round($kaspiComission), 0, '.', ' ') }}</td>
+                                        <td></td>
+                                    </tr>
+                                    <tr class="table-warning">
+                                        <td colspan="9">Налог УСН (4%)</td>
+                                        <td class="text-end text-danger">-{{ number_format($tax, 0, '.', ' ') }}</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            </div>
                     </div>
                 </div>
                 <div id="stats_graphics">

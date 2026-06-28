@@ -105,9 +105,21 @@ class AdminPanelController extends Controller
         $totalSalesSum = Order::whereBetween('date', [$start, $end])->sum('sum_with_margine');
         $totalPrimeCostSum = Order::whereBetween('date', [$start, $end])->sum('sum');
         $totalCountOfSales = Order::whereBetween('date', [$start, $end])->count();
-        
-        $kaspiComission = Order::whereBetween('date', [$start, $end])->where('sale_channel', 'kaspi')->sum('sum_with_margine') * 12 / 100;
-        $marginClear = round($totalSalesSum - $totalPrimeCostSum - $kaspiComission);
+
+        $kaspiComission = Order::whereBetween('date', [$start, $end])
+            ->where('sale_channel', 'kaspi')
+            ->sum('sum_with_margine') * 12.5 / 100;
+
+        $tax = round($totalSalesSum * 4 / 100); // налог УСН 4%
+
+        $marginClear = round($totalSalesSum - $totalPrimeCostSum - $kaspiComission - $tax);
+
+        // Сортировка по доле в продажах
+        uasort($sales_statistics, function($a, $b) use ($totalSalesSum) {
+            $shareA = $totalSalesSum ? $a['totalSalesSum'] / $totalSalesSum : 0;
+            $shareB = $totalSalesSum ? $b['totalSalesSum'] / $totalSalesSum : 0;
+            return $shareB <=> $shareA;
+        });
 
         foreach ($users as $user) {
             $usersCalculating[$user->id] = [
