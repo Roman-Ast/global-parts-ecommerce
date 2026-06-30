@@ -14,7 +14,7 @@ class ParseKaspiSkuCommand extends Command
 
     private string $cityId = '710000000';
 
-    private string $cookies = 'mc-session=1781506004.033.106882.257262|825e5f3659dba1ed7b5d7b2cbf5f1012; mc-sid=e95ae362-b70b-48a8-823a-6e44053d3e92';
+    private string $cookies = 'mc-session=1782659049.269.46760.366092|825e5f3659dba1ed7b5d7b2cbf5f1012; mc-sid=227e57a4-3e4a-4292-a305-61f04b26f156';
 
     /**
      * Категории товаров, где у ПОСТАВЩИКА цена уже указана за комплект,

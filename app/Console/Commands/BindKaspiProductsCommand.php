@@ -16,7 +16,7 @@ class BindKaspiProductsCommand extends Command
 
     private string $merchantCode = '30360429';
 
-    private $cookies = '1781506004.033.106882.257262|825e5f3659dba1ed7b5d7b2cbf5f1012; mc-sid=977e6538-d795-4eaf-b804-596db21d31d6';
+    private $cookies = 'mc-session=1782712488.114.73211.769917|825e5f3659dba1ed7b5d7b2cbf5f1012; mc-sid=00d0b847-ac23-4536-9fc2-bf76bb1355b9';
 
     public function handle(): int
     {

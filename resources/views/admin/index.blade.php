@@ -912,85 +912,49 @@
                 
 
                 @foreach ($orders as $orderItem)
-                <div class="admin-order-item-wrapper">
-                    <div class="order-item-header">
-                       <div class="order-item-id">
-                            {{ $orderItem->id }}
-                       </div>
-                       <div class="order-item-user-name">
-                            <span>{{ $orderItem->user->name }}</span> 
-                            <span style="font-size: 0.7em">{{ $orderItem->customer_phone }}</span> 
-                       </div>
-                       <div class="order-item-status">
-                            {{ $orderItem->status }} <img src="/images/clock-wait-16.png">
-                       </div>
-                       <div class="order-item-date">
-                            {{ $orderItem->date->format('d.m.y') }}
-                       </div>
-                       <div class="order-item-time">
-                            {{ $orderItem->sale_channel }}
-                       </div>
-                       
-                       <div class="admin-order-item-sum">
-                            <span style="font-weight: 600;color:green">{{ number_format($orderItem->sum_with_margine, 2, ',', ' ') }}</span>
-                            <span style="font-style: italic;color:red;font-size: 0.7em">
-                                {{ number_format($orderItem->sum, 2, ',', ' ') }}
+                    <div class="gp-order">
+                        <div class="gp-head">
+                            <span class="gp-id">#{{ $orderItem->id }}</span>
+                            <span>
+                                <span class="gp-name">{{ $orderItem->user->name }}</span>
+                                @if($orderItem->customer_phone)
+                                    <span class="gp-phone">{{ $orderItem->customer_phone }}</span>
+                                @endif
+                            </span>
+                            <span class="gp-status"><img src="/images/clock-wait-16.png" style="width:13px;vertical-align:-1px">{{ $orderItem->status }}</span>
+                            <span class="gp-date">{{ $orderItem->date->format('d.m.y') }}</span>
+                            <span class="gp-channel gp-chan-{{ $orderItem->sale_channel }}">{{ $orderItem->sale_channel }}</span>
+                            <span class="gp-sum">
+                                <span class="gp-sum-main">{{ number_format($orderItem->sum_with_margine, 0, ',', ' ') }}</span>
                                 @if ($orderItem->sum_with_margine != 0)
-                                %{{ number_format(($orderItem->sum_with_margine - $orderItem->sum) * 100 / $orderItem->sum_with_margine, 2, ',', ' ') }}
+                                <span class="gp-sum-sub">{{ number_format($orderItem->sum, 0, ',', ' ') }} · {{ number_format(($orderItem->sum_with_margine - $orderItem->sum) * 100 / $orderItem->sum_with_margine, 1, ',', ' ') }}%</span>
                                 @endif
                             </span>
                         </div>
-                    </div>
-                    <div class="order-item-products-wrapper">
+
                         @foreach ($orderItem->products as $product)
-                        <div class="admin-order-item-products-content">
-                            <div class="order-products-searched_number">
-                                {{ $product->searched_number }}
-                            </div>
-                            <div class="order-products-article">
-                                {{ $product->article }}
-                            </div>
-                            <div class="order-products-brand">
-                                {{ $product->brand }}
-                            </div>
-                            <div class="order-products-name">
-                                {{ mb_strimwidth($product->name, 0, 50, '...') }}
-                            </div>
-                            <div class="order-products-qty">
-                                {{ $product->qty }}
-                            </div>
-                            <div class="order-products-price">
-                                {{ number_format($product->priceWithMargine, 0, ',', ' ') }}
-                            </div>
-                            <div class="order-products-item_sum">
-                                {{ number_format($product->itemSumWithMargine, 0, ',', ' ') }}
-                            </div>
-                            <div class="order-products-fromStock">
-                                {{ $product->fromStock }}
-                            </div>
-                            <div class="order-products-deliveryTime">
-                                {{ $product->deliveryTime }}
-                            </div>
-                            <div class="order-products-status">
-                                <select name="order_product_status" class="order_product_status form-select">
-                                    @foreach ($statuses as $key => $status)
-                                        @if ($key != $product->status)
-                                            <option value="{{ $key }}">{{ $status }}</option>
-                                        @else
-                                            <option value="{{ $key }}" selected disabled>{{ $status }}</option>
-                                        @endif
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="change_status">
+                        <div class="gp-row">
+                            <span class="gp-art">{{ $product->article }}</span>
+                            <span class="gp-brand">{{ $product->brand }}</span>
+                            <span class="gp-pname" title="{{ $product->name }}">{{ mb_strimwidth($product->name, 0, 50, '...') }}</span>
+                            <span class="gp-num">{{ $product->qty }}</span>
+                            <span class="gp-num">{{ number_format($product->priceWithMargine, 0, ',', ' ') }}</span>
+                            <span class="gp-num">{{ number_format($product->itemSumWithMargine, 0, ',', ' ') }}</span>
+                            <span class="gp-stock">{{ $product->fromStock }}</span>
+                            <span class="gp-stock">{{ $product->deliveryTime }}</span>
+                            <select name="order_product_status" class="order_product_status gp-sel">
+                                @foreach ($statuses as $key => $status)
+                                    <option value="{{ $key }}" @selected($key == $product->status) @disabled($key == $product->status)>{{ $status }}</option>
+                                @endforeach
+                            </select>
+                            <span class="change_status">
                                 <input type="hidden" value="{{ $product->id }}">
-                                <button class="btn btn-sm btn-info change_status_submit">Сменить</button>
-                            </div>
+                                <button class="btn btn-sm btn-info gp-btn change_status_submit">Сменить</button>
+                            </span>
                         </div>
                         @endforeach
                     </div>
-                </div>
-                @endforeach
+                    @endforeach
             </div>
             <div id="make_customer_return" class="container admin-content-item">
                 <form method="POST" action="/makeCustomerReturn" id="customer-return-form">
