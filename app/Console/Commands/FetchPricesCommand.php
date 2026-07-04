@@ -15,6 +15,8 @@ use App\Services\PriceParsers\ZakazAutoParser;
 use App\Services\PriceParsers\VoltazhParser;
 use App\Services\PriceParsers\RosskoParser;
 use App\Services\PriceParsers\ForumAutoParser;
+use App\Services\PriceParsers\AutotradeAstParser;
+use App\Services\PriceParsers\AutotradeAlmParser; 
 
 class FetchPricesCommand extends Command
 {
@@ -135,7 +137,7 @@ class FetchPricesCommand extends Command
                     }
 
                     $purchasePrice = (float) str_replace([' ', ','], ['', '.'], (string)$parsedData['price']);
-                    if ($purchasePrice < 10000) {
+                    if ($purchasePrice < 3000) {
                         $skippedCount++;
                         continue;
                     }
@@ -157,6 +159,7 @@ class FetchPricesCommand extends Command
                             'brand'          => mb_strtolower($parsedData['brand']),
                             'purchase_price' => $purchasePrice,
                             'stock'          => $qty,
+                            'preorder_days'  => $parsedData['preorder_days'] ?? 0,
                             'updated_at'     => now(),
                             'created_at'     => $existOffer ? $existOffer->created_at : now(),
                         ]
@@ -242,6 +245,30 @@ class FetchPricesCommand extends Command
         ) {
             $this->comment('Выбран парсер: Фаэтон');
             return [new PhaetonParser(), 'phaeton'];
+        }
+
+        if (
+            str_contains($subjectLower,   'алматы')        ||
+            str_contains($subjectLower,   'almaty')        ||
+            str_contains($fromEmailLower, 'almaty')         ||
+            str_contains($filenameLower,  'алм')            ||
+            str_contains($filenameLower,  'autotrade_alm')
+        ) {
+            $this->comment('Выбран парсер: АвтоТрейд Алматы');
+            return [new AutotradeAlmParser(), 'autotrade_alm'];
+        }
+
+         if (
+            str_contains($subjectLower,   'автотрейд')      ||
+            str_contains($subjectLower,   'avtotrade')      ||
+            str_contains($fromEmailLower, 'avtotrade')      ||
+            str_contains($fromEmailLower, 'автотрейд')      ||
+            str_starts_with($filenameLower, 'аст_')          ||
+            str_starts_with($filenameLower, 'аст ')          ||
+            str_starts_with($filenameLower, 'autotrade_ast')
+        ) {
+            $this->comment('Выбран парсер: АвтоТрейд Астана');
+            return [new AutotradeAstParser(), 'autotrade_ast'];
         }
 
         if (

@@ -125,26 +125,34 @@ class RepriceKaspiCommand extends Command
             $competitorMinTomorrow  = $item->tomorrow_min_price ? (float) $item->tomorrow_min_price : null;
 
             // === ЛОГИКА ВЫБОРА ЦЕНЫ ===
-            if ($competitorsTotal === 0 || $competitorMinAll === null) {
+            // Для дешёвого входа (закуп < 10 000 тг) держим эталон ВСЕГДА,
+            // не участвуем в демпинге под конкурента вообще — приоритет
+            // максимальному охвату карточек и марже, а не битве за топ
+            // выдачи в этом сегменте. Ревизия после первых недель по рынку.
+            if ($purchase < 10000) {
+                $ourPrice = $etalonPrice;
+                $scenario = 'etalon_low_purchase_fixed';
+ 
+            } elseif ($competitorsTotal === 0 || $competitorMinAll === null) {
                 $ourPrice = $etalonPrice;
                 $scenario = 'etalon_no_competitors';
-
+ 
             } elseif ($tomorrowCount === 0) {
                 // Мы единственные с доставкой завтра — держим эталон
                 $ourPrice = $etalonPrice;
                 $scenario = 'etalon_alone_tomorrow';
-
+ 
             } else {
                 if ($competitorMinTomorrow === null) {
                     $competitorMinTomorrow = $competitorMinAll;
                 }
-
+ 
                 if ($etalonPrice <= $competitorMinTomorrow) {
                     $ourPrice = $etalonPrice;
                     $scenario = 'etalon_competitive';
                 } else {
                     $beatPrice = floor($competitorMinTomorrow * 0.995);
-
+ 
                     if ($beatPrice >= $minPrice) {
                         $ourPrice = $beatPrice;
                         $scenario = 'beat_tomorrow_competitor';

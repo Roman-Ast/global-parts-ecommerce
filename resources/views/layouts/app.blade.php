@@ -25,6 +25,18 @@
         <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
         @stack('styles')
+        <!-- Yandex.Metrika counter -->
+        <script type="text/javascript">
+            (function(m,e,t,r,i,k,a){
+                m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+            })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=110381917', 'ym');
+            ym(110381917, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+        </script>
+        <noscript><div><img src="https://mc.yandex.ru/watch/110381917" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+        <!-- /Yandex.Metrika counter -->
     </head>
     <body>
         @yield('content')
@@ -189,5 +201,63 @@
         gtag('js', new Date());
         gtag('config', 'AW-16870370925', { 'page_path': location.pathname });
     </script>
+
+    <script>
+        (function () {
+            var YANDEX_PHONE = '77475711906';
+            var DEFAULT_PHONE = '77087172549';
+            var STORAGE_KEY = 'traffic_source';
+
+            var params = new URLSearchParams(window.location.search);
+            var isYandexClick = params.has('yclid') || (params.get('utm_source') || '').toLowerCase() === 'yandex';
+            if (isYandexClick) {
+                sessionStorage.setItem(STORAGE_KEY, 'yandex');
+            }
+
+            function isYandex() {
+                return sessionStorage.getItem(STORAGE_KEY) === 'yandex';
+            }
+
+            // 1. Подмена wa.me ссылок (сайдбар + фиксированная кнопка на мобильных)
+            document.addEventListener('click', function (e) {
+                var link = e.target.closest('a[href*="wa.me/"]');
+                if (!link || !isYandex()) return;
+
+                var url = new URL(link.href);
+                var pathParts = url.pathname.split('/').filter(Boolean);
+                if (pathParts.length > 0) {
+                    pathParts[0] = YANDEX_PHONE;
+                    url.pathname = '/' + pathParts.join('/');
+                    link.href = url.toString();
+                }
+
+                // если видимый текст ссылки — это номер телефона, обновим и его
+                if (/^\+?7\d{10}$/.test(link.textContent.trim())) {
+                    link.textContent = '+' + YANDEX_PHONE;
+                }
+
+                if (typeof ym !== 'undefined') {
+                    ym(110381917, 'reachGoal', 'whatsapp_click');
+                }
+            }, true);
+
+            // 2. Подмена QR-кода в модалке для десктопа
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.whatsapp-fixed-btn, .wa-top-container')) return;
+                if (!isYandex()) return;
+
+                var qrImg = document.querySelector('#modal-qr img');
+                if (qrImg) {
+                    qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='
+                        + encodeURIComponent('https://wa.me/' + YANDEX_PHONE);
+                }
+
+                if (typeof ym !== 'undefined') {
+                    ym(110381917, 'reachGoal', 'whatsapp_click');
+                }
+            }, true);
+        })();
+        </script>
+
     </body>
 </html>
