@@ -53,6 +53,11 @@ class GlobalProductController extends Controller
 
         // 3. РЕДИРЕКТ И ЦЕНА
         if ($product) {
+            if (empty($product->brand)) {
+                $product = $this->createVirtual($cleanBrand, $cleanArticle);
+                return $this->renderProduct($product, 404, url()->current());
+            }
+            
             $canonicalBrand = SlugHelper::brandToSlug($product->brand);
             
             $correctPath = 'product/' . $canonicalBrand . '/' . strtolower($product->clean_article);

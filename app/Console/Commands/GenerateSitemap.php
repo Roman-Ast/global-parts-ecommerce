@@ -18,9 +18,13 @@ class GenerateSitemap extends Command
         $baseUrl    = rtrim(config('app.url'), '/');
         $sitemaps   = [];
         $fileNum    = 1;
+        $seenUrls   = []; // Дедуп-реестр на ВЕСЬ каталог, а не на один чанк
 
         // Захватываем $this явно для использования внутри chunk
         $command = $this;
+
+        $skippedEmpty = 0;
+        $skippedDup   = 0;
 
         DB::table('global_catalog')
             ->select('article', 'clean_article', 'brand')
@@ -28,7 +32,7 @@ class GenerateSitemap extends Command
             ->where('article', '!=', '')
             ->distinct()
             ->orderBy('brand')
-            ->chunk($chunkSize, function ($products) use (&$sitemaps, &$fileNum, $baseUrl, $command) {
+            ->chunk($chunkSize, function ($products) use (&$sitemaps, &$fileNum, &$seenUrls, &$skippedEmpty, &$skippedDup, $baseUrl, $command) {
 
                 $fileName = "sitemap_products_{$fileNum}.xml";
                 $filePath = public_path($fileName);
@@ -38,16 +42,33 @@ class GenerateSitemap extends Command
                 fwrite($handle, '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
 
                 foreach ($products as $product) {
+                    // Пропускаем товары без бренда — такие страницы падали в 500-ку
+                    if (empty($product->brand)) {
+                        $skippedEmpty++;
+                        continue;
+                    }
+
                     $urlBrand = SlugHelper::brandToSlug($product->brand);
 
                     $finalArticle = !empty($product->clean_article)
                         ? $product->clean_article
                         : preg_replace('/[^A-Za-z0-9]/', '', $product->article ?? '');
 
-                    // Пропускаем записи без артикула
-                    if (empty($finalArticle)) {
+                    // Приводим артикул к нижнему регистру — совпадает с логикой редиректа в контроллере
+                    $finalArticle = strtolower(trim($finalArticle));
+
+                    if (empty($finalArticle) || empty($urlBrand)) {
+                        $skippedEmpty++;
                         continue;
                     }
+
+                    // Дедуп: не пишем повторно уже добавленную комбинацию бренд+артикул
+                    $dedupKey = $urlBrand . '|' . $finalArticle;
+                    if (isset($seenUrls[$dedupKey])) {
+                        $skippedDup++;
+                        continue;
+                    }
+                    $seenUrls[$dedupKey] = true;
 
                     $url = $baseUrl . '/product/' . $urlBrand . '/' . $finalArticle;
 
@@ -69,6 +90,8 @@ class GenerateSitemap extends Command
             });
 
         $this->generateIndex($sitemaps, $baseUrl);
+        $this->info("Пропущено (пустой бренд/артикул): {$skippedEmpty}");
+        $this->info("Пропущено (дубли бренд+артикул): {$skippedDup}");
         $this->info('Готово!');
     }
 
