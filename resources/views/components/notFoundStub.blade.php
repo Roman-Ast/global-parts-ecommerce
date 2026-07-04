@@ -8,6 +8,7 @@
    
 @section('content')
 @include('components.header')
+@include('components.header-mini')
 
 {{-- resources/views/components/notFoundStub.blade.php --}}
 @php
@@ -142,5 +143,6 @@
     </div>
 </div>
 
+@include('components.footer-bar-mini')
 @include('components.footer')
 @endsection
