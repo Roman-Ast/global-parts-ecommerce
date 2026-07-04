@@ -4,6 +4,7 @@
    
 @section('content')
 @include('components.header')
+@include('components.header-mini')
 
     <div    class="container nothing-found-wrapper">
         <div id="not-found-wrapper">
@@ -16,4 +17,5 @@
         </div>
     </div>
 @include('components.footer')
+@include('components.footer-bar-mini')
 @endsection

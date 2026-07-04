@@ -23,7 +23,16 @@
 .gp-num{text-align:right}
 .gp-stock{color:#666;font-size:11.5px}
 .gp-sel{width:100%;font-size:12px;padding:2px 6px}
-.gp-btn{font-size:12px;padding:4px 10px;white-space:nowrap}/*!
+.gp-btn{font-size:12px;padding:4px 10px;white-space:nowrap}
+
+@media (max-width: 580px) {
+    #nothing-found-stub-container {
+        margin-top: 10px !important;
+        height: auto !important;
+    }
+}
+
+/*!
  * Bootstrap  v5.3.3 (https://getbootstrap.com/)
  * Copyright 2011-2024 The Bootstrap Authors
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
