@@ -515,7 +515,183 @@
                         <div>Показать статистику</div>
                         <img src="/images/plus-24.png" alt="open/close table" id="show-close-admin-panel-statistic-wrapper">
                     </div>
-                    <div id="admin-panel-orders-by-channel" status="closed">
+                    <div id="admin-panel-monthly-stats-wrapper" style="width:80% !important">
+                        <div id="admin-panel-monthly-stats-header">
+                            <div>Статистика по месяцам</div>
+                            <img src="/images/plus-24.png" alt="open/close table" id="show-close-admin-panel-monthly-stats-wrapper">
+                        </div>
+                        <div id="admin-panel-monthly-stats" status="closed">
+
+                            <div class="mt-3 mb-3" style="max-width:250px">
+                                <select id="monthly-stats-selector" class="form-select">
+                                    @foreach ($monthsSorted as $monthKey)
+                                        <option value="{{ $monthKey }}" {{ $monthKey === $currentAccountingMonthKey ? 'selected' : '' }}>
+                                            {{ $monthKey }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="table-responsive mt-3">
+                                <table class="table table-hover align-middle" style="font-size:.9em">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Канал</th>
+                                            <th class="text-end">Выручка</th>
+                                            <th class="text-end">С/С</th>
+                                            <th class="text-end">Маржа</th>
+                                            <th class="text-end">Маржа %</th>
+                                            <th class="text-end">Продаж</th>
+                                            <th class="text-end">Средний чек</th>
+                                            <th class="text-end">Доля</th>
+                                            <th class="text-end">Чистая маржа</th>
+                                            <th class="text-end">Чистая %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="monthly-stats-tbody">
+                                        <!-- заполняется JS -->
+                                    </tbody>
+                                    <tfoot class="table-light fw-bold" id="monthly-stats-tfoot">
+                                        <!-- заполняется JS -->
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        const salesStatisticsByMonth = @json($salesStatisticsByMonth);
+
+                        const channelLabels = {
+                            'kaspi':          ['🛒 Kaspi',      'warning'],
+                            '2gis':           ['📍 2GIS',        'info'],
+                            'olx':            ['📦 OLX',         'secondary'],
+                            'friends':        ['👥 Сарафан',     'success'],
+                            'site':           ['🌐 Сайт',        'primary'],
+                            'repeat_request': ['🔁 Повторные',   'dark'],
+                        };
+
+                        function fmt(num) {
+                            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                        }
+
+                        function marginBadgeClass(pct, thresholds) {
+                            if (pct >= thresholds[0]) return 'success';
+                            if (pct >= thresholds[1]) return 'warning';
+                            return 'danger';
+                        }
+
+                        function renderMonthlyStats(monthKey) {
+                            const data = salesStatisticsByMonth[monthKey];
+                            if (!data) return;
+
+                            const tbody = document.getElementById('monthly-stats-tbody');
+                            const tfoot = document.getElementById('monthly-stats-tfoot');
+                            tbody.innerHTML = '';
+                            tfoot.innerHTML = '';
+
+                            let totalRevenue = 0, totalCost = 0, totalCount = 0, totalKaspiCommission = 0;
+
+                            // Считаем общий оборот месяца для доли каждого канала
+                            Object.values(data).forEach(d => totalRevenue += d.totalSalesSum);
+
+                            let i = 1;
+
+                            for (const [channel, d] of Object.entries(data)) {
+                                const revenue = d.totalSalesSum;
+                                const cost    = d.totalSalesPrimeCostSum;
+                                const count   = d.countOfSales;
+
+                                if (count <= 0) continue;
+
+                                const gross    = revenue - cost;
+                                const grossPct = revenue > 0 ? Math.round((gross / revenue) * 100 * 10) / 10 : 0;
+                                const avg      = count > 0 ? Math.round(revenue / count) : 0;
+                                const share    = totalRevenue > 0 ? Math.round((revenue / totalRevenue) * 100 * 10) / 10 : 0;
+
+                                let netMargin;
+                                if (channel === 'kaspi') {
+                                    const commission = revenue * 12.5 / 100;
+                                    totalKaspiCommission += commission;
+                                    netMargin = Math.round(gross - commission);
+                                } else {
+                                    netMargin = Math.round(gross);
+                                }
+                                const netPct = revenue > 0 ? Math.round((netMargin / revenue) * 100 * 10) / 10 : 0;
+
+                                const label = channelLabels[channel] ? channelLabels[channel][0] : channel;
+                                const badge = channelLabels[channel] ? channelLabels[channel][1] : 'secondary';
+
+                                totalCost  += cost;
+                                totalCount += count;
+
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td class="text-muted">${i++}</td>
+                                    <td><span class="badge bg-${badge}">${label}</span></td>
+                                    <td class="text-end fw-semibold">${fmt(revenue)}</td>
+                                    <td class="text-end text-muted">${fmt(cost)}</td>
+                                    <td class="text-end">${fmt(gross)}</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-${marginBadgeClass(grossPct, [40, 30])}">${grossPct}%</span>
+                                    </td>
+                                    <td class="text-end">${count}</td>
+                                    <td class="text-end">${fmt(avg)}</td>
+                                    <td class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end gap-1">
+                                            <div style="width:60px;height:6px;background:#e9ecef;border-radius:3px">
+                                                <div style="width:${share}%;height:100%;background:#0d6efd;border-radius:3px"></div>
+                                            </div>
+                                            <small>${share}%</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-end fw-semibold ${netMargin > 0 ? 'text-success' : 'text-danger'}">${fmt(netMargin)}</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-${marginBadgeClass(netPct, [30, 20])}">${netPct}%</span>
+                                    </td>
+                                `;
+                                tbody.appendChild(row);
+                            }
+
+                            const totalGross    = totalRevenue - totalCost;
+                            const totalGrossPct = totalRevenue > 0 ? Math.round((totalGross / totalRevenue) * 100 * 10) / 10 : 0;
+                            const totalAvg      = totalCount > 0 ? Math.round(totalRevenue / totalCount) : 0;
+                            const totalNetMargin = Math.round(totalGross - totalKaspiCommission);
+                            const totalNetPct    = totalRevenue > 0 ? Math.round((totalNetMargin / totalRevenue) * 100 * 10) / 10 : 0;
+
+                            tfoot.innerHTML = `
+                                <tr>
+                                    <td colspan="2">Итого</td>
+                                    <td class="text-end">${fmt(totalRevenue)}</td>
+                                    <td class="text-end text-muted">${fmt(totalCost)}</td>
+                                    <td class="text-end">${fmt(totalGross)}</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-success">${totalGrossPct}%</span>
+                                    </td>
+                                    <td class="text-end">${totalCount}</td>
+                                    <td class="text-end">${fmt(totalAvg)}</td>
+                                    <td class="text-end">100%</td>
+                                    <td class="text-end text-success">${fmt(totalNetMargin)}</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-success">${totalNetPct}%</span>
+                                    </td>
+                                </tr>
+                                <tr class="table-warning">
+                                    <td colspan="9">Комиссия Kaspi (12.5%)</td>
+                                    <td class="text-end text-danger">-${fmt(totalKaspiCommission)}</td>
+                                    <td></td>
+                                </tr>
+                            `;
+                        }
+
+                        document.getElementById('monthly-stats-selector').addEventListener('change', function () {
+                            renderMonthlyStats(this.value);
+                        });
+
+                        renderMonthlyStats('{{ $currentAccountingMonthKey }}');
+                    </script>
+                    {{--<div id="admin-panel-orders-by-channel" status="closed">
                         <div class="table-responsive mt-3">
                             <table class="table table-hover align-middle" style="font-size:.9em">
                                 <thead class="table-dark">
@@ -628,7 +804,7 @@
                                 </tfoot>
                             </table>
                             </div>
-                    </div>
+                    </div>--}}
                 </div>
                 <div id="stats_graphics" style="width:80% !important">
                     <div id="stats_graphics_header">
@@ -638,96 +814,6 @@
                     <div id="stats_graphics_content" status="closed">
                         <h2>1. Сумма продаж и закупа по месяцам</h2>
                         <canvas id="salesChart" width="800" height="400"></canvas>
-
-                        <h2>2. Статистика продаж по месяцам</h2>
-                        <div style="margin-bottom: 10px;">
-                            <label for="month-selector">Выберите месяц: </label>
-                            <select id="month-selector">
-                                @foreach ($monthsSorted as $monthKey)
-                                    <option value="{{ $monthKey }}" {{ $monthKey === $currentAccountingMonthKey ? 'selected' : '' }}>
-                                        {{ $monthKey }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <table class="table table-striped" id="monthly-stats-table">
-                            <thead>
-                                <th>Канал продаж</th>
-                                <th>Сумма</th>
-                                <th>С/С</th>
-                                <th>Маржа грязная</th>
-                                <th>Маржа грязная, %</th>
-                                <th>Кол-во продаж</th>
-                                <th>Средний чек</th>
-                                <th>% от общих продаж</th>
-                                <th>Комиссия</th>
-                                <th>Маржа чистая</th>
-                                <th>Маржа чистая, %</th>
-                            </thead>
-                            <tbody id="monthly-stats-body">
-                                <!-- заполняется JS -->
-                            </tbody>
-                        </table>
-
-                        <script>
-                            const salesStatisticsByMonth = @json($salesStatisticsByMonth);
-
-                            function formatNumber(num) {
-                                return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-                            }
-
-                            function renderMonthlyStats(monthKey) {
-                                const data = salesStatisticsByMonth[monthKey];
-                                if (!data) return;
-
-                                const tbody = document.getElementById('monthly-stats-body');
-                                tbody.innerHTML = '';
-
-                                let totalSalesSumAllChannels = 0;
-                                Object.values(data).forEach(d => totalSalesSumAllChannels += d.totalSalesSum);
-
-                                for (const [channel, d] of Object.entries(data)) {
-                                    const grossMargin = d.totalSalesSum - d.totalSalesPrimeCostSum;
-                                    const grossMarginPct = d.totalSalesSum ? Math.round(100 - (d.totalSalesPrimeCostSum * 100 / d.totalSalesSum)) : 0;
-                                    const avgCheck = d.countOfSales ? Math.round(d.totalSalesSum / d.countOfSales) : 0;
-                                    const sharePct = totalSalesSumAllChannels ? (d.totalSalesSum * 100 / totalSalesSumAllChannels).toFixed(2) : 0;
-
-                                    let commission = '';
-                                    let netMargin = '';
-                                    let netMarginPct = '';
-
-                                    if (channel === 'kaspi') {
-                                        commission = d.totalSalesSum * 12.5 / 100;
-                                        netMargin = grossMargin - commission;
-                                        netMarginPct = d.totalSalesSum > 0 ? ((netMargin * 100) / d.totalSalesSum).toFixed(2) : 0;
-                                    }
-
-                                    const row = document.createElement('tr');
-                                    row.innerHTML = `
-                                        <td>${channel}</td>
-                                        <td>${formatNumber(d.totalSalesSum)}</td>
-                                        <td>${formatNumber(d.totalSalesPrimeCostSum)}</td>
-                                        <td>${formatNumber(grossMargin)}</td>
-                                        <td>${grossMarginPct}%</td>
-                                        <td>${formatNumber(d.countOfSales)}</td>
-                                        <td>${formatNumber(avgCheck)}</td>
-                                        <td>${sharePct}</td>
-                                        <td>${commission !== '' ? formatNumber(commission) : ''}</td>
-                                        <td>${netMargin !== '' ? formatNumber(netMargin) : ''}</td>
-                                        <td>${netMarginPct !== '' ? netMarginPct + '%' : ''}</td>
-                                    `;
-                                    tbody.appendChild(row);
-                                }
-                            }
-
-                            document.getElementById('month-selector').addEventListener('change', function () {
-                                renderMonthlyStats(this.value);
-                            });
-
-                            // Отрисовываем текущий месяц при загрузке
-                            renderMonthlyStats('{{ $currentAccountingMonthKey }}');
-                        </script>
 
                         <h2>2. Статистика продаж за весь период</h2>
                         <div id="admin-panel-orders-from begin" status="closed">
