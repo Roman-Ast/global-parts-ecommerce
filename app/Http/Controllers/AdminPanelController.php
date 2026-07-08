@@ -402,6 +402,12 @@ class AdminPanelController extends Controller
             'salesStatisticsByMonth'     => $salesStatisticsByMonth,
             'monthsSorted'               => $monthsSorted,
             'currentAccountingMonthKey'  => $currentAccountingMonthKey,
+            'salesStatisticsByMonth'     => $salesStatisticsByMonth,
+            'salesStatisticsByMonth'     => $salesStatisticsByMonth,
+            'monthsSorted'               => $monthsSorted,
+            'currentAccountingMonthKey'  => $currentAccountingMonthKey,
+            'start'                      => $start,
+            'end'                        => $end,
         ], 
         $financeDashboard, 
         $supplierSettlementsDebts
