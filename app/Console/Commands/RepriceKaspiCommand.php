@@ -55,6 +55,10 @@ class RepriceKaspiCommand extends Command
         'spring',
     ];
 
+    const PAIR_ALREADY_BUNDLED = [
+        'autotrade_ast' => ['sat', 'baikor'], // было 'baikal' — опечатка, в прайсе бренд BAIKOR
+    ];
+
     public function handle(): int
     {
         $dryRun = $this->option('dry-run');
@@ -310,24 +314,49 @@ class RepriceKaspiCommand extends Command
      */
     private function applyQtyOverrides(): void
     {
-        // Проставляем qty_override = 2 где его ещё нет
-        $updated = DB::table('kaspi_feed_items')
-            ->where('kaspi_qty', 1)
-            ->whereNull('qty_override')
-            ->where('is_active', 1)
+        // Кандидаты на qty_override=2: пружины с kaspi_qty=1, вместе с брендом
+        // и поставщиком — чтобы можно было отфильтровать исключения.
+        $candidates = DB::table('kaspi_feed_items as kfi')
+            ->join('kaspi_initial_products as kip', 'kip.sku', '=', 'kfi.our_article')
+            ->where('kfi.kaspi_qty', 1)
+            ->whereNull('kfi.qty_override')
+            ->where('kfi.is_active', 1)
             ->where(function ($q) {
                 foreach (self::PAIR_KEYWORDS as $kw) {
-                    $q->orWhereRaw('LOWER(kaspi_name) LIKE ?', ['%' . mb_strtolower($kw) . '%']);
+                    $q->orWhereRaw('LOWER(kfi.kaspi_name) LIKE ?', ['%' . mb_strtolower($kw) . '%']);
                 }
             })
-            ->update(['qty_override' => 2]);
+            ->select('kfi.id', 'kip.supplier_name', 'kip.brand')
+            ->get();
 
-        if ($updated > 0) {
+        $idsToOverride  = [];
+        $skippedBundled = 0;
+
+        foreach ($candidates as $row) {
+            $bundledBrands = self::PAIR_ALREADY_BUNDLED[$row->supplier_name] ?? [];
+
+            if (in_array(mb_strtolower($row->brand), $bundledBrands, true)) {
+                // Уже комплект по 2 шт. в прайсе поставщика — не удваиваем
+                $skippedBundled++;
+                continue;
+            }
+
+            $idsToOverride[] = $row->id;
+        }
+
+        if (!empty($idsToOverride)) {
+            $updated = DB::table('kaspi_feed_items')
+                ->whereIn('id', $idsToOverride)
+                ->update(['qty_override' => 2]);
+
             $this->info("🔧 qty_override=2 проставлен для {$updated} пружин (kaspi_qty=1)");
         }
 
-        // Сбрасываем блокировку репрайса для пружин — ВСЕГДА,
-        // т.к. их цена была занижена и рост >30% это корректное исправление
+        if ($skippedBundled > 0) {
+            $this->info("↷ Пропущено как уже-комплект (SAT/Baikal у АвтоТрейда и т.п.): {$skippedBundled}");
+        }
+
+        // Сброс блокировки репрайса для пружин — без изменений
         $unblocked = DB::table('kaspi_feed_items')
             ->where('price_review_needed', 1)
             ->where(function ($q) {

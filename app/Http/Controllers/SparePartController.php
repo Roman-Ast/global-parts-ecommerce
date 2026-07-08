@@ -236,7 +236,6 @@ class SparePartController extends Controller
         $this->searchInterkom($request->brand, $partNumber);
         $this->searchAdilPhaeton($request->brand, $partNumber);
 
-        
         if (!$request->only_on_stock) {
             $this->searchAutopiter($request->brand, $request->partnumber);
             $this->searchAvtozakup($request->brand, $partNumber);
@@ -289,6 +288,141 @@ class SparePartController extends Controller
         ]);
     }
 
+    public function searchGerat(string $brand, string $partnumber)
+    {
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/storage_astana.php');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+
+        $result = curl_exec($ch);
+        curl_close($ch);
+
+        $xml_snippet = simplexml_load_string($result);
+        $json_convert = json_encode($xml_snippet);
+        $json = json_decode($json_convert);
+
+        if (!$json || empty($json->shop->offers->offer)) {
+            return;
+        }
+
+        // защита от дублей одной и той же позиции (по артикулу+цене+кол-ву)
+        $seen = [];
+
+        foreach ($json->shop->offers->offer as $item) {
+            $qty = (int) $this->xmlValueToString($item->count);
+
+            // нулевой остаток — вообще не показываем
+            if ($qty <= 0) {
+                continue;
+            }
+
+            $vendorCodeNormalized = strtolower($this->removeAllUnnecessaries($item->vendorCode));
+            $partnumberNormalized = strtolower($partnumber);
+
+            $isDirectMatch = $vendorCodeNormalized === $partnumberNormalized;
+            $isCrossMatch  = false;
+
+            if (!$isDirectMatch) {
+                $cross_numbers = explode(', ', (string) $item->description);
+                foreach ($cross_numbers as $cross_number) {
+                    if (strtolower($cross_number) === $partnumberNormalized) {
+                        $isCrossMatch = true;
+                        break; // одного совпадения достаточно, не плодим дубли
+                    }
+                }
+            }
+
+            if (!$isDirectMatch && !$isCrossMatch) {
+                continue;
+            }
+
+            $dedupeKey = $vendorCodeNormalized . '|' . (string) $item->price . '|' . $qty;
+            if (isset($seen[$dedupeKey])) {
+                continue;
+            }
+            $seen[$dedupeKey] = true;
+
+            // цена закупа с поправкой +20% сразу на входе:
+            // API поставщика отдаёт заниженную цену относительно их же сайта — баг на их стороне
+            $purchasePrice = round(((float) $item->price) * 1.2, self::ROUND_LIMIT);
+
+            array_push($this->finalArr['brands'], $item->vendor);
+
+            if ($isDirectMatch) {
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand'            => $item->vendor,
+                    'article'          => $item->vendorCode,
+                    'name'             => substr($item->model, 0, 60),
+                    'price'            => $purchasePrice,
+                    'priceWithMargine' => round($this->setPrice($purchasePrice), self::ROUND_LIMIT),
+                    'qty'              => $qty,
+                    'supplier_name'    => 'grt',
+                    'supplier_city'    => 'Астана',
+                    'supplier_color'   => '#7bafcf',
+                    'deliveryStart'    => '1.5-2 часа',
+                    'info' => [
+                        'pictures' => $item->picture ?? '',
+                        'params' => count($item->param) <= 3 ? [] : [
+                            'OEM'         => explode(',', $item->param[3]),
+                            'suitable_to' => '',
+                            'tech_info'   => '',
+                            'sizes'       => [
+                                'width'  => $item->param[6] ?? 'нет информации',
+                                'height' => $item->param[5] ?? 'нет информации',
+                                'depth'  => $item->param[4] ?? 'нет информации',
+                            ],
+                        ],
+                    ],
+                ]);
+            } else {
+                $params     = $item->param ?? [];
+                $infoParams = [];
+
+                if (count($params) >= 4 && isset($params[3])) {
+                    $infoParams = [
+                        'OEM'         => explode(',', $params[3]),
+                        'suitable_to' => '',
+                        'tech_info'   => '',
+                        'sizes' => [
+                            'width'  => $params[6] ?? 'нет информации',
+                            'height' => $params[5] ?? 'нет информации',
+                            'depth'  => $params[4] ?? 'нет информации',
+                        ],
+                    ];
+                }
+
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand'          => $item->vendor,
+                    'article'        => $item->vendorCode,
+                    'name'           => substr($item->model, 0, 60),
+                    'qty'            => $qty,
+                    'price'          => $purchasePrice,
+                    'priceWithMargine' => round($this->setPrice($purchasePrice), self::ROUND_LIMIT),
+                    'delivery_time'  => '1.5-2 часа',
+                    'info' => [
+                        'pictures' => $item->picture ?? 0,
+                        'params'   => $infoParams,
+                    ],
+                    'stocks' => [
+                        [
+                            'qty'              => $qty,
+                            'price'            => $purchasePrice,
+                            'priceWithMargine' => round($this->setPrice($purchasePrice), self::ROUND_LIMIT),
+                        ],
+                    ],
+                    'supplier_name'  => 'grt',
+                    'supplier_city'  => 'Астана',
+                    'supplier_color' => '#feed00',
+                ]);
+            }
+        }
+
+        return;
+    }
     public function searchAvtozakup(String $brand, String $partnumber)
     {
         try {
@@ -1561,76 +1695,6 @@ class SparePartController extends Controller
         return;
     }
 
-    public function searchTiss(String $brand, String $partnumber)
-    {
-        //$start = microtime(true);
-        $ch1 = curl_init(); 
-        
-        $fields = array("JSONparameter" => "{'Brand': '".$brand."', 'Article': '".$partnumber."', 'is_main_warehouse': ".'1'." }" );
-        
-        $headers = array(         
-            'Authorization: Bearer '. self::TISS_API_KEY
-        );
-        curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/StockByArticle?". http_build_query($fields));
-        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch1, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
-        curl_setopt($ch1, CURLOPT_TIMEOUT, self::TIMEOUT);
-        curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-
-        try {
-            $result = json_decode(curl_exec($ch1));
-        } catch (\Throwable $th) {
-            return;
-        }
-        
-        if (empty($result)) {
-            return;
-        }
-        
-        foreach ($result as $key => $item) {
-            if (strtolower($item->article) == strtolower($this->finalArr['originNumber']) ) {
-                array_push($this->finalArr['searchedNumber'], [
-                    'brand' => $item->brand,
-                    'article' => $item->article,
-                    'name' => $item->article_name,
-                    'price' => $item->min_price,
-                    'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
-                    'qty' => $item->warehouse_offers[0]->quantity,
-                    'supplier_name' => 'tss',
-                    'supplier_city' => 'ast',
-                    'supplier_color' => '#7bafcf',
-                    'deliveryStart' => date('d.m.Y'),
-                ]);
-            } else {
-                $stocks = [];
-                foreach ($item->warehouse_offers as $key => $offer) {
-                    array_push($stocks, [
-                        'qty' => $offer->quantity,
-                        'price' => $offer->price,
-                        'priceWithMargine' => round($this->setPrice($offer->price), self::ROUND_LIMIT)
-                    ]);
-                }
-                array_push($this->finalArr['crosses_on_stock'], [
-                    'brand' => $item->brand,
-                    'article' => $item->article,
-                    'name' => $item->article_name,
-                    'qty' => $item->warehouse_offers[0]->quantity,
-                    'price' => $item->min_price,
-                    'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
-                    'stocks' => $stocks,
-                    'supplier_name' => 'tss',
-                    'stock_legend' => $item->warehouse_offers[0]->warehouse_name,
-                    'delivery_time' => '1.5-2 часа',
-                    'supplier_city' => 'ast',
-                    'supplier_color' => '#7bafcf',
-                ]);
-            }
-        }
-        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. tiss';
-        return;
-    }
-
     public function searchKulan(String $brand, String $partnumber)
     {
         $start = microtime(true);
@@ -1786,114 +1850,173 @@ class SparePartController extends Controller
         return;
     }
 
-    public function searchGerat(String $brand, String $partnumber)
+    public function searchTiss(string $brand, string $partnumber)
     {
-        //$start = microtime(true);old anchor 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php'
-        $ch = curl_init();
+        $apiUrl = 'https://api.tabys.parts/external/v1/product-offers/by-brand-and-product-code';
 
-        curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/storage_astana.php');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
-        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
-        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        try {
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'Accept'              => 'application/json',
+                    'Accept-Language'     => 'ru-RU',
+                    'Content-Type'        => 'application/json',
+                    'X-External-Api-Key'  => env('TISS_API_KEY'),
+                ])
+                ->timeout(self::TIMEOUT)
+                ->post($apiUrl, [
+                    'products' => [
+                        [
+                            'productCode' => $partnumber,
+                            'brandName'   => $brand,
+                        ],
+                    ],
+                    'contractId'                    => env('TISS_CONTRACT_ID'),
+                    'outletId'                      => env('TISS_OUTLET_ID'),
+                    'priceFrom'                     => 0,
+                    'priceTo'                       => 0,
+                    'deliveryMinDays'               => 0,
+                    'deliveryMaxDays'               => 0,
+                    'offersMaxNum'                  => 0,
+                    'orderByPrice'                  => true,
+                    'enableAnalog'                  => true,
+                    'warehouses'                    => [env('TISS_WAREHOUSE_ID')],
+                    'isInStockInHomeWarehousesOnly' => false,
+                ]);
+        } catch (\Throwable $th) {
+            return;
+        }
 
-        $result = curl_exec($ch);
-        $xml_snippet = simplexml_load_string( $result );
-        $json_convert = json_encode( $xml_snippet );
-        $json = json_decode( $json_convert );
-        if (!$json) {
-			return;
-		}
-        //dd($json);
-        foreach ($json->shop->offers->offer as $item) {
-            //dd($item);
-            $cross_numbers = explode(', ', $item->description);
-            
-            foreach ($cross_numbers as $cross_number) {
-                if (strtolower($cross_number) == strtolower($partnumber) || strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
-                    if (strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
-                        array_push($this->finalArr['brands'], $item->vendor);
-                        //dd($item);
-                        array_push($this->finalArr['searchedNumber'], [
-                            'brand' => $item->vendor,
-                            'article' => $item->vendorCode,
-                            'name' => substr($item->model, 0, 60),
-                            'price' => $item->price,
-                            'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                            'qty' => $item->count,
-                            'supplier_name' => 'grt',
-                            'supplier_city' => 'Астана',
-                            'supplier_color' => '#7bafcf',
-                            'deliveryStart' => '1.5-2 часа',
-                            'info' => [
-                                'pictures' => $item->picture ?? '',
-                                'params' => count($item->param) <=3 ? [] : [
-                                    'OEM' => explode(',', $item->param[3]),
-                                    'suitable_to' => '',
-                                    'tech_info' => '',
-                                    'sizes' => count($item->param) > 4 ?[
-                                        'width' => $item->param[6],
-                                        'height' => $item->param[5],
-                                        'depth' => $item->param[4]
-                                    ] : [
-                                        'width' => 'нет информации',
-                                        'height' => 'нет информации',
-                                        'depth' => 'нет информации'
-                                    ]
-                                ],
-                            ],
-                        ]);
-                    } else {
-                        array_push($this->finalArr['brands'], $item->vendor);
-                        //dd($item);
-                        // 1. Сначала готовим безопасные параметры
-                        $params = $item->param ?? [];
-                        $infoParams = [];
+        if (!$response->successful()) {
+            \Illuminate\Support\Facades\Log::warning('TISS API error', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            return;
+        }
 
-                        // Проверяем, что в массиве хотя бы 4 элемента для OEM
-                        if (count($params) >= 4 && isset($params[3])) {
-                            $infoParams = [
-                                'OEM' => explode(',', $params[3]),
-                                'suitable_to' => '',
-                                'tech_info' => '',
-                                'sizes' => [
-                                    // Проверяем наличие каждого индекса отдельно, чтобы не поймать Undefined Key
-                                    'width' => isset($params[6]) ? $params[6] : 'нет информации',
-                                    'height' => isset($params[5]) ? $params[5] : 'нет информации',
-                                    'depth' => isset($params[4]) ? $params[4] : 'нет информации',
-                                ]
-                            ];
+        $data = $response->json();
+        //dd($data);
+        if (empty($data) || !is_array($data)) {
+            return;
+        }
+
+        $cleanPartnumber = $this->removeAllUnnecessaries($partnumber);
+
+        // Верхний уровень ответа — объект с динамическими ключами (по каждому запрошенному товару)
+        foreach ($data as $group) {
+            if (empty($group['items']) || !is_array($group['items'])) {
+                continue;
+            }
+
+            foreach ($group['items'] as $item) {
+                $itemBrand        = (string) ($item['brandName'] ?? '');
+                $itemArticle      = (string) ($item['productCode'] ?? $item['displayProductCode'] ?? '');
+                $cleanItemArticle = $this->removeAllUnnecessaries($itemArticle);
+                $name             = substr((string) ($item['productName'] ?? 'Запчасть'), 0, 60);
+
+                if (empty($item['offers']) || !is_array($item['offers'])) {
+                    continue;
+                }
+
+                // Точное совпадение — тот же артикул и бренд, что искали
+                $isExactMatch = ($cleanItemArticle === $cleanPartnumber)
+                    && (strtoupper($itemBrand) === strtoupper($brand));
+
+                foreach ($item['offers'] as $offer) {
+                    $price = (float) ($offer['price'] ?? 0);
+                    if ($price <= 0) {
+                        continue;
+                    }
+
+                    $warehouseName = (string) ($offer['warehouseName'] ?? '');
+                    $isAstana      = str_contains($warehouseName, 'Астана') || str_contains($warehouseName, 'Маскеу');
+
+                    $qtyNow      = (int) ($offer['amount'] ?? 0);
+                    $qtyExpected = (int) ($offer['expectedAmount'] ?? 0);
+
+                    $deliveryInfo = $offer['deliveryInfo'] ?? [];
+                    $deliveryText = $isAstana
+                        ? '1.5-2 часа'
+                        : (!empty($deliveryInfo['workDays'])
+                            ? $deliveryInfo['workDays'] . ' дн.'
+                            : ($deliveryInfo['timeFrame'] ?? '3-5 дней'));
+
+                    $supplierCity = $isAstana ? 'ast' : ($warehouseName ?: 'РФ/Склад');
+
+                    if ($isExactMatch) {
+                        // Искомый номер — только если реально есть в наличии сейчас
+                        if ($qtyNow > 0) {
+                            array_push($this->finalArr['brands'], $itemBrand);
+
+                            array_push($this->finalArr['searchedNumber'], [
+                                'guid'             => '',
+                                'brand'            => $itemBrand,
+                                'article'          => $itemArticle,
+                                'name'             => $name,
+                                'item_id'          => $item['productId'] ?? '',
+                                'price'            => $price,
+                                'priceWithMargine' => round($this->setPrice($price), self::ROUND_LIMIT),
+                                'qty'              => $qtyNow,
+                                'multiplicity'     => $offer['minPackSize'] ?? '',
+                                'type'             => '',
+                                'delivery'         => '',
+                                'extra'            => '',
+                                'description'      => 'tiss',
+                                'deliveryStart'    => date('d.m.Y'),
+                                'deliveryEnd'      => date('d.m.Y'),
+                                'supplier_name'    => 'tiss',
+                                'supplier_city'    => $supplierCity,
+                                'supplier_color'   => '#7a3ea1',
+                            ]);
                         }
+                        continue;
+                    }
 
-                        // 2. Теперь вставляем это в твой основной массив
+                    // Кросс/аналог — в наличии сейчас
+                    if ($qtyNow > 0) {
+                        array_push($this->finalArr['brands'], $itemBrand);
+
                         array_push($this->finalArr['crosses_on_stock'], [
-                            'brand' => $item->vendor,
-                            'article' => $item->vendorCode,
-                            'name' => substr($item->model, 0, 60),
-                            'qty' => $item->count,
-                            'price' => $item->price,
-                            'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                            'delivery_time' => "1.5-2 часа",
-                            'info' => [
-                                'pictures' => $item->picture ?? 0,
-                                'params' => $infoParams, // Вставляем уже подготовленный массив
-                            ],
-                            'stocks' => [
-                                [
-                                    'qty' => $item->count,
-                                    'price' => $item->price,
-                                    'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                                ]
-                            ],
-                            'supplier_name' => 'grt',
-                            'supplier_city' => 'Астана',
-                            'supplier_color' => '#feed00'
+                            'id'             => $item['productId'] ?? '',
+                            'brand'          => $itemBrand,
+                            'article'        => $itemArticle,
+                            'name'           => $name,
+                            'qty'            => $qtyNow,
+                            'price'          => round($price),
+                            'priceWithMargine' => round($this->setPrice($price), self::ROUND_LIMIT),
+                            'supplier_name'  => 'tiss',
+                            'extra'          => ['photo' => ''],
+                            'delivery_date'  => '',
+                            'delivery_time'  => $deliveryText,
+                            'supplier_city'  => $supplierCity,
+                            'supplier_color' => '#9c63c2',
+                        ]);
+                        continue;
+                    }
+
+                    // Кросс/аналог — нет сейчас, но есть ожидаемая поставка ("под заказ")
+                    if ($qtyExpected > 0) {
+                        array_push($this->finalArr['brands'], $itemBrand);
+
+                        array_push($this->finalArr['crosses_to_order'], [
+                            'id'             => $item['productId'] ?? '',
+                            'brand'          => $itemBrand,
+                            'article'        => $itemArticle,
+                            'name'           => $name,
+                            'qty'            => $qtyExpected,
+                            'price'          => round($price),
+                            'priceWithMargine' => round($this->setPrice($price), self::ROUND_LIMIT),
+                            'supplier_name'  => 'tiss',
+                            'extra'          => ['photo' => ''],
+                            'delivery_date'  => $offer['expectedArrivalDate'] ?? '',
+                            'delivery_time'  => $deliveryText,
+                            'supplier_city'  => $supplierCity,
+                            'supplier_color' => '#9c63c2',
                         ]);
                     }
                 }
             }
         }
-        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. grt';
+
         return;
     }
 
@@ -2555,5 +2678,78 @@ class SparePartController extends Controller
     {
         preg_match('/(\d+)/', $text, $matches);
         return isset($matches[1]) ? (int)$matches[1] : 999;
+    }
+
+    public function getBrandsByArticle(string $partnumber): array
+    {
+        try {
+            $response = Http::timeout(15)->post('https://service.tradesoft.ru/3/info/get-brands-by-article', [
+                'user'     => env('TRADESOFT_USER'),
+                'password' => env('TRADESOFT_PASSWORD'),
+                'service'  => 'info',
+                'action'   => 'getBrandsByArticle',
+                'param'    => [
+                    'code' => $partnumber,
+                    'lang' => 'ru',
+                ],
+            ]);
+
+            \Log::info('Avtozakup getBrandsByArticle response', [
+                'status' => $response->status(),
+                'body'   => substr($response->body(), 0, 500),
+            ]);
+
+            if (!$response->ok()) {
+                \Log::warning('Avtozakup getBrandsByArticle not ok', ['status' => $response->status()]);
+                return [];
+            }
+
+            $data = $response->json();
+
+            if (!empty($data['error']) || empty($data['result'][0])) {
+                \Log::warning('Avtozakup getBrandsByArticle empty or error', [
+                    'error'  => $data['error'] ?? null,
+                    'result' => $data['result'] ?? null,
+                ]);
+                return [];
+            }
+
+            $brands = [];
+
+            foreach ($data['result'][0] as $item) {
+                if (empty($item['brand'])) {
+                    continue;
+                }
+
+                $brands[] = [
+                    'name'  => $item['name']  ?? '',
+                    'brand' => $item['brand'] ?? '',
+                ];
+            }
+
+            return $brands;
+
+        } catch (\Exception $e) {
+            \Log::error('Avtozakup getBrandsByArticle exception', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+            return [];
+        }
+    }
+
+    private function xmlValueToString($value): string
+    {
+        if (is_object($value)) {
+            $value = (array) $value;
+        }
+
+        if (is_array($value)) {
+            $first = reset($value);
+            return $first !== false ? $this->xmlValueToString($first) : '';
+        }
+
+        return (string) $value;
     }
 } 

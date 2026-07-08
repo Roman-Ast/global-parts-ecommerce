@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\Http;
 
 class ParseKaspiSkuCommand extends Command
 {
-    protected $signature = 'kaspi:parse-sku {--limit=50} {--supplier=}';
+    protected $signature = 'kaspi:parse-sku {--limit=11000} {--supplier=}';
 
     protected $description = 'Парсит Каспи: SKU + конкуренты + количество в комплекте';
 
     private string $cityId = '710000000';
 
-    private string $cookies = 'mc-session=1783085574.073.81224.909019|825e5f3659dba1ed7b5d7b2cbf5f1012; mc-sid=3077b2be-23bf-47d6-bf5f-ea3d73e979b3';
+    private string $cookies = 'mc-session=1783326645.435.114065.686134|825e5f3659dba1ed7b5d7b2cbf5f1012; mc-sid=0a99e808-b347-4d4a-9b04-da7b56e9d6f9';
 
     /**
      * Категории товаров, где у ПОСТАВЩИКА цена уже указана за комплект,

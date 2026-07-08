@@ -16,7 +16,7 @@ class BindKaspiProductsCommand extends Command
 
     private string $merchantCode = '30360429';
 
-    private $cookies = 'mc-session=1782712488.114.73211.769917|825e5f3659dba1ed7b5d7b2cbf5f1012; mc-sid=00d0b847-ac23-4536-9fc2-bf76bb1355b9';
+    private $cookies = 'mc-session=1783326645.435.114065.686134|825e5f3659dba1ed7b5d7b2cbf5f1012; mc-sid=0c990b19-7646-4c30-9369-4d97010aba96';
 
     public function handle(): int
     {
@@ -49,6 +49,7 @@ class BindKaspiProductsCommand extends Command
 
         $success = 0;
         $failed  = 0;
+        $expired = 0;
         $session_dead = false;
 
         foreach ($items as $item) {
@@ -73,6 +74,16 @@ class BindKaspiProductsCommand extends Command
                     ->update(['bound' => 1]);
                 $success++;
                 $this->line("  ✓ Привязан");
+            } elseif (is_string($result) && $this->isExpiredMasterError($result)) {
+                // Мастер-карточка на стороне Kaspi мертва (EXPIRED) окончательно —
+                // это не временное отсутствие в прайсе поставщика, а статус самого Kaspi.
+                // Если она когда-нибудь появится заново, kaspi:match всё равно создаст/обновит
+                // нужную строку через upsert по kaspi_sku — хранить мёртвую запись впрок смысла нет.
+                DB::table('kaspi_feed_items')
+                    ->where('id', $item->id)
+                    ->delete();
+                $expired++;
+                $this->warn("  ⚠ Мастер-карточка EXPIRED — запись удалена из kaspi_feed_items");
             } else {
                 $failed++;
                 $this->warn("  ✗ Ошибка: {$result}");
@@ -81,8 +92,14 @@ class BindKaspiProductsCommand extends Command
             usleep($delay * 1000);
         }
 
-        $this->info("Готово. Привязано: {$success}, ошибок: {$failed}");
+        $this->info("Готово. Привязано: {$success}, удалено (EXPIRED): {$expired}, ошибок: {$failed}");
         return 0;
+    }
+
+    private function isExpiredMasterError(string $result): bool
+    {
+        return str_contains($result, 'master.product.expired')
+            || str_contains(strtolower($result), 'status expired');
     }
 
     private function linkToMaster(string $kaspiSku, string $cookies): true|null|string

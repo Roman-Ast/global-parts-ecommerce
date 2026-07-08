@@ -16,7 +16,9 @@ use App\Services\PriceParsers\VoltazhParser;
 use App\Services\PriceParsers\RosskoParser;
 use App\Services\PriceParsers\ForumAutoParser;
 use App\Services\PriceParsers\AutotradeAstParser;
-use App\Services\PriceParsers\AutotradeAlmParser; 
+use App\Services\PriceParsers\AutotradeAlmParser;
+use App\Services\PriceParsers\InterkomParser; 
+use App\Services\PriceParsers\MultiSheetParserInterface;
 
 class FetchPricesCommand extends Command
 {
@@ -85,6 +87,7 @@ class FetchPricesCommand extends Command
 
                 $this->info("Скачиваем вложение: {$filename}...");
 
+                // --- СКАЧИВАНИЕ (общее для всех парсеров) ---
                 $localStoragePath = 'tmp/' . $filename;
                 Storage::disk('local')->put($localStoragePath, $attachment->getContent());
                 $fullPath = storage_path('app/' . $localStoragePath);
@@ -103,7 +106,19 @@ class FetchPricesCommand extends Command
                     }
                 }
 
-                // --- ЧИТАЕМ СТРОКИ ---
+                // --- РАЗВИЛКА: multi-sheet (Interkom) vs обычный однолистовый парсер ---
+                if ($parser instanceof MultiSheetParserInterface) {
+                    $this->processMultiSheetFile($parser, $fullPath, $isXlsx, $isXls, $filename);
+
+                    Storage::disk('local')->delete($localStoragePath);
+                    if ($extractedFullPath && file_exists($extractedFullPath)) {
+                        unlink($extractedFullPath);
+                    }
+
+                    continue; // к следующему вложению
+                }
+
+                // --- ЧИТАЕМ СТРОКИ (однолистовые парсеры — Rossko, Shatem и т.д., как раньше) ---
                 $rows = $this->readRows($fullPath, $isXlsx, $isCsv, $isXls, $filename);
 
                 Storage::disk('local')->delete($localStoragePath);
@@ -120,7 +135,6 @@ class FetchPricesCommand extends Command
                 $updatedCount = 0;
                 $skippedCount = 0;
 
-                // Собираем SKU всех позиций, прошедших фильтры в этом прайсе
                 $skuListFromPrice = [];
 
                 foreach ($rows as $row) {
@@ -173,7 +187,6 @@ class FetchPricesCommand extends Command
                 $this->comment("Добавлено:            {$newCount}");
                 $this->comment("Обновлено:            {$updatedCount}");
 
-                // --- УДАЛЕНИЕ ИСЧЕЗНУВШИХ ПОЗИЦИЙ ЭТОГО ПОСТАВЩИКА ИЗ supplier_offers ---
                 $this->removeStaleOffers($supplierKey, $skuListFromPrice);
             }
 
@@ -191,9 +204,6 @@ class FetchPricesCommand extends Command
 
         $this->info('Агрегация завершена.');
 
-        /*\Illuminate\Support\Facades\Artisan::call('kaspi:generate-xml');
-
-        $this->info('XML-фид для Каспи успешно перегенерирован!');*/
         return 0;
     }
 
@@ -216,6 +226,108 @@ class FetchPricesCommand extends Command
             ->delete();
 
         $this->comment("  Удалено офферов {$supplierKey} (исчезли из прайса): {$deleted}");
+    }
+
+    /**
+     * Обрабатывает multi-sheet файл, где один файл = несколько поставщиков
+     * (каждый разрешённый лист — свой supplier_name). Сейчас единственный
+     * пример — Interkom (LADA/GAZ/LargusRenault/Chevrolet).
+     */
+    private function processMultiSheetFile(
+        MultiSheetParserInterface $parser,
+        string $fullPath,
+        bool   $isXlsx,
+        bool   $isXls,
+        string $filename
+    ): void {
+        if ($isXlsx) {
+            $book = SimpleXLSX::parse($fullPath);
+        } elseif ($isXls) {
+            $book = SimpleXLS::parse($fullPath);
+        } else {
+            $this->error("Multi-sheet парсер поддерживает только XLS/XLSX: {$filename}");
+            return;
+        }
+
+        if (!$book) {
+            $this->error("Не удалось распарсить книгу: {$filename}");
+            return;
+        }
+
+        $sheetNames   = $book->sheetNames();
+        $dataStartRow = $parser->getDataStartRow();
+
+        foreach ($parser->getAllowedSheets() as $sheetName) {
+            $sheetIndex = array_search($sheetName, $sheetNames, true);
+
+            if ($sheetIndex === false) {
+                $this->warn("  Лист «{$sheetName}» не найден в файле {$filename}, пропускаем.");
+                continue;
+            }
+
+            $supplierKey = $parser->resolveSupplierName($sheetName);
+
+            $allRows  = $book->rows($sheetIndex);
+            $dataRows = array_slice($allRows, $dataStartRow);
+
+            $newCount         = 0;
+            $updatedCount     = 0;
+            $skippedCount     = 0;
+            $skuListFromPrice = [];
+
+            foreach ($dataRows as $row) {
+                $parsedData = $parser->parseRow($row);
+
+                if (!$parsedData) {
+                    continue;
+                }
+
+                $qty = (int) preg_replace('/[^0-9]/', '', (string)$parsedData['stock']);
+                if ($qty < 2) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                $purchasePrice = (float) str_replace([' ', ','], ['', '.'], (string)$parsedData['price']);
+                if ($purchasePrice < 3000) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                $skuListFromPrice[] = $parsedData['sku'];
+
+                $existOffer = DB::table('supplier_offers')
+                    ->where('sku', $parsedData['sku'])
+                    ->where('supplier_name', $supplierKey)
+                    ->first();
+
+                DB::table('supplier_offers')->updateOrInsert(
+                    [
+                        'sku'           => $parsedData['sku'],
+                        'supplier_name' => $supplierKey,
+                    ],
+                    [
+                        'title'          => $parsedData['title'],
+                        'brand'          => mb_strtolower($parsedData['brand']),
+                        'purchase_price' => $purchasePrice,
+                        'stock'          => $qty,
+                        'preorder_days'  => $parsedData['preorder_days'] ?? 0,
+                        'updated_at'     => now(),
+                        'created_at'     => $existOffer ? $existOffer->created_at : now(),
+                    ]
+                );
+
+                $existOffer ? $updatedCount++ : $newCount++;
+            }
+
+            $this->info("  Лист «{$sheetName}» → {$supplierKey}");
+            $this->comment("    Пропущено: {$skippedCount}");
+            $this->comment("    Добавлено: {$newCount}");
+            $this->comment("    Обновлено: {$updatedCount}");
+
+            // защита от пустого листа встроена внутрь removeStaleOffers
+            $this->removeStaleOffers($supplierKey, $skuListFromPrice);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -292,6 +404,18 @@ class FetchPricesCommand extends Command
         ) {
             $this->comment('Выбран парсер: Вольтаж');
             return [new VoltazhParser(), 'voltazh'];
+        }
+
+        if (
+            str_contains($subjectLower,   'интерком')   ||
+            str_contains($subjectLower,   'interkom')   ||
+            str_contains($fromEmailLower, 'interkom')   ||
+            str_contains($fromEmailLower, 'roman_planeta') ||
+            str_contains($filenameLower,  'интерком')   ||
+            str_contains($filenameLower,  'interkom')
+        ) {
+            $this->comment('Выбран парсер: Интерком');
+            return [new InterkomParser(), 'interkom'];
         }
 
         if (
