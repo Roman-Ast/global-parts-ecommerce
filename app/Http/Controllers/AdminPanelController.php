@@ -102,6 +102,65 @@ class AdminPanelController extends Controller
             $sales_statistics[$sale_channel]['countOfSales'] = Order::whereBetween('date', [$start, $end])->where('sale_channel', $sale_channel)->count();
         }
 
+        // Помесячная статистика по каналам продаж (учётный период — с 8 числа по 7-е)
+        $channelStatsRaw = Order::select(
+                'sale_channel',
+                DB::raw("
+                    DATE_FORMAT(
+                        CASE
+                            WHEN DAY(`date`) >= 8 THEN `date`
+                            ELSE DATE_SUB(`date`, INTERVAL 1 MONTH)
+                        END,
+                        '%m.%Y'
+                    ) as accounting_month
+                "),
+                DB::raw('SUM(sum_with_margine) as total_sales_sum'),
+                DB::raw('SUM(sum) as total_prime_cost_sum'),
+                DB::raw('COUNT(*) as count_of_sales')
+            )
+            ->whereNotNull('sale_channel')
+            ->groupBy('sale_channel', 'accounting_month')
+            ->get();
+
+        $channelKeys = ['kaspi', '2gis', 'olx', 'friends', 'site', 'repeat_request'];
+
+        $salesStatisticsByMonth = [];
+
+        foreach ($channelStatsRaw as $row) {
+            $month   = $row->accounting_month;
+            $channel = $row->sale_channel;
+
+            if (!isset($salesStatisticsByMonth[$month])) {
+                $salesStatisticsByMonth[$month] = [];
+                foreach ($channelKeys as $ck) {
+                    $salesStatisticsByMonth[$month][$ck] = [
+                        'totalSalesSum'          => 0,
+                        'totalSalesPrimeCostSum' => 0,
+                        'countOfSales'           => 0,
+                    ];
+                }
+            }
+
+            if (in_array($channel, $channelKeys, true)) {
+                $salesStatisticsByMonth[$month][$channel] = [
+                    'totalSalesSum'          => (float) $row->total_sales_sum,
+                    'totalSalesPrimeCostSum' => (float) $row->total_prime_cost_sum,
+                    'countOfSales'           => (int) $row->count_of_sales,
+                ];
+            }
+        }
+
+        // Сортируем месяцы от новых к старым для выпадающего списка
+        $monthsSorted = array_keys($salesStatisticsByMonth);
+        usort($monthsSorted, function ($a, $b) {
+            return Carbon::createFromFormat('m.Y', $b)->timestamp <=> Carbon::createFromFormat('m.Y', $a)->timestamp;
+        });
+
+        // Текущий учётный месяц — выбран по умолчанию в UI
+        $currentAccountingMonthKey = $today->day >= 8
+            ? $today->format('m.Y')
+            : $today->copy()->subMonth()->format('m.Y');
+
         $totalSalesSum = Order::whereBetween('date', [$start, $end])->sum('sum_with_margine');
         $totalPrimeCostSum = Order::whereBetween('date', [$start, $end])->sum('sum');
         $totalCountOfSales = Order::whereBetween('date', [$start, $end])->count();
@@ -332,6 +391,9 @@ class AdminPanelController extends Controller
             'kaspiComissionFromBegin' => $kaspiComissionFromBegin,
             'marginClearFromBegin' => $marginClearFromBegin,
             'accounts' => $accounts,
+            'salesStatisticsByMonth'     => $salesStatisticsByMonth,
+            'monthsSorted'               => $monthsSorted,
+            'currentAccountingMonthKey'  => $currentAccountingMonthKey,
         ], 
         $financeDashboard, 
         $supplierSettlementsDebts

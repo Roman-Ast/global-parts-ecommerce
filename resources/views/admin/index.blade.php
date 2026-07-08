@@ -639,6 +639,96 @@
                         <h2>1. Сумма продаж и закупа по месяцам</h2>
                         <canvas id="salesChart" width="800" height="400"></canvas>
 
+                        <h2>2. Статистика продаж по месяцам</h2>
+                        <div style="margin-bottom: 10px;">
+                            <label for="month-selector">Выберите месяц: </label>
+                            <select id="month-selector">
+                                @foreach ($monthsSorted as $monthKey)
+                                    <option value="{{ $monthKey }}" {{ $monthKey === $currentAccountingMonthKey ? 'selected' : '' }}>
+                                        {{ $monthKey }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <table class="table table-striped" id="monthly-stats-table">
+                            <thead>
+                                <th>Канал продаж</th>
+                                <th>Сумма</th>
+                                <th>С/С</th>
+                                <th>Маржа грязная</th>
+                                <th>Маржа грязная, %</th>
+                                <th>Кол-во продаж</th>
+                                <th>Средний чек</th>
+                                <th>% от общих продаж</th>
+                                <th>Комиссия</th>
+                                <th>Маржа чистая</th>
+                                <th>Маржа чистая, %</th>
+                            </thead>
+                            <tbody id="monthly-stats-body">
+                                <!-- заполняется JS -->
+                            </tbody>
+                        </table>
+
+                        <script>
+                            const salesStatisticsByMonth = @json($salesStatisticsByMonth);
+
+                            function formatNumber(num) {
+                                return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                            }
+
+                            function renderMonthlyStats(monthKey) {
+                                const data = salesStatisticsByMonth[monthKey];
+                                if (!data) return;
+
+                                const tbody = document.getElementById('monthly-stats-body');
+                                tbody.innerHTML = '';
+
+                                let totalSalesSumAllChannels = 0;
+                                Object.values(data).forEach(d => totalSalesSumAllChannels += d.totalSalesSum);
+
+                                for (const [channel, d] of Object.entries(data)) {
+                                    const grossMargin = d.totalSalesSum - d.totalSalesPrimeCostSum;
+                                    const grossMarginPct = d.totalSalesSum ? Math.round(100 - (d.totalSalesPrimeCostSum * 100 / d.totalSalesSum)) : 0;
+                                    const avgCheck = d.countOfSales ? Math.round(d.totalSalesSum / d.countOfSales) : 0;
+                                    const sharePct = totalSalesSumAllChannels ? (d.totalSalesSum * 100 / totalSalesSumAllChannels).toFixed(2) : 0;
+
+                                    let commission = '';
+                                    let netMargin = '';
+                                    let netMarginPct = '';
+
+                                    if (channel === 'kaspi') {
+                                        commission = d.totalSalesSum * 12.5 / 100;
+                                        netMargin = grossMargin - commission;
+                                        netMarginPct = d.totalSalesSum > 0 ? ((netMargin * 100) / d.totalSalesSum).toFixed(2) : 0;
+                                    }
+
+                                    const row = document.createElement('tr');
+                                    row.innerHTML = `
+                                        <td>${channel}</td>
+                                        <td>${formatNumber(d.totalSalesSum)}</td>
+                                        <td>${formatNumber(d.totalSalesPrimeCostSum)}</td>
+                                        <td>${formatNumber(grossMargin)}</td>
+                                        <td>${grossMarginPct}%</td>
+                                        <td>${formatNumber(d.countOfSales)}</td>
+                                        <td>${formatNumber(avgCheck)}</td>
+                                        <td>${sharePct}</td>
+                                        <td>${commission !== '' ? formatNumber(commission) : ''}</td>
+                                        <td>${netMargin !== '' ? formatNumber(netMargin) : ''}</td>
+                                        <td>${netMarginPct !== '' ? netMarginPct + '%' : ''}</td>
+                                    `;
+                                    tbody.appendChild(row);
+                                }
+                            }
+
+                            document.getElementById('month-selector').addEventListener('change', function () {
+                                renderMonthlyStats(this.value);
+                            });
+
+                            // Отрисовываем текущий месяц при загрузке
+                            renderMonthlyStats('{{ $currentAccountingMonthKey }}');
+                        </script>
+
                         <h2>2. Статистика продаж за весь период</h2>
                         <div id="admin-panel-orders-from begin" status="closed">
                             <table class="table table-striped">

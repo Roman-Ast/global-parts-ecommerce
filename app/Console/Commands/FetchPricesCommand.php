@@ -151,7 +151,7 @@ class FetchPricesCommand extends Command
                     }
 
                     $purchasePrice = (float) str_replace([' ', ','], ['', '.'], (string)$parsedData['price']);
-                    if ($purchasePrice < 3000) {
+                    if ($purchasePrice < 5000) {
                         $skippedCount++;
                         continue;
                     }
@@ -289,7 +289,7 @@ class FetchPricesCommand extends Command
                 }
 
                 $purchasePrice = (float) str_replace([' ', ','], ['', '.'], (string)$parsedData['price']);
-                if ($purchasePrice < 3000) {
+                if ($purchasePrice < 5000) {
                     $skippedCount++;
                     continue;
                 }

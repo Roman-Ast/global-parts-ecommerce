@@ -12,7 +12,7 @@ class AggregateSupplierOffersCommand extends Command
     protected $description = 'Синхронизирует kaspi_initial_products с лучшими (минимальными по цене среди прошедших фильтр по остатку) предложениями из supplier_offers. Позиции avtozakup не трогаются.';
 
     const MIN_STOCK = 2;
-    const MIN_PRICE = 10000;
+    const MIN_PRICE = 5000;
     const PROTECTED_SUPPLIER = 'avtozakup';
 
     public function handle(): int
@@ -110,10 +110,22 @@ class AggregateSupplierOffersCommand extends Command
             return;
         }
 
-        $staleSkus = DB::table('kaspi_initial_products')
+        // array_flip даёт O(1) проверку через isset() вместо O(N) через in_array()
+        $activeSkusMap = array_flip($activeSkus);
+
+        $staleSkus = collect();
+
+        DB::table('kaspi_initial_products')
             ->where('supplier_name', '!=', self::PROTECTED_SUPPLIER)
-            ->whereNotIn('sku', $activeSkus)
-            ->pluck('sku');
+            ->select('sku')
+            ->orderBy('sku')
+            ->chunkById(2000, function ($products) use ($activeSkusMap, $staleSkus) {
+                foreach ($products as $product) {
+                    if (!isset($activeSkusMap[$product->sku])) {
+                        $staleSkus->push($product->sku);
+                    }
+                }
+            }, 'sku');
 
         if ($staleSkus->isEmpty()) {
             $this->comment('  Исчезнувших позиций: 0');
@@ -122,22 +134,27 @@ class AggregateSupplierOffersCommand extends Command
 
         $this->comment('  Исчезнувших позиций: ' . $staleSkus->count());
 
-        $deactivated = DB::table('kaspi_feed_items')
-            ->whereIn('our_article', $staleSkus)
-            ->update([
-                'is_active'  => 0,
-                'stock'      => 0,
-                'updated_at' => now(),
-            ]);
+        $staleSkus->chunk(2000)->each(function ($chunk) {
+            $deactivated = DB::table('kaspi_feed_items')
+                ->whereIn('our_article', $chunk)
+                ->update([
+                    'is_active'  => 0,
+                    'stock'      => 0,
+                    'updated_at' => now(),
+                ]);
 
-        if ($deactivated > 0) {
-            $this->comment("  Деактивировано в kaspi_feed_items: {$deactivated}");
-        }
+            if ($deactivated > 0) {
+                $this->comment("  Деактивировано в kaspi_feed_items: {$deactivated}");
+            }
+        });
 
-        $deleted = DB::table('kaspi_initial_products')
-            ->whereIn('sku', $staleSkus)
-            ->delete();
+        $deletedTotal = 0;
+        $staleSkus->chunk(2000)->each(function ($chunk) use (&$deletedTotal) {
+            $deletedTotal += DB::table('kaspi_initial_products')
+                ->whereIn('sku', $chunk)
+                ->delete();
+        });
 
-        $this->comment("  Удалено из kaspi_initial_products: {$deleted}");
+        $this->comment("  Удалено из kaspi_initial_products: {$deletedTotal}");
     }
 }
