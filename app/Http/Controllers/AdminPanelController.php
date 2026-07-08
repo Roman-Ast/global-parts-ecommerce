@@ -102,6 +102,15 @@ class AdminPanelController extends Controller
             $sales_statistics[$sale_channel]['countOfSales'] = Order::whereBetween('date', [$start, $end])->where('sale_channel', $sale_channel)->count();
         }
 
+        // Закреплённый пункт "Весь период" — берём из уже посчитанной статистики с начала работы
+        $salesStatisticsByMonth['all'] = [];
+        foreach ($channelKeys as $ck) {
+            $salesStatisticsByMonth['all'][$ck] = [
+                'totalSalesSum'          => (float) ($sales_statistics_from_begin[$ck]['totalSalesSum'] ?? 0),
+                'totalSalesPrimeCostSum' => (float) ($sales_statistics_from_begin[$ck]['totalSalesPrimeCostSum'] ?? 0),
+                'countOfSales'           => (int) ($sales_statistics_from_begin[$ck]['countOfSales'] ?? 0),
+            ];
+        }
         // Помесячная статистика по каналам продаж (учётный период — с 8 числа по 7-е)
         $channelStatsRaw = Order::select(
                 'sale_channel',

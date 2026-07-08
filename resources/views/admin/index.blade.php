@@ -511,10 +511,6 @@
                     
                 </div>
                 <div id="admin-panel-orders-total-wrapper" style="width:80% !important">
-                    <div id="admin-panel-orders-by-channel-header">
-                        <div>Показать статистику</div>
-                        <img src="/images/plus-24.png" alt="open/close table" id="show-close-admin-panel-statistic-wrapper">
-                    </div>
                     <div id="admin-panel-monthly-stats-wrapper" style="width:80% !important">
                         <div id="admin-panel-monthly-stats-header">
                             <div>Статистика по месяцам</div>
@@ -524,6 +520,7 @@
 
                             <div class="mt-3 mb-3" style="max-width:250px">
                                 <select id="monthly-stats-selector" class="form-select">
+                                    <option value="all">Весь период</option>
                                     @foreach ($monthsSorted as $monthKey)
                                         <option value="{{ $monthKey }}" {{ $monthKey === $currentAccountingMonthKey ? 'selected' : '' }}>
                                             {{ $monthKey }}
@@ -549,12 +546,8 @@
                                             <th class="text-end">Чистая %</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="monthly-stats-tbody">
-                                        <!-- заполняется JS -->
-                                    </tbody>
-                                    <tfoot class="table-light fw-bold" id="monthly-stats-tfoot">
-                                        <!-- заполняется JS -->
-                                    </tfoot>
+                                    <tbody id="monthly-stats-tbody"></tbody>
+                                    <tfoot class="table-light fw-bold" id="monthly-stats-tfoot"></tfoot>
                                 </table>
                             </div>
                         </div>
@@ -593,7 +586,6 @@
 
                             let totalRevenue = 0, totalCost = 0, totalCount = 0, totalKaspiCommission = 0;
 
-                            // Считаем общий оборот месяца для доли каждого канала
                             Object.values(data).forEach(d => totalRevenue += d.totalSalesSum);
 
                             let i = 1;
@@ -654,9 +646,9 @@
                                 tbody.appendChild(row);
                             }
 
-                            const totalGross    = totalRevenue - totalCost;
-                            const totalGrossPct = totalRevenue > 0 ? Math.round((totalGross / totalRevenue) * 100 * 10) / 10 : 0;
-                            const totalAvg      = totalCount > 0 ? Math.round(totalRevenue / totalCount) : 0;
+                            const totalGross     = totalRevenue - totalCost;
+                            const totalGrossPct  = totalRevenue > 0 ? Math.round((totalGross / totalRevenue) * 100 * 10) / 10 : 0;
+                            const totalAvg       = totalCount > 0 ? Math.round(totalRevenue / totalCount) : 0;
                             const totalNetMargin = Math.round(totalGross - totalKaspiCommission);
                             const totalNetPct    = totalRevenue > 0 ? Math.round((totalNetMargin / totalRevenue) * 100 * 10) / 10 : 0;
 
@@ -666,16 +658,12 @@
                                     <td class="text-end">${fmt(totalRevenue)}</td>
                                     <td class="text-end text-muted">${fmt(totalCost)}</td>
                                     <td class="text-end">${fmt(totalGross)}</td>
-                                    <td class="text-end">
-                                        <span class="badge bg-success">${totalGrossPct}%</span>
-                                    </td>
+                                    <td class="text-end"><span class="badge bg-success">${totalGrossPct}%</span></td>
                                     <td class="text-end">${totalCount}</td>
                                     <td class="text-end">${fmt(totalAvg)}</td>
                                     <td class="text-end">100%</td>
                                     <td class="text-end text-success">${fmt(totalNetMargin)}</td>
-                                    <td class="text-end">
-                                        <span class="badge bg-success">${totalNetPct}%</span>
-                                    </td>
+                                    <td class="text-end"><span class="badge bg-success">${totalNetPct}%</span></td>
                                 </tr>
                                 <tr class="table-warning">
                                     <td colspan="9">Комиссия Kaspi (12.5%)</td>
@@ -689,8 +677,42 @@
                             renderMonthlyStats(this.value);
                         });
 
+                        // По умолчанию — текущий расчётный период
                         renderMonthlyStats('{{ $currentAccountingMonthKey }}');
                     </script>
+
+                    <!-- Заказы за текущий расчётный период (08 текущего – 07 следующего включительно) -->
+                    <div id="admin-panel-current-period-orders-wrapper" style="width:80% !important" class="mt-4">
+                        <h4>Заказы за текущий расчётный период ({{ $start->format('d.m.Y') }} – {{ $end->format('d.m.Y') }})</h4>
+                        <div class="table-responsive mt-2">
+                            <table class="table table-striped table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Дата</th>
+                                        <th>Канал</th>
+                                        <th>Клиент</th>
+                                        <th>Сумма</th>
+                                        <th>С/С</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($orders as $order)
+                                    <tr>
+                                        <td>{{ $order->id }}</td>
+                                        <td>{{ $order->date->format('d.m.Y H:i') }}</td>
+                                        <td>{{ $order->sale_channel }}</td>
+                                        <td>{{ $order->customer_phone ?? '—' }}</td>
+                                        <td>{{ number_format($order->sum_with_margine, 0, '.', ' ') }}</td>
+                                        <td>{{ number_format($order->sum, 0, '.', ' ') }}</td>
+                                        <td>{{ $statuses[$order->status] ?? $order->status }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     {{--<div id="admin-panel-orders-by-channel" status="closed">
                         <div class="table-responsive mt-3">
                             <table class="table table-hover align-middle" style="font-size:.9em">
