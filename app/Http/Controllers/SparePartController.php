@@ -62,7 +62,6 @@ class SparePartController extends Controller
 {
     $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber));
 
-    /*
     function catalogAutopiterSearch(String $partNumber) {
         $connect = array(
             'options' => array(
@@ -111,12 +110,12 @@ class SparePartController extends Controller
         
         return $catalog;
     }
-    */
+    
 
     // Fallback через Avtozakup (Tradesoft, service: provider / getProducerList) —
     // используется, когда Rossko не смог авторизоваться/ответить, или у Rossko
     // просто нет данных по этому артикулу вообще.
-    $catalogAvtozakupSearch = function (string $partNumber) {
+    /*$catalogAvtozakupSearch = function (string $partNumber) {
         $brands = $this->getBrandsByArticle($partNumber);
 
         if (empty($brands)) {
@@ -136,7 +135,7 @@ class SparePartController extends Controller
         }
         dd($catalog);
         return $catalog;
-    };
+    };*/
 
     $context = stream_context_create([
         'http' => [

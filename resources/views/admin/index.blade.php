@@ -681,7 +681,7 @@
                         renderMonthlyStats('{{ $currentAccountingMonthKey }}');
                     </script>
 
-                    <!-- Заказы за текущий расчётный период (08 текущего – 07 следующего включительно) -->
+                    <!-- Заказы за текущий расчётный период (08 текущего – 07 следующего включительно) 
                     <div id="admin-panel-current-period-orders-wrapper" style="width:80% !important" class="mt-4">
                         <h4>Заказы за текущий расчётный период ({{ $start->format('d.m.Y') }} – {{ $end->format('d.m.Y') }})</h4>
                         <div class="table-responsive mt-2">
@@ -712,7 +712,7 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </div>-->
                     {{--<div id="admin-panel-orders-by-channel" status="closed">
                         <div class="table-responsive mt-3">
                             <table class="table table-hover align-middle" style="font-size:.9em">
