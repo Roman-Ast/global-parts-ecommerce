@@ -59,183 +59,183 @@ class SparePartController extends Controller
     
 
     public function catalogSearch(Request $request) 
-{
-    $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber));
+    {
+        $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber));
 
-    function catalogAutopiterSearch(String $partNumber) {
+        function catalogAutopiterSearch(String $partNumber) {
+            $connect = array(
+                'options' => array(
+                    'connection_timeout' => 1,
+                    'trace' => true
+                )
+            );
+
+            $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL", $connect['options']);
+
+            if (!($client->IsAuthorization()->IsAuthorizationResult)) {
+                $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
+            }
+            
+            try {
+                $result = $client->FindCatalog (array("Number"=>$partNumber));
+            } catch (\Throwable $th) {
+                return [];
+            }
+            
+            if (!property_exists($result->FindCatalogResult, 'SearchCatalogModel')) {
+                return [];
+            }
+            
+            $catalog = [];
+
+            if (is_array($result->FindCatalogResult->SearchCatalogModel)) {
+                foreach ($result->FindCatalogResult->SearchCatalogModel as $value) {
+                    array_push($catalog, [
+                        'brand' => $value->CatalogName,
+                        'partnumber' => $value->Number,
+                        'name' => $value->Name,
+                        'guid' => '',
+                        'rossko_need_to_search' => false
+                    ]);
+                }
+            } else {
+                array_push($catalog, [
+                    'brand' => $result->FindCatalogResult->SearchCatalogModel->CatalogName,
+                    'partnumber' => $result->FindCatalogResult->SearchCatalogModel->Number,
+                    'name' => $result->FindCatalogResult->SearchCatalogModel->Name,
+                    'guid' => '',
+                    'rossko_need_to_search' => false
+                ]);        
+            }
+            
+            return $catalog;
+        }
+        
+
+        // Fallback через Avtozakup (Tradesoft, service: provider / getProducerList) —
+        // используется, когда Rossko не смог авторизоваться/ответить, или у Rossko
+        // просто нет данных по этому артикулу вообще.
+        /*$catalogAvtozakupSearch = function (string $partNumber) {
+            $brands = $this->getBrandsByArticle($partNumber);
+
+            if (empty($brands)) {
+                return [];
+            }
+
+            $catalog = [];
+
+            foreach ($brands as $item) {
+                array_push($catalog, [
+                    'brand'                  => $item['brand'],
+                    'partnumber'             => $partNumber,
+                    'name'                   => $item['name'],
+                    'guid'                   => '',
+                    'rossko_need_to_search'  => false,
+                ]);
+            }
+            dd($catalog);
+            return $catalog;
+        };*/
+
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 2 // общее время ожидания (подключение + ответ)
+            ]
+        ]);
+
+        //поиск брэндлиста по каталогам
         $connect = array(
+            'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
             'options' => array(
                 'connection_timeout' => 1,
-                'trace' => true
+                'trace' => true,
+                'stream_context' => $context
             )
         );
+        
+        $param = array(
+            'KEY1' => self::API_KEY1_ROSSKO,
+            'KEY2' => self::API_KEY2_ROSSKO,
+            'text' => $partNumber,
+            'delivery_id' => '000000001',
+            'address_id'  => '229881'
+        );
+        
+        try {
+            $query = new SoapClient($connect['wsdl'], $connect['options']);
+            
+        } catch (\Throwable $th) {
+            $catalog = catalogAutopiterSearch($partNumber);
 
-        $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL", $connect['options']);
+            if (empty($catalog)) {
+                return view('components.nothingFound');
+            }
 
-        if (!($client->IsAuthorization()->IsAuthorizationResult)) {
-            $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
+            return view('catalogSearchRes')->with([
+                    'finalArr' => $catalog,
+                    'only_on_stock' => $request->only_on_stock
+                ]
+            );
         }
         
         try {
-            $result = $client->FindCatalog (array("Number"=>$partNumber));
+            $result = $query->GetSearch($param);
         } catch (\Throwable $th) {
-            return [];
-        }
-        
-        if (!property_exists($result->FindCatalogResult, 'SearchCatalogModel')) {
-            return [];
-        }
-        
-        $catalog = [];
+            
+            $catalog = catalogAutopiterSearch($partNumber);
 
-        if (is_array($result->FindCatalogResult->SearchCatalogModel)) {
-            foreach ($result->FindCatalogResult->SearchCatalogModel as $value) {
-                array_push($catalog, [
-                    'brand' => $value->CatalogName,
-                    'partnumber' => $value->Number,
-                    'name' => $value->Name,
-                    'guid' => '',
-                    'rossko_need_to_search' => false
-                ]);
+            if (empty($catalog)) {
+                return view('components.nothingFound');
             }
-        } else {
-            array_push($catalog, [
-                'brand' => $result->FindCatalogResult->SearchCatalogModel->CatalogName,
-                'partnumber' => $result->FindCatalogResult->SearchCatalogModel->Number,
-                'name' => $result->FindCatalogResult->SearchCatalogModel->Name,
-                'guid' => '',
-                'rossko_need_to_search' => false
-            ]);        
-        }
-        
-        return $catalog;
-    }
-    
 
-    // Fallback через Avtozakup (Tradesoft, service: provider / getProducerList) —
-    // используется, когда Rossko не смог авторизоваться/ответить, или у Rossko
-    // просто нет данных по этому артикулу вообще.
-    /*$catalogAvtozakupSearch = function (string $partNumber) {
-        $brands = $this->getBrandsByArticle($partNumber);
+            return view('catalogSearchRes')->with([
+                    'finalArr' => $catalog,
+                    'only_on_stock' => $request->only_on_stock
+                ]
+            );
+        } 
 
-        if (empty($brands)) {
-            return [];
-        }
+        if ($result->SearchResult->success) {
+            $catalog = [];
 
-        $catalog = [];
-
-        foreach ($brands as $item) {
-            array_push($catalog, [
-                'brand'                  => $item['brand'],
-                'partnumber'             => $partNumber,
-                'name'                   => $item['name'],
-                'guid'                   => '',
-                'rossko_need_to_search'  => false,
-            ]);
-        }
-        dd($catalog);
-        return $catalog;
-    };*/
-
-    $context = stream_context_create([
-        'http' => [
-            'timeout' => 2 // общее время ожидания (подключение + ответ)
-        ]
-    ]);
-
-    //поиск брэндлиста по каталогам
-    $connect = array(
-        'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetSearch',
-        'options' => array(
-            'connection_timeout' => 1,
-            'trace' => true,
-            'stream_context' => $context
-        )
-    );
-    
-    $param = array(
-        'KEY1' => self::API_KEY1_ROSSKO,
-        'KEY2' => self::API_KEY2_ROSSKO,
-        'text' => $partNumber,
-        'delivery_id' => '000000001',
-        'address_id'  => '229881'
-    );
-    
-    try {
-        $query = new SoapClient($connect['wsdl'], $connect['options']);
-        
-    } catch (\Throwable $th) {
-        $catalog = $catalogAvtozakupSearch($partNumber);
-
-        if (empty($catalog)) {
-            return view('components.nothingFound');
-        }
-
-        return view('catalogSearchRes')->with([
-                'finalArr' => $catalog,
-                'only_on_stock' => $request->only_on_stock
-            ]
-        );
-    }
-    
-    try {
-        $result = $query->GetSearch($param);
-    } catch (\Throwable $th) {
-        
-        $catalog = $catalogAvtozakupSearch($partNumber);
-
-        if (empty($catalog)) {
-            return view('components.nothingFound');
-        }
-
-        return view('catalogSearchRes')->with([
-                'finalArr' => $catalog,
-                'only_on_stock' => $request->only_on_stock
-            ]
-        );
-    } 
-   
-    if ($result->SearchResult->success) {
-        $catalog = [];
-
-        if (!is_countable($result->SearchResult->PartsList->Part)) {
-            array_push($catalog,[
-                'brand' => $result->SearchResult->PartsList->Part->brand,
-                'partnumber' => $result->SearchResult->PartsList->Part->partnumber,
-                'name' => $result->SearchResult->PartsList->Part->name,
-                'guid' => $result->SearchResult->PartsList->Part->guid,
-                'rossko_need_to_search' => true
-            ]);
-        } else {
-            foreach ($result->SearchResult->PartsList->Part as $part) {
+            if (!is_countable($result->SearchResult->PartsList->Part)) {
                 array_push($catalog,[
-                    'brand' => $part->brand,
-                    'partnumber' => $part->partnumber,
-                    'name' => $part->name,
-                    'guid' => $part->guid,
+                    'brand' => $result->SearchResult->PartsList->Part->brand,
+                    'partnumber' => $result->SearchResult->PartsList->Part->partnumber,
+                    'name' => $result->SearchResult->PartsList->Part->name,
+                    'guid' => $result->SearchResult->PartsList->Part->guid,
                     'rossko_need_to_search' => true
                 ]);
+            } else {
+                foreach ($result->SearchResult->PartsList->Part as $part) {
+                    array_push($catalog,[
+                        'brand' => $part->brand,
+                        'partnumber' => $part->partnumber,
+                        'name' => $part->name,
+                        'guid' => $part->guid,
+                        'rossko_need_to_search' => true
+                    ]);
+                }
             }
-        }
-        
-        return view('catalogSearchRes')->with([
-            'finalArr' => $catalog,
-            'only_on_stock' => $request->only_on_stock
-        ]);
-    } else {
-       $catalog = $catalogAvtozakupSearch($partNumber);
-
-       if (empty($catalog)) {
-            return view('components.nothingFound');
-        }
-
-       return view('catalogSearchRes')->with([
+            
+            return view('catalogSearchRes')->with([
                 'finalArr' => $catalog,
                 'only_on_stock' => $request->only_on_stock
-            ]
-        );
+            ]);
+        } else {
+        $catalog = catalogAutopiterSearch($partNumber);
+
+        if (empty($catalog)) {
+                return view('components.nothingFound');
+            }
+
+        return view('catalogSearchRes')->with([
+                    'finalArr' => $catalog,
+                    'only_on_stock' => $request->only_on_stock
+                ]
+            );
+        }
     }
-}
 
     public function getSearchedPartAndCrosses (Request $request)
     {
