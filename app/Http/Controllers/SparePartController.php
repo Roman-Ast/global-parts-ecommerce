@@ -2111,25 +2111,53 @@ class SparePartController extends Controller
     public function searchAutopiter(String $brand, String $partnumber)
     {
         //$start = microtime(true);
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 6, // секунд на ответ каждого SOAP-вызова
+            ]
+        ]);
+
         $connect = array(
             'options' => array(
-                'connection_timeout' => 1,
-                'trace' => true
+                'connection_timeout' => 3,
+                'trace' => true,
+                'stream_context' => $context,
             )
         );
         $brand = strtolower($brand);
 
-        $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL", $connect['options']);
+        try {
+            $client = new SoapClient("http://service.autopiter.ru/v2/price?WSDL", $connect['options']);
+        } catch (\Throwable $th) {
+            \Log::channel('autopiter')->warning('Autopiter SOAP client init failed', [
+                'article' => $partnumber,
+                'brand'   => $brand,
+                'message' => $th->getMessage(),
+            ]);
+            return;
+        }
         
         try {
             if (!($client->IsAuthorization()->IsAuthorizationResult)) {
                 $client->Authorization(array("UserID"=>"1440698", "Password"=>"B_RH019rAk", "Save"=> "true"));
             }
         } catch (\Throwable $th) {
+            \Log::channel('autopiter')->warning('Autopiter Authorization failed', [
+                'article' => $partnumber,
+                'message' => $th->getMessage(),
+            ]);
             return view('components.hostError');
         }
         
-        $noAnalogsResult = $client->FindCatalog (array("Number"=>$partnumber));
+        try {
+            $noAnalogsResult = $client->FindCatalog (array("Number"=>$partnumber));
+        } catch (\Throwable $th) {
+            \Log::channel('autopiter')->warning('Autopiter FindCatalog failed', [
+                'article' => $partnumber,
+                'message' => $th->getMessage(),
+            ]);
+            return;
+        }
         
         if(!$noAnalogsResult || empty($noAnalogsResult)) {
             return;
@@ -2173,12 +2201,16 @@ class SparePartController extends Controller
         try {
             $result = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 0, "DetailUid"=>null));
         } catch (\Throwable $th) {
+            \Log::channel('autopiter')->warning('Autopiter GetPriceId (original) failed', [
+                'article' => $partnumber,
+                'message' => $th->getMessage(),
+            ]);
             return 'error';
         }
 
         $result2 = (json_decode(json_encode($result), true));
-		
-		if (!empty($result2)) {
+        
+        if (!empty($result2)) {
             if (is_array(array_shift($result2['GetPriceIdResult']['PriceSearchModel']))) {
                 foreach ($result2['GetPriceIdResult']['PriceSearchModel'] as $item) {
                     array_push($this->finalArr['searchedNumber'], [
@@ -2216,6 +2248,10 @@ class SparePartController extends Controller
         try {
             $resultWithAnalogs = $client->GetPriceId(array("ArticleId"=> $articleId, "Currency" => 'РУБ', "SearchCross"=> 2, "DetailUid"=>null));
         } catch (\Throwable $th) {
+            \Log::channel('autopiter')->warning('Autopiter GetPriceId (analogs) failed', [
+                'article' => $partnumber,
+                'message' => $th->getMessage(),
+            ]);
             return 'error';
         }  
 
@@ -2223,7 +2259,7 @@ class SparePartController extends Controller
             return 'error';
         } 
         $result3 = (json_decode(json_encode($resultWithAnalogs), true));
-    
+
         if (!$result3 || empty($result3)) {
             return;
         }
