@@ -52,6 +52,12 @@ return [
 
     'channels' => [
 
+            'phaeton' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/suppliers_logs/phaeton_log.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', env('LOG_STACK', 'single')),

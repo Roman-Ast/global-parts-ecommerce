@@ -564,10 +564,8 @@ class SparePartController extends Controller
     
     public function searchPhaeton(String $brand, String $partnumber) 
     {
-        //$start = microtime(true);
-
         $ch = curl_init();
- 
+
         $params = [
             'Article' => $partnumber,
             'Brand' => $brand,
@@ -577,21 +575,53 @@ class SparePartController extends Controller
             'includeAnalogs' => 'true'
         ];
 
-        curl_setopt($ch, CURLOPT_URL, 'https://api.phaeton.kz/api/Search?' . http_build_query($params));
+        $url = 'https://api.phaeton.kz/api/Search?' . http_build_query($params);
+
+        curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
         curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
+        $rawResponse = curl_exec($ch);
+        $curlErrno   = curl_errno($ch);
+        $curlError   = curl_error($ch);
+        $httpCode    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        \Log::channel('phaeton')->info('Phaeton search (source 1, Астана)', [
+            'article'    => $partnumber,
+            'brand'      => $brand,
+            'url'        => $url,
+            'http_code'  => $httpCode,
+            'curl_errno' => $curlErrno,
+            'curl_error' => $curlError,
+            'raw_body'   => substr((string) $rawResponse, 0, 1000),
+        ]);
+
         try {
-            $response = json_decode(curl_exec($ch));
+            $response = json_decode($rawResponse);
         } catch (\Throwable $th) {
+            \Log::channel('phaeton')->error('Phaeton json_decode exception (source 1)', [
+                'article' => $partnumber,
+                'message' => $th->getMessage(),
+            ]);
             return;
         }
-        //dd($response);
+
         if (!$response || $response->IsError) {
+            \Log::channel('phaeton')->warning('Phaeton empty or IsError (source 1)', [
+                'article'   => $partnumber,
+                'brand'     => $brand,
+                'is_error'  => $response->IsError ?? null,
+                'error_msg' => $response->ErrorMessage ?? null,
+            ]);
             return;
         }
+
+        \Log::channel('phaeton')->info('Phaeton items count (source 1)', [
+            'article' => $partnumber,
+            'count'   => count($response->Items ?? []),
+        ]);
 
         foreach ($response->Items as $item) {
             if ($item->Warehouse == 'Астана') {
@@ -675,21 +705,53 @@ class SparePartController extends Controller
             'includeAnalogs' => 'true'
         ];
 
-        curl_setopt($ch1, CURLOPT_URL, 'https://api.phaeton.kz/api/Search?' . http_build_query($params1));
+        $url1 = 'https://api.phaeton.kz/api/Search?' . http_build_query($params1);
+
+        curl_setopt($ch1, CURLOPT_URL, $url1);
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
         curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
+        $rawResponse1 = curl_exec($ch1);
+        $curlErrno1   = curl_errno($ch1);
+        $curlError1   = curl_error($ch1);
+        $httpCode1    = curl_getinfo($ch1, CURLINFO_HTTP_CODE);
+
+        \Log::channel('phaeton')->info('Phaeton search (source 2, локальные поставщики)', [
+            'article'    => $partnumber,
+            'brand'      => $brand,
+            'url'        => $url1,
+            'http_code'  => $httpCode1,
+            'curl_errno' => $curlErrno1,
+            'curl_error' => $curlError1,
+            'raw_body'   => substr((string) $rawResponse1, 0, 1000),
+        ]);
+
         try {
-            $response1 = json_decode(curl_exec($ch1));
+            $response1 = json_decode($rawResponse1);
         } catch (\Throwable $th) {
+            \Log::channel('phaeton')->error('Phaeton json_decode exception (source 2)', [
+                'article' => $partnumber,
+                'message' => $th->getMessage(),
+            ]);
             return;
         }
 
         if (!$response1 || $response1->IsError) {
+            \Log::channel('phaeton')->warning('Phaeton empty or IsError (source 2)', [
+                'article'   => $partnumber,
+                'brand'     => $brand,
+                'is_error'  => $response1->IsError ?? null,
+                'error_msg' => $response1->ErrorMessage ?? null,
+            ]);
             return;
         }
+
+        \Log::channel('phaeton')->info('Phaeton items count (source 2)', [
+            'article' => $partnumber,
+            'count'   => count($response1->Items ?? []),
+        ]);
 
         foreach ($response1->Items as $item) {
             array_push($this->finalArr['brands'], $item->Brand);
@@ -714,7 +776,7 @@ class SparePartController extends Controller
                 'supplier_color' => '#feed00'
             ]);
         }
-        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. phtn';
+
         return;
     }
 

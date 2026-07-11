@@ -9,10 +9,15 @@ class InterkomParser implements ParserInterface, MultiSheetParserInterface
     private const MIN_PRICE = 3000;
     private const FIXED_QTY = 2;
 
-    private const PREORDER_DAYS_MAP = [
-        '+'   => 1,
-        '~~~' => 2,
-    ];
+    // Стабильный preorder для ВСЕХ позиций Interkom, независимо от значка
+    // в колонке "Остаток" ('+' / '~~~') — раньше маппилось по-разному
+    // ('+' => 1, '~~~' => 2), теперь всегда 1 день для простоты и
+    // предсказуемости сроков доставки.
+    private const FIXED_PREORDER_DAYS = 2;
+
+    // Значки, которые считаются валидным "товар есть в прайсе"
+    // (раньше это были ключи PREORDER_DAYS_MAP, теперь просто список).
+    private const VALID_STOCK_MARKS = ['+', '~~~'];
 
     private const SUPPLIER_NAME_MAP = [
         'LADA'          => 'interkom_lada',
@@ -36,12 +41,6 @@ class InterkomParser implements ParserInterface, MultiSheetParserInterface
         return self::DATA_START_ROW;
     }
 
-    /**
-     * $row ожидается как обычный индексированный массив колонок строки
-     * (как у RosskoParser), без привязки к листу — раннер сам знает,
-     * с какого листа строка пришла, и подставит правильный supplier_name
-     * через resolveSupplierName() уже после parseRow().
-     */
     public function parseRow(array $row): ?array
     {
         $article     = trim((string)($row[2] ?? ''));  // C -> Артикул
@@ -57,7 +56,7 @@ class InterkomParser implements ParserInterface, MultiSheetParserInterface
 
         $finalArticle = $article !== '' ? $article : $supplierArt;
 
-        if (!array_key_exists($stockMark, self::PREORDER_DAYS_MAP)) {
+        if (!in_array($stockMark, self::VALID_STOCK_MARKS, true)) {
             return null;
         }
 
@@ -73,7 +72,7 @@ class InterkomParser implements ParserInterface, MultiSheetParserInterface
             'title'             => mb_substr($name, 0, 255),
             'price'             => $price,
             'stock'             => self::FIXED_QTY,
-            'preorder_days'     => self::PREORDER_DAYS_MAP[$stockMark],
+            'preorder_days'     => self::FIXED_PREORDER_DAYS,
             'category_code'     => null,
             'description'       => null,
             'images'            => null,
