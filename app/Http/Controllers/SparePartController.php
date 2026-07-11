@@ -1942,6 +1942,26 @@ class SparePartController extends Controller
     {
         $apiUrl = 'https://api.tabys.parts/external/v1/product-offers/by-brand-and-product-code';
 
+        $requestPayload = [
+            'products' => [
+                [
+                    'productCode' => $partnumber,
+                    'brandName'   => $brand,
+                ],
+            ],
+            'contractId'                    => env('TISS_CONTRACT_ID'),
+            'outletId'                      => env('TISS_OUTLET_ID'),
+            'priceFrom'                     => 0,
+            'priceTo'                       => 0,
+            'deliveryMinDays'               => 0,
+            'deliveryMaxDays'               => 0,
+            'offersMaxNum'                  => 0,
+            'orderByPrice'                  => true,
+            'enableAnalog'                  => true,
+            'warehouses'                    => [env('TISS_WAREHOUSE_ID')],
+            'isInStockInHomeWarehousesOnly' => false,
+        ];
+
         try {
             $response = \Illuminate\Support\Facades\Http::withHeaders([
                     'Accept'              => 'application/json',
@@ -1950,33 +1970,29 @@ class SparePartController extends Controller
                     'X-External-Api-Key'  => env('TISS_API_KEY'),
                 ])
                 ->timeout(self::TIMEOUT)
-                ->post($apiUrl, [
-                    'products' => [
-                        [
-                            'productCode' => $partnumber,
-                            'brandName'   => $brand,
-                        ],
-                    ],
-                    'contractId'                    => env('TISS_CONTRACT_ID'),
-                    'outletId'                      => env('TISS_OUTLET_ID'),
-                    'priceFrom'                     => 0,
-                    'priceTo'                       => 0,
-                    'deliveryMinDays'               => 0,
-                    'deliveryMaxDays'               => 0,
-                    'offersMaxNum'                  => 0,
-                    'orderByPrice'                  => true,
-                    'enableAnalog'                  => true,
-                    'warehouses'                    => [env('TISS_WAREHOUSE_ID')],
-                    'isInStockInHomeWarehousesOnly' => false,
-                ]);
+                ->post($apiUrl, $requestPayload);
         } catch (\Throwable $th) {
+            \Log::channel('tiss')->error('TISS request exception', [
+                'article' => $partnumber,
+                'brand'   => $brand,
+                'message' => $th->getMessage(),
+            ]);
             return;
         }
 
+        \Log::channel('tiss')->info('TISS search', [
+            'article'   => $partnumber,
+            'brand'     => $brand,
+            'status'    => $response->status(),
+            'raw_body'  => substr($response->body(), 0, 1000),
+        ]);
+
         if (!$response->successful()) {
-            \Illuminate\Support\Facades\Log::warning('TISS API error', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
+            \Log::channel('tiss')->warning('TISS API error', [
+                'article' => $partnumber,
+                'brand'   => $brand,
+                'status'  => $response->status(),
+                'body'    => $response->body(),
             ]);
             return;
         }
@@ -1984,10 +2000,19 @@ class SparePartController extends Controller
         $data = $response->json();
         //dd($data);
         if (empty($data) || !is_array($data)) {
+            \Log::channel('tiss')->warning('TISS empty or invalid response body', [
+                'article' => $partnumber,
+                'brand'   => $brand,
+            ]);
             return;
         }
 
         $cleanPartnumber = $this->removeAllUnnecessaries($partnumber);
+
+        $foundCount        = 0;
+        $exactMatchCount    = 0;
+        $crossOnStockCount  = 0;
+        $crossToOrderCount  = 0;
 
         // Верхний уровень ответа — объект с динамическими ключами (по каждому запрошенному товару)
         foreach ($data as $group) {
@@ -2004,6 +2029,8 @@ class SparePartController extends Controller
                 if (empty($item['offers']) || !is_array($item['offers'])) {
                     continue;
                 }
+
+                $foundCount++;
 
                 // Точное совпадение — тот же артикул и бренд, что искали
                 $isExactMatch = ($cleanItemArticle === $cleanPartnumber)
@@ -2033,6 +2060,7 @@ class SparePartController extends Controller
                     if ($isExactMatch) {
                         // Искомый номер — только если реально есть в наличии сейчас
                         if ($qtyNow > 0) {
+                            $exactMatchCount++;
                             array_push($this->finalArr['brands'], $itemBrand);
 
                             array_push($this->finalArr['searchedNumber'], [
@@ -2061,6 +2089,7 @@ class SparePartController extends Controller
 
                     // Кросс/аналог — в наличии сейчас
                     if ($qtyNow > 0) {
+                        $crossOnStockCount++;
                         array_push($this->finalArr['brands'], $itemBrand);
 
                         array_push($this->finalArr['crosses_on_stock'], [
@@ -2083,6 +2112,7 @@ class SparePartController extends Controller
 
                     // Кросс/аналог — нет сейчас, но есть ожидаемая поставка ("под заказ")
                     if ($qtyExpected > 0) {
+                        $crossToOrderCount++;
                         array_push($this->finalArr['brands'], $itemBrand);
 
                         array_push($this->finalArr['crosses_to_order'], [
@@ -2104,6 +2134,15 @@ class SparePartController extends Controller
                 }
             }
         }
+
+        \Log::channel('tiss')->info('TISS parsed results', [
+            'article'            => $partnumber,
+            'brand'              => $brand,
+            'items_with_offers'  => $foundCount,
+            'exact_match'        => $exactMatchCount,
+            'cross_on_stock'     => $crossOnStockCount,
+            'cross_to_order'     => $crossToOrderCount,
+        ]);
 
         return;
     }
@@ -2332,44 +2371,6 @@ class SparePartController extends Controller
             }
         }       
         //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. atptr';
-        return;
-    }
-
-    public function searchXuiPoimi(String $brand, String $partnumber)
-    {
-        $searchedPart = XuiPoimiPrice::where('oem', $partnumber)
-            ->get()
-            ->toArray();
-        
-        if (empty($searchedPart)) {
-            return;
-        }
-        
-        foreach ($searchedPart as $item) {
-            array_push($this->finalArr['brands'], $item['brand']);
-
-            array_push($this->finalArr['crosses_on_stock'], [
-                'brand' => $item['brand'],
-                'article' => $item['oem'],
-                'name' => $item['article'] . ' ' . $item['name'],
-                'stock_legend' => '',
-                'qty' => $item['qty'],
-                'price' => $item['price'],
-                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                'delivery_time' => '1 день',
-                'stocks' => [
-                    [
-                        'qty' => $item['qty'],
-                        'price' =>$item['price'],
-                        'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                    ]
-                ],
-                'supplier_name' => 'Хуйпойми',
-                'supplier_city' => 'Астана',
-                'supplier_color' => 'yellow',
-            ]);  
-        }
-        
         return;
     }
 

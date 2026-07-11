@@ -52,7 +52,7 @@ return [
 
     'channels' => [
 
-            'phaeton' => [
+        'phaeton' => [
             'driver' => 'single',
             'path' => storage_path('logs/suppliers_logs/phaeton_log.log'),
             'level' => env('LOG_LEVEL', 'debug'),
@@ -61,6 +61,12 @@ return [
         'autopiter' => [
             'driver' => 'single',
             'path' => storage_path('logs/suppliers_logs/autopiter_log.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
+        'tiss' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/suppliers_logs/tiss_log.log'),
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 

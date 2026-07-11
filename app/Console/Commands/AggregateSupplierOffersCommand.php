@@ -15,9 +15,16 @@ class AggregateSupplierOffersCommand extends Command
     const MIN_PRICE = 5000;
     const PROTECTED_SUPPLIER = 'avtozakup';
 
+    // SKU, которые нужно навсегда исключить из выдачи Kaspi
+    // (мусорные/тестовые/неверно определённые позиции)
+    const EXCLUDED_SKUS = [
+        'stsdr10000r',
+    ];
+
     public function handle(): int
     {
         $this->info('Выбираем лучшие предложения по каждому SKU...');
+        $placeholders = implode(',', array_fill(0, count(self::EXCLUDED_SKUS), '?'));
 
         $bestOffers = DB::select("
             SELECT so.sku, so.supplier_name, so.title, so.brand, so.purchase_price, so.stock
@@ -28,13 +35,16 @@ class AggregateSupplierOffersCommand extends Command
                 INNER JOIN (
                     SELECT sku, MIN(purchase_price) AS min_price
                     FROM supplier_offers
-                    WHERE stock >= ? AND purchase_price >= ? AND supplier_name != ?
+                    WHERE stock >= ? AND purchase_price >= ? AND supplier_name != ? AND sku NOT IN ($placeholders)
                     GROUP BY sku
                 ) best ON best.sku = eligible.sku AND best.min_price = eligible.purchase_price
-                WHERE eligible.stock >= ? AND eligible.purchase_price >= ? AND eligible.supplier_name != ?
+                WHERE eligible.stock >= ? AND eligible.purchase_price >= ? AND eligible.supplier_name != ? AND eligible.sku NOT IN ($placeholders)
                 GROUP BY eligible.sku
             ) pick ON pick.pick_id = so.id
-        ", [self::MIN_STOCK, self::MIN_PRICE, self::PROTECTED_SUPPLIER, self::MIN_STOCK, self::MIN_PRICE, self::PROTECTED_SUPPLIER]);
+        ", array_merge(
+            [self::MIN_STOCK, self::MIN_PRICE, self::PROTECTED_SUPPLIER], self::EXCLUDED_SKUS,
+            [self::MIN_STOCK, self::MIN_PRICE, self::PROTECTED_SUPPLIER], self::EXCLUDED_SKUS
+        ));
 
         $this->info('Прошедших фильтр SKU: ' . count($bestOffers));
 
