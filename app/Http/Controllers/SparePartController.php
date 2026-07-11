@@ -1958,7 +1958,7 @@ class SparePartController extends Controller
             'offersMaxNum'                  => 0,
             'orderByPrice'                  => true,
             'enableAnalog'                  => true,
-            'warehouses'                    => [env('TISS_WAREHOUSE_ID')],
+            'warehouses'                    => [],
             'isInStockInHomeWarehousesOnly' => false,
         ];
 
