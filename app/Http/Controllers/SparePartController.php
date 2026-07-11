@@ -579,7 +579,7 @@ class SparePartController extends Controller
 
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
         curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
@@ -607,7 +607,7 @@ class SparePartController extends Controller
             ]);
             return;
         }
-
+        //dd($response);
         if (!$response || $response->IsError) {
             \Log::channel('phaeton')->warning('Phaeton empty or IsError (source 1)', [
                 'article'   => $partnumber,
@@ -709,7 +709,7 @@ class SparePartController extends Controller
 
         curl_setopt($ch1, CURLOPT_URL, $url1);
         curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
         curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
         curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
