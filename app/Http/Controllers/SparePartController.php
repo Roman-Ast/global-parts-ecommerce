@@ -62,6 +62,8 @@ class SparePartController extends Controller
     {
         $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber));
 
+        $this->logSearchIfNotAdmin($request->partNumber, $partNumber);
+
         function catalogAutopiterSearch(String $partNumber) {
             $connect = array(
                 'options' => array(
@@ -2876,5 +2878,27 @@ class SparePartController extends Controller
         }
 
         return (string) $value;
+    }
+
+    /**
+     * Логирует поисковый запрос, если он сделан НЕ администратором —
+     * чтобы отслеживать реальное использование поиска обычными
+     * посетителями сайта, отдельно от наших собственных тестов через админку.
+     */
+    private function logSearchIfNotAdmin(string $originalQuery): void
+    {
+        $user = auth()->user();
+
+        // Админ — это мы сами, тестовые запросы не логируем
+        if ($user && ($user->user_role ?? null) === 'admin') {
+            return;
+        }
+
+        \Log::channel('user_searches')->info('Search', [
+            'user' => $user ? $user->name : 'гость',
+            'date' => now()->format('d.m.Y'),
+            'time' => now()->format('H:i:s'),
+            'query' => $originalQuery,
+        ]);
     }
 } 

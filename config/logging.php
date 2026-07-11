@@ -70,6 +70,12 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
+        'user_searches' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/user_searches.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', env('LOG_STACK', 'single')),
