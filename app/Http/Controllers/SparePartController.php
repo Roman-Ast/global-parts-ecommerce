@@ -1969,7 +1969,7 @@ class SparePartController extends Controller
                     'Content-Type'        => 'application/json',
                     'X-External-Api-Key'  => env('TISS_API_KEY'),
                 ])
-                ->timeout(self::TIMEOUT)
+                ->timeout(8)
                 ->post($apiUrl, $requestPayload);
         } catch (\Throwable $th) {
             \Log::channel('tiss')->error('TISS request exception', [
