@@ -27,7 +27,7 @@ class AggregateSupplierOffersCommand extends Command
         $placeholders = implode(',', array_fill(0, count(self::EXCLUDED_SKUS), '?'));
 
         $bestOffers = DB::select("
-            SELECT so.sku, so.supplier_name, so.title, so.brand, so.purchase_price, so.stock
+            SELECT so.sku, so.supplier_name, so.title, so.brand, so.purchase_price, so.stock, so.preorder_days
             FROM supplier_offers so
             INNER JOIN (
                 SELECT eligible.sku, MIN(eligible.id) AS pick_id
@@ -81,7 +81,7 @@ class AggregateSupplierOffersCommand extends Command
                         'price'          => $retailPrice,
                         'stock'          => $qty,
                         'supplier_name'  => $offer->supplier_name,
-                        'preorder_days'  => 0,
+                        'preorder_days'  => (int) $offer->preorder_days,
                         'updated_at'     => now(),
                     ]);
                 $updatedCount++;
@@ -95,7 +95,7 @@ class AggregateSupplierOffersCommand extends Command
                     'price'          => $retailPrice,
                     'stock'          => $qty,
                     'supplier_name'  => $offer->supplier_name,
-                    'preorder_days'  => 0,
+                    'preorder_days'  => (int) $offer->preorder_days,
                     'created_at'     => now(),
                     'updated_at'     => now(),
                 ]);

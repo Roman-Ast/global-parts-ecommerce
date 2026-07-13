@@ -590,7 +590,10 @@
 
                             let i = 1;
 
-                            for (const [channel, d] of Object.entries(data)) {
+                            // Сортируем каналы по выручке от большего к меньшему перед рендером
+                            const sortedEntries = Object.entries(data).sort((a, b) => b[1].totalSalesSum - a[1].totalSalesSum);
+
+                            for (const [channel, d] of sortedEntries) {
                                 const revenue = d.totalSalesSum;
                                 const cost    = d.totalSalesPrimeCostSum;
                                 const count   = d.countOfSales;
