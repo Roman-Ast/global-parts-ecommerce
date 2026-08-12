@@ -151,6 +151,12 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'kaspi_scrape' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/kaspi_scrape.log'),
+            'level' => 'debug',
+        ],
+
     ],
 
 ];

@@ -4,7 +4,7 @@ namespace App\Services\PriceParsers;
 
 class InterkomParser implements ParserInterface, MultiSheetParserInterface
 {
-    private const ALLOWED_SHEETS = ['LADA', 'GAZ', 'LargusRenault', 'Chevrolet'];
+    private const ALLOWED_SHEETS = ['GAZ', 'LargusRenault', 'Chevrolet'];
     private const DATA_START_ROW = 10;
     private const MIN_PRICE = 3000;
     private const FIXED_QTY = 2;

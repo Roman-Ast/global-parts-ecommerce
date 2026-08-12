@@ -89,6 +89,7 @@ class GenerateKaspiXml extends Command
                     $xml->startElement('availability');
                     $xml->writeAttribute('available', 'yes');
                     $xml->writeAttribute('storeId', 'PP1');
+                    $xml->writeAttribute('stockCount', (int) $item->stock);
 
                     if ($item->preorder_days > 0) {
                         $xml->writeAttribute('preOrder', $item->preorder_days);

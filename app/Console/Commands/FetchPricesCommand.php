@@ -11,13 +11,16 @@ use Illuminate\Support\Facades\DB;
 
 use App\Services\PriceParsers\ShatemParser;
 use App\Services\PriceParsers\PhaetonParser;
-use App\Services\PriceParsers\ZakazAutoParser;
 use App\Services\PriceParsers\VoltazhParser;
 use App\Services\PriceParsers\RosskoParser;
 use App\Services\PriceParsers\ForumAutoParser;
 use App\Services\PriceParsers\AutotradeAstParser;
 use App\Services\PriceParsers\AutotradeAlmParser;
+use App\Services\PriceParsers\KulanParser;
 use App\Services\PriceParsers\InterkomParser; 
+use App\Services\PriceParsers\ZakazAutoKostanayParser;
+use App\Services\PriceParsers\TissParser;
+use App\Services\PriceParsers\TstarterParser;
 use App\Services\PriceParsers\MultiSheetParserInterface;
 
 class FetchPricesCommand extends Command
@@ -53,6 +56,16 @@ class FetchPricesCommand extends Command
                 $fromEmailLower = mb_strtolower($message->getFrom()->first()->mail ?? '');
             }
 
+            // --- НОВОЕ: текст письма нужен, чтобы находить оригинального
+            // отправителя даже когда письмо переслано вручную (кнопкой
+            // «Переслать») — mail.ru вставляет в тело блок
+            // "От кого: price@phaeton.kz" / "prices_export@shate-m.com",
+            // а заголовок From при этом содержит уже личный e-mail Романа.
+            $bodyLower = mb_strtolower($message->getTextBody() ?? '');
+            if ($bodyLower === '') {
+                $bodyLower = mb_strtolower(strip_tags($message->getHTMLBody() ?? ''));
+            }
+
             $this->info("Обрабатываем письмо: {$message->getSubject()} [От: {$fromEmailLower}]");
 
             if (!$message->hasAttachments()) {
@@ -77,7 +90,8 @@ class FetchPricesCommand extends Command
                 [$parser, $supplierKey] = $this->detectParser(
                     $subjectLower,
                     $fromEmailLower,
-                    $filenameLower
+                    $filenameLower,
+                    $bodyLower
                 );
 
                 if (!$parser) {
@@ -95,7 +109,7 @@ class FetchPricesCommand extends Command
                 $extractedFullPath = null;
 
                 if ($isZip) {
-                    [$fullPath, $extractedFullPath, $isXlsx, $isCsv] = $this->extractFromZip(
+                    [$fullPath, $extractedFullPath, $isXlsx, $isCsv, $isXls] = $this->extractFromZip(
                         $fullPath,
                         $localStoragePath
                     );
@@ -106,7 +120,6 @@ class FetchPricesCommand extends Command
                     }
                 }
 
-                // --- РАЗВИЛКА: multi-sheet (Interkom) vs обычный однолистовый парсер ---
                 if ($parser instanceof MultiSheetParserInterface) {
                     $this->processMultiSheetFile($parser, $fullPath, $isXlsx, $isXls, $filename);
 
@@ -115,10 +128,9 @@ class FetchPricesCommand extends Command
                         unlink($extractedFullPath);
                     }
 
-                    continue; // к следующему вложению
+                    continue;
                 }
 
-                // --- ЧИТАЕМ СТРОКИ (однолистовые парсеры — Rossko, Shatem и т.д., как раньше) ---
                 $rows = $this->readRows($fullPath, $isXlsx, $isCsv, $isXls, $filename);
 
                 Storage::disk('local')->delete($localStoragePath);
@@ -130,7 +142,6 @@ class FetchPricesCommand extends Command
                     continue;
                 }
 
-                // --- ОБРАБАТЫВАЕМ СТРОКИ ---
                 $newCount     = 0;
                 $updatedCount = 0;
                 $skippedCount = 0;
@@ -207,12 +218,6 @@ class FetchPricesCommand extends Command
         return 0;
     }
 
-    /**
-     * Удаляет из kaspi_initial_products позиции данного поставщика,
-     * которых больше нет в свежем прайсе (физически закончились/исчезли),
-     * и деактивирует соответствующие записи в kaspi_feed_items,
-     * чтобы они не ушли в XML-фид для Kaspi со старыми данными.
-     */
     private function removeStaleOffers(string $supplierKey, array $skuListFromPrice): void
     {
         if (empty($skuListFromPrice)) {
@@ -228,11 +233,6 @@ class FetchPricesCommand extends Command
         $this->comment("  Удалено офферов {$supplierKey} (исчезли из прайса): {$deleted}");
     }
 
-    /**
-     * Обрабатывает multi-sheet файл, где один файл = несколько поставщиков
-     * (каждый разрешённый лист — свой supplier_name). Сейчас единственный
-     * пример — Interkom (LADA/GAZ/LargusRenault/Chevrolet).
-     */
     private function processMultiSheetFile(
         MultiSheetParserInterface $parser,
         string $fullPath,
@@ -325,21 +325,37 @@ class FetchPricesCommand extends Command
             $this->comment("    Добавлено: {$newCount}");
             $this->comment("    Обновлено: {$updatedCount}");
 
-            // защита от пустого листа встроена внутрь removeStaleOffers
             $this->removeStaleOffers($supplierKey, $skuListFromPrice);
         }
     }
 
     // -------------------------------------------------------------------------
 
-    private function detectParser(
+   private function detectParser(
         string $subjectLower,
         string $fromEmailLower,
-        string $filenameLower
+        string $filenameLower,
+        string $bodyLower = ''
     ): array {
         if (
+            (str_contains($filenameLower, 'zakazauto') || str_contains($subjectLower, 'zakazauto') || str_contains($subjectLower, 'заказавто'))
+            && (str_contains($filenameLower, 'kostanay') || str_contains($filenameLower, 'костанай') || str_contains($filenameLower, 'kst'))
+        ) {
+            $this->comment('Выбран парсер: ЗаказАвто Костанай');
+            return [new ZakazAutoKostanayParser(), 'zakazauto_kst'];
+        }
+
+        // Шатэм (Shate-M Plus). Реальный домен price@shate-m.com отправитель
+        // пишет как "shate-m.com". Тема реально приходит как "Шате-М" (через
+        // дефис), а не "Шатэм" как в старом варианте, поэтому оставлены оба.
+        // $bodyLower — самый надёжный сигнал: при пересылке письма вручную
+        // (Fwd:) mail.ru вставляет в тело "От кого: prices_export@shate-m.com",
+        // и это остаётся стабильным даже если поставщик поменяет тему письма.
+        if (
+            str_contains($bodyLower,      'shate-m.com') ||
             str_contains($subjectLower,   'shatem')      ||
             str_contains($subjectLower,   'шатэм')       ||
+            str_contains($subjectLower,   'шате-м')      ||
             str_contains($subjectLower,   'shate-m')     ||
             str_contains($fromEmailLower, 'shate-m.com') ||
             str_contains($filenameLower,  'shate-m')     ||
@@ -349,7 +365,10 @@ class FetchPricesCommand extends Command
             return [new ShatemParser(), 'shatem'];
         }
 
+        // Phaeton — аналогично, $bodyLower ловит "От кого: price@phaeton.kz"
+        // из пересланного письма даже если From-заголовок = личная почта.
         if (
+            str_contains($bodyLower,      'phaeton.kz') ||
             str_contains($subjectLower,   'phaeton')    ||
             str_contains($subjectLower,   'фаэтон')     ||
             str_contains($fromEmailLower, 'phaeton.kz') ||
@@ -359,10 +378,25 @@ class FetchPricesCommand extends Command
             return [new PhaetonParser(), 'phaeton'];
         }
 
+        // Tstarter проверяем ДО АвтоТрейд Алматы/Астана — иначе письма из
+        // алматинского филиала Tstarter (almaty@tstarter.ru) ложно матчатся
+        // на АвтоТрейд Алматы.
+        if (
+            str_contains($subjectLower,   'tstarter')      ||
+            str_contains($subjectLower,   'т-стартер')     ||
+            str_contains($subjectLower,   'транс стартер') ||
+            str_contains($fromEmailLower, 'tstarter.ru')   ||
+            str_contains($filenameLower,  'tstarter')
+        ) {
+            $this->comment('Выбран парсер: Транс Стартер (Tstarter)');
+            return [new TstarterParser(), 'tstarter'];
+        }
+
         if (
             str_contains($subjectLower,   'алматы')        ||
-            str_contains($subjectLower,   'almaty')        ||
-            str_contains($fromEmailLower, 'almaty')         ||
+            str_contains($subjectLower,   'almaty')         ||
+            // Убрали str_contains($fromEmailLower, 'almaty') — ненадёжно,
+            // т.к. у Tstarter тоже есть филиал с почтой almaty@tstarter.ru
             str_contains($filenameLower,  'алм')            ||
             str_contains($filenameLower,  'autotrade_alm')
         ) {
@@ -370,27 +404,15 @@ class FetchPricesCommand extends Command
             return [new AutotradeAlmParser(), 'autotrade_alm'];
         }
 
-         if (
+        if (
             str_contains($subjectLower,   'автотрейд')      ||
             str_contains($subjectLower,   'avtotrade')      ||
             str_contains($fromEmailLower, 'avtotrade')      ||
             str_contains($fromEmailLower, 'автотрейд')      ||
-            str_starts_with($filenameLower, 'аст_')          ||
-            str_starts_with($filenameLower, 'аст ')          ||
-            str_starts_with($filenameLower, 'autotrade_ast')
+            str_starts_with($filenameLower, 'аст')           // было 'аст_'/'аст '/'autotrade_ast' — требовало разделитель
         ) {
             $this->comment('Выбран парсер: АвтоТрейд Астана');
             return [new AutotradeAstParser(), 'autotrade_ast'];
-        }
-
-        if (
-            str_contains($subjectLower,   'zakazauto')    ||
-            str_contains($subjectLower,   'заказавто')    ||
-            str_contains($fromEmailLower, 'zakazauto.kz') ||
-            str_contains($filenameLower,  'zakaz')
-        ) {
-            $this->comment('Выбран парсер: ЗаказАвто');
-            return [new ZakazAutoParser(), 'zakazauto'];
         }
 
         if (
@@ -407,34 +429,45 @@ class FetchPricesCommand extends Command
         }
 
         if (
-            str_contains($subjectLower,   'интерком')   ||
-            str_contains($subjectLower,   'interkom')   ||
-            str_contains($fromEmailLower, 'interkom')   ||
-            str_contains($fromEmailLower, 'roman_planeta') ||
-            str_contains($filenameLower,  'интерком')   ||
-            str_contains($filenameLower,  'interkom')
+            str_contains($fromEmailLower, 'kulanoil') ||
+            str_contains($subjectLower,   'kulan')    ||
+            str_contains($filenameLower,  'kulan')
+        ) {
+            $this->comment('Выбран парсер: Кулан');
+            return [new KulanParser(), 'kln'];
+        }
+
+        // Интерком. ВАЖНО: письмо Роман пересылает вручную с личной почты
+        // (кнопкой «Переслать»), поэтому From-заголовок = его личный e-mail,
+        // а тема письма — произвольная ("Прайс от 28.07.2026"), без слова
+        // "interkom"/"интерком" вообще. Имя вложения тоже не содержит его
+        // ("Прайс00-00045418.XLS.xls"). Единственный стабильный сигнал —
+        // домен реального отправителя ("info@interkom.kz"), который остаётся
+        // в теле пересланного письма ("От: Интерком <info@interkom.kz>") —
+        // тот же самый приём, что уже работает для Шатэм/Фаэтон выше.
+        // Без этой проверки приходилось вручную переименовывать файл перед
+        // пересылкой, чтобы имя содержало "interkom".
+        if (
+            str_contains($bodyLower,      'interkom.kz') ||
+            str_contains($fromEmailLower, 'interkom.kz') ||
+            str_contains($filenameLower,  'interkom')    ||
+            str_contains($filenameLower,  'интерком')
         ) {
             $this->comment('Выбран парсер: Интерком');
             return [new InterkomParser(), 'interkom'];
         }
 
-        if (
-            str_contains($subjectLower,   'forum')      ||
-            str_contains($subjectLower,   'форум')      ||
-            str_contains($fromEmailLower, 'forum')      ||
-            str_contains($filenameLower,  'forum_auto') ||
-            str_contains($filenameLower,  'forum auto')
-        ) {
+        if (str_contains($filenameLower, 'forum') || str_contains($filenameLower, 'форум')) {
             if (str_contains($filenameLower, ' лп') || str_contains($filenameLower, '_лп')) {
-                $this->comment('Выбран парсер: Forum Auto ЛП');
+                $this->comment('Выбран парсер: Forum Auto ЛП (по имени файла)');
                 return [new ForumAutoParser(), 'forumauto_lp'];
             }
             if (str_contains($filenameLower, ' гп') || str_contains($filenameLower, '_гп')) {
-                $this->comment('Выбран парсер: Forum Auto ГП');
+                $this->comment('Выбран парсер: Forum Auto ГП (по имени файла)');
                 return [new ForumAutoParser(), 'forumauto_gp'];
             }
-            $this->comment('Выбран парсер: Forum Auto');
-            return [new ForumAutoParser(), 'forumauto'];
+            $this->comment('Выбран парсер: Forum Auto (суффикс не указан, по умолчанию ЛП)');
+            return [new ForumAutoParser(), 'forumauto_lp'];
         }
 
         if (
@@ -448,6 +481,17 @@ class FetchPricesCommand extends Command
             return [new RosskoParser(), 'rossko'];
         }
 
+        if (
+            str_contains($fromEmailLower, 'tabys.parts') ||
+            str_contains($subjectLower,   'тисс')        ||
+            str_contains($subjectLower,   'tiss')        ||
+            str_contains($filenameLower,  'тисс')        ||
+            str_contains($filenameLower,  'tiss')
+        ) {
+            $this->comment('Выбран парсер: TISS');
+            return [new TissParser(), 'tiss'];
+        }
+
         return [null, ''];
     }
 
@@ -456,7 +500,7 @@ class FetchPricesCommand extends Command
         $zip = new \ZipArchive();
         if ($zip->open($zipFullPath) !== true) {
             $this->error("Не удалось открыть ZIP: " . basename($zipFullPath));
-            return [null, null, false, false];
+            return [null, null, false, false, false];
         }
 
         $extractedFullPath = null;
@@ -466,7 +510,11 @@ class FetchPricesCommand extends Command
             $innerName      = $zip->getNameIndex($i);
             $innerNameLower = mb_strtolower($innerName);
 
-            if (str_ends_with($innerNameLower, '.csv') || str_ends_with($innerNameLower, '.xlsx')) {
+            if (
+                str_ends_with($innerNameLower, '.csv') ||
+                str_ends_with($innerNameLower, '.xlsx') ||
+                str_ends_with($innerNameLower, '.xls')
+            ) {
                 $innerFilename     = basename($innerName);
                 $extractedFullPath = storage_path('app/tmp/' . $innerFilename);
 
@@ -478,15 +526,16 @@ class FetchPricesCommand extends Command
         $zip->close();
 
         if (!$extractedFullPath) {
-            $this->error("В ZIP нет CSV/XLSX: " . basename($zipFullPath));
-            return [null, null, false, false];
+            $this->error("В ZIP нет CSV/XLSX/XLS: " . basename($zipFullPath));
+            return [null, null, false, false, false];
         }
 
         $innerNameLower = mb_strtolower($innerFilename);
         $isXlsx = str_ends_with($innerNameLower, '.xlsx');
         $isCsv  = str_ends_with($innerNameLower, '.csv');
+        $isXls  = str_ends_with($innerNameLower, '.xls');
 
-        return [$extractedFullPath, $extractedFullPath, $isXlsx, $isCsv];
+        return [$extractedFullPath, $extractedFullPath, $isXlsx, $isCsv, $isXls];
     }
 
     private function readRows(

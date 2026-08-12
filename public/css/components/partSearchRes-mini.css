@@ -40,7 +40,7 @@
         margin-top: 0;
         margin-bottom: 80px;
         padding: 0 8px 16px;
-        background-color: #eeeeee;
+        background-color: #fff;
     }
 
     /* --- скрываем то, что не нужно на мобилке --- */
@@ -69,26 +69,31 @@
 
     /* --- секционный заголовок (Запрошенный артикул / Аналоги ...) --- */
     .searchResForRequestPartNumber {
-        margin-top: 12px;
+        margin-top: 20px;
     }
 
     .searchResForRequestPartNumberHeader {
-        height: 36px;
-        font-size: 0.85em;
-        border-radius: 8px;
-        margin-bottom: 4px;
+        height: auto;
+        padding: 10px 12px;
+        font-size: 1.05em;
+        font-weight: 700;
+        color: #042D4D;
+        border-left: 4px solid #DA251C;
+        border-radius: 6px;
+        margin-bottom: 10px;
     }
 
     /* ---- КАРТОЧКА ТОВАРА ---- */
     .requestPartNumberContainer-item {
+        position: relative;
         display: flex;
         flex-direction: column;
         background: #fff;
-        border-radius: 10px;
-        border: 0.5px solid #ddd;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.07);
-        padding: 10px 12px;
-        margin-bottom: 6px;
+        border-radius: 12px;
+        border: 1px solid #eee;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        padding: 12px 14px;
+        margin-bottom: 12px;
         gap: 0;
     }
 
@@ -149,9 +154,72 @@
         margin-bottom: 6px;
     }
 
-    /* info-иконка — скрываем, на мобилке не нужна */
+    /* info-иконка — теперь показываем и на мобилке, уголок карточки */
     .requestPartNumber-info {
+        display: flex !important;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        margin: 0;
+        z-index: 2;
+    }
+
+    /* модалка с информацией — на мобилке на весь экран, а не по центру
+       колонкой как на десктопе (там она вообще не описана вне
+       @media(min-width:1024px), так что без этого блока была бы видна
+       всегда открытой прямо в потоке страницы) */
+    .info-block {
         display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        max-height: 100vh;
+        overflow-y: auto;
+        background: #fff;
+        z-index: 1050;
+        padding: 16px;
+        border-radius: 0;
+    }
+    .info-block-pictures {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .info-block-pictures-name {
+        width: 100%;
+    }
+    .info-block-pictures-name-header {
+        font-size: 1.1em;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    .info-block-pictures-name-brand,
+    .info-block-pictures-name-article {
+        font-size: 0.95em;
+        margin-bottom: 6px;
+    }
+    .carouselExampleControls {
+        width: 100%;
+    }
+    .carousel-item {
+        height: 220px;
+        overflow: hidden;
+    }
+    .carousel-item-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #f2f2f2;
+        display: block;
+    }
+    .info-block-information {
+        width: 100%;
+        height: auto;
+        max-height: none;
+        overflow-y: visible;
+        margin-top: 12px;
     }
 
     /* --- разделитель перед нижней строкой --- */
@@ -166,7 +234,7 @@
     /* --- строка 3: кол-во + цена + корзина --- */
     .requestPartNumber-count {
         font-size: 13px;
-        color: #92b6c8;
+        color: #6c757d;
         order: 6;
         flex-direction: row;
         justify-content: flex-start;
@@ -203,7 +271,7 @@
         width: 100%;
     }
 
-    /* --- корзина --- */
+    /* --- корзина: сплошная navy-кнопка, как у конкурента (не серый контур) --- */
     .stock-item-cart {
         display: flex;
         flex-direction: row;
@@ -211,15 +279,15 @@
         justify-content: center;
         gap: 6px;
         width: 100%;
-        border: 0.5px solid #ccc;
+        border: none;
         border-radius: 8px;
-        padding: 6px 10px;
-        background: #f7f7f7;
+        padding: 8px 10px;
+        background: #042D4D;
     }
 
     .stock-item-cart-img {
-        width: 18px;
-        height: 18px;
+        color: #fff !important;
+        font-size: 16px !important;
     }
 
     .stock-item-cart-qty input,
@@ -231,6 +299,9 @@
         font-size: 12px;
         margin-left: 4px;
         border-radius: 4px;
+        border: none;
+        background: rgba(255,255,255,0.15);
+        color: #fff;
     }
 
     /* --- бейджи доставки --- */
@@ -296,5 +367,34 @@
     #show-other-items a {
         font-size: 13px;
         font-style: normal;
+    }
+
+    /* --- "Аналоги в наличии" — лёгкий зелёный тон карточки, как у конкурента.
+       Кнопка корзины (.stock-item-cart) остаётся navy — у неё свой фон ниже,
+       заливка карточки его не перекрывает. --- */
+    #crossesContainer-on-stock .requestPartNumberContainer-item {
+        background: #e3f6e9;
+        border-color: #b9e3c6;
+    }
+
+    /* иконка "i" — тот же нежно-голубой, что и на десктопе */
+    .spare-part-info-show,
+    .spare-part-info-lookup {
+        color: #5bc0de !important;
+    }
+
+    /* плашка "1.5-2 часа" на мобилке — карточка и так зелёная (см. выше),
+       поэтому саму плашку оставляем прозрачной с navy-текстом, а не зелёной */
+    .gp-delivery-badge {
+        background: transparent;
+        color: #042D4D;
+    }
+    .gp-delivery-badge i {
+        color: #042D4D;
+    }
+
+    /* пагинация на мобилке не нужна — все результаты идут одним списком */
+    .pagination-nav {
+        display: none !important;
     }
 }

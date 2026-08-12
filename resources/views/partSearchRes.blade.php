@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @push('styles')
-    <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}" rel="stylesheet">
-    <link href="{{ URL::asset('css/components/partSearchRes.css') }}" rel="stylesheet">
+    <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}?v=9" rel="stylesheet">
+    <link href="{{ URL::asset('css/components/partSearchRes.css') }}?v=7" rel="stylesheet">
 @endpush
 
 @section('title', 'Результат поиска')
@@ -108,9 +108,119 @@
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
                                 @if(array_key_exists('info',$searchItem))
-                                    <img src="/images/info_pic.png" alt="info">
+                                    <i class="fas fa-circle-info spare-part-info-show" style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
+
+                                    <div class="info-block">
+                                        <div class="block-info-close-wrapper">
+                                            <button type="button" class="btn-close block-info-item-close" aria-label="Close"></button>
+                                        </div>
+                                        <div class="info-block-pictures">
+                                            <div class="info-block-pictures-name">
+                                                <div class="info-block-pictures-name-header">
+                                                    {{ $searchItem['name'] }}
+                                                </div>
+                                                <div class="info-block-pictures-name-brand">
+                                                    <span style="color:#bbb"> Брэнд: </span> {{ $searchItem['brand'] }}
+                                                </div>
+                                                <div class="info-block-pictures-name-article">
+                                                    <span style="color:#bbb"> Артикул: </span> {{ $searchItem['article'] }}
+                                                </div>
+                                            </div>
+                                            <div id="carouselExampleControls-searched-{{ $searchItem['article'] }}" class="carousel slide carouselExampleControls" data-bs-ride="carousel">
+                                                <div class="carousel-inner">
+                                                    @if (!empty($searchItem['info']['pictures']))
+                                                        @if (gettype($searchItem['info']['pictures']) == 'string')
+                                                            <div class="carousel-item active">
+                                                                <img src="{{ $searchItem['info']['pictures'] }}" class="carousel-item-img" alt="sparepart-picture">
+                                                            </div>
+                                                        @else
+                                                            @foreach($searchItem['info']['pictures'] as $pic_number => $picture_address)
+                                                                @if($pic_number == 0)
+                                                                    <div class="carousel-item active">
+                                                                        <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
+                                                                    </div>
+                                                                @else
+                                                                    <div class="carousel-item">
+                                                                        <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
+                                                                    </div>
+                                                                @endif
+                                                            @endforeach
+                                                        @endif
+                                                    @endif
+                                                </div>
+                                                <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls-searched-{{ $searchItem['article'] }}" data-bs-slide="prev">
+                                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                    <span class="visually-hidden">Previous</span>
+                                                </button>
+                                                <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleControls-searched-{{ $searchItem['article'] }}" data-bs-slide="next">
+                                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                                    <span class="visually-hidden">Next</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="info-block-information">
+                                            <ul class="nav nav-tabs" id="productTabs-searched-{{ $searchItem['article'] }}" role="tablist">
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link active"
+                                                            data-bs-toggle="tab"
+                                                            data-bs-target="#description-searched-{{ $searchItem['article'] }}"
+                                                            type="button"
+                                                            role="tab">
+                                                        Описание
+                                                    </button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link"
+                                                            data-bs-toggle="tab"
+                                                            data-bs-target="#original-searched-{{ $searchItem['article'] }}"
+                                                            type="button"
+                                                            role="tab">
+                                                        Оригинальные номера
+                                                    </button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link"
+                                                            data-bs-toggle="tab"
+                                                            data-bs-target="#usage-searched-{{ $searchItem['article'] }}"
+                                                            type="button"
+                                                            role="tab">
+                                                        Применение в автомобилях
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                            <div class="tab-content mt-3">
+                                                <div class="tab-pane fade show active info-description"
+                                                    id="description-searched-{{ $searchItem['article'] }}"
+                                                    role="tabpanel">
+                                                    <ul class="info-description-sizes">
+                                                        <li><b>Размеры</b></li>
+                                                        <li>Ширина: {{ $searchItem['info']['params']['sizes']['width'] ?? '' }}</li>
+                                                        <li>Высота: {{ $searchItem['info']['params']['sizes']['height'] ?? '' }}</li>
+                                                        <li>Толщина: {{ $searchItem['info']['params']['sizes']['depth'] ?? '' }}</li>
+                                                    </ul>
+                                                </div>
+                                                <div class="tab-pane fade info-oem-numbers"
+                                                    id="original-searched-{{ $searchItem['article'] }}"
+                                                    role="tabpanel">
+                                                    @if (array_key_exists('OEM', $searchItem['info']['params']))
+                                                        @foreach($searchItem['info']['params']['OEM'] as $oem_number)
+                                                            {{ $oem_number }}
+                                                        @endforeach
+                                                    @endif
+                                                </div>
+                                                <div class="tab-pane fade"
+                                                    id="usage-searched-{{ $searchItem['article'] }}"
+                                                    role="tabpanel">
+                                                    <p></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 @else
-                                    <img src="/images/info_unavailable.png" alt="info">
+                                    <i class="fas fa-circle-info spare-part-info-lookup"
+                                       data-article="{{ $searchItem['article'] }}"
+                                       data-brand="{{ $searchItem['brand'] }}"
+                                       style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
                                 @endif
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-delivery">
@@ -142,10 +252,10 @@
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-cart">
                                 <div class="stock-item-cart">
                                     <div class="stock-item-cart-btn">
-                                        <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
+                                        <i class="fas fa-cart-shopping stock-item-cart-img" style="color: #042D4D; font-size: 20px;"></i>
                                     </div>
                                     <div class="stock-item-cart-qty">
-                                        <input type='number' value="1" class="form-control">
+                                        <input type='number' value="1" min="1" max="{{ $searchItem['qty'] }}" class="form-control">
                                     </div>
                                     <input type="hidden" value="{{ $searchItem['price'] }}">
                                 </div>
@@ -198,11 +308,10 @@
                         {{ $crossItem['name'] }}
                     </div>
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                        @if(array_key_exists('info',$crossItem))
-                            <img src="/images/info_pic.png" alt="info">
-                        @else
-                            <img src="/images/info_unavailable.png" alt="info">
-                        @endif
+                        <i class="fas fa-circle-info spare-part-info-lookup"
+                           data-article="{{ $crossItem['article'] }}"
+                           data-brand="{{ $crossItem['brand'] }}"
+                           style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery" style="background:{{ $crossItem['supplier_color']}};color:#111">
                         {{ $crossItem['delivery_time'] }}
@@ -224,10 +333,10 @@
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
                         <div class="stock-item-cart">
                             <div class="stock-item-cart-btn">
-                                <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
+                                <i class="fas fa-cart-shopping stock-item-cart-img" style="color: #042D4D; font-size: 20px;"></i>
                             </div>
                             <div class="stock-item-cart-qty">
-                                <input type='number' value="1" class="form-control">
+                                <input type='number' value="1" min="1" max="{{ $crossItem['qty'] }}" class="form-control">
                             </div>
                             <input type="hidden" value="{{ $crossItem['price'] }}">
                         </div>
@@ -280,7 +389,7 @@
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
                         
                         @if (array_key_exists('info', $crossItem))
-                            <img src="/images/info_pic.png" alt="info" class="spare-part-info-show">
+                            <i class="fas fa-circle-info spare-part-info-show" style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
 
                             <div class="info-block">
                                 <div class="block-info-close-wrapper">
@@ -406,12 +515,15 @@
                                 </div>
                             </div>
                         @else
-                            <img src="/images/info_unavailable.png" alt="info">
+                            <i class="fas fa-circle-info spare-part-info-lookup"
+                               data-article="{{ $crossItem['article'] }}"
+                               data-brand="{{ $crossItem['brand'] }}"
+                               style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
                         @endif
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery parts-on-stock">
-                        <span class="badge" style="background:#d1e7dd;color:#0a6640;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;display:inline-block;min-width:80px;text-align:center;">
-                            {{ $crossItem['delivery_time'] }}
+                        <span class="badge gp-delivery-badge" style="padding:5px 10px;border-radius:6px;font-size:0.85rem;display:inline-block;min-width:80px;text-align:center;">
+                            <i class="fas fa-clock"></i> {{ $crossItem['delivery_time'] }}
                         </span>
                     </div>
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
@@ -427,10 +539,10 @@
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
                         <div class="stock-item-cart">
                             <div class="stock-item-cart-btn">
-                                <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
+                                <i class="fas fa-cart-shopping stock-item-cart-img" style="color: #042D4D; font-size: 20px;"></i>
                             </div>
                             <div class="stock-item-cart-qty">
-                                <input type='number' value="1" class="form-control">
+                                <input type='number' value="1" min="1" max="{{ $crossItem['qty'] }}" class="form-control">
                             </div>
                             <input type="hidden" value="{{ $crossItem['price'] }}">
                         </div>
@@ -485,11 +597,10 @@
                     </div>
 
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                        @if(array_key_exists('info', $crossItem))
-                            <img src="/images/info_pic.png" alt="info">
-                        @else
-                            <img src="/images/info_unavailable.png" alt="info">
-                        @endif
+                        <i class="fas fa-circle-info spare-part-info-lookup"
+                           data-article="{{ $crossItem['article'] }}"
+                           data-brand="{{ $crossItem['brand'] }}"
+                           style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
                     </div>
 
                     <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
@@ -526,10 +637,10 @@
                         @foreach ($crossItem['stocks'] as $stockItem)
                             <div class="stock-item-cart">
                                 <div class="stock-item-cart-btn">
-                                    <img src="/images/cart_pic_20.png" alt="cart" class="stock-item-cart-img">
+                                    <i class="fas fa-cart-shopping stock-item-cart-img" style="color: #042D4D; font-size: 20px;"></i>
                                 </div>
                                 <div class="stock-item-cart-qty">
-                                    <input type='number' value="1" class="form-control">
+                                    <input type='number' value="1" min="1" max="{{ $stockItem['qty'] }}" class="form-control">
                                 </div>
                                 <input type="hidden" value="{{ $crossItem['price'] }}">
                             </div>
@@ -630,6 +741,53 @@
 </div>
 
 <textarea id="clipboard-buffer" style="position: absolute; left: -9999px;"></textarea>
+
+{{-- Общая модалка для иконки "i" у поставщиков без встроенных данных (не Gerat).
+     Одна на страницу — заполняется через AJAX по клику (CatalogController::partInfo),
+     не рендерится заранее на каждую строку. Переиспользует те же CSS-классы,
+     что и готовая модалка Gerat (.info-block и т.д.) — визуально то же самое,
+     просто источник данных другой (parts_catalog вместо ответа поставщика). --}}
+<div class="info-block" id="ajaxInfoBlock" style="display:none;">
+    <div class="block-info-close-wrapper">
+        <button type="button" class="btn-close block-info-item-close" aria-label="Close"></button>
+    </div>
+    <div class="info-block-pictures">
+        <div class="info-block-pictures-name">
+            <div class="info-block-pictures-name-header" id="ajaxInfoName"></div>
+            <div class="info-block-pictures-name-brand"><span style="color:#bbb">Брэнд: </span><span id="ajaxInfoBrand"></span></div>
+            <div class="info-block-pictures-name-article"><span style="color:#bbb">Артикул: </span><span id="ajaxInfoArticle"></span></div>
+        </div>
+        <div id="ajaxInfoCarousel" class="carousel slide carouselExampleControls" data-bs-ride="carousel">
+            <div class="carousel-inner" id="ajaxInfoCarouselInner"></div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#ajaxInfoCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#ajaxInfoCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </div>
+    <div class="info-block-information">
+        <ul class="nav nav-tabs" id="ajaxInfoTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#ajaxInfoDescription" type="button" role="tab">Описание</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ajaxInfoSpecs" type="button" role="tab">Характеристики</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ajaxInfoApplicability" type="button" role="tab">Применимость</button>
+            </li>
+        </ul>
+        <div class="tab-content mt-3">
+            <div class="tab-pane fade show active" id="ajaxInfoDescription" role="tabpanel"></div>
+            <div class="tab-pane fade" id="ajaxInfoSpecs" role="tabpanel"></div>
+            <div class="tab-pane fade" id="ajaxInfoApplicability" role="tabpanel"></div>
+        </div>
+    </div>
+</div>
 
 @include('components.footer-bar-mini')
 @include('components.footer')

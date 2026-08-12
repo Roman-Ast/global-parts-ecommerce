@@ -1,7 +1,7 @@
 <div id="main-header-mini" style="background: #fff; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
     
     {{-- Kaspi-бар (без изменений) --}}
-    <div id="kaspi-wrapper" style="background: #212529; color: #fff; padding: 6px 15px; overflow: hidden; display: block;">
+    <div id="kaspi-wrapper" style="background: #042D4D; color: #fff; padding: 6px 15px; overflow: hidden; display: block;">
         <div style="display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 15px;">
                 <div class="kaspi-item" style="display: flex; align-items: center; gap: 5px;">

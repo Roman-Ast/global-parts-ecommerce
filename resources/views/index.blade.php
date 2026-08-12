@@ -1,10 +1,5 @@
 @extends('layouts.app')
 
-@push('styles')
-    <link href="{{ asset('css/main.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/main-mini.css') }}" rel="stylesheet">
-@endpush
-
 @section('title', 'Global Parts — Автозапчасти в Астане и по всему Казахстану | VIN-подбор')
     
 @section('content')
@@ -38,7 +33,7 @@
             </p>
 
             <div class="d-flex flex-row justify-content-center align-items-center gap-2 mb-3 col-12 align-items-stretch" >
-                <a href="#vin-form" class="btn btn-success btn-lg px-4" id="scroll-to-form">Подобрать по VIN</a>
+                <a href="#vin-form" class="btn btn-primary btn-lg px-4" id="scroll-to-form">Подобрать по VIN</a>
 
                 <a href="https://wa.me/77087172549?text=Здравствуйте,%20пишу%20вам%20с%20сайта." 
 				   class="btn btn-outline-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container"
@@ -57,14 +52,14 @@
                 <div class="col-12 col-lg-4">
                     <div class="gp-badge d-flex align-items-center gap-2 fs-4 text-center  mt-3">
                         <span class="text-success">✔</span>
-                        <span><b>Более 1000</b> довольных клиентов</span>
+                        <span><b class="gp-accent-red">Более 1000</b> довольных клиентов</span>
                     </div>
                 </div>
 
                 <div class="col-12 col-lg-4">
                     <div class="gp-badge d-flex align-items-center gap-2 fs-4 text-center  mt-3">
                         <span class="text-success">✔</span>
-                        <span><b>Гарантия</b> соответствия и подлинности</span>
+                        <span><b class="gp-accent-red">Гарантия</b> соответствия и подлинности</span>
                     </div>
                 </div>
 
@@ -81,72 +76,31 @@
         {{-- POPULAR CATEGORIES --}}
         <section class="mt-4 mt-lg-5 shadow-sm" id="popular-categories">
 
-            <div id="popular-categories-header" class="mb-3 text-dark fs-5 fw-semibold">
+            <div id="popular-categories-header" class="mb-3 text-dark fs-4 fw-semibold gp-heading-accent">
               Популярные категории
             </div>
 
             <div id="popular-categories-container">
 
-              <div class="popular-categories-item shadow-sm">
-                <div class="popular-categories-img">
-                  <img src="images/popular-categories/chasis.png" alt="chasis" class="popular-categories-img">
-                </div>
-                <div class="popular-categories-name text-dark text-center">
-                  Ходовая часть
-                </div>
-              </div>
-
-              <div class="popular-categories-item shadow-sm">
-                <div class="popular-categories-img">
-                  <img src="images/popular-categories/brakes.png" alt="brakes" class="popular-categories-img">
-                </div>
-                <div class="popular-categories-name text-dark text-center">
-                  Тормозная система
-                </div>
-              </div>
-
-              <div class="popular-categories-item shadow-sm">
-                <div class="popular-categories-img">
-                  <img src="images/popular-categories/body.png" alt="body" class="popular-categories-img">
-                </div>
-                <div class="popular-categories-name text-dark text-center">
-                  Кузовные детали
-                </div>
-              </div>
-
-              <div class="popular-categories-item shadow-sm">
-                <div class="popular-categories-img">
-                  <img src="images/popular-categories/engine.png" alt="engine" class="popular-categories-img">
-                </div>
-                <div class="popular-categories-name text-dark text-center">
-                  Детали ДВС
-                </div>
-              </div>
-
-              <div class="popular-categories-item shadow-sm">
-                <div class="popular-categories-img">
-                  <img src="images/popular-categories/electricparts.png" alt="electricparts" class="popular-categories-img">
-                </div>
-                <div class="popular-categories-name text-dark text-center">
-                  Электрика
-                </div>
-              </div>
-
-              <div class="popular-categories-item shadow-sm">
-                <div class="popular-categories-img">
-                  <img src="images/popular-categories/add-tools.png" alt="electricparts" class="popular-categories-img">
-                </div>
-                <div class="popular-categories-name text-dark text-center">
-                  Доп. оборудование
-                </div>
-              </div>
+              @foreach($popularCategories as $category)
+                <a href="{{ route('catalog.category', $category->category_slug) }}" class="text-decoration-none">
+                  <div class="popular-categories-item shadow-sm">
+                    <div class="popular-categories-img">
+                      <img src="{{ asset($category->icon) }}" alt="{{ $category->category_top_title }}" class="popular-categories-img">
+                    </div>
+                    <div class="popular-categories-name text-dark text-center">
+                      {{ $category->category_top_title }}
+                    </div>
+                  </div>
+                </a>
+              @endforeach
 
             </div>
         </section>
 
         {{-- REVIEWS + HELP BLOCK (как на 2й картинке: слева фото/блок, справа отзывы) --}}
         <section class="mt-7 mt-lg-5">
-            <h2 class="h4 fw-bold mb-3 text-center text-lg-start">Отзывы довольных клиентов</h2>
+            <h2 class="fs-4 fw-semibold mb-3 text-dark gp-heading-accent">Отзывы довольных клиентов</h2>
 
             <div class="row g-3 align-items-stretch">
                 {{-- Слева: фото склада + блок помощи --}}
@@ -156,6 +110,7 @@
                         <div class="ratio ratio-21x9 rounded-4 overflow-hidden bg-light">
                             <img src="images/i.webp"
                                 alt="Склад"
+                                class="gp-warehouse-photo"
                                 style="width:100%;height:100%;object-fit:cover;"
                                 loading="lazy">
                         </div>
@@ -229,7 +184,7 @@
 									   class="btn btn-success btn-lg px-4 d-flex align-items-center justify-content-center wa-top-container">
                                         Купить по WhatsApp
                                     </a>
-                                    <a href="tel:+77087172549" class="btn btn-outline-secondary btn-lg flex-fill">
+                                    <a href="tel:+77087172549" class="btn btn-primary btn-lg flex-fill">
                                         Позвонить
                                     </a>
                                 </div>
@@ -244,12 +199,12 @@
         {{-- 3 шага для заказа--}}
         <section class="steps-section py-5 mt-5" style="background-color:#f5f8fa">
           <div class="container">
-            <h2 class="text-center fw-bold mb-4">Как заказать запчасти — всего 3 шага</h2>
+            <h2 class="fs-4 fw-semibold mb-4 text-dark gp-heading-accent">Как заказать запчасти — всего 3 шага</h2>
 
             <div class="row text-center gy-4">
               <div class="col-md-4">
                 <div class="p-4 border rounded-4 shadow-sm h-100">
-                  <div class="fs-1 mb-3 text-primary">📸</div>
+                  <div class="gp-icon-circle mb-3"><i class="fas fa-camera"></i></div>
                   <h5 class="fw-semibold">1. Присылаете VIN или фото техпаспорта - 30 секунд</h5>
                   <p class="text-muted mb-0">Отправляйте в WhatsApp или через форму на сайте</p>
                 </div>
@@ -257,7 +212,7 @@
 
               <div class="col-md-4">
                 <div class="p-4 border rounded-4 shadow-sm h-100">
-                  <div class="fs-1 mb-3 text-success">🔍</div>
+                  <div class="gp-icon-circle mb-3"><i class="fas fa-magnifying-glass"></i></div>
                   <h5 class="fw-semibold">2. Мы подбираем нужные детали - 5-10 минут</h5>
                   <p class="text-muted mb-0">Высылаем фото, цену и срок доставки</p>
                 </div>
@@ -265,7 +220,7 @@
 
               <div class="col-md-4">
                 <div class="p-4 border rounded-4 shadow-sm h-100">
-                  <div class="fs-1 mb-3 text-danger">📦</div>
+                  <div class="gp-icon-circle mb-3"><i class="fas fa-box"></i></div>
                   <h5 class="fw-semibold">3. Отправляем в ваш город 1-3 дня</h5>
                   <p class="text-muted mb-0">Доставка по РК или самовывоз в Астане</p>
                 </div>
@@ -276,12 +231,12 @@
         {{-- Почему выбирают нас--}}
         <section class="why-us-section py-5 bg-white mt-3">
             <div class="container">
-              <h2 class="text-center fw-bold mb-4">Почему нас выбирают более 1000 покупателей по Казахстану</h2>
+              <h2 class="fs-4 fw-semibold mb-4 text-dark gp-heading-accent">Почему нас выбирают более 1000 покупателей по Казахстану</h2>
 
               <div class="row gy-4">
                 <div class="col-md-6 col-lg-4">
                   <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
-                    <div class="fs-2 me-3 text-primary">🔧</div>
+                    <div class="gp-icon-circle-sm me-3"><i class="fas fa-wrench"></i></div>
                     <div>
                       <h6 class="fw-semibold mb-1">Подбор по VIN-коду</h6>
                       <p class="text-muted mb-0">Быстро, точно и удобно — не нужно искать самому</p>
@@ -291,7 +246,7 @@
 
                 <div class="col-md-6 col-lg-4">
                   <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
-                    <div class="fs-2 me-3 text-success">✅</div>
+                    <div class="gp-icon-circle-sm me-3"><i class="fas fa-circle-check"></i></div>
                     <div>
                       <h6 class="fw-semibold mb-1">Оригиналы и качественные аналоги</h6>
                       <p class="text-muted mb-0">В наличии и под заказ напрямую от поставщиков</p>
@@ -301,7 +256,7 @@
 
                 <div class="col-md-6 col-lg-4">
                   <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
-                    <div class="fs-2 me-3 text-danger">📦</div>
+                    <div class="gp-icon-circle-sm me-3"><i class="fas fa-truck-fast"></i></div>
                     <div>
                       <h6 class="fw-semibold mb-1">Доставка по Казахстану</h6>
                       <p class="text-muted mb-0">Отправка за 1–3 дня, а по Астане — самовывоз</p>
@@ -311,7 +266,7 @@
 
                 <div class="col-md-6 col-lg-4">
                   <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
-                    <div class="fs-2 me-3 text-info">💬</div>
+                    <div class="gp-icon-circle-sm me-3"><i class="fas fa-comment-dots"></i></div>
                     <div>
                       <h6 class="fw-semibold mb-1">Консультации через WhatsApp</h6>
                       <p class="text-muted mb-0">Без звонков — пишите, как удобно</p>
@@ -321,7 +276,7 @@
 
                 <div class="col-md-6 col-lg-4">
                   <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
-                    <div class="fs-2 me-3 text-warning">💰</div>
+                    <div class="gp-icon-circle-sm me-3"><i class="fas fa-tag"></i></div>
                     <div>
                       <h6 class="fw-semibold mb-1">Доступные цены</h6>
                       <p class="text-muted mb-0">Работаем напрямую с проверенными поставщиками</p>
@@ -331,7 +286,7 @@
 
                 <div class="col-md-6 col-lg-4">
                   <div class="d-flex align-items-start p-3 border rounded-4 shadow-sm h-100">
-                    <div class="fs-2 me-3 text-secondary">🔄</div>
+                    <div class="gp-icon-circle-sm me-3"><i class="fas fa-rotate-left"></i></div>
                     <div>
                       <h6 class="fw-semibold mb-1">Гарантия и возврат</h6>
                       <p class="text-muted mb-0">Если запчасть не подошла — обмен или возврат</p>
@@ -346,7 +301,7 @@
         <section class="cta-form-section py-5 bg-light mt-3" id="vin-form">
             <div class="container">
                 <div class="text-center mb-4">
-                    <h2 class="fw-bold">Не знаете номер детали?</h2>
+                    <h2 class="fs-4 fw-semibold mb-2 text-dark gp-heading-accent d-inline-block">Не знаете номер детали?</h2>
                     <p class="text-muted lead mb-0">Подберем по VIN — быстро и точно</p>
                 </div>
 
@@ -444,7 +399,7 @@
 
                             {{-- Кнопка --}}
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-success btn-lg" id="send-vin-search-btn">
+                                <button type="submit" class="btn btn-primary btn-lg" id="send-vin-search-btn">
                                     Получить подбор
                                 </button>
                             </div>
@@ -460,8 +415,8 @@
             <div class="text-center mb-4">
               
               
-              <h2 class="fw-bold">Хиты продаж по моделям авто</h2>
-              <p class="text-muted lead mb-0">Переходите сразу к спискам популярных моделей и находите нужное быстрее.</p>
+              <h2 class="fs-4 fw-semibold mb-2 text-dark text-start gp-heading-accent">Хиты продаж по моделям авто</h2>
+              <p class="text-muted lead mb-0 text-start">Переходите сразу к спискам популярных моделей и находите нужное быстрее.</p>
                 
               </p>
 
@@ -494,28 +449,6 @@
         </section>
 
 
-        {{-- FOOTER CONTACTS --}}
-        <div class="mt-4 mt-lg-5 text-center d-flex justify-content-center" >
-            <div id="pre-footer-contacts">
-              <div class="gp-muted small mb-2">
-                  Контакты для быстрого заказа
-              </div>
-
-              <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-                  <a class="gp-phone-pill text-decoration-none text-dark" href="tel:+77087172549">
-                      📞 <span>+7 708 717 25 49</span>
-                  </a>
-                  <a class="gp-phone-pill text-decoration-none text-dark" href="tel:+77058443458">
-                      📞 <span>+7 708 844 34 58</span>
-                  </a>
-              </div>
-
-              <div class="mt-3 gp-muted small">
-                  {{ date('Y') }} © GlobalParts.kz — запчасти в наличии и с доставкой по РК
-              </div>
-            </div>
-        </div>
-
         <section class="mt-5 pt-4 border-top">
           <div class="container gp-muted small">
               <h2 class="h6 fw-bold">Доставка автозапчастей по всему Казахстану</h2>
@@ -540,7 +473,7 @@
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="faq-section p-4 bg-white shadow-sm" style="border-radius: 15px;">
-                    <h2 class="fw-bold mb-4" style="font-size: 1.5rem; border-left: 5px solid #ffc107; padding-left: 15px;">
+                    <h2 class="fs-4 fw-semibold mb-4 text-dark gp-heading-accent">
                         Часто задаваемые вопросы о Global Parts
                     </h2>
                     

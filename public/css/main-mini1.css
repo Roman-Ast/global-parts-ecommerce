@@ -1,12 +1,14 @@
 @media (max-width: 580px) {
     #popular-categories-container{
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        grid-gap:10px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
         padding-left: 30px;
         padding-right: 30px;
-        justify-content: center;
-        justify-items: center;
+    }
+    .popular-categories-item{
+        flex: 0 0 calc((100% - 2 * 10px) / 3);
     }
     #reviews-card-container{
         margin-top: 50px;

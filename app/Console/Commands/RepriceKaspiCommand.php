@@ -47,12 +47,77 @@ class RepriceKaspiCommand extends Command
         'колодки', // тормозные колодки — себестоимость = purchase_price, независимо от kaspi_qty карточки
         'Колодок',
         'ремень',
-        'лампы'
+        'лампы',
     ];
 
-    const PAIR_KEYWORDS = [
-        'пружин',
-        'spring',
+    /**
+     * Аналог FIXED_COST_KEYWORDS, но привязанный к КОНКРЕТНОМУ поставщику,
+     * а не действующий для всех разом. Пример: АвтоТрейд (Астана и Алматы)
+     * указывает цену на тормозные диски ЗА ПАРУ (комплект из 2), что
+     * подтверждено и самим прайсом, и карточкой Kaspi ("Количество в
+     * комплекте: 2"). Но это может быть частностью именно этого поставщика —
+     * другие поставщики тех же тормозных дисков вполне могут честно
+     * указывать цену за ОДНУ штуку, и для них умножение на kaspi_qty
+     * должно оставаться как есть. Поэтому это правило проверяется только
+     * для перечисленных ниже supplier_name, а не глобально по всем.
+     */
+    const SUPPLIER_FIXED_COST_KEYWORDS = [
+        'autotrade_ast' => ['диск'],
+        'autotrade_alm' => ['диск'],
+    ];
+
+    /**
+     * Проверяет, относится ли товар к категории с фиксированной
+     * себестоимостью для КОНКРЕТНОГО поставщика (см. SUPPLIER_FIXED_COST_KEYWORDS).
+     */
+    private function isSupplierFixedCost(?string $supplierName, string $title): bool
+    {
+        if ($supplierName === null || !isset(self::SUPPLIER_FIXED_COST_KEYWORDS[$supplierName])) {
+            return false;
+        }
+
+        $titleLower = mb_strtolower($title);
+        foreach (self::SUPPLIER_FIXED_COST_KEYWORDS[$supplierName] as $keyword) {
+            if (str_contains($titleLower, mb_strtolower($keyword))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Категории товаров, где Kaspi-карточка обычно показывает "1 шт",
+     * но фактическая продажа/себестоимость считается за КОМПЛЕКТ из
+     * нескольких штук — множитель свой для каждой категории.
+     *
+     * Ключ — подстрока в названии товара (регистронезависимо),
+     * значение — на сколько штук реально умножать себестоimость.
+     *
+     * Пример: поршневые кольца физически продаются комплектом на
+     * 4 цилиндра, но у поставщика/на Kaspi цена и qty часто указаны
+     * как "за 1 шт" — тогда себестоимость нужно умножать на 4, а не
+     * на 1, иначе цена уходит в минус аналогично истории с занижением
+     * себестоимости.
+     */
+    const QTY_OVERRIDE_KEYWORDS = [
+        'пружин' => 2,
+        'spring' => 2,
+    ];
+
+    /**
+     * Точечные override по КОНКРЕТНОМУ артикулу (наш our_article), а не
+     * по ключевому слову в названии — используется, когда категория
+     * товара НЕОДНОРОДНА: часть карточек уже честно указывает цену за
+     * весь комплект (например, "кольца поршневые на двигатель, комплект"),
+     * а часть — только за 1 деталь, хотя физически поставляется тоже
+     * комплектом. Ключевое слово тут ловило бы ОБА случая одинаково и
+     * задвоило бы себестоимость там, где она уже верна — поэтому для
+     * таких смешанных категорий множитель прописывается вручную по
+     * каждому проверенному артикулу отдельно.
+     */
+    const QTY_OVERRIDE_ARTICLES = [
+        '800017712050' => 4, // KOLBENSCHMIDT кольца поршневые — цена в прайсе за 1 шт, реально комплект на 4 цилиндра
     ];
 
     const PAIR_ALREADY_BUNDLED = [
@@ -102,14 +167,18 @@ class RepriceKaspiCommand extends Command
         $stats = [];
         $statRed = $statYellow = $statGreen = 0;
         $statAnomaly = 0;
+        $statAutoApplied = 0;
         $anomalies = [];
+
+        $normalUpdates  = [];
+        $anomalyUpdates = [];
 
         foreach ($items as $item) {
             $purchase = (float) $item->purchase_price;
             $qty      = (int)   ($item->qty_override ?? $item->kaspi_qty ?? 1);
             $qty      = max($qty, 1);
 
-            if ($this->isFixedCost($item->kaspi_name)) {
+            if ($this->isFixedCost($item->kaspi_name) || $this->isSupplierFixedCost($item->supplier_name, $item->kaspi_name)) {
                 $cost = $purchase;
             } else {
                 $cost = $purchase * $qty;
@@ -129,34 +198,29 @@ class RepriceKaspiCommand extends Command
             $competitorMinTomorrow  = $item->tomorrow_min_price ? (float) $item->tomorrow_min_price : null;
 
             // === ЛОГИКА ВЫБОРА ЦЕНЫ ===
-            // Для дешёвого входа (закуп < 10 000 тг) держим эталон ВСЕГДА,
-            // не участвуем в демпинге под конкурента вообще — приоритет
-            // максимальному охвату карточек и марже, а не битве за топ
-            // выдачи в этом сегменте. Ревизия после первых недель по рынку.
             if ($purchase < 10000) {
                 $ourPrice = $etalonPrice;
                 $scenario = 'etalon_low_purchase_fixed';
- 
+
             } elseif ($competitorsTotal === 0 || $competitorMinAll === null) {
                 $ourPrice = $etalonPrice;
                 $scenario = 'etalon_no_competitors';
- 
+
             } elseif ($tomorrowCount === 0) {
-                // Мы единственные с доставкой завтра — держим эталон
                 $ourPrice = $etalonPrice;
                 $scenario = 'etalon_alone_tomorrow';
- 
+
             } else {
                 if ($competitorMinTomorrow === null) {
                     $competitorMinTomorrow = $competitorMinAll;
                 }
- 
+
                 if ($etalonPrice <= $competitorMinTomorrow) {
                     $ourPrice = $etalonPrice;
                     $scenario = 'etalon_competitive';
                 } else {
                     $beatPrice = floor($competitorMinTomorrow * 0.995);
- 
+
                     if ($beatPrice >= $minPrice) {
                         $ourPrice = $beatPrice;
                         $scenario = 'beat_tomorrow_competitor';
@@ -190,13 +254,21 @@ class RepriceKaspiCommand extends Command
             }
 
             // === ПРОВЕРКА АНОМАЛИИ ===
-            // Сравниваем новую рассчитанную цену со старой (текущей в фиде).
-            // Если отклонение больше порога — не применяем новую цену,
-            // оставляем старую и помечаем позицию на ручную проверку.
-            // Исключение: товары с qty_override (пружины и др.) — их рост цены
-            // намеренный (себестоимость пересчитана), аномалия не применяется.
+            // ВАЖНО: блокируем не по НАПРАВЛЕНИЮ изменения цены, а по
+            // РЕАЛЬНОМУ РИСКУ маржи ($flag === 'risk', посчитан чуть выше).
+            // Раньше блокировка была по направлению (любое падение >30%
+            // блокируется) — но на практике оказалось, что подавляющее
+            // большинство таких "падений" это здоровая корректировка цены
+            // вниз с маржой 55-110% (цена просто была задрана раньше по
+            // старой логике/цене поставщика), а вовсе не риск продажи в
+            // убыток. Прогрессивная шкала минимальной маржи (minPrice)
+            // и так не даёт цене физически уйти ниже безопасного порога
+            // ни в одном штатном сценарии — так что настоящий риск
+            // (flag === 'risk') должен быть редким исключением, и именно
+            // он единственный оправдывает блокировку и ручную проверку.
             $currentPrice = (float) $item->current_price;
             $isAnomaly = false;
+            $isRiskyAnomaly = false; // блокирующая аномалия — только реальный риск маржи
             $anomalyReason = null;
 
             $isPairItem = !is_null($item->qty_override) && $this->isPairItem($item->kaspi_name);
@@ -206,14 +278,16 @@ class RepriceKaspiCommand extends Command
 
                 if ($deviation > self::PRICE_ANOMALY_THRESHOLD) {
                     $isAnomaly = true;
+                    $isRiskyAnomaly = ($flag === 'risk'); // блокируем только реальный риск, не любое падение
                     $direction = $ourPrice > $currentPrice ? '+' : '-';
                     $anomalyReason = sprintf(
-                        'Цена изменилась на %s%.0f%% (%s → %s), сценарий: %s',
+                        'Цена изменилась на %s%.0f%% (%s → %s), сценарий: %s, маржа: %.1f%%',
                         $direction,
                         $deviation * 100,
                         number_format($currentPrice, 0, '.', ' '),
                         number_format($ourPrice, 0, '.', ' '),
-                        $scenario
+                        $scenario,
+                        $marginPct
                     );
                 }
             }
@@ -226,14 +300,15 @@ class RepriceKaspiCommand extends Command
                     'old'      => $currentPrice,
                     'new'      => $ourPrice,
                     'reason'   => $anomalyReason,
+                    'blocked'  => $isRiskyAnomaly,
                 ];
             }
 
             $stats[$scenario] = ($stats[$scenario] ?? 0) + 1;
 
             if ($dryRun) {
-                $anomalyMark = $isAnomaly ? ' ⚠️ANOMALY' : '';
-                $pairMark    = $isPairItem ? ' [×2]' : '';
+                $anomalyMark = $isAnomaly ? ($isRiskyAnomaly ? ' ⚠️BLOCKED(risk)' : ' ⚠️AUTO-APPLIED') : '';
+                $pairMark = $item->qty_override ? " [×{$item->qty_override}]" : '';
                 $this->line(sprintf(
                     "[%s|%s]%s%s %s | закуп: %s | эталон: %s | мин: %s | итог: %s | маржа: %.1f%% (%s) | конк: %d | завтра: %d",
                     $scenario,
@@ -253,38 +328,47 @@ class RepriceKaspiCommand extends Command
                 continue;
             }
 
-            if ($isAnomaly) {
-                // Не применяем новую цену — оставляем старую, помечаем на проверку
-                DB::table('kaspi_feed_items')
-                    ->where('id', $item->id)
-                    ->update([
-                        'price_review_needed'     => 1,
-                        'price_review_reason'     => $anomalyReason,
-                        'price_review_calculated' => $ourPrice,
-                        'updated_at'              => now(),
-                    ]);
+            if ($isRiskyAnomaly) {
+                // Падение цены >30% — НЕ применяем, оставляем старую, помечаем на проверку
+                $anomalyUpdates[$item->id] = [
+                    'price_review_needed'     => 1,
+                    'price_review_reason'     => $anomalyReason,
+                    'price_review_calculated' => $ourPrice,
+                ];
                 continue;
             }
 
-            DB::table('kaspi_feed_items')
-                ->where('id', $item->id)
-                ->update([
-                    'price'                   => $ourPrice,
-                    'purchase_price'          => $cost,
-                    'strategic_price'         => $etalonPrice,
-                    'price_strategy'          => $scenario,
-                    'price_review_needed'     => 0,
-                    'price_review_reason'     => null,
-                    'price_review_calculated' => null,
-                    'updated_at'              => now(),
-                ]);
+            if ($isAnomaly) {
+                // Рост цены >30% — применяем автоматически, но фиксируем
+                // в статистике/логе, что применение было "нештатным" по
+                // размеру скачка (для последующего аудита, не для блокировки).
+                $statAutoApplied++;
+            }
+
+            $normalUpdates[$item->id] = [
+                'price'                   => $ourPrice,
+                'purchase_price'          => $cost,
+                'strategic_price'         => $etalonPrice,
+                'price_strategy'          => $scenario,
+                'price_review_needed'     => 0,
+                'price_review_reason'     => null,
+                'price_review_calculated' => null,
+            ];
+        }
+
+        if (!$dryRun) {
+            $this->batchUpdate('kaspi_feed_items', $normalUpdates);
+            $this->batchUpdate('kaspi_feed_items', $anomalyUpdates);
         }
 
         $this->info('Готово.');
         $this->info("🔴 Риск: {$statRed}  🟡 Низкая: {$statYellow}  🟢 OK: {$statGreen}");
 
         if ($statAnomaly > 0) {
-            $this->warn("⚠️  Аномалий (отклонение цены >" . (self::PRICE_ANOMALY_THRESHOLD * 100) . "%): {$statAnomaly} — цена НЕ применена, требуется ручная проверка");
+            $blockedCount = $statAnomaly - $statAutoApplied;
+            $this->warn("⚠️  Аномалий (отклонение цены >" . (self::PRICE_ANOMALY_THRESHOLD * 100) . "%): {$statAnomaly}");
+            $this->warn("   → из них рост цены применён автоматически: {$statAutoApplied}");
+            $this->warn("   → из них падение цены ЗАБЛОКИРОВАНО, требует проверки: {$blockedCount}");
             $this->logAnomalies($anomalies);
         }
 
@@ -295,11 +379,12 @@ class RepriceKaspiCommand extends Command
         );
 
         if (!$dryRun) {
-            $this->info('Запускаем генерацию XML...');
+            /*$this->info('Запускаем генерацию XML...');
             \Illuminate\Support\Facades\Artisan::call('kaspi:generate-xml');
-            $this->info('XML обновлён.');
+            $this->info('XML обновлён.');*/
 
-            if ($statAnomaly > 0) {
+            $blockedCount = $statAnomaly - $statAutoApplied;
+            if ($blockedCount > 0) {
                 $this->info("После исправления причин аномалий: SELECT * FROM kaspi_feed_items WHERE price_review_needed = 1; — посмотреть список, поправить данные, затем повторно запустить kaspi:reprice.");
             }
         }
@@ -308,59 +393,168 @@ class RepriceKaspiCommand extends Command
     }
 
     /**
-     * Автоматически проставляет qty_override = 2 для товаров, которые
-     * всегда продаются парами (пружины), но у которых kaspi_qty = 1 (дефолт).
-     * Также сбрасывает price_review_needed чтобы репрайс не пропустил их.
+     * Батчевый UPDATE через CASE WHEN — вместо отдельного запроса на каждую
+     * строку. Разные строки могут иметь разный набор полей для обновления.
+     */
+    private function batchUpdate(string $table, array $updatesById, int $chunkSize = 500): void
+    {
+        if (empty($updatesById)) {
+            return;
+        }
+
+        $allFields = [];
+        foreach ($updatesById as $fields) {
+            $allFields = array_merge($allFields, array_keys($fields));
+        }
+        $allFields = array_unique($allFields);
+
+        foreach (array_chunk($updatesById, $chunkSize, true) as $chunk) {
+            $ids = array_keys($chunk);
+            $cases = [];
+            $bindings = [];
+
+            foreach ($allFields as $field) {
+                $sql = "`{$field}` = CASE `id` ";
+                foreach ($chunk as $id => $fields) {
+                    if (array_key_exists($field, $fields)) {
+                        $sql .= "WHEN ? THEN ? ";
+                        $bindings[] = $id;
+                        $bindings[] = $fields[$field];
+                    }
+                }
+                $sql .= "ELSE `{$field}` END";
+                $cases[] = $sql;
+            }
+
+            $cases[] = "`updated_at` = ?";
+            $bindings[] = now();
+
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $bindings = array_merge($bindings, $ids);
+
+            $sql = "UPDATE `{$table}` SET " . implode(', ', $cases) . " WHERE `id` IN ({$placeholders})";
+
+            DB::update($sql, $bindings);
+        }
+    }
+
+    /**
+     * Автоматически проставляет qty_override для товаров, которые
+     * реально продаются комплектом (пружины ×2, поршневые кольца ×4
+     * и т.п. — см. QTY_OVERRIDE_KEYWORDS), но у которых kaspi_qty = 1
+     * (Kaspi-карточка показывает "за 1 шт"). Также сбрасывает
+     * price_review_needed, чтобы репрайс не пропустил их.
      */
     private function applyQtyOverrides(): void
     {
-        // Кандидаты на qty_override=2: пружины с kaspi_qty=1, вместе с брендом
-        // и поставщиком — чтобы можно было отфильтровать исключения.
+        // Кандидаты: любой товар с kaspi_qty=1, без override, чьё название
+        // содержит хотя бы одно ключевое слово из QTY_OVERRIDE_KEYWORDS.
         $candidates = DB::table('kaspi_feed_items as kfi')
             ->join('kaspi_initial_products as kip', 'kip.sku', '=', 'kfi.our_article')
             ->where('kfi.kaspi_qty', 1)
             ->whereNull('kfi.qty_override')
             ->where('kfi.is_active', 1)
             ->where(function ($q) {
-                foreach (self::PAIR_KEYWORDS as $kw) {
+                foreach (array_keys(self::QTY_OVERRIDE_KEYWORDS) as $kw) {
                     $q->orWhereRaw('LOWER(kfi.kaspi_name) LIKE ?', ['%' . mb_strtolower($kw) . '%']);
                 }
             })
-            ->select('kfi.id', 'kip.supplier_name', 'kip.brand')
+            ->select('kfi.id', 'kfi.kaspi_name', 'kip.supplier_name', 'kip.brand')
             ->get();
 
-        $idsToOverride  = [];
+        $idsByMultiplier = []; // multiplier => [id, id, ...]
         $skippedBundled = 0;
 
         foreach ($candidates as $row) {
             $bundledBrands = self::PAIR_ALREADY_BUNDLED[$row->supplier_name] ?? [];
 
             if (in_array(mb_strtolower($row->brand), $bundledBrands, true)) {
-                // Уже комплект по 2 шт. в прайсе поставщика — не удваиваем
+                // Уже комплект в прайсе поставщика — не удваиваем/не умножаем повторно
                 $skippedBundled++;
                 continue;
             }
 
-            $idsToOverride[] = $row->id;
+            $multiplier = $this->matchQtyOverrideMultiplier($row->kaspi_name);
+            if ($multiplier === null) {
+                continue; // подстраховка, не должно случиться раз кандидат уже прошёл фильтр по keyword
+            }
+
+            $idsByMultiplier[$multiplier][] = $row->id;
         }
 
-        if (!empty($idsToOverride)) {
+        $totalUpdated = 0;
+        foreach ($idsByMultiplier as $multiplier => $ids) {
             $updated = DB::table('kaspi_feed_items')
-                ->whereIn('id', $idsToOverride)
-                ->update(['qty_override' => 2]);
+                ->whereIn('id', $ids)
+                ->update(['qty_override' => $multiplier]);
 
-            $this->info("🔧 qty_override=2 проставлен для {$updated} пружин (kaspi_qty=1)");
+            $totalUpdated += $updated;
+            $this->info("🔧 qty_override={$multiplier} проставлен для {$updated} позиций (kaspi_qty=1)");
         }
 
         if ($skippedBundled > 0) {
             $this->info("↷ Пропущено как уже-комплект (SAT/Baikal у АвтоТрейда и т.п.): {$skippedBundled}");
         }
 
-        // Сброс блокировки репрайса для пружин — без изменений
+        // === Точечные override по конкретным артикулам (QTY_OVERRIDE_ARTICLES) ===
+        // Отдельно от keyword-логики выше — тут множитель применяется только
+        // к явно перечисленным our_article, независимо от текста названия,
+        // чтобы не задвоить себестоимость у уже корректно оценённых карточек
+        // той же товарной категории (см. комментарий у константы).
+        if (!empty(self::QTY_OVERRIDE_ARTICLES)) {
+            // ВАЖНО: array_keys() на массиве с числовыми строковыми ключами
+            // ("800017712050" => 4) отдаёт их как int, а не string — это
+            // стандартное поведение PHP для числовых строк-ключей массива.
+            // Если такой int уйдёт как есть в whereIn(), Laravel сгенерирует
+            // SQL без кавычек вокруг значения, и MySQL при сравнении VARCHAR-
+            // колонки с числом попытается привести К ЧИСЛУ ВСЕ строки в
+            // таблице для сравнения — и упадёт на первом же нечисловом
+            // артикуле (например 'PE21370') с ошибкой "Truncated incorrect
+            // DOUBLE value". Поэтому явно приводим ключи обратно к строке.
+            $overrideArticles = array_map('strval', array_keys(self::QTY_OVERRIDE_ARTICLES));
+
+            $articleCandidates = DB::table('kaspi_feed_items as kfi')
+                ->whereIn('kfi.our_article', $overrideArticles)
+                ->where('kfi.kaspi_qty', 1)
+                ->whereNull('kfi.qty_override')
+                ->where('kfi.is_active', 1)
+                ->select('kfi.id', 'kfi.our_article')
+                ->get();
+
+            $articleIdsByMultiplier = [];
+            foreach ($articleCandidates as $row) {
+                $multiplier = self::QTY_OVERRIDE_ARTICLES[$row->our_article];
+                $articleIdsByMultiplier[$multiplier][] = $row->id;
+            }
+
+            foreach ($articleIdsByMultiplier as $multiplier => $ids) {
+                $updated = DB::table('kaspi_feed_items')
+                    ->whereIn('id', $ids)
+                    ->update(['qty_override' => $multiplier]);
+
+                $this->info("🔧 [точечный override] qty_override={$multiplier} проставлен для {$updated} позиций по списку QTY_OVERRIDE_ARTICLES");
+            }
+
+            // Снимаем блокировку репрайса именно для этих артикулов, если она была
+            $unblockedArticles = DB::table('kaspi_feed_items')
+                ->whereIn('our_article', $overrideArticles)
+                ->where('price_review_needed', 1)
+                ->update([
+                    'price_review_needed'     => 0,
+                    'price_review_reason'     => null,
+                    'price_review_calculated' => null,
+                ]);
+
+            if ($unblockedArticles > 0) {
+                $this->info("🔓 Снята блокировка price_review для {$unblockedArticles} позиций из QTY_OVERRIDE_ARTICLES");
+            }
+        }
+
+        // Сброс блокировки репрайса для всех категорий с qty override — без изменений
         $unblocked = DB::table('kaspi_feed_items')
             ->where('price_review_needed', 1)
             ->where(function ($q) {
-                foreach (self::PAIR_KEYWORDS as $kw) {
+                foreach (array_keys(self::QTY_OVERRIDE_KEYWORDS) as $kw) {
                     $q->orWhereRaw('LOWER(kaspi_name) LIKE ?', ['%' . mb_strtolower($kw) . '%']);
                 }
             })
@@ -371,8 +565,23 @@ class RepriceKaspiCommand extends Command
             ]);
 
         if ($unblocked > 0) {
-            $this->info("🔓 Снята блокировка price_review для {$unblocked} пружин");
+            $this->info("🔓 Снята блокировка price_review для {$unblocked} позиций с qty override");
         }
+    }
+
+    /**
+     * Возвращает множитель для первого совпавшего ключевого слова из
+     * QTY_OVERRIDE_KEYWORDS, или null если ни одно не совпало.
+     */
+    private function matchQtyOverrideMultiplier(string $title): ?int
+    {
+        $titleLower = mb_strtolower($title);
+        foreach (self::QTY_OVERRIDE_KEYWORDS as $kw => $multiplier) {
+            if (str_contains($titleLower, mb_strtolower($kw))) {
+                return $multiplier;
+            }
+        }
+        return null;
     }
     /**
      * Записывает список аномальных позиций в лог-файл для разбора.
@@ -383,8 +592,10 @@ class RepriceKaspiCommand extends Command
         $lines[] = '=== ' . now()->format('Y-m-d H:i:s') . ' — Аномалии цен (kaspi:reprice) ===';
 
         foreach ($anomalies as $a) {
+            $status = $a['blocked'] ? 'ЗАБЛОКИРОВАНО (риск маржи)' : 'ПРИМЕНЕНО (маржа безопасна)';
             $lines[] = sprintf(
-                "%s | %s | %s",
+                "[%s] %s | %s | %s",
+                $status,
                 $a['article'],
                 mb_strimwidth($a['name'], 0, 60, '…'),
                 $a['reason']
@@ -431,12 +642,6 @@ class RepriceKaspiCommand extends Command
 
     private function isPairItem(string $title): bool
     {
-        $titleLower = mb_strtolower($title);
-        foreach (self::PAIR_KEYWORDS as $kw) {
-            if (str_contains($titleLower, mb_strtolower($kw))) {
-                return true;
-            }
-        }
-        return false;
+        return $this->matchQtyOverrideMultiplier($title) !== null;
     }
 }

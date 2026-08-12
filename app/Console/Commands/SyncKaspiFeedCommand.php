@@ -176,11 +176,11 @@ class SyncKaspiFeedCommand extends Command
         $this->warn("Подозрительный kaspi_qty:           {$suspiciousQty}");
         $this->warn("Нет альтернативного источника:      {$noSource}");
 
-        if (!$dryRun && $lowered > 0) {
+        /*if (!$dryRun && $lowered > 0) {
             $this->info('Запускаем генерацию XML...');
             \Illuminate\Support\Facades\Artisan::call('kaspi:generate-xml');
             $this->info('XML перегенерирован.');
-        }
+        }*/
 
         return 0;
     }

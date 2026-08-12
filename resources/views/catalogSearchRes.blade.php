@@ -1,14 +1,16 @@
 @extends('layouts.app')
 
 @push('styles')
-    <link href="{{ URL::asset('css/components/searchCatalog.css') }}" rel="stylesheet">
-    <link href="{{ URL::asset('css/components/searchCatalog-mini.css') }}" rel="stylesheet">
+    <link href="{{ URL::asset('css/components/searchCatalog.css') }}?v=2" rel="stylesheet">
+    <link href="{{ URL::asset('css/components/searchCatalog-mini.css') }}?v=2" rel="stylesheet">
 @endpush
 
 @section('title', 'Выберите каталог')
    
 @section('content')
 
+@include('components.header')
+@include('components.header-mini')
 
 <div id="search-catalog-main-container" class="container">
     <div id="shadow">
@@ -21,8 +23,6 @@
             Выполняется поиск... это может занять несколько секунд, пожалуйста ожидайте...
         </div>
     </div>
-    @include('components.header')
-    @include('components.header-mini')
     <div id="search-result-container-header">
         Результаты поиска
     </div>

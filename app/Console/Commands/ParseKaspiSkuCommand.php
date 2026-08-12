@@ -17,16 +17,13 @@ class ParseKaspiSkuCommand extends Command
     private string $cookies = 'mc-session=1783326645.435.114065.686134|825e5f3659dba1ed7b5d7b2cbf5f1012; mc-sid=cfca2f70-71f1-4dc6-9ca1-82c921ac43e8';
 
     /**
-     * Категории товаров, где у ПОСТАВЩИКА цена уже указана за комплект,
-     * а не за 1 штуку. Для них kaspi_qty используется только для
-     * информации (сравнение с карточкой Kaspi), но НЕ умножает
-     * purchase_price при расчёте себестоимости.
-     *
-     * Сюда добавлять новые ключевые слова по мере обнаружения новых кейсов.
-     * Сравнение регистронезависимое, ищется подстрока в названии товара.
+     * Минимальная длина нормализованного артикула, до которой можно
+     * укорачивать поисковый запрос в fallback-цикле.
      */
+    const MIN_SEARCH_QUERY_LEN = 4;
+
     const BUNDLE_PRICED_KEYWORDS = [
-        'колодки', // тормозные колодки — прайс поставщика уже за комплект (обычно 4 шт)
+        'колодки',
     ];
 
     public function handle(): int
@@ -53,10 +50,9 @@ class ParseKaspiSkuCommand extends Command
         $totalSaved = 0;
 
         foreach ($products as $product) {
-            $searchQuery = mb_strtoupper($product->brand) . ' ' . $product->sku;
-            $this->line("→ Ищем: {$searchQuery}");
+            $this->line("→ Артикул: {$product->sku} (бренд: {$product->brand})");
 
-            $results = $this->searchKaspi($searchQuery, $product->sku);
+            $results = $this->searchKaspi($product->brand, $product->sku);
 
             if ($results === null) {
                 $this->error('Сессия истекла! Обнови куки и запусти снова.');
@@ -71,7 +67,6 @@ class ParseKaspiSkuCommand extends Command
                 ]);
             } else {
                 foreach ($results as $result) {
-                    // Шаг 2: конкуренты
                     $competitorData = $this->fetchOffers(
                         $result['sku'],
                         $result['brand'],
@@ -79,11 +74,8 @@ class ParseKaspiSkuCommand extends Command
                         $product->sku
                     );
 
-                    // Шаг 3: количество в комплекте из характеристик
                     $kaspiQty = $this->fetchSpecifications($result['sku']);
 
-                    // Если поставщик продаёт товар комплектом (например колодки),
-                    // помечаем это отдельным флагом — пригодится для расчёта маржи
                     $isBundlePriced = $this->isBundlePriced($product->title ?? $result['name']);
 
                     DB::table('kaspi_sku_test')->insert([
@@ -114,13 +106,27 @@ class ParseKaspiSkuCommand extends Command
         }
 
         $this->info("Готово. Сохранено результатов: {$totalSaved}");
+
+        // ВРЕМЕННО: после основного парсинга сразу запускаем полный пересбор
+        // карточек (включая уже готовые, --rescrape-done) — чтобы заодно
+        // дособрать category_path/category_leaf для подготовки выгрузки на
+        // Ozon, без отдельного ручного ночного запуска. Затея разовая —
+        // когда категории соберутся по всей базе, этот блок стоит вернуть
+        // обратно к обычному вызову без --rescrape-done (или вовсе убрать
+        // отсюда и звать parts:scrape-cards отдельным шагом в pipeline),
+        // иначе КАЖДЫЙ прогон kaspi:parse-sku будет заново пересобирать
+        // ВСЕ ~49к карточек (часы времени) вместо только новых.
+        /*$this->info('Запускаем полный пересбор карточек Kaspi (включая готовые, для категорий)...');
+        \Illuminate\Support\Facades\Artisan::call('parts:scrape-cards', [
+            '--source'         => 'own',
+            '--limit'          => 0,
+            '--rescrape-done'  => true,
+        ], $this->getOutput());
+        $this->info('Скрапинг карточек завершён.');*/
+
         return 0;
     }
 
-    /**
-     * Определяет, продаёт ли поставщик данный товар комплектом
-     * (цена в прайсе уже за весь комплект, не за 1 штуку).
-     */
     private function isBundlePriced(string $title): bool
     {
         $titleLower = mb_strtolower($title);
@@ -134,7 +140,66 @@ class ParseKaspiSkuCommand extends Command
         return false;
     }
 
-    private function searchKaspi(string $query, string $article): ?array
+    /**
+     * Нормализует артикул: убирает ТОЛЬКО дефисы, приводит к верхнему
+     * регистру. Пробелы НЕ убираем — они нужны как настоящие границы
+     * слов в названии карточки при проверке токена.
+     */
+    private function normalizeArticle(string $s): string
+    {
+        $s = mb_strtoupper($s);
+        return str_replace('-', '', $s);
+    }
+
+    /**
+     * Ищет карточки Kaspi по артикулу с fallback на укороченные запросы.
+     *
+     * Поисковый движок Kaspi, похоже, токенизирует названия карточек ПО
+     * ДЕФИСАМ ("BW0010-07-2" -> токены "BW0010","07","2"). Слитный запрос
+     * без дефисов длиннее одного индексного токена ("BW0010072") движок
+     * не находит вообще, даже если карточка реально существует.
+     *
+     * Если полный запрос пуст — пробуем короче (обрезая хвост), получаем
+     * более широкий список кандидатов от Kaspi, но фильтруем СТРОГО по
+     * полному (не обрезанному) артикулу с проверкой границы токена —
+     * обрезка касается только текста запроса, не критерия совпадения.
+     */
+    private function searchKaspi(string $brand, string $article): ?array
+    {
+        $articleNormalized = $this->normalizeArticle($article);
+        $fullLen = mb_strlen($articleNormalized);
+
+        for ($len = $fullLen; $len >= min($fullLen, self::MIN_SEARCH_QUERY_LEN); $len--) {
+            $queryArticle = mb_substr($articleNormalized, 0, $len);
+            $searchQuery  = mb_strtoupper($brand) . ' ' . $queryArticle;
+
+            if ($len < $fullLen) {
+                $this->line("  ↳ полный запрос не дал совпадений, пробуем короче: {$searchQuery}");
+                usleep(random_int(500000, 900000));
+            }
+
+            $rawResults = $this->searchKaspiRaw($searchQuery);
+
+            if ($rawResults === null) {
+                return null; // сессия истекла
+            }
+
+            $filtered = $this->filterByExactArticle($rawResults, $article);
+
+            if (!empty($filtered)) {
+                return $filtered;
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Сырой поиск по Kaspi API без фильтрации по артикулу (только
+     * базовая проверка id/title/категории). Точный отбор — отдельно
+     * в filterByExactArticle().
+     */
+    private function searchKaspiRaw(string $query): ?array
     {
         try {
             $response = Http::withHeaders([
@@ -159,9 +224,8 @@ class ParseKaspiSkuCommand extends Command
                 return [];
             }
 
-            $data         = $response->json();
-            $results      = [];
-            $articleUpper = strtoupper(trim($article));
+            $data    = $response->json();
+            $results = [];
 
             foreach ($data['products'] ?? [] as $item) {
                 if (empty($item['id']) || empty($item['title'])) {
@@ -170,11 +234,6 @@ class ParseKaspiSkuCommand extends Command
 
                 $categoryCodes = $item['categoryCodes'] ?? [];
                 if (!in_array('Replacement parts', $categoryCodes)) {
-                    continue;
-                }
-
-                $nameUpper = strtoupper($item['title']);
-                if (!str_contains($nameUpper, $articleUpper)) {
                     continue;
                 }
 
@@ -192,6 +251,26 @@ class ParseKaspiSkuCommand extends Command
             $this->warn("  Ошибка поиска: " . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Строгая фильтрация кандидатов по ПОЛНОМУ артикулу, с проверкой
+     * границы токена — тот же принцип, что защищал от бага BW0010.
+     */
+    private function filterByExactArticle(array $rawResults, string $article): array
+    {
+        $articleNormalized = $this->normalizeArticle($article);
+        $pattern = '/(?<![A-Z0-9])' . preg_quote($articleNormalized, '/') . '(?![A-Z0-9])/u';
+
+        $filtered = [];
+        foreach ($rawResults as $r) {
+            $nameNormalized = $this->normalizeArticle($r['name']);
+            if (preg_match($pattern, $nameNormalized)) {
+                $filtered[] = $r;
+            }
+        }
+
+        return $filtered;
     }
 
     private function fetchOffers(string $sku, string $brand, array $categoryCodes, string $requestArticle): array

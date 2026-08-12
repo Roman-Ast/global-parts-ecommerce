@@ -34,6 +34,8 @@ use App\Http\Controllers\FinanceDashboardController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\Admin\WhatsappController;
 use App\Http\Controllers\Admin\KanbanController;
+use App\Http\Controllers\Admin\PartsCatalogController;
+use App\Http\Controllers\CatalogController;
 
 // ─── Robots.txt ───────────────────────────────────────────────────────────────
 Route::get('/robots.txt', function () {
@@ -87,6 +89,12 @@ Route::get('/product/{brand}/{article}', [GlobalProductController::class, 'show'
     ->name('product.show')
     ->where('brand', '.*')
     ->where('article', '.*');
+// ─── Каталог запчастей (parts_catalog) ────────────────────────────────────────
+Route::get('/catalog/card/{partsCatalog}', [CatalogController::class, 'show'])->name('catalog.show');
+Route::get('/catalog/{topSlug}/{groupSlug}', [CatalogController::class, 'group'])->name('catalog.group');
+Route::get('/catalog/{topSlug}', [CatalogController::class, 'category'])->name('catalog.category');
+Route::get('/api/part-info', [CatalogController::class, 'partInfo'])->name('api.part-info');
+
 // ─── Публичные роуты ──────────────────────────────────────────────────────────
 Route::get('forgot-password', fn() => view('user.forgot-password'))->name('password.request');
 Route::post('forgot-password', [UserController::class, 'forgotPasswordStore'])
@@ -143,6 +151,15 @@ Route::middleware('auth')->group(function () {
         $request->user()->sendEmailVerificationNotification();
         return back()->with('message', 'Ссылка верификации отправлена на вашу почту!');
     })->middleware('throttle:2,1')->name('verification.send');
+});
+
+
+// ─── Админ: Каталог карточек Kaspi ────────────────────────────────────────────
+Route::middleware('auth')->prefix('admin/parts-catalog')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\PartsCatalogController::class, 'index'])
+        ->name('admin.parts-catalog.index');
+    Route::get('/{partsCatalog}', [\App\Http\Controllers\Admin\PartsCatalogController::class, 'show'])
+        ->name('admin.parts-catalog.show');
 });
 
 // ─── Авторизован + email подтверждён ─────────────────────────────────────────

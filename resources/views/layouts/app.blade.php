@@ -16,12 +16,25 @@
         @else
             <link rel="canonical" href="{{ url()->current() }}" />
         @endif
+        {{-- Шрифт бренда — Golos Text (хорошая поддержка кириллицы, популярен в RU/KZ
+             e-commerce). До этого сайт рендерился системным шрифтом Bootstrap по
+             умолчанию — без своего шрифта любой сайт выглядит "нетронутым шаблоном". --}}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
         {{-- 3. Твой главный монолитный файл стилей (Bootstrap + твои стили + Cache Busting) --}}
-        <link href="{{ asset('css/master.css') }}?v=3" rel="stylesheet">
+        <link href="{{ asset('css/master.css') }}?v=22" rel="stylesheet">
+
+        {{-- Иконки: в проекте используются классы и Bootstrap Icons (bi bi-*), и Font
+             Awesome (fas/far/fab fa-*), но ни один шрифт нигде не подключался — иконки
+             везде на сайте рендерились пустыми кружками без глифа. --}}
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
 
         {{-- 4. Фавиконка --}}
         <link rel="icon" type="image/png" href="https://shop.globalparts.kz/images/favicon-32x32.png">
-        
+
         <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
         @stack('styles')
@@ -190,7 +203,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-<script src="{{ URL::asset('js/master.js') }}?v=3"></script>
+<script src="{{ URL::asset('js/master.js') }}?v=5"></script>
 
     @stack('scripts')
 

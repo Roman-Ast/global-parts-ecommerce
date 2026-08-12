@@ -86,6 +86,8 @@
                                 @if (auth()->user()->user_role == "admin")
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a href="{{ route('admin_panel') }}" class="dropdown-item text-danger fw-bold">Админка</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a href="{{ route('admin.parts-catalog.index') }}" class="dropdown-item text-danger fw-bold">Каталог</a></li>
                                 @endif
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a href="{{ route('logout') }}" class="dropdown-item py-2">Выход</a></li>
