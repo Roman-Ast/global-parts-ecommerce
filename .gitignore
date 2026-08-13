@@ -21,3 +21,4 @@ yarn-error.log
 public/robots*.xml
 sitemap.xml
 sitemap_products_*.xml
+public/kaspi_feed.xml
