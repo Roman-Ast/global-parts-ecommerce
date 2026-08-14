@@ -16,6 +16,9 @@
         @else
             <link rel="canonical" href="{{ url()->current() }}" />
         @endif
+        @hasSection('robots')
+            @yield('robots')
+        @endif
         {{-- Шрифт бренда — Golos Text (хорошая поддержка кириллицы, популярен в RU/KZ
              e-commerce). До этого сайт рендерился системным шрифтом Bootstrap по
              умолчанию — без своего шрифта любой сайт выглядит "нетронутым шаблоном". --}}

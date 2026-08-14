@@ -2,165 +2,156 @@
 
 namespace App\Http\Controllers;
 
+use App\Console\Commands\SeedOwnPartsCatalogCommand;
+use App\Helpers\SlugHelper;
+use App\Models\PartsCatalog;
+use App\Services\SupplierOfferPricer;
 use Illuminate\Http\Request;
-use App\Models\GlobalCatalog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use App\Helpers\SlugHelper;
 
 class GlobalProductController extends Controller
 {
     /**
-     * Твой бронебойный метод SHOW
+     * /product/{brand}/{article} — теперь смотрит в parts_catalog (контент
+     * из скрейпа Kaspi-карточек), а не в устаревший global_catalog (цены там
+     * зависли на 2026-05-20, см. CLAUDE.md). Три исхода:
+     *
+     *  1. Карточка есть и заскрейплена (scrape_status=done) — полный
+     *     контент (фото/описание/характеристики), индексируем, 301 на
+     *     канонический URL при несовпадении регистра/слага.
+     *  2. Карточки нет, но товар реально продаётся (живой supplier_offers) —
+     *     облегчённая версия страницы (как раньше выглядел весь сайт), но с
+     *     noindex — впустую тратить краулинговый бюджет Google на тонкий
+     *     контент мы и пытаемся прекратить.
+     *  3. Ни того, ни другого — 410 Gone. Явный сигнал "не возвращайся",
+     *     быстрее выпадает из индекса, чем мягкий 404.
+     *
+     *  Оба поддерживаемых случая (1 и 2) требуют, чтобы бренд хоть раз
+     *  был привязан к карточке Kaspi (parts_catalog.brand_slug) — иначе
+     *  восстановить исходное написание бренда из URL-слага нечем, а
+     *  гадать по эвристике (дефис↔пробел) ненадёжно.
      */
     public function show($brand, $article)
     {
-        // 1. ДЕЗИНФЕКЦИЯ
         $rawBrand = urldecode($brand);
         $rawArticle = urldecode($article);
 
-        // Лечим раскладку
+        // Лечим раскладку: копипаста артикула при русской раскладке
+        // клавиатуры подменяет визуально неотличимые латинские буквы на
+        // кириллические — без этого такие артикулы никогда не находились.
         $cyrillic = ['С', 'А', 'Е', 'О', 'Р', 'К', 'Х', 'В', 'а', 'е', 'о', 'р', 'к', 'х', 'с'];
         $latin    = ['C', 'A', 'E', 'O', 'P', 'K', 'X', 'B', 'a', 'e', 'o', 'p', 'k', 'x', 'c'];
         $decodedArticle = str_replace($cyrillic, $latin, $rawArticle);
 
-        // Убираем всё, кроме дефисов и подчеркиваний
-        $badSymbols = ['/', '+', '*', '(', ')', '"', "'", '&', '!', '#', ',', '?', '%2F', '%2B', '%26', '%3F'];
-        $cleanArticle = str_replace($badSymbols, '', $decodedArticle);
-        
-        // Для бренда: заменяем мусор на дефис, но НЕ трогаем существующие дефисы слишком жестко
-        $cleanBrand = str_replace($badSymbols, '-', $rawBrand);
-        $cleanBrand = trim($cleanBrand, '- ');
+        $brandSlug = SlugHelper::brandToSlug($rawBrand);
+        $articleNormalized = SeedOwnPartsCatalogCommand::normalizeArticle($decodedArticle);
 
-        $cleanArticle = trim($cleanArticle);
-
-        if (empty($cleanArticle) || str_contains(strtoupper($cleanArticle), 'E+')) {
-            return $this->renderProduct($this->createVirtual($cleanBrand, $cleanArticle), 404);
+        if ($brandSlug === '' || $articleNormalized === '') {
+            return $this->renderGone();
         }
 
-        // Артикул для поиска: буквы, цифры и подчеркивание (G4KE_1)
-        $searchArticle = preg_replace('/[^A-Za-z0-9_]/', '', $cleanArticle);
+        $card = PartsCatalog::query()
+            ->where('brand_slug', $brandSlug)
+            ->where('article_normalized', $articleNormalized)
+            ->where('scrape_status', 'done')
+            ->whereNotNull('name')
+            ->first();
 
-        // 2. ПОИСК В БАЗЕ (Улучшенный)
-        // Мы ищем, игнорируя регистр и лишние пробелы. 
-        // Если в базе 'Chery-Exeed', а в URL 'Chery-Exeed' — теперь точно найдет.
-        $product = GlobalCatalog::where(function($query) use ($cleanBrand) {
-            $query->where(DB::raw('UPPER(REPLACE(brand, " ", "-"))'), strtoupper($cleanBrand))
-                  ->orWhere(DB::raw('UPPER(brand)'), strtoupper($cleanBrand));
-        })
-        ->where('clean_article', $searchArticle)
-        ->first();
-
-        // 3. РЕДИРЕКТ И ЦЕНА
-        if ($product) {
-            if (empty($product->brand)) {
-                $product = $this->createVirtual($cleanBrand, $cleanArticle);
-                return $this->renderProduct($product, 404, url()->current());
-            }
-            
-            $canonicalBrand = SlugHelper::brandToSlug($product->brand);
-            
-            $correctPath = 'product/' . $canonicalBrand . '/' . strtolower($product->clean_article);
-            $currentPath = urldecode(request()->path());
-
-            if (!empty($canonicalBrand) && $currentPath !== $correctPath) {
-                return redirect()->to(url($correctPath), 301);
-            }
-
-            $product->retail_price = $this->setPrice($product->price);
-            
-            return $this->renderProduct($product, 200, url($correctPath));
+        if ($card) {
+            return $this->showRichCard($card);
         }
 
-        // Продукт не найден — виртуальный
-        $product = $this->createVirtual($cleanBrand, $cleanArticle);
-        return $this->renderProduct($product, 404, url()->current());
+        return $this->showFallback($brandSlug, $articleNormalized, $decodedArticle);
     }
 
-    /**
-     * Твой метод наценки (он в этом же классе!)
-     */
-    public function setPrice($price)
+    private function showRichCard(PartsCatalog $card)
     {
-        $priceWithMargin = 0;
+        $correctPath = 'product/' . $card->brand_slug . '/' . strtolower(trim($card->article));
+        $currentPath = urldecode(request()->path());
 
-        if ($price > 0 && $price <= 900) {
-            $priceWithMargin = $price * 3.385;
-        } else if ($price > 900 && $price <= 3000) {
-            $priceWithMargin = $price * 2.344;
-        } else if ($price > 3000 && $price <= 6000) {
-            $priceWithMargin = $price * 1.991;
-        } else if ($price > 6000 && $price <= 10000) {
-            $priceWithMargin = $price * 1.637;
-        } else if ($price > 10000 && $price <= 15000) {
-            $priceWithMargin = $price * 1.485;
-        } else if ($price > 15000 && $price <= 20000) {
-            $priceWithMargin = $price * 1.445;
-        } else if ($price > 20000 && $price <= 30000) {
-            $priceWithMargin = $price * 1.384;
-        } else if ($price > 30000 && $price <= 40000) {
-            $priceWithMargin = $price * 1.394;
-        } else if ($price > 40000 && $price <= 50000) {
-            $priceWithMargin = $price * 1.374;
-        } else if ($price > 50000 && $price <= 60000) {
-            $priceWithMargin = $price * 1.354;
-        } else if ($price > 60000 && $price <= 70000) {
-            $priceWithMargin = $price * 1.334;
-        } else if ($price > 70000 && $price <= 80000) {
-            $priceWithMargin = $price * 1.304;
-        } else if ($price > 80000 && $price <= 90000) {
-            $priceWithMargin = $price * 1.284;
-        } else if ($price > 90000 && $price <= 100000) {
-            $priceWithMargin = $price * 1.263;
-        } else if ($price > 100000 && $price <= 120000) {
-            $priceWithMargin = $price * 1.253;
-        } else if ($price > 120000) {
-            $priceWithMargin = $price * 1.243;
+        if ($currentPath !== $correctPath) {
+            return redirect()->to(url($correctPath), 301);
         }
 
-        return $priceWithMargin;
-    }
+        (new SupplierOfferPricer())->attach(collect([$card]));
+        $card->retail_price = $card->offer['retail_price'] ?? 0;
 
-    /**
-     * Создание виртуального объекта
-     */
-    private function createVirtual($brand, $article)
-    {
-        $virtual = new \stdClass();
-        $virtual->id = 0;
-        $virtual->name = "Запчасть " . $article;
-        $virtual->brand = strtoupper($brand);
-        $virtual->article = $article;
-        $virtual->clean_article = $article;
-        $virtual->price = 0;
-        $virtual->retail_price = 0; // ← теперь после new \stdClass()
-        $virtual->is_virtual = true;
-        return $virtual;
-    }
-
-    /**
-     * Метод рендеринга (чтобы не дублировать код)
-     */
-    private function renderProduct($product, $status, $canonicalUrl = null)
-    {
-        $recommended = GlobalCatalog::where('brand', 'LIKE', $product->brand . '%')
-            ->where('clean_article', '!=', $product->clean_article)
-            ->limit(10) // Просто берем первые 10
+        $recommended = PartsCatalog::query()
+            ->where('brand_slug', $card->brand_slug)
+            ->where('id', '!=', $card->id)
+            ->where('scrape_status', 'done')
+            ->whereNotNull('name')
+            ->orderByDesc('id')
+            ->limit(10)
             ->get();
 
-        // Прогоняем цены рекомендаций через наценку
-        foreach ($recommended as $item) {
-            $item->retail_price = $this->setPrice($item->price);
+        (new SupplierOfferPricer())->attach($recommended);
+
+        return response()->view('global_product', [
+            'product'      => $card,
+            'recommended'  => $recommended,
+            'canonicalUrl' => url($correctPath),
+            'indexable'    => true,
+        ], 200);
+    }
+
+    /**
+     * Товар реально в продаже (живой supplier_offers), но своей карточки
+     * в parts_catalog ещё нет — либо очередь скрейпа не дошла, либо бренд
+     * никогда не матчился с Kaspi вовсе. Показываем облегчённую версию,
+     * но помечаем noindex, чтобы не плодить тонкий контент в индексе, пока
+     * пока нет реального наполнения.
+     */
+    private function showFallback(string $brandSlug, string $articleNormalized, string $rawArticle)
+    {
+        $brandNormalized = PartsCatalog::query()
+            ->where('brand_slug', $brandSlug)
+            ->value('brand_normalized');
+
+        if (!$brandNormalized) {
+            return $this->renderGone();
         }
 
-        if ($product && isset($product->brand)) {
-            $product->brand = \Illuminate\Support\Str::upper($product->brand);
+        $offer = DB::table('supplier_offers')
+            ->where('sku_normalized', $articleNormalized)
+            ->where('brand_normalized', $brandNormalized)
+            ->orderByDesc('stock')
+            ->orderBy('purchase_price')
+            ->first();
+
+        if (!$offer) {
+            return $this->renderGone();
         }
+
+        $pricer = new SparePartController();
+
+        $product = new \stdClass();
+        $product->id = 0;
+        $product->name = $offer->title ?: ('Запчасть ' . $rawArticle);
+        $product->brand = $offer->brand;
+        $product->article = $rawArticle;
+        $product->offer = [
+            'purchase_price' => (float) $offer->purchase_price,
+            'retail_price'   => (int) ceil($pricer->setPrice((float) $offer->purchase_price)),
+            'stock'          => (int) $offer->stock,
+            'supplier_name'  => $offer->supplier_name,
+            'preorder_days'  => (int) $offer->preorder_days,
+        ];
+        $product->retail_price = $product->offer['retail_price'];
+        $product->is_virtual = false;
+
         return response()->view('global_product', [
             'product'      => $product,
-            'recommended'  => $recommended,
-            'canonicalUrl' => $canonicalUrl ?? url()->current()
-        ], $status);
+            'recommended'  => collect(),
+            'canonicalUrl' => url()->current(),
+            'indexable'    => false,
+        ], 200)->header('X-Robots-Tag', 'noindex, follow');
+    }
+
+    private function renderGone()
+    {
+        return response()->view('global_product_gone', [], 410);
     }
 
     public function fetchGoogleImages(Request $request)
@@ -186,7 +177,7 @@ class GlobalProductController extends Controller
             'body'   => $response->json(), // ← вот тут увидишь что именно Google говорит
         ], 500);
     }
-    
+
     public function getApiPrices(Request $request)
     {
         set_time_limit(120);
@@ -244,10 +235,10 @@ class GlobalProductController extends Controller
                 })
                 ->flatMap(function($group) {
                     // Внутри каждой группы (например, все LYNX CO-7301):
-                    
+
                     // Сначала ищем наличие в Астане
                     $inAstana = $group->filter(function($item) {
-                        return $item['supplier_city'] === 'ast' || 
+                        return $item['supplier_city'] === 'ast' ||
                             str_contains(mb_strtolower($item['delivery_time']), 'часа');
                     })->sortBy('priceWithMargine');
 
@@ -265,9 +256,9 @@ class GlobalProductController extends Controller
 
             // 3. Возвращаем чистый, красивый JSON
             return response()->json(
-                ['offers' => $processed], 
-                200, 
-                [], 
+                ['offers' => $processed],
+                200,
+                [],
                 JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT
             );
 
@@ -280,23 +271,23 @@ class GlobalProductController extends Controller
         }
     }
 
-    public function getRosskoApi(Request $request) 
+    public function getRosskoApi(Request $request)
     {
         // Создаем экземпляр контроллера, где лежит метод
         $sparePartCtrl = new \App\Http\Controllers\SparePartController();
-        
+
         // Вызываем метод оттуда
         $offers = $sparePartCtrl->getRosskoPricesOnly($request->brand, $request->article);
-        
+
         return response()->json(['offers' => $offers]);
     }
 
-    public function addToCartApi(Request $request) 
+    public function addToCartApi(Request $request)
     {
         // 1. Пытаемся достать корзину из сессии
         $cart = session()->get('cart');
 
-        // 2. ПРОВЕРКА: Если там пусто или (вдруг) затесался массив от прошлых тестов — 
+        // 2. ПРОВЕРКА: Если там пусто или (вдруг) затесался массив от прошлых тестов —
         // создаем НОВЫЙ объект твоего класса. Это защитит от ошибок.
         if (!$cart instanceof \App\Cart) {
             $cart = new \App\Cart();
@@ -316,7 +307,7 @@ class GlobalProductController extends Controller
             (int)$request->retail_price        // $priceWithMargine (продажа)
         );
 
-        // 4. Сохраняем ОБЪЕКТ обратно. 
+        // 4. Сохраняем ОБЪЕКТ обратно.
         // Теперь и старый поиск, и новый метод видят одну и ту же структуру.
         session()->put('cart', $cart);
 

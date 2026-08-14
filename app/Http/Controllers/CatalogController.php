@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Console\Commands\SeedOwnPartsCatalogCommand;
 use App\Models\PartsCatalog;
+use App\Services\SupplierOfferPricer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -66,46 +67,13 @@ class CatalogController extends Controller
      * доверию клиента при сравнении. setPrice() ещё и учитывает роль текущего
      * пользователя (обычная/опт/админ), как и везде на сайте — это осознанно,
      * не только для анонимных посетителей.
+     *
+     * Сама логика матчинга/наценки — в App\Services\SupplierOfferPricer,
+     * общем и для этого контроллера, и для GlobalProductController.
      */
     private function attachOffers(Collection $cards): Collection
     {
-        if ($cards->isEmpty()) {
-            return $cards;
-        }
-
-        $pricer = new SparePartController();
-
-        $articles = $cards->pluck('article_normalized')->unique()->values();
-        $brands = $cards->pluck('brand_normalized')->unique()->values();
-
-        $offersByKey = DB::table('supplier_offers')
-            ->select('sku_normalized', 'brand_normalized', 'purchase_price', 'stock', 'supplier_name', 'preorder_days')
-            ->whereIn('sku_normalized', $articles)
-            ->whereIn('brand_normalized', $brands)
-            ->get()
-            ->groupBy(fn ($offer) => $offer->sku_normalized . '|' . $offer->brand_normalized);
-
-        foreach ($cards as $card) {
-            $matches = $offersByKey->get($card->article_normalized . '|' . $card->brand_normalized);
-
-            if (!$matches) {
-                $card->offer = null;
-                continue;
-            }
-
-            $inStock = $matches->where('stock', '>', 0)->sortBy('purchase_price')->first();
-            $best = $inStock ?? $matches->sortBy('purchase_price')->first();
-
-            $card->offer = [
-                'purchase_price' => (float) $best->purchase_price,
-                'retail_price' => (int) ceil($pricer->setPrice((float) $best->purchase_price)),
-                'stock' => (int) $best->stock,
-                'supplier_name' => $best->supplier_name,
-                'preorder_days' => (int) $best->preorder_days,
-            ];
-        }
-
-        return $cards;
+        return (new SupplierOfferPricer())->attach($cards);
     }
 
     /**

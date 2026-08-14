@@ -1,16 +1,18 @@
 @extends('layouts.app')
 
-@section('title', $product 
-    ? "Купить " . $product->name . " " . \Illuminate\Support\Str::upper($product->brand) . " (" . $product->article . ") в Казахстане — Цена, Наличие" 
-    : "Товар не найден — Global Parts")
+@section('title', "Купить " . $product->name . " " . \Illuminate\Support\Str::upper($product->brand) . " (" . $product->article . ") в Казахстане — Цена, Наличие")
 
-@section('description', $product 
-    ? "Купить " . $product->name . " " . \Illuminate\Support\Str::upper($product->brand) . " (арт. " . $product->article . ") в Астане за " . number_format($product->price, 0, '.', ' ') . " ₸." 
-    : "К сожалению, запрашиваемый товар не найден в нашем каталоге.")
+@section('description', "Купить " . $product->name . " " . \Illuminate\Support\Str::upper($product->brand) . " (арт. " . $product->article . ") в Астане" . ($product->retail_price > 0 ? " за " . number_format($product->retail_price, 0, '.', ' ') . " ₸." : "."))
 
 @section('canonical')
     <link rel="canonical" href="{{ $canonicalUrl }}" />
 @endsection
+
+@unless($indexable)
+    @section('robots')
+        <meta name="robots" content="noindex, follow">
+    @endsection
+@endunless
 
 @section('content')
 <style>
@@ -120,17 +122,6 @@
     @include('components.header')
     @include('components.header-mini')
 
-    @if(!$product)
-        {{-- Код для страницы 404 --}}
-        <div class="container text-center mt-5">
-            <div class="alert alert-warning">
-                <h3>Товар не найден</h3>
-                <p>К сожалению, запчасть с артикулом {{ request()->route('article') }} не найдена.</p>
-                <a href="/" class="btn btn-primary">Вернуться на главную</a>
-            </div>
-        </div>  
-    @endif
-
     <div class="container flex-grow-1 my-5">
         {{-- Хлебные крошки --}}
         <nav aria-label="breadcrumb" class="mb-4">
@@ -172,35 +163,22 @@
                             </div>
                         </div>
 
-                        {{-- Блок дополнительных OEM номеров для SEO --}}
+                        {{-- OEM-номера для SEO — сырой текст из скрейпа Kaspi-карточки,
+                             формат не документирован Kaspi, поэтому не пытаемся его
+                             разбивать на отдельные чипы, как раньше с global_catalog. --}}
                         @php
-                            // Разбиваем строку OEM по разделителю |, убираем лишние пробелы
-                            $oemList = !empty($product->oem) ? explode('|', $product->oem) : [];
-                            $oemList = array_map('trim', $oemList);
-                            
-                            // Фильтруем: оставляем только те, что не совпадают с текущим артикулом и не пустые
-                            $filteredOems = array_filter($oemList, function($oem) use ($product) {
-                                return !empty($oem) && $oem !== $product->article && $oem !== $product->clean_article;
-                            });
-                            // Убираем дубликаты
-                            $filteredOems = array_unique($filteredOems);
+                            $oemRaw = $product->characteristics['oem_numbers_raw'] ?? null;
                         @endphp
 
-                        @if(count($filteredOems) > 0)
+                        @if(!empty($oemRaw))
                             <div class="mb-4">
                                 <small class="text-muted d-block mb-1"><i class="fas fa-fingerprint me-1"></i> Дополнительные кросс-номера (OEM):</small>
-                                <div class="d-flex flex-wrap gap-2">
-                                    @foreach($filteredOems as $oemItem)
-                                        <span class="badge bg-white text-dark border fw-normal" style="font-size: 0.85rem;">
-                                            {{ $oemItem }}
-                                        </span>
-                                    @endforeach
-                                </div>
+                                <div class="small">{!! $oemRaw !!}</div>
                             </div>
                         @endif
 
                         <div class="mb-3">
-                            @if(empty($product->retail_price) || $product->retail_price <= 0 || (isset($product->is_virtual) && $product->is_virtual))
+                            @if(empty($product->retail_price) || $product->retail_price <= 0)
                                 {{-- Ультра-компактный блок в одну строку --}}
                                 <div style="background: #fff3cd; color: #856404; padding: 10px 15px; border-radius: 8px; border: 1px solid #ffeeba; font-size: 0.85rem;">
                                     <i class="fas fa-search me-2"></i> 
@@ -230,30 +208,55 @@
                     </div>
 
                     <div class="col-md-5 mt-4 mt-md-0 d-flex flex-column">
-                        <div id="prodCarousel" class="carousel slide border rounded bg-white shadow-sm overflow-hidden flex-grow-1" style="min-height: 280px;">
-                            <div class="carousel-inner h-100" id="google-images-container">
-                                <div class="carousel-item active h-100">
-                                    <div class="d-flex flex-column align-items-center justify-content-center h-100 p-4 bg-white" style="min-height: 280px;">
-                                        <div class="mb-3">
-                                            <img src="{{ asset('images/placeholders/default_gear.jpeg') }}" alt="placeholder" style="max-height: 120px; width: auto;">
+                        @if(!empty($product->images))
+                            {{-- Реальные фото из карточки Kaspi — известный контент, Google
+                                 видит их сразу в HTML, без клика/JS-запроса, в отличие от
+                                 фолбэка ниже через Google Custom Search. --}}
+                            <div id="prodCarousel" class="carousel slide border rounded bg-white shadow-sm overflow-hidden flex-grow-1" style="min-height: 280px;">
+                                <div class="carousel-inner h-100">
+                                    @foreach($product->images as $index => $imageUrl)
+                                        <div class="carousel-item h-100 {{ $index === 0 ? 'active' : '' }}">
+                                            <div class="d-flex align-items-center justify-content-center h-100 p-2" style="min-height: 280px;">
+                                                <img src="{{ $imageUrl }}" alt="{{ $product->name }}" loading="lazy" style="max-height: 260px; width: auto; object-fit: contain;">
+                                            </div>
                                         </div>
-                                        <div class="text-center w-100">
-                                            <h5 class="fw-bold text-dark mb-1">{{ \Illuminate\Support\Str::upper($product->brand) }}</h5>
-                                            <p class="text-muted small mb-3">{{ $product->article }}</p>
-                                            <button id="load-google-images" class="btn btn-outline-primary btn-sm rounded-pill px-4 shadow-sm fw-bold">
-                                                <i class="fas fa-search-plus me-1"></i> Показать реальное фото
-                                            </button>
+                                    @endforeach
+                                </div>
+                                @if(count($product->images) > 1)
+                                    <button class="carousel-control-prev" type="button" data-bs-target="#prodCarousel" data-bs-slide="prev">
+                                        <span class="carousel-control-prev-icon"></span>
+                                    </button>
+                                    <button class="carousel-control-next" type="button" data-bs-target="#prodCarousel" data-bs-slide="next">
+                                        <span class="carousel-control-next-icon"></span>
+                                    </button>
+                                @endif
+                            </div>
+                        @else
+                            <div id="prodCarousel" class="carousel slide border rounded bg-white shadow-sm overflow-hidden flex-grow-1" style="min-height: 280px;">
+                                <div class="carousel-inner h-100" id="google-images-container">
+                                    <div class="carousel-item active h-100">
+                                        <div class="d-flex flex-column align-items-center justify-content-center h-100 p-4 bg-white" style="min-height: 280px;">
+                                            <div class="mb-3">
+                                                <img src="{{ asset('images/placeholders/default_gear.jpeg') }}" alt="placeholder" style="max-height: 120px; width: auto;">
+                                            </div>
+                                            <div class="text-center w-100">
+                                                <h5 class="fw-bold text-dark mb-1">{{ \Illuminate\Support\Str::upper($product->brand) }}</h5>
+                                                <p class="text-muted small mb-3">{{ $product->article }}</p>
+                                                <button id="load-google-images" class="btn btn-outline-primary btn-sm rounded-pill px-4 shadow-sm fw-bold">
+                                                    <i class="fas fa-search-plus me-1"></i> Показать реальное фото
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div id="image-disclaimer" class="mt-2 text-center">
-                            <p class="text-muted mb-0" style="font-size: 0.7rem; line-height: 1.2;">
-                                <i class="fas fa-info-circle me-1 text-primary text-opacity-75"></i> 
-                                Изображение подобрано автоматически.
-                            </p>
-                        </div>
+                            <div id="image-disclaimer" class="mt-2 text-center">
+                                <p class="text-muted mb-0" style="font-size: 0.7rem; line-height: 1.2;">
+                                    <i class="fas fa-info-circle me-1 text-primary text-opacity-75"></i>
+                                    Изображение подобрано автоматически.
+                                </p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -274,6 +277,52 @@
         </div>
     </div>
 </div>
+
+{{-- Описание/характеристики/применимость — только у карточек, реально
+     заскрейпленных с Kaspi (rich-путь контроллера). Это и есть тот самый
+     контент, ради которого затевался переход с global_catalog. --}}
+@if(!empty($product->description) || !empty($product->applicability) || !empty($product->characteristics['specifications'] ?? []))
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    @if(!empty($product->description))
+                        <h2 class="h4 fw-bold mb-3">Описание</h2>
+                        <div class="mb-4">{!! $product->description !!}</div>
+                    @endif
+
+                    @if(!empty($product->applicability))
+                        <h2 class="h5 fw-bold mb-2">Применимость</h2>
+                        <div class="text-muted mb-4">{!! $product->applicability !!}</div>
+                    @endif
+
+                    @if(!empty($product->characteristics['specifications'] ?? []))
+                        <h2 class="h5 fw-bold mb-3">Характеристики</h2>
+                        @foreach($product->characteristics['specifications'] as $section)
+                            @if(!empty($section['features']))
+                                <div class="mb-3">
+                                    @if(!empty($section['title']))
+                                        <div class="text-muted small text-uppercase fw-bold mb-2">{{ $section['title'] }}</div>
+                                    @endif
+                                    <table class="table table-sm mb-0">
+                                        <tbody>
+                                            @foreach($section['features'] as $feature)
+                                                <tr>
+                                                    <td class="text-muted" style="width: 45%;">{{ $feature['name'] ?? '' }}</td>
+                                                    <td>{{ collect($feature['featureValues'] ?? [])->pluck('value')->join(', ') }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        @endforeach
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 
 {{-- Блок API поиска: Кнопка (Десктоп) + Таблица --}}
 <div id="api-search-container">
@@ -490,65 +539,77 @@
             </div>
         </div>
     </div>
-    {{-- Похожие товары --}}
-    <div class="container my-5">
-        <h5 class="fw-bold mb-4">
-            <i class="bi bi-gear-wide-connected me-2"></i>Похожие товары ({{ $product->brand }})
-        </h5>
+    {{-- Похожие товары — из parts_catalog (той же brand_slug), пусто для
+         тонкого фолбэка (там recommended всегда []), тогда секцию не рисуем. --}}
+    @if($recommended->isNotEmpty())
+        <div class="container my-5">
+            <h5 class="fw-bold mb-4">
+                <i class="bi bi-gear-wide-connected me-2"></i>Похожие товары ({{ \Illuminate\Support\Str::upper($product->brand) }})
+            </h5>
 
-        @php
-            $chunks = $recommended->chunk(5);
-        @endphp
-
-        @foreach($chunks as $chunkIndex => $chunk)
             @php
-                $count = $chunk->count();
-                $isLastChunk = $loop->last;
-                $isIncomplete = $isLastChunk && $count < 5;
+                $chunks = $recommended->chunk(5);
             @endphp
 
-            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3
-                {{ $isIncomplete ? 'justify-content-center' : '' }} mb-3">
+            @foreach($chunks as $chunkIndex => $chunk)
+                @php
+                    $count = $chunk->count();
+                    $isLastChunk = $loop->last;
+                    $isIncomplete = $isLastChunk && $count < 5;
+                @endphp
 
-                @foreach($chunk as $item)
-                    <div class="col">
-                        <a href="/product/{{ $item->brand }}/{{ $item->article }}"
-                        class="text-decoration-none">
-                            <div class="card h-100 border-0 shadow-sm text-center p-3 hover-card">
+                <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3
+                    {{ $isIncomplete ? 'justify-content-center' : '' }} mb-3">
 
-                                <div class="product-img-container mb-2 d-flex align-items-center
-                                    justify-content-center"
-                                    style="height: 100px; background: #f8f9fa;
-                                        border-radius: 8px; overflow: hidden;">
-                                    <img src="{{ $item->getPlaceholder() }}"
-                                        class="img-fluid"
-                                        style="max-height: 80px; width: auto;"
-                                        onerror="this.onerror=null;
-                                                this.src='{{ asset('images/placeholders/default_gear.jpeg') }}'">
+                    @foreach($chunk as $item)
+                        <div class="col">
+                            {{-- Ссылка сразу на канонический вид (brand_slug + lowercase
+                                 article) — раньше тут был сырой $item->brand/article без
+                                 нормализации, что гнало каждый переход по этой ссылке
+                                 через лишний 301. --}}
+                            <a href="/product/{{ $item->brand_slug }}/{{ strtolower(trim($item->article)) }}"
+                            class="text-decoration-none">
+                                <div class="card h-100 border-0 shadow-sm text-center p-3 hover-card">
+
+                                    <div class="product-img-container mb-2 d-flex align-items-center
+                                        justify-content-center"
+                                        style="height: 100px; background: #f8f9fa;
+                                            border-radius: 8px; overflow: hidden;">
+                                        <img src="{{ $item->images[0] ?? asset('images/placeholders/default_gear.jpeg') }}"
+                                            class="img-fluid"
+                                            style="max-height: 80px; width: auto;"
+                                            loading="lazy"
+                                            onerror="this.onerror=null;
+                                                    this.src='{{ asset('images/placeholders/default_gear.jpeg') }}'">
+                                    </div>
+
+                                    <div class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">
+                                        {{ $item->article }}
+                                    </div>
+
+                                    <div class="fw-bold text-dark small text-truncate"
+                                        style="max-width: 100%;">
+                                        {{ $item->name }}
+                                    </div>
+
+                                    <div class="text-primary fw-bold mt-1">
+                                        @if($item->offer)
+                                            {{ number_format($item->offer['retail_price'], 0, '.', ' ') }} ₸
+                                        @else
+                                            Цена по запросу
+                                        @endif
+                                    </div>
+
                                 </div>
+                            </a>
+                        </div>
+                    @endforeach
 
-                                <div class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">
-                                    {{ $item->article }}
-                                </div>
+                </div>
+            @endforeach
 
-                                <div class="fw-bold text-dark small text-truncate"
-                                    style="max-width: 100%;">
-                                    {{ $item->name }}
-                                </div>
-
-                                <div class="text-primary fw-bold mt-1">
-                                    {{ number_format($item->price, 0, '.', ' ') }} ₸
-                                </div>
-
-                            </div>
-                        </a>
-                    </div>
-                @endforeach
-
-            </div>
-        @endforeach
-
-    </div>
+        </div>
+    @endif
     {{-- Футер будет всегда внизу благодаря flex-grow-1 выше --}}
     <div class="mt-auto">
         @include('components.footer-bar-mini')
@@ -561,9 +622,7 @@
         "@context": "https://schema.org/",
         "@type": "Product",
         "name": "{{ $product->name }} {{ $product->brand }} ({{ $product->article }})",
-        "image": [
-            "https://shop.globalparts.kz/images/logo1.png" 
-        ],
+        "image": {!! json_encode(!empty($product->images) ? $product->images : ["https://shop.globalparts.kz/images/logo1.png"], JSON_UNESCAPED_SLASHES) !!},
         "description": "Купить {{ $product->name }} артикул {{ $product->article }} бренда {{ $product->brand }} в Казахстане. Цена: {{ number_format($product->retail_price, 0, '', '') }} ₸. В наличии и под заказ.",
         "sku": "{{ $product->article }}",
         "brand": {
@@ -574,9 +633,9 @@
             "@type": "Offer",
             "url": "{{ url()->current() }}",
             "priceCurrency": "KZT",
-            "price": "{{ number_format($product->retail_price, 0, '', '') }}", 
+            "price": "{{ number_format($product->retail_price, 0, '', '') }}",
             "itemCondition": "https://schema.org/NewCondition",
-            "availability": "https://schema.org/InStock",
+            "availability": "{{ ($product->offer['stock'] ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/PreOrder' }}",
             "seller": {
             "@type": "Organization",
             "name": "Global Parts Astana"

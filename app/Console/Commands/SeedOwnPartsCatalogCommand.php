@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Helpers\SlugHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -23,7 +24,6 @@ class SeedOwnPartsCatalogCommand extends Command
         $limit = $this->option('limit') ? (int) $this->option('limit') : null;
 
         $baseQuery = DB::table('kaspi_feed_items')
-            ->where('is_active', 1)
             ->where('bound', 1)
             ->whereNotNull('our_article')
             ->orderBy('kaspi_sku')
@@ -47,6 +47,7 @@ class SeedOwnPartsCatalogCommand extends Command
                     'article_normalized' => $articleNorm,
                     'brand' => $item->brand,
                     'brand_normalized' => $brandNorm,
+                    'brand_slug' => SlugHelper::brandToSlug($item->brand),
                     'name' => $item->kaspi_name,
                     'source' => 'own',
                     'source_kaspi_sku' => $item->kaspi_sku,

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Helpers\SlugHelper;
 use App\Models\PartsCatalog;
 use App\Services\KaspiCardScraper;
 use Illuminate\Console\Command;
@@ -33,6 +34,19 @@ class ScrapeKaspiCardsCommand extends Command
         if ($sku = $this->option('sku')) {
             $query->where('source_kaspi_sku', $sku);
         }
+
+        // Сначала карточки, у которых позиция сейчас реально живая
+        // (is_active=1 в kaspi_feed_items) — они важнее для наполнения
+        // сайтового поиска прямо сейчас. Исторические позиции (когда-то
+        // были, сейчас нет в живом прайсе) остаются в очереди, но
+        // докручиваются во вторую очередь, не блокируя актуальные.
+        $query->orderByRaw(
+            '(select exists(
+                select 1 from kaspi_feed_items kfi
+                where kfi.kaspi_sku = parts_catalog.source_kaspi_sku
+                and kfi.is_active = 1
+            )) desc'
+        );
 
         $totalPending = (clone $query)->count();
 
@@ -81,9 +95,12 @@ class ScrapeKaspiCardsCommand extends Command
                     $characteristics['category_leaf_title'] = $data['category_leaf_title'] ?? null;
                     $characteristics['category_leaf_code']  = $data['category_leaf_code'] ?? null;
 
+                    $resolvedBrand = $data['brand'] ?? $card->brand;
+
                     $card->update([
                         'name' => $data['name'] ?? $card->name,
-                        'brand' => $data['brand'] ?? $card->brand,
+                        'brand' => $resolvedBrand,
+                        'brand_slug' => SlugHelper::brandToSlug($resolvedBrand),
                         'description' => $data['description'],
                         'characteristics' => $characteristics,
                         'applicability' => $data['applicability'],

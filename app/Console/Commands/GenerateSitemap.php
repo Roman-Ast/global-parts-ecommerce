@@ -3,7 +3,6 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use App\Helpers\SlugHelper;
 
 class GenerateSitemap extends Command
 {
@@ -26,12 +25,17 @@ class GenerateSitemap extends Command
         $skippedEmpty = 0;
         $skippedDup   = 0;
 
-        DB::table('global_catalog')
-            ->select('article', 'clean_article', 'brand')
-            ->whereNotNull('article')
-            ->where('article', '!=', '')
-            ->distinct()
-            ->orderBy('brand')
+        // Источник — parts_catalog (заскрейпленные с Kaspi карточки), а не
+        // устаревший global_catalog. В sitemap попадает только то, что реально
+        // просим Google индексировать: scrape_status=done — та же граница,
+        // что и в CatalogController::publishedQuery()/GlobalProductController.
+        DB::table('parts_catalog')
+            ->select('article', 'brand_slug')
+            ->where('scrape_status', 'done')
+            ->whereNotNull('name')
+            ->whereNotNull('brand_slug')
+            ->where('brand_slug', '!=', '')
+            ->orderBy('brand_slug')
             ->chunk($chunkSize, function ($products) use (&$sitemaps, &$fileNum, &$seenUrls, &$skippedEmpty, &$skippedDup, $baseUrl, $command) {
 
                 $fileName = "sitemap_products_{$fileNum}.xml";
@@ -42,35 +46,24 @@ class GenerateSitemap extends Command
                 fwrite($handle, '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
 
                 foreach ($products as $product) {
-                    // Пропускаем товары без бренда — такие страницы падали в 500-ку
-                    if (empty($product->brand)) {
-                        $skippedEmpty++;
-                        continue;
-                    }
+                    // Приводим артикул к нижнему регистру — совпадает с логикой
+                    // канонического URL в GlobalProductController::showRichCard()
+                    $finalArticle = strtolower(trim($product->article));
 
-                    $urlBrand = SlugHelper::brandToSlug($product->brand);
-
-                    $finalArticle = !empty($product->clean_article)
-                        ? $product->clean_article
-                        : preg_replace('/[^A-Za-z0-9]/', '', $product->article ?? '');
-
-                    // Приводим артикул к нижнему регистру — совпадает с логикой редиректа в контроллере
-                    $finalArticle = strtolower(trim($finalArticle));
-
-                    if (empty($finalArticle) || empty($urlBrand)) {
+                    if (empty($finalArticle)) {
                         $skippedEmpty++;
                         continue;
                     }
 
                     // Дедуп: не пишем повторно уже добавленную комбинацию бренд+артикул
-                    $dedupKey = $urlBrand . '|' . $finalArticle;
+                    $dedupKey = $product->brand_slug . '|' . $finalArticle;
                     if (isset($seenUrls[$dedupKey])) {
                         $skippedDup++;
                         continue;
                     }
                     $seenUrls[$dedupKey] = true;
 
-                    $url = $baseUrl . '/product/' . $urlBrand . '/' . $finalArticle;
+                    $url = $baseUrl . '/product/' . $product->brand_slug . '/' . $finalArticle;
 
                     fwrite($handle,
                         '<url>' .
@@ -90,7 +83,7 @@ class GenerateSitemap extends Command
             });
 
         $this->generateIndex($sitemaps, $baseUrl);
-        $this->info("Пропущено (пустой бренд/артикул): {$skippedEmpty}");
+        $this->info("Пропущено (пустой артикул): {$skippedEmpty}");
         $this->info("Пропущено (дубли бренд+артикул): {$skippedDup}");
         $this->info('Готово!');
     }
