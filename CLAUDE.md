@@ -81,7 +81,28 @@ Kaspi при сохранении строгой фильтрации по ар�
    день-в-день, расширить лог `raw_body` до ~10000 символов, сравнить полный JSON
    с распарсенным количеством.
 
-3. **Каталог на главной — блок «Популярные категории»**: реализовано
+3. **504 на обычном поиске сайта** (обнаружено 2026-08-15 по логу
+   `production.ERROR`): `SparePartController::getSearchedPartAndCrosses()`
+   (вызывается из `catalogSearch()`) опрашивает 18+ поставщиков **строго
+   последовательно** — `searchArmtek`, `searchGerat`, `searchShatem`,
+   `searchPhaeton`, `searchTreid`, `searchTiss`, `searchKulan`,
+   `searchFebest`, `searchForumAuto`, `searchIngvar`, `searchVoltage`,
+   `searchBlueStar`, `searchInterkom`, `searchAdilPhaeton`, плюс условно
+   `searchAutopiter`/`searchAvtozakup`/`searchRossko`. У каждого свой таймаут
+   (2-8 сек через `curl`/`SoapClient`/`Http`, константы
+   `CONNECTION_TIMEOUT=2`/`TIMEOUT=3`), но т.к. вызовы идут один за другим —
+   если несколько поставщиков одновременно медленные/недоступны, суммарное
+   время легко перескакивает 30-60 сек и обрывается по gateway timeout
+   (504). Следующий шаг: распараллелить опрос поставщиков (часть на `curl`,
+   часть на `SoapClient`, часть на Laravel `Http` — у каждого свой способ
+   сделать асинхронным/пуловым, единого решения на все методы не будет).
+   Отдельно и попутно найдено и исправлено: `catalogSearch()` падал с
+   TypeError на `logSearchIfNotAdmin()` при отсутствии `partNumber` в
+   запросе (лишний второй аргумент при однопараметрической сигнатуре +
+   нестрогая типизация) — это не причина 504 (падало бы мгновенно, не через
+   долгое зависание), просто соседний баг в той же функции.
+
+4. **Каталог на главной — блок «Популярные категории»**: реализовано
    (2026-08-10), ждёт визуальной проверки Романом на живом сайте. Публичный
    каталог на `parts_catalog`: `CatalogController` (`catalog.category` /
    `catalog.group` / `catalog.show`, роуты `/catalog/{topSlug}[/{groupSlug}]` и

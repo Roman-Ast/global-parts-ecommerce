@@ -60,9 +60,9 @@ class SparePartController extends Controller
 
     public function catalogSearch(Request $request) 
     {
-        $partNumber = $this->removeAllUnnecessaries(trim($request->partNumber));
+        $partNumber = $this->removeAllUnnecessaries(trim((string) $request->partNumber));
 
-        $this->logSearchIfNotAdmin($request->partNumber, $partNumber);
+        $this->logSearchIfNotAdmin((string) $request->partNumber);
 
         function catalogAutopiterSearch(String $partNumber) {
             $connect = array(
