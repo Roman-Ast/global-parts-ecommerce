@@ -35,6 +35,13 @@
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
 
+        {{-- Animate.css — классы animate__animated animate__fadeIn уже
+             использовались в global_product.blade.php (renderOfferRow), но
+             сама библиотека нигде не подключалась — классы висели вникуда,
+             ничего не анимировали. Теперь подключена по-настоящему, заодно
+             и старое использование в global_product наконец заработает. --}}
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
+
         {{-- 4. Фавиконка --}}
         <link rel="icon" type="image/png" href="https://shop.globalparts.kz/images/favicon-32x32.png">
 

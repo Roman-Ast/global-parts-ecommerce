@@ -7,6 +7,19 @@
         margin-top: 120px;
     }
 
+    /* Кнопка "Копировать текст" (быстрый подбор для клиента) и переключатель
+       "скрыть артикула" — обе чисто десктопные админские утилиты, на мобиле
+       не нужны никому (даже самому админу — там неудобно ими пользоваться).
+       Чекбоксы .copy_text и так уже скрыты в строках (см. ниже), но саму
+       плавающую кнопку прячем отдельно и жёстко — не полагаемся на то, что
+       чекбокс физически нельзя отметить, раз он невидим. */
+    #copy_text_wrapper {
+        display: none !important;
+    }
+    #articles-hide-wrapper {
+        display: none !important;
+    }
+
     /* фильтр — узкая боковая колонка */
     #search-res-filter {
         width: 22%;
@@ -169,14 +182,20 @@
        @media(min-width:1024px), так что без этого блока была бы видна
        всегда открытой прямо в потоке страницы) */
     .info-block {
-        display: none;
+        display: none; /* JS переключает на flex при показе, см. master.js */
+        flex-direction: column;
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         max-height: 100vh;
-        overflow-y: auto;
+        /* Раньше overflow-y:auto был тут — весь блок (картинка+текст)
+           скроллился одним куском, и картинка на длинном описании
+           уезжала вверх за экран. Теперь сам блок не скроллится —
+           скроллится только .info-block-information ниже, картинка
+           остаётся на месте, как на десктопе. */
+        overflow: hidden;
         background: #fff;
         z-index: 1050;
         padding: 16px;
@@ -186,6 +205,7 @@
         width: 100%;
         display: flex;
         flex-direction: column;
+        flex-shrink: 0; /* картинка+название держат свою высоту, не сжимаются */
     }
     .info-block-pictures-name {
         width: 100%;
@@ -216,10 +236,30 @@
     }
     .info-block-information {
         width: 100%;
-        height: auto;
-        max-height: none;
-        overflow-y: visible;
+        max-width: 100%;
+        /* flex:1 1 auto + min-height:0 — стандартная пара для "занять
+           всё оставшееся место и скроллиться внутри себя", когда родитель
+           (.info-block) — flex-колонка фиксированной высоты. Без
+           min-height:0 flex-элемент по умолчанию не сжимается меньше
+           высоты своего контента, и скролл внутри него не включается —
+           это тот самый эффект, который был раньше ("едет вся страница"). */
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
         margin-top: 12px;
+    }
+    /* характеристики/описание иногда приходят с сырым HTML (таблицы,
+       картинки) из parts_catalog — без этого широкая таблица или крупная
+       картинка распирала модалку за пределы экрана по горизонтали */
+    .info-block-information img {
+        max-width: 100%;
+        height: auto;
+    }
+    .info-block-information table {
+        max-width: 100%;
     }
 
     /* --- разделитель перед нижней строкой --- */
@@ -377,6 +417,32 @@
         border-color: #b9e3c6;
     }
 
+    /* Мобильная версия подсветки новых строк при прогрессивной подгрузке
+       (аналог десктопной .progressive-highlight в partSearchRes.css) —
+       по-разному для двух случаев:
+       1) "в наличии на складе" — фон и так постоянно зелёный #e3f6e9 (см.
+          выше), заливкой не отличить, поэтому подсвечиваем рамкой/тенью;
+       2) остальные 3 секции — фона нет, обычная заливка-затухание, как на
+          десктопе.
+       animation-fill-mode: forwards — держит финальный кадр после
+       окончания, JS ничего по таймеру не убирает. */
+    @keyframes progressive-highlight-fade-mobile {
+        0%   { background-color: #e3f6e9; box-shadow: inset 0 0 0 2px #28a745; }
+        100% { background-color: transparent; box-shadow: inset 0 0 0 0 rgba(40,167,69,0); }
+    }
+    @keyframes progressive-highlight-glow-mobile {
+        0%   { box-shadow: 0 0 0 3px #28a745; }
+        100% { box-shadow: 0 0 0 0 rgba(40,167,69,0); }
+    }
+    #requestPartNumberContainer .requestPartNumberContainer-item.progressive-highlight,
+    #crossesContainer-in-office .requestPartNumberContainer-item.progressive-highlight,
+    #crossesContainer-to-order .requestPartNumberContainer-item.progressive-highlight {
+        animation: progressive-highlight-fade-mobile 1.5s ease-out forwards;
+    }
+    #crossesContainer-on-stock .requestPartNumberContainer-item.progressive-highlight {
+        animation: progressive-highlight-glow-mobile 1.5s ease-out forwards;
+    }
+
     /* иконка "i" — тот же нежно-голубой, что и на десктопе */
     .spare-part-info-show,
     .spare-part-info-lookup {
@@ -387,10 +453,11 @@
        поэтому саму плашку оставляем прозрачной с navy-текстом, а не зелёной */
     .gp-delivery-badge {
         background: transparent;
-        color: #042D4D;
+        color: #000;
+        font-weight: 400;
     }
     .gp-delivery-badge i {
-        color: #042D4D;
+        color: #000;
     }
 
     /* пагинация на мобилке не нужна — все результаты идут одним списком */

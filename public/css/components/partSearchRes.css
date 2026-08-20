@@ -1,5 +1,19 @@
 
 @media (min-width: 1024px) {
+    /* Мягкая зелёная подсветка новых строк при прогрессивной подгрузке —
+       только десктоп (на мобиле "Аналоги в наличии на складе" и так уже
+       залиты этим же зелёным #e3f6e9 постоянно, подсветка бы слилась и её
+       не было бы видно — см. #crossesContainer-on-stock в mini.css).
+       animation-fill-mode: forwards — держит финальный кадр (прозрачный)
+       после окончания, JS не нужно ничего убирать классом по таймеру. */
+    @keyframes progressive-highlight-fade {
+        0%   { background-color: #e3f6e9; box-shadow: inset 0 0 0 2px #28a745; }
+        100% { background-color: transparent; box-shadow: inset 0 0 0 0 rgba(40,167,69,0); }
+    }
+    .requestPartNumberContainer-item.progressive-highlight {
+        animation: progressive-highlight-fade 1.5s ease-out forwards;
+    }
+
     #curtain-grey-searchpartres{
         position: fixed;
         width: 100%;
@@ -21,17 +35,19 @@
         width: 60%;
         max-height: 92vh;
         overflow-y: auto;
+        overflow-x: hidden;
         position: fixed;
         top: 4vh;
         left: 20vw;
-        border: 1px solid #ddd;
-        border-radius: 5px;
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0,0,0,.3);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
-        background-color: #eee;
-        padding: 10px;
+        background-color: #fff;
+        padding: 20px;
         z-index: 10;
         display: none;
     }
@@ -49,11 +65,11 @@
        как было исторически, только текст не зелёный, а нейтральный тёмный. */
     .gp-delivery-badge{
         background: #d1e7dd;
-        color: #495057;
-        font-weight: 700;
+        color: #000;
+        font-weight: 400;
     }
     .gp-delivery-badge i{
-        color: #495057;
+        color: #000;
     }
     .block-info-close-wrapper{
         width: 100%;
@@ -109,8 +125,39 @@
     }
     .info-block-information{
         width: 100%;
-        height: 30vh;
+        max-width: 100%;
+        max-height: 40vh;
         overflow-y: auto;
+        overflow-x: hidden;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    /* характеристики/описание иногда приходят с сырым HTML (таблицы,
+       картинки) из parts_catalog — без этого широкая таблица или крупная
+       картинка распирала модалку за пределы блока по горизонтали */
+    .info-block-information img {
+        max-width: 100%;
+        height: auto;
+    }
+    .info-block-information table {
+        max-width: 100%;
+    }
+    /* вкладки чуть современнее нативных nav-tabs — скруглённые "таблетки"
+       вместо плоских квадратных вкладок с подчёркиванием */
+    .info-block-information .nav-tabs {
+        border-bottom: none;
+        gap: 6px;
+    }
+    .info-block-information .nav-tabs .nav-link {
+        border: none;
+        border-radius: 999px;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 6px 16px;
+    }
+    .info-block-information .nav-tabs .nav-link.active {
+        background-color: #e7f1ff;
+        color: #0d6efd;
     }
     .info-oem-numbers{
         display: flex !important;

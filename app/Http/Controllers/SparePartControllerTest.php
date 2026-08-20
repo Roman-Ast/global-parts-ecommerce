@@ -20,12 +20,18 @@ use App\Models\InterkomPrice;
 use App\Models\AdilPhaetonPrice;
 use App\Models\ZakazautoPrice;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\JsonResponse;
 use Carbon;
 use Collator;
 
-class SparePartController extends Controller
+// ВАЖНО: имя класса намеренно отличается от SparePartController — при
+// совпадении имени в том же неймспейсе Composer-автозагрузчик всё равно
+// маппит "SparePartController" на SparePartController.php (PSR-4 по имени
+// класса, не по имени файла), и этот файл никогда бы реально не
+// подключился под собственным классом.
+class SparePartControllerTest extends Controller
 {
     const API_KEY1_ROSSKO = '4adcbb9794b8e537bd2aa6272b36bdb0';
     const API_KEY2_ROSSKO = '5fcc040a8188a51baf5a6f36ca15ce05';
@@ -45,6 +51,11 @@ class SparePartController extends Controller
     const KULAN_ASTSTORE_ID = '2198d63c-35f3-11eb-925f-00155d20f705';
     const CONNECTION_TIMEOUT = 2;
     const TIMEOUT = 3;
+
+    // См. searchAvtozakup() и stratifyByPrice() — защита от раздутого
+    // ответа при нестрогом подборе аналогов у Автозакупа.
+    const PRICE_STRATIFY_BUCKETS = 10;
+    const PRICE_STRATIFY_PER_BUCKET = 15;
 
     public $partNumber = '';
 
@@ -211,102 +222,283 @@ class SparePartController extends Controller
         }
     }
 
-    public function getSearchedPartAndCrossesFast (Request $request)
+    /**
+     * ФАЗА 1 прогрессивного поиска: только Rossko (SOAP), отвечает за 1-2
+     * сек — самый быстрый источник. Фронт рисует эти строки сразу, не
+     * дожидаясь остальных поставщиков (см. searchRestOfSuppliers ниже).
+     * Возвращает плоский список офферов той же формы, что ожидает
+     * renderOfferRow() в global_product.blade.php, отсортированный по
+     * цене по возрастанию.
+     */
+    public function searchRosskoFast(Request $request)
     {
-        $this->finalArr['originNumber'] = $request->partnumber;
-        $partNumber = $this->removeAllUnnecessaries(trim($request->partnumber));
-        
-        $this->searchStockInOffice($request->brand, $partNumber);
-        $this->searchZakazauto_kst($request->brand, $partNumber);
-        $this->searchVoltage($request->brand, $partNumber);
-        $this->searchBlueStar($request->brand, $partNumber);
-        $this->searchInterkom($request->brand, $partNumber);
-        $this->searchAdilPhaeton($request->brand, $partNumber);
+        $brand      = (string) $request->brand;
+        $partnumber = $this->removeAllUnnecessaries(trim((string) $request->partnumber));
 
-        if($request->rossko_need_to_search) {
-            $this->searchRossko($request->brand,  $partNumber, $request->guid);
-        }
+        $offers = $this->getRosskoPricesOnly($brand, $partnumber);
 
-        $arr = array_unique($this->finalArr['brands']);
+        usort($offers, fn($a, $b) => $a['priceWithMargine'] <=> $b['priceWithMargine']);
 
-        
-        usort($arr, function($a, $b) {
-            if ($a == $b) {
-                return 0;
-            }
-            return ($a < $b) ? -1 : 1;
-        });
-
-        usort($this->finalArr['crosses_on_stock'], function ($a, $b)
-        {
-            if ($a['priceWithMargine'] == $b['priceWithMargine']) {
-                return 0;
-            }
-            return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
-        });
-        
-        usort($this->finalArr['crosses_to_order'], function ($a, $b)
-        {
-            if ($a['priceWithMargine'] == $b['priceWithMargine']) {
-                return 0;
-            }
-            return ($a['priceWithMargine'] < $b['priceWithMargine']) ? -1 : 1;
-        });
-
-        $finalArrEmpty = empty($this->finalArr['crosses_in_office']) 
-            && empty($this->finalArr['crosses_on_stock']) 
-            && empty($this->finalArr['searchedNumber']) 
-            && empty($this->finalArr['crosses_to_order']);
-
-        
-        if ($finalArrEmpty) {
-            return view('components.notFoundStub', [
-                'article' => $this->partNumber 
-            ]);
-        }
-        
-        // Если данные есть, показываем результат
-        return view('partSearchRes', [
-            'finalArr' => $this->finalArr,
-            'searchedNumber' => $this->partNumber,
-            'chosenBrand' => $request->brand,
-            'brands' => $arr
+        return response()->json([
+            'offers' => $this->utf8ize($offers),
         ]);
     }
-    
-    public function getSearchedPartAndCrossesOtherJson(Request $request)
+
+    /**
+     * ФАЗА 2 прогрессивного поиска: все остальные поставщики, кроме
+     * Rossko — Armtek, Autopiter отдельно (у них своя специфика), плюс
+     * runParallelSuppliers() (curl_multi-пул простых REST-источников +
+     * Shatem/Treid последовательно следом, см. комментарий в
+     * runParallelSuppliers). Фронт вызывает этот эндпоинт ПАРАЛЛЕЛЬНО с
+     * searchRosskoFast (не дожидаясь его ответа) и домешивает результат в
+     * уже отрисованную таблицу, пересортировывая по цене.
+     *
+     * Раньше (getSearchedPartAndCrossesOtherJson) в JSON терялся
+     * searchedNumber (точное совпадение по артикулу) — отдавались только
+     * кроссы. Точное совпадение — самое важное для покупателя, поэтому
+     * возвращаем и его тоже, единым списком вместе с кроссами (фронту всё
+     * равно, откуда строка — он просто рисует таблицу офферов).
+     *
+     * Плюс 8 поставщиков, которых не было в изначальном прототипе (сверено
+     * с боевым SparePartController::getSearchedPartAndCrosses()):
+     * StockInOffice/Zakazauto_kst/Ingvar/Voltage/BlueStar/Interkom/
+     * AdilPhaeton — локальные Eloquent-запросы, миллисекунды, зовём
+     * синхронно первыми же. Avtozakup — единственный из "хвоста", кто
+     * реально ходит в сеть (Http::post) — зовём последовательно рядом с
+     * Shatem/Treid.
+     */
+    public function searchRestOfSuppliers(Request $request)
     {
-        $brand      = $request->brand;
-        $partnumber = $this->removeAllUnnecessaries(trim($request->partnumber));
+        $brand      = (string) $request->brand;
+        $partnumber = $this->removeAllUnnecessaries(trim((string) $request->partnumber));
 
-        $t = microtime(true);
-        try { $this->searchArmtek($brand, $partnumber); } catch (\Throwable $e) {}
-        \Log::info('Armtek: ' . round(microtime(true) - $t, 2) . 's');
+        $this->runRestOfSuppliers($brand, $partnumber, (bool) $request->only_on_stock);
 
-        $t = microtime(true);
-        try { $this->searchAutopiter($brand, $partnumber); } catch (\Throwable $e) {}
-        \Log::info('Autopiter: ' . round(microtime(true) - $t, 2) . 's');
-
-        $t = microtime(true);
-        $this->runParallelSuppliers($brand, $partnumber);
-        \Log::info('Pool (все HTTP параллельно): ' . round(microtime(true) - $t, 2) . 's');
-
-        usort($this->finalArr['crosses_on_stock'], fn($a, $b) =>
-            $a['priceWithMargine'] <=> $b['priceWithMargine']
+        $offers = array_merge(
+            $this->finalArr['searchedNumber'],
+            $this->finalArr['crosses_on_stock'],
+            $this->finalArr['crosses_to_order']
         );
-        usort($this->finalArr['crosses_to_order'], fn($a, $b) =>
-            $a['priceWithMargine'] <=> $b['priceWithMargine']
-        );
+
+        usort($offers, fn($a, $b) => ($a['priceWithMargine'] ?? 0) <=> ($b['priceWithMargine'] ?? 0));
 
         return response()->json([
-            'crosses_on_stock' => $this->utf8ize($this->finalArr['crosses_on_stock'] ?? []),
-            'crosses_to_order' => $this->utf8ize($this->finalArr['crosses_to_order'] ?? []),
-            'brands'           => $this->utf8ize(array_values(array_unique($this->finalArr['brands'] ?? []))),
+            'offers' => $this->utf8ize($offers),
+            'brands' => $this->utf8ize(array_values(array_unique($this->finalArr['brands'] ?? []))),
         ]);
-        return response()->json([
-            'crosses_on_stock' => $this->finalArr['crosses_on_stock'] ?? [],
-            'crosses_to_order' => $this->finalArr['crosses_to_order'] ?? [],
-            'brands'           => array_values(array_unique($this->finalArr['brands'] ?? [])),
+    }
+
+    /**
+     * Вынесено из searchRestOfSuppliers() — та же выборка нужна ещё и для
+     * HTML-фрагмента partSearchRes (searchRestFragment ниже), чтобы не
+     * дублировать список из 11 вызовов дважды.
+     */
+    private function runRestOfSuppliers(string $brand, string $partnumber, bool $onlyOnStock = false): void
+    {
+        $this->finalArr['originNumber'] = $partnumber;
+
+        // Локальные БД — быстро, без try/catch по одному не нужно, но на
+        // всякий случай оборачиваем группой, чтобы падение одной таблицы
+        // не обрушило остальные.
+        try {
+            $this->searchStockInOffice($brand, $partnumber);
+            $this->searchZakazauto_kst($brand, $partnumber);
+            $this->searchIngvar($brand, $partnumber);
+            $this->searchVoltage($brand, $partnumber);
+            $this->searchBlueStar($brand, $partnumber);
+            $this->searchInterkom($brand, $partnumber);
+            $this->searchAdilPhaeton($brand, $partnumber);
+        } catch (\Throwable $e) {}
+
+        try { $this->searchArmtek($brand, $partnumber); } catch (\Throwable $e) {}
+
+        // Как и в боевом getSearchedPartAndCrosses() — Autopiter/Avtozakup
+        // пропускаем, если просили только то, что реально на складе.
+        if (!$onlyOnStock) {
+            try { $this->searchAutopiter($brand, $partnumber); } catch (\Throwable $e) {}
+            try { $this->searchAvtozakup($brand, $partnumber); } catch (\Throwable $e) {}
+        }
+
+        $this->runParallelSuppliers($brand, $partnumber);
+
+        // Shatem/Treid раньше звались из конца runParallelSuppliers() —
+        // вынесены сюда явно, чтобы сам curl_multi-пул можно было гонять
+        // отдельно (с фильтром по ключу) для пошаговой подгрузки, не
+        // утаскивая за собой эти два последовательных вызова каждый раз.
+        try { $this->searchShatem($brand, $partnumber); } catch (\Throwable $e) {}
+        try { $this->searchTreid($brand, $partnumber); } catch (\Throwable $e) {}
+    }
+
+    /**
+     * Рендерит 4 маленьких partial'а (partials/items/*.blade.php — только
+     * строки, без шапки секции) и отдаёт их отдельно в JSON. Так и
+     * searchRosskoFragment, и searchRestFragment досыпают строки в ТЕ ЖЕ
+     * персистентные контейнеры секций (см. partials.searchResultsBody),
+     * а не рендерят секцию с шапкой заново — иначе при двух фрагментах
+     * заголовок каждой секции задваивался.
+     */
+    private function renderItemsEnvelope(): array
+    {
+        usort($this->finalArr['crosses_on_stock'], fn($a, $b) => ($a['priceWithMargine'] ?? 0) <=> ($b['priceWithMargine'] ?? 0));
+        usort($this->finalArr['crosses_to_order'], fn($a, $b) => ($a['priceWithMargine'] ?? 0) <=> ($b['priceWithMargine'] ?? 0));
+
+        return [
+            'searchedNumber'  => (string) view('partials.items.searchedNumber', ['items' => $this->finalArr['searchedNumber']]),
+            'crossesInOffice' => (string) view('partials.items.crossesInOffice', ['items' => $this->finalArr['crosses_in_office']]),
+            'crossesOnStock'  => (string) view('partials.items.crossesOnStock', ['items' => $this->finalArr['crosses_on_stock']]),
+            'crossesToOrder'  => (string) view('partials.items.crossesToOrder', ['items' => $this->finalArr['crosses_to_order']]),
+        ];
+    }
+
+    /**
+     * ФАЗА 1 прогрессивного partSearchRes: строки от Rossko —
+     * используется вместе с searchRestFragment() ниже.
+     */
+    public function searchRosskoFragment(Request $request)
+    {
+        $brand      = (string) $request->brand;
+        $partnumber = $this->removeAllUnnecessaries(trim((string) $request->partnumber));
+        $guid       = (string) $request->guid;
+
+        $this->finalArr['originNumber'] = $partnumber;
+
+        if ($request->rossko_need_to_search && $guid !== '') {
+            try { $this->searchRossko($brand, $partnumber, $guid); } catch (\Throwable $e) {}
+        }
+
+        return response()->json($this->renderItemsEnvelope());
+    }
+
+    /**
+     * ФАЗА 2 прогрессивного partSearchRes: строки от всех остальных
+     * поставщиков (см. runRestOfSuppliers выше).
+     */
+    public function searchRestFragment(Request $request)
+    {
+        $brand      = (string) $request->brand;
+        $partnumber = $this->removeAllUnnecessaries(trim((string) $request->partnumber));
+
+        $this->runRestOfSuppliers($brand, $partnumber, (bool) $request->only_on_stock);
+
+        return response()->json($this->renderItemsEnvelope());
+    }
+
+    /**
+     * Один шаг пошаговой подгрузки — один поставщик (или маленькая группа,
+     * см. 'locals') за один вызов. Фронт вызывает это ПОСЛЕДОВАТЕЛЬНО, шаг
+     * за шагом (см. STEP_ORDER в partSearchRes.blade.php) — каждый следующий
+     * запрос уходит только после того, как предыдущий отрисовался. Так и
+     * получается "ощущение живости", которое просил Роман — Rossko сразу,
+     * через 2 сек сел Shatem, через 2 сек сел Armtek и т.д., а не одно
+     * общее ожидание 15-20 сек на "остальное" разом.
+     *
+     * 'locals' — единственная группа из нескольких поставщиков в одном
+     * шаге: 7 обращений к локальным Eloquent-таблицам, миллисекунды на
+     * все сразу, дробить их на отдельные шаги для "живости" смысла нет —
+     * посетитель всё равно не увидит между ними паузы.
+     *
+     * Пул REST-поставщиков (phaeton/forumauto/tiss/kulan/febest/gerat) —
+     * тот же runParallelSuppliers(), что и в runRestOfSuppliers(), просто
+     * с $onlyKeys, отфильтрованным до одного шага — сам curl-запрос
+     * остаётся тем же самым, меняется только то, сколько задач летит за
+     * один вызов (1 вместо 8).
+     */
+    public function searchSupplierStepFragment(Request $request)
+    {
+        $brand      = (string) $request->brand;
+        $partnumber = $this->removeAllUnnecessaries(trim((string) $request->partnumber));
+        $step       = (string) $request->step;
+
+        $this->finalArr['originNumber'] = $partnumber;
+
+        try {
+            switch ($step) {
+                case 'locals':
+                    $this->searchStockInOffice($brand, $partnumber);
+                    $this->searchZakazauto_kst($brand, $partnumber);
+                    $this->searchIngvar($brand, $partnumber);
+                    $this->searchVoltage($brand, $partnumber);
+                    $this->searchBlueStar($brand, $partnumber);
+                    $this->searchInterkom($brand, $partnumber);
+                    $this->searchAdilPhaeton($brand, $partnumber);
+                    break;
+                case 'armtek':
+                    $this->searchArmtek($brand, $partnumber);
+                    break;
+                case 'shatem':
+                    $this->searchShatem($brand, $partnumber);
+                    break;
+                case 'treid':
+                    $this->searchTreid($brand, $partnumber);
+                    break;
+                case 'phaeton':
+                    $this->runParallelSuppliers($brand, $partnumber, ['phaeton_ast', 'phaeton_local']);
+                    break;
+                case 'forumauto':
+                    $this->runParallelSuppliers($brand, $partnumber, ['forumauto']);
+                    break;
+                case 'tiss':
+                    $this->runParallelSuppliers($brand, $partnumber, ['tiss']);
+                    break;
+                case 'kulan':
+                    $this->runParallelSuppliers($brand, $partnumber, ['kulan_main', 'kulan_analogs']);
+                    break;
+                case 'febest':
+                    $this->runParallelSuppliers($brand, $partnumber, ['febest']);
+                    break;
+                case 'gerat':
+                    $this->runParallelSuppliers($brand, $partnumber, ['gerat']);
+                    break;
+                case 'autopiter':
+                    // Как и в боевом getSearchedPartAndCrosses() — пропускаем,
+                    // если просили только то, что реально на складе.
+                    if (!$request->only_on_stock) {
+                        $this->searchAutopiter($brand, $partnumber);
+                    }
+                    break;
+                case 'avtozakup':
+                    if (!$request->only_on_stock) {
+                        $this->searchAvtozakup($brand, $partnumber);
+                    }
+                    break;
+            }
+        } catch (\Throwable $e) {}
+
+        return response()->json($this->renderItemsEnvelope());
+    }
+
+    /**
+     * Шелл-рендер partSearchRes — раньше это был кусок
+     * getSearchedPartAndCrosses(), синхронно опрашивающий ВСЕ 19
+     * поставщиков перед рендером. Теперь страница рендерится сразу же,
+     * без единого обращения к поставщику, а сами данные подгружаются
+     * двумя фрагментами через JS в конце partSearchRes.blade.php
+     * (searchRosskoFragment + searchRestFragment выше).
+     *
+     * $brands (список для фильтра слева) тут пустой — тот список раньше
+     * тоже строился только ПОСЛЕ того, как все поставщики отвечали,
+     * так что при прогрессивной загрузке его настоящее место — тоже в
+     * JS, отдельным улучшением, а не блокировать им первый рендер.
+     */
+    public function getSearchedPartAndCrossesShell(Request $request)
+    {
+        $partnumber = $this->removeAllUnnecessaries(trim((string) $request->partnumber));
+
+        return view('partSearchRes', [
+            'finalArr' => [
+                'originNumber' => $partnumber,
+                'searchedNumber' => [],
+                'crosses_in_office' => [],
+                'crosses_on_stock' => [],
+                'crosses_to_order' => [],
+                'brands' => [],
+            ],
+            'searchedNumber' => $partnumber,
+            'chosenBrand' => $request->brand,
+            'brands' => [],
+            'guid' => $request->guid,
+            'rosskoNeedToSearch' => (bool) $request->rossko_need_to_search,
+            'onlyOnStock' => (bool) $request->only_on_stock,
         ]);
     }
 
@@ -325,7 +517,15 @@ class SparePartController extends Controller
         return $data;
     }
 
-    private function runParallelSuppliers(string $brand, string $partnumber): void
+    /**
+     * $onlyKeys — если передан, curl_multi-пул гоняет ТОЛЬКО задачи с этими
+     * key (см. 'key' => ... у каждой задачи ниже). Нужно для пошаговой
+     * подгрузки (searchSupplierStepFragment) — один и тот же список задач,
+     * просто на каждый шаг фильтруем до одного поставщика вместо разом
+     * восьми. При $onlyKeys=null (по умолчанию) ведёт себя как раньше —
+     * весь пул разом, это путь runRestOfSuppliers()/старого 2-фазного JSON.
+     */
+    private function runParallelSuppliers(string $brand, string $partnumber, ?array $onlyKeys = null): void
     {
         // Определяем все HTTP-запросы которые надо выполнить параллельно
         // Каждый элемент: ['url' => ..., 'method' => 'GET'|'POST', 'data' => [...], 'parser' => 'methodName']
@@ -428,6 +628,14 @@ class SparePartController extends Controller
             'partnumber_for_parser' => $partnumber, // Gerat нужно фильтровать по артикулу на нашей стороне
         ];
 
+        if ($onlyKeys !== null) {
+            $tasks = array_values(array_filter($tasks, fn($task) => in_array($task['key'], $onlyKeys, true)));
+        }
+
+        if (empty($tasks)) {
+            return;
+        }
+
         // ── curl_multi — запускаем все параллельно ──────────────────────────────
         $mh      = curl_multi_init();
         $handles = [];
@@ -483,15 +691,7 @@ do {
         }
 
         curl_multi_close($mh);
-
-        $t = microtime(true);
-        try { $this->searchShatem($brand, $partnumber); } catch (\Throwable $e) {}
-        \Log::info('Shatem: ' . round(microtime(true) - $t, 2) . 's');
-
-        $t = microtime(true);
-        try { $this->searchTreid($brand, $partnumber); } catch (\Throwable $e) {}
-        \Log::info('Treid: ' . round(microtime(true) - $t, 2) . 's');
-            }
+    }
 
     private function parsePhaeton($data, string $brand, string $partnumber, $extra = null): void
     {
@@ -1797,31 +1997,16 @@ do {
             $brand = 'nissan';
         }
         
-        //получение токена
-        $request_params = [
-            'ApiKey' => '{3f3b6eeb-709c-4dcb-be59-147ce8f9cb87}',
-        ];
-        $ch = curl_init('https://api.shate-m.kz/api/v1/auth/loginByapiKey');
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($request_params));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
-        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
-        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-        
-        try {
-            $response = json_decode(curl_exec($ch));
-            
-        } catch (\Throwable $th) {
+        // Токен — из кеша (см. getShatemToken(): Cache::lock() защищает от
+        // гонки при параллельном опросе поставщиков). Раньше тут был
+        // свежий логин на каждый вызов — лишний медленный HTTP-хоп плюс
+        // источник как раз того "отваливания" при параллелизации.
+        $access_token = $this->getShatemToken();
+
+        if (!$access_token) {
             return;
         }
-        
-        if(!$response || !property_exists($response, 'access_token')) {
-            return;
-        }
-        
-        $access_token = $response->access_token;
-        
+
         //получение внутреннего id товара
         $params = [
             'SearchString' => $partnumber,
@@ -2848,7 +3033,222 @@ do {
         return;
     }
 
-    public function getCheckoutDetails () 
+    /**
+     * Скопировано без изменений из боевого SparePartController.php —
+     * единственный поставщик из "хвоста" последовательного списка (кроме
+     * Shatem/Treid), который реально ходит в сеть (Http::post), а не
+     * читает локальную БД. Остальные 7 (searchStockInOffice/
+     * searchZakazauto_kst/searchIngvar/searchVoltage/searchBlueStar/
+     * searchInterkom/searchAdilPhaeton) — локальные Eloquent-запросы,
+     * миллисекунды, им curl_multi/последовательный вызов не нужен, они уже
+     * достаточно быстрые сами по себе.
+     */
+    public function searchAvtozakup(String $brand, String $partnumber)
+    {
+        try {
+            // 'timelimit' — сколько секунд САМ Tradesoft вправе ждать ответ
+            // от апстрима (avto_zakup). Раньше стояло 10 — ровно столько же,
+            // сколько браузер ждёт весь шаг целиком (SUPPLIER_TIMEOUT_MS в
+            // partSearchRes.blade.php), т.е. без единого запаса на наш
+            // собственный сетевой круг + рендер Blade + сериализацию JSON.
+            // Как только апстрим Автозакупа отвечал медленно (обычное дело
+            // для реального дропшип-поставщика на заказные позиции), браузер
+            // обрывал запрос раньше, чем Tradesoft вообще успевал прислать
+            // данные — и никакой ошибки при этом не было: AbortSignal рвёт
+            // соединение на клиенте, сервер продолжает работать молча.
+            // Первая попытка снизить до 6 сек оказалась СЛИШКОМ жёсткой —
+            // сам Tradesoft начал отдавать "Превышено время ожидания 6 сек."
+            // (см. лог 'Avtozakup empty or error response'), т.е. реальному
+            // апстриму на заказные позиции нужно больше 6 сек, а клиент готов
+            // столько ждать (см. STEP_TIMEOUTS_MS.avtozakup = 18000 в
+            // partSearchRes.blade.php). 12 — с запасом под 18-секундный
+            // клиентский бюджет (сеть + рендер Blade + сериализация).
+            // Http::timeout(20) — свой PHP-клиент тоже поднят выше 12, иначе
+            // он сам оборвал бы запрос раньше, чем Tradesoft успеет уложиться
+            // в свои 12 секунд ожидания + отдать ответ.
+            $response = Http::timeout(20)->post('https://service.tradesoft.ru/3/provider/get-price-list/', [
+                'user'      => env('TRADESOFT_USER'),
+                'password'  => env('TRADESOFT_PASSWORD'),
+                'service'   => 'provider',
+                'action'    => 'getPriceList',
+                'timelimit' => 12,
+                'container' => [[
+                    'provider' => 'avto_zakup',
+                    'login'    => env('TRADESOFT_PROVIDER_LOGIN'),
+                    'password' => env('TRADESOFT_PROVIDER_PASSWORD'),
+                    'code'     => $partnumber,
+                    'producer' => $brand,
+                ]],
+            ]);
+
+            if (!$response->ok()) {
+                \Log::warning('Avtozakup non-200 response', ['status' => $response->status()]);
+                return;
+            }
+
+            $data = $response->json();
+
+            // container[0]['error'] — ошибка именно от провайдера (напр.
+            // "не удалось авторизоваться"), а не верхнеуровневая $data['error'];
+            // раньше проверяли только верхний уровень и такие сбои проходили
+            // мимо логов молча (см. CLAUDE.md, история с протухшими TRADESOFT_
+            // PROVIDER_LOGIN/PASSWORD в .env).
+            $providerError = $data['container'][0]['error'] ?? null;
+            if (!empty($data['error']) || !empty($providerError) || empty($data['container'][0]['data'])) {
+                \Log::warning('Avtozakup empty or error response', [
+                    'top_level_error' => $data['error'] ?? null,
+                    'provider_error'  => $providerError,
+                    'has_data'        => !empty($data['container'][0]['data']),
+                ]);
+                return;
+            }
+
+            // Конвертация RUB → KZT (пока заглушка, потом заменишь на реальный курс)
+            $convertPrice = function(float $priceRub): float {
+                $rate = 1; // TODO: заменить на env('RUB_TO_KZT_RATE') или API курса
+                return $priceRub * $rate;
+            };
+
+            $searchArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $partnumber));
+
+            foreach ($data['container'][0]['data'] as $item) {
+                $itemArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $item['code'] ?? ''));
+                $isExact = $itemArticleClean === $searchArticleClean;
+
+                $priceKzt = $convertPrice((float)($item['price'] ?? 0));
+
+                $deliveryDaysMin = isset($item['deliverydays_min']) ? (int)$item['deliverydays_min'] : 0;
+                $deliveryDaysMax = isset($item['deliverydays_max']) ? (int)$item['deliverydays_max'] : $deliveryDaysMin;
+
+                // +5 дней доставки до Астаны от Уральска
+                $deliveryDaysMin += 5;
+                $deliveryDaysMax += 5;
+
+                $deliveryDate = date('Y-m-d', strtotime("+{$deliveryDaysMax} days"));
+                $deliveryText  = $deliveryDaysMin . '-' . $deliveryDaysMax . ' дн.';
+
+                $entry = [
+                    'brand'            => $item['producer'] ?? '',
+                    'article'          => $item['code'] ?? '',
+                    'name'             => $item['caption'] ?? '',
+                    'price'            => $priceKzt,
+                    'priceWithMargine' => round($this->setPrice($priceKzt), self::ROUND_LIMIT),
+                    'qty'              => $item['rest'] ?? 0,
+                    'delivery_time'    => $deliveryDate,
+                    'deliveryStart'    => $deliveryDate,
+                    'deliverydays_min' => $deliveryDaysMin,
+                    'supplier_name'    => 'vtzkp',
+                    'supplier_city'    => 'msk',
+                    'supplier_color'   => 'linear-gradient(135deg, #1a1a1a, #cc0000)',
+                    'stocks'           => [[
+                        'qty'              => $item['rest'] ?? 0,
+                        'price'            => $priceKzt,
+                        'priceWithMargine' => round($this->setPrice($priceKzt), self::ROUND_LIMIT),
+                        'delivery_time'    => $deliveryDate,
+                        'supplier_city'    => 'msk',
+                    ]],
+                ];
+
+                array_push($this->finalArr['brands'], $item['producer'] ?? '');
+
+                if ($isExact) {
+                    array_push($this->finalArr['searchedNumber'], $entry);
+                } else {
+                    array_push($this->finalArr['crosses_to_order'], $entry);
+                }
+            }
+
+            // Фильтрация аналогов ПОСЛЕ цикла
+            if (count($this->finalArr['crosses_to_order']) > 20) {
+                $this->finalArr['crosses_to_order'] = array_values(array_filter(
+                    $this->finalArr['crosses_to_order'],
+                    function($analog) {
+                        $days = $analog['deliverydays_min'] ?? $this->extractDaysFromText($analog['delivery_time'] ?? '');
+                        return (int)$days <= 14;
+                    }
+                ));
+            }
+
+            // У Автозакупа подбор аналогов местами очень нестрогий — на
+            // некоторые артикулы фильтр по срокам доставки выше всё равно
+            // оставляет тысячи позиций (реальный случай: 4553 шт. на один
+            // артикул => ~15 МБ одного JSON-ответа, на слабом интернете
+            // легко вылезает за клиентский таймаут прогрессивной подгрузки,
+            // хотя сам запрос к Tradesoft отрабатывает за секунды).
+            //
+            // Просто взять самые дешёвые — не выход (Роман: "не все ищут
+            // именно дешёвые"), поэтому — честная стратифицированная выборка
+            // по цене: диапазон от мин. до макс. цены делим на равные
+            // ценовые бакеты, из каждого берём не больше N штук. Так виден
+            // весь разброс цен — и бюджетные, и премиальные варианты — а не
+            // только нижний край.
+            if (count($this->finalArr['crosses_to_order']) > self::PRICE_STRATIFY_BUCKETS * self::PRICE_STRATIFY_PER_BUCKET) {
+                $this->finalArr['crosses_to_order'] = $this->stratifyByPrice(
+                    $this->finalArr['crosses_to_order'],
+                    self::PRICE_STRATIFY_BUCKETS,
+                    self::PRICE_STRATIFY_PER_BUCKET
+                );
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Avtozakup exception', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+        }
+    }
+
+    private function extractDaysFromText(string $text): int
+    {
+        preg_match('/(\d+)/', $text, $matches);
+        return isset($matches[1]) ? (int)$matches[1] : 999;
+    }
+
+    /**
+     * Стратифицированная выборка по цене — не "самое дешёвое", а честный
+     * срез по всему диапазону: от минимальной до максимальной цены В ЭТОМ
+     * конкретном наборе (не хардкодим границы в тенге — у разных деталей
+     * ценовой диапазон совсем разный), делим на $bucketsCount равных по
+     * ширине бакетов, из каждого берём не больше $maxPerBucket штук
+     * (внутри бакета — тоже от дешёвого к дорогому). Так и бюджетный, и
+     * премиальный вариант остаются видны, просто без всех тысяч подряд.
+     */
+    private function stratifyByPrice(array $items, int $bucketsCount, int $maxPerBucket): array
+    {
+        if (empty($items)) {
+            return $items;
+        }
+
+        $prices = array_map(fn($item) => (float) ($item['priceWithMargine'] ?? 0), $items);
+        $min = min($prices);
+        $max = max($prices);
+
+        if ($max <= $min) {
+            // Все примерно по одной цене — бакетить нечего, просто режем сверху.
+            return array_slice($items, 0, $bucketsCount * $maxPerBucket);
+        }
+
+        $bucketWidth = ($max - $min) / $bucketsCount;
+        $buckets = array_fill(0, $bucketsCount, []);
+
+        foreach ($items as $item) {
+            $price = (float) ($item['priceWithMargine'] ?? 0);
+            $bucketIndex = (int) floor(($price - $min) / $bucketWidth);
+            $bucketIndex = min($bucketIndex, $bucketsCount - 1); // самая дорогая позиция — в последний бакет
+            $buckets[$bucketIndex][] = $item;
+        }
+
+        $result = [];
+        foreach ($buckets as $bucketItems) {
+            usort($bucketItems, fn($a, $b) => ($a['priceWithMargine'] ?? 0) <=> ($b['priceWithMargine'] ?? 0));
+            $result = array_merge($result, array_slice($bucketItems, 0, $maxPerBucket));
+        }
+
+        return $result;
+    }
+
+    public function getCheckoutDetails ()
     {
         $connect = array(
             'wsdl'    => 'http://api.rossko.ru/service/v2.1/GetDeliveryDetails',
@@ -2956,13 +3356,30 @@ do {
         }
     }
 
+    /**
+     * Cache::lock() вокруг получения токена — раньше при параллельном
+     * опросе поставщиков несколько запросов одновременно мимо холодного
+     * кеша ломились логиниться на Shate-M разом ("cache stampede"), и если
+     * у них на один ApiKey разрешена только одна активная сессия —
+     * конкурентные логины инвалидировали токены друг друга, часть
+     * запросов ловила протухший токен и Shatem "отваливался". Теперь
+     * логин делает только один процесс, остальные ждут и берут готовый
+     * токен из кеша.
+     */
     private function getShatemToken()
     {
-        return cache()->remember('shatem_token', 3600, function () {
-            $response = Http::asForm()->post('https://api.shate-m.kz/api/v1/auth/loginByapiKey', [
-                'ApiKey' => '{3f3b6eeb-709c-4dcb-be59-147ce8f9cb87}',
-            ]);
-            return $response->json()['access_token'] ?? null;
+        $cached = cache()->get('shatem_token');
+        if ($cached) {
+            return $cached;
+        }
+
+        return Cache::lock('shatem_token_lock', 10)->block(5, function () {
+            return cache()->remember('shatem_token', 3600, function () {
+                $response = Http::asForm()->post('https://api.shate-m.kz/api/v1/auth/loginByapiKey', [
+                    'ApiKey' => '{3f3b6eeb-709c-4dcb-be59-147ce8f9cb87}',
+                ]);
+                return $response->json()['access_token'] ?? null;
+            });
         });
     }
 } 

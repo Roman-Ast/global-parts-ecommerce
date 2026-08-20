@@ -726,44 +726,48 @@
         loader.style.display = 'block';
         tbody.innerHTML = ''; // Очищаем старое
 
-        // ШАГ 1: Основной быстрый поиск
-        fetch(`/api/search-prices?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(res => res.json())
-        .then(json => {
-            loader.style.display = 'none';
-            content.style.display = 'block';
-            
-            let html = '';
-            if (json.offers && json.offers.length > 0) {
-                json.offers.forEach(offer => html += renderOfferRow(offer));
-                tbody.innerHTML = html;
-            }
+        // ВРЕМЕННО: переключено на тестовый прогрессивный поиск
+        // (SparePartControllerTest / /test/search-*) вместо боевого
+        // /api/search-prices+/api/search-rossko — Rossko и "остальное"
+        // теперь летят ПАРАЛЛЕЛЬНО (не один после другого), каждый рисуется
+        // сразу по готовности, таблица целиком пересортировывается по цене
+        // при каждом обновлении. Чтобы откатить — вернуть старый блок из
+        // git (см. соседний коммит), это не трогает ни один PHP-контроллер.
+        let progressiveOffers = [];
 
-            // ШАГ 2: Догружаем Rossko (запускаем сразу после отрисовки первых данных)
-            console.log('Запрашиваем Rossko...');
-            fetch(`/api/search-rossko?article=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`)
-            .then(res => res.json())
-            .then(rosskoData => {
-                if (rosskoData.offers && rosskoData.offers.length > 0) {
-                    let rosskoHtml = '';
-                    rosskoData.offers.forEach(offer => rosskoHtml += renderOfferRow(offer));
-                    // Добавляем в начало, если Астана, или в конец
-                    tbody.insertAdjacentHTML('afterbegin', rosskoHtml); 
-                    console.log('Rossko добавлен');
-                }
+        function renderProgressive() {
+            progressiveOffers.sort((a, b) => (a.priceWithMargine || 0) - (b.priceWithMargine || 0));
+            tbody.innerHTML = progressiveOffers.map(offer => renderOfferRow(offer)).join('');
+        }
+
+        loader.style.display = 'none';
+        content.style.display = 'block';
+
+        let pending = 2;
+        function onPhaseDone() {
+            pending -= 1;
+            if (pending === 0) {
                 btn.innerHTML = 'Обновлено';
+            }
+        }
+
+        fetch(`/test/search-rossko?partnumber=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`)
+            .then(res => res.json())
+            .then(json => {
+                (json.offers || []).forEach(o => progressiveOffers.push(o));
+                renderProgressive();
+                onPhaseDone();
             })
-            .catch(err => console.error('Rossko error:', err));
-        })
-        .catch(err => {
-            loader.style.display = 'none';
-            btn.disabled = false;
-            btn.innerHTML = 'Ошибка. Повторить?';
-        });
+            .catch(err => { console.error('Rossko (test) error:', err); onPhaseDone(); });
+
+        fetch(`/test/search-rest?partnumber=${encodeURIComponent(article)}&brand=${encodeURIComponent(brand)}`)
+            .then(res => res.json())
+            .then(json => {
+                (json.offers || []).forEach(o => progressiveOffers.push(o));
+                renderProgressive();
+                onPhaseDone();
+            })
+            .catch(err => { console.error('Rest (test) error:', err); onPhaseDone(); });
     });
 
     function handleMobileApiSearch(btn) {

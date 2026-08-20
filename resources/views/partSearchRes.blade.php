@@ -47,10 +47,43 @@
                     <div id="articles-hide-wrapper">
                         <i>скрыть артикула</i> <input type="checkbox" id="articles-hide">
                     </div>
+                    {{-- Только для админа — прогресс прогрессивной подгрузки
+                         (см. <script> в конце файла), обычным посетителям
+                         это знать незачем. position:fixed — держится в углу
+                         экрана независимо от скролла (не position:absolute,
+                         тот прокрутился бы вместе со страницей — тут именно
+                         "прилипание" к вьюпорту, оно и нужно). --}}
+                    <div id="suppliers-progress-widget" style="position: fixed; top: 90px; right: 16px; z-index: 1050; text-align: right;">
+                        <span id="suppliers-responded-badge" class="badge rounded-pill bg-success" style="display: none;"></span>
+                        <div id="suppliers-failed-list" class="small text-danger mt-1" style="display: none;"></div>
+                    </div>
                 @endif
                 @endauth
             </div>
-            
+
+            {{-- Прогресс-бар для ВСЕХ посетителей (не только админа) — пока
+                 идёт прогрессивная подгрузка (см. <script> в конце файла),
+                 показываем % по числу ответивших поставщиков, с иконкой
+                 логотипа (шестерёнка+машина, без текста — полный логотип с
+                 текстом слишком вытянутый для такого), едущей по краю
+                 заполненной полосы. Прячется сам, как только всё загрузилось. --}}
+            <div id="customer-search-progress" class="my-3">
+                <div class="small text-muted mb-1">
+                    Ищем запчасти у поставщиков… <span id="customer-search-progress-percent">0%</span>
+                </div>
+                <div style="position: relative; height: 8px; background: #e9ecef; border-radius: 999px;">
+                    <div id="customer-search-progress-fill" style="height: 100%; width: 0%; background: #0d6efd; border-radius: 999px; transition: width 0.4s ease;"></div>
+                    <img id="customer-search-progress-icon" src="{{ asset('images/favicon-master-512.png') }}" alt=""
+                         style="position: absolute; top: 50%; left: 0%; width: 26px; height: 26px; transform: translate(-50%, -50%); transition: left 0.4s ease; filter: drop-shadow(0 1px 3px rgba(0,0,0,.35)); animation: customer-progress-spin 1.8s linear infinite;">
+                </div>
+            </div>
+            <style>
+                @keyframes customer-progress-spin {
+                    from { transform: translate(-50%, -50%) rotate(0deg); }
+                    to   { transform: translate(-50%, -50%) rotate(360deg); }
+                }
+            </style>
+
             <div id="search-res-part-header">
                 <div class="search-res-part-header-item">
                     Наименование
@@ -66,591 +99,14 @@
                 </div>
             </div>
 
-            @if (count($finalArr['searchedNumber']) > 0)
-
-            <div class="searchResForRequestPartNumber">
-                <div class="searchResForRequestPartNumberHeader">
-                    Запрошенный артикул
-                </div>
-            </div>
-            
-            <div id="requestPartNumberContainer">
-                <input type="hidden" value="{{ $finalArr['originNumber'] }}" id="originNumber">
-                @if (count($finalArr['searchedNumber']) > 0)
-                    @foreach ($finalArr['searchedNumber'] as $searchItem)
-                        <div class="requestPartNumberContainer-item">
-							@auth
-                            @if(auth()->user()->user_role == "admin")
-                                <div class="form-check">
-                                    <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
-                                </div>
-                            @endif
-							@endauth
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
-                                @auth
-                                    @if (auth()->user()->user_role == "admin")
-                                        {{ $searchItem['supplier_name'] }}
-                                    @else
-                                        {{ $searchItem['supplier_city'] }}
-                                    @endif
-                                @else
-                                {{ $searchItem['supplier_city'] }}
-                                @endauth
-                            </div>
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
-                                {{ $searchItem['brand'] }}
-                            </div>
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-partnumber">
-                                {{ $searchItem['article'] }}
-                            </div>
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-name">
-                                {{ $searchItem['name'] }}
-                            </div>
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                                @if(array_key_exists('info',$searchItem))
-                                    <i class="fas fa-circle-info spare-part-info-show" style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
-
-                                    <div class="info-block">
-                                        <div class="block-info-close-wrapper">
-                                            <button type="button" class="btn-close block-info-item-close" aria-label="Close"></button>
-                                        </div>
-                                        <div class="info-block-pictures">
-                                            <div class="info-block-pictures-name">
-                                                <div class="info-block-pictures-name-header">
-                                                    {{ $searchItem['name'] }}
-                                                </div>
-                                                <div class="info-block-pictures-name-brand">
-                                                    <span style="color:#bbb"> Брэнд: </span> {{ $searchItem['brand'] }}
-                                                </div>
-                                                <div class="info-block-pictures-name-article">
-                                                    <span style="color:#bbb"> Артикул: </span> {{ $searchItem['article'] }}
-                                                </div>
-                                            </div>
-                                            <div id="carouselExampleControls-searched-{{ $searchItem['article'] }}" class="carousel slide carouselExampleControls" data-bs-ride="carousel">
-                                                <div class="carousel-inner">
-                                                    @if (!empty($searchItem['info']['pictures']))
-                                                        @if (gettype($searchItem['info']['pictures']) == 'string')
-                                                            <div class="carousel-item active">
-                                                                <img src="{{ $searchItem['info']['pictures'] }}" class="carousel-item-img" alt="sparepart-picture">
-                                                            </div>
-                                                        @else
-                                                            @foreach($searchItem['info']['pictures'] as $pic_number => $picture_address)
-                                                                @if($pic_number == 0)
-                                                                    <div class="carousel-item active">
-                                                                        <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
-                                                                    </div>
-                                                                @else
-                                                                    <div class="carousel-item">
-                                                                        <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
-                                                                    </div>
-                                                                @endif
-                                                            @endforeach
-                                                        @endif
-                                                    @endif
-                                                </div>
-                                                <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls-searched-{{ $searchItem['article'] }}" data-bs-slide="prev">
-                                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                                    <span class="visually-hidden">Previous</span>
-                                                </button>
-                                                <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleControls-searched-{{ $searchItem['article'] }}" data-bs-slide="next">
-                                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                                    <span class="visually-hidden">Next</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="info-block-information">
-                                            <ul class="nav nav-tabs" id="productTabs-searched-{{ $searchItem['article'] }}" role="tablist">
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link active"
-                                                            data-bs-toggle="tab"
-                                                            data-bs-target="#description-searched-{{ $searchItem['article'] }}"
-                                                            type="button"
-                                                            role="tab">
-                                                        Описание
-                                                    </button>
-                                                </li>
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link"
-                                                            data-bs-toggle="tab"
-                                                            data-bs-target="#original-searched-{{ $searchItem['article'] }}"
-                                                            type="button"
-                                                            role="tab">
-                                                        Оригинальные номера
-                                                    </button>
-                                                </li>
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link"
-                                                            data-bs-toggle="tab"
-                                                            data-bs-target="#usage-searched-{{ $searchItem['article'] }}"
-                                                            type="button"
-                                                            role="tab">
-                                                        Применение в автомобилях
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                            <div class="tab-content mt-3">
-                                                <div class="tab-pane fade show active info-description"
-                                                    id="description-searched-{{ $searchItem['article'] }}"
-                                                    role="tabpanel">
-                                                    <ul class="info-description-sizes">
-                                                        <li><b>Размеры</b></li>
-                                                        <li>Ширина: {{ $searchItem['info']['params']['sizes']['width'] ?? '' }}</li>
-                                                        <li>Высота: {{ $searchItem['info']['params']['sizes']['height'] ?? '' }}</li>
-                                                        <li>Толщина: {{ $searchItem['info']['params']['sizes']['depth'] ?? '' }}</li>
-                                                    </ul>
-                                                </div>
-                                                <div class="tab-pane fade info-oem-numbers"
-                                                    id="original-searched-{{ $searchItem['article'] }}"
-                                                    role="tabpanel">
-                                                    @if (array_key_exists('OEM', $searchItem['info']['params']))
-                                                        @foreach($searchItem['info']['params']['OEM'] as $oem_number)
-                                                            {{ $oem_number }}
-                                                        @endforeach
-                                                    @endif
-                                                </div>
-                                                <div class="tab-pane fade"
-                                                    id="usage-searched-{{ $searchItem['article'] }}"
-                                                    role="tabpanel">
-                                                    <p></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @else
-                                    <i class="fas fa-circle-info spare-part-info-lookup"
-                                       data-article="{{ $searchItem['article'] }}"
-                                       data-brand="{{ $searchItem['brand'] }}"
-                                       style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
-                                @endif
-                            </div>
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-delivery">
-                                @php
-                                    $ds = $searchItem['deliveryStart'] ?? '';
-                                    $isToday = $ds == 'в офисе' || $ds == '1.5-2 часа' || (strtotime($ds) && date('Y-m-d', strtotime($ds)) == date('Y-m-d'));
-                                    $isDate = !$isToday && strtotime($ds);
-                                    $days = $isDate ? max(1, (int) ceil((strtotime($ds) - time()) / 86400)) : 0;
-                                @endphp
-
-                                @if ($isToday)
-                                    <span class="badge" style="background:#d1e7dd;color:#0a6640;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;min-width:80px;text-align:center;display:inline-block;">
-                                        {{ $ds == 'в офисе' ? 'в офисе' : '1.5-2 часа' }}
-                                    </span>
-                                @elseif ($isDate)
-                                    <span class="badge" style="background:transparent;color:#6c757d;border:1px solid #dee2e6;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:500;min-width:80px;text-align:center;display:inline-block;">
-                                        {{ $days }} дн.
-                                    </span>
-                                @else
-                                    <span class="text-muted small">уточняйте</span>
-                                @endif
-                            </div>
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-count">
-                                {{ $searchItem['qty']  }}
-                            </div>
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-price stock-item-price">
-                                {{ number_format($searchItem['priceWithMargine'], 0, '.', ' ') }}
-                            </div>
-                            <div class="requestPartNumberContainer-item-entity requestPartNumber-cart">
-                                <div class="stock-item-cart">
-                                    <div class="stock-item-cart-btn">
-                                        <i class="fas fa-cart-shopping stock-item-cart-img" style="color: #042D4D; font-size: 20px;"></i>
-                                    </div>
-                                    <div class="stock-item-cart-qty">
-                                        <input type='number' value="1" min="1" max="{{ $searchItem['qty'] }}" class="form-control">
-                                    </div>
-                                    <input type="hidden" value="{{ $searchItem['price'] }}">
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                @endif
-                <div id="show-other-items" counter="10">
-                    <a href="###">Показать еще 10</a>
-                </div>
-            </div>
-            @endif
-
-            @if (!empty($finalArr['crosses_in_office']))
-
-            <div class="searchResForRequestPartNumber">
-                <div class="searchResForRequestPartNumberHeader">
-                    Аналоги в наличии в офисе
-                </div>
-            </div>
-
-            <div id="crossesContainer-on-stock">
-                @foreach ($finalArr['crosses_in_office'] as $index => $crossItem)
-                <div class="requestPartNumberContainer-item">
-
-                    @if(auth()->user()->user_role == "admin")
-                        <div class="form-check">
-                            <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
-                        </div>
-                    @endif
-                    
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
-                        @auth
-                            @if (auth()->user()->user_role == "admin")
-                                {{ $crossItem['supplier_name'] }}
-                            @else
-                                {{ $crossItem['supplier_city'] }}
-                            @endif
-                        @else
-                        {{ $crossItem['supplier_city'] }}
-                        @endauth
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
-                        {{ $crossItem['brand'] }}
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-partnumber">
-                        {{ $crossItem['article'] }}
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-name">
-                        {{ $crossItem['name'] }}
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                        <i class="fas fa-circle-info spare-part-info-lookup"
-                           data-article="{{ $crossItem['article'] }}"
-                           data-brand="{{ $crossItem['brand'] }}"
-                           style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery" style="background:{{ $crossItem['supplier_color']}};color:#111">
-                        {{ $crossItem['delivery_time'] }}
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
-                        <div class="stock-item stock-item-qty">
-                            @if ($crossItem['qty'] > 10)
-                                >10
-                            @else
-                                {{ $crossItem['qty'] }}
-                            @endif
-                        </div>
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
-                        <div class="stock-item stock-item-price">
-                            {{ number_format($crossItem['priceWithMargine'], 0, '.', ' ') }}
-                        </div>
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
-                        <div class="stock-item-cart">
-                            <div class="stock-item-cart-btn">
-                                <i class="fas fa-cart-shopping stock-item-cart-img" style="color: #042D4D; font-size: 20px;"></i>
-                            </div>
-                            <div class="stock-item-cart-qty">
-                                <input type='number' value="1" min="1" max="{{ $crossItem['qty'] }}" class="form-control">
-                            </div>
-                            <input type="hidden" value="{{ $crossItem['price'] }}">
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-
-            @endif
-
-            
-            @if (!empty($finalArr['crosses_on_stock']))
-
-            <div class="searchResForRequestPartNumber">
-                <div class="searchResForRequestPartNumberHeader">
-                    Аналоги в наличии на складе
-                </div>
-            </div>
-
-            <div id="crossesContainer-on-stock">
-                @foreach ($finalArr['crosses_on_stock'] as $index => $crossItem)
-                <div class="requestPartNumberContainer-item">
-                   @auth
-                    @if(auth()->user()->user_role == "admin")
-                        <div class="form-check">
-                            <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
-                        </div>
-                    @endif
-                    @endauth
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
-                        @auth
-                            @if (auth()->user()->user_role == "admin")
-                                {{ $crossItem['supplier_name'] }}
-                            @else
-                                {{ $crossItem['supplier_city'] }}
-                            @endif
-                        @else
-                        {{ $crossItem['supplier_city'] }}
-                        @endauth
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
-                        {{ $crossItem['brand'] }}
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-partnumber">
-                        {{ $crossItem['article'] }}
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-name">
-                        {{ $crossItem['name'] }}
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                        
-                        @if (array_key_exists('info', $crossItem))
-                            <i class="fas fa-circle-info spare-part-info-show" style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
-
-                            <div class="info-block">
-                                <div class="block-info-close-wrapper">
-                                    <button type="button" class="btn-close block-info-item-close" aria-label="Close"></button>
-                                </div>
-                                <div class="info-block-pictures">
-                                        <div class="info-block-pictures-name">
-                                            <div class="info-block-pictures-name-header">
-                                                {{ $crossItem['name'] }}
-                                            </div>
-                                            <div class="info-block-pictures-name-brand">
-                                                <span style="color:#bbb"> Брэнд: </span> {{ $crossItem['brand'] }}
-                                            </div>
-                                            <div class="info-block-pictures-name-article">
-                                                <span style="color:#bbb"> Артикул: </span> {{ $crossItem['article'] }}
-                                            </div>
-                                        </div>
-                                        <div id="carouselExampleControls-{{ $crossItem['article'] }}" class="carousel slide carouselExampleControls" data-bs-ride="carousel">
-                                        <div class="carousel-inner">
-                                            @if (!empty($crossItem['info']['pictures']))
-                                                @if (gettype($crossItem['info']['pictures']) == 'string')
-                                                    <div class="carousel-item active">
-                                                        <img src="{{ $crossItem['info']['pictures'] }}" class="carousel-item-img" alt="sparepart-picture">
-                                                    </div>
-                                                @else
-                                                    @foreach($crossItem['info']['pictures'] as $pic_number => $picture_address)
-                                                        @if($pic_number == 0)
-                                                            <div class="carousel-item active">
-                                                                <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
-                                                            </div>
-                                                        @else
-                                                            <div class="carousel-item">
-                                                                <img src="{{ $picture_address }}" class="carousel-item-img" alt="sparepart-picture">
-                                                            </div>
-                                                        @endif
-                                                    @endforeach
-                                                @endif
-                                            @endif
-                                        </div>
-                                        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls-{{ $crossItem['article'] }}" data-bs-slide="prev">
-                                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                            <span class="visually-hidden">Previous</span>
-                                        </button>
-                                        <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleControls-{{ $crossItem['article'] }}" data-bs-slide="next">
-                                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                            <span class="visually-hidden">Next</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="info-block-information">
-                                    <!-- NAV TABS -->
-                                    <ul class="nav nav-tabs" id="productTabs-{{ $crossItem['article'] }}" role="tablist">
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link active"
-                                                    id="description-tab"
-                                                    data-bs-toggle="tab"
-                                                    data-bs-target="#description-{{ $crossItem['article'] }}"
-                                                    type="button"
-                                                    role="tab">
-                                                Описание
-                                            </button>
-                                        </li>
-
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link"
-                                                    id="original-tab"
-                                                    data-bs-toggle="tab"
-                                                    data-bs-target="#original-{{ $crossItem['article'] }}"
-                                                    type="button"
-                                                    role="tab">
-                                                Оригинальные номера
-                                            </button>
-                                        </li>
-
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link"
-                                                    id="usage-tab"
-                                                    data-bs-toggle="tab"
-                                                    data-bs-target="#usage-{{ $crossItem['article'] }}"
-                                                    type="button"
-                                                    role="tab">
-                                                Применение в автомобилях
-                                            </button>
-                                        </li>
-                                    </ul>
-
-                                    <!-- TAB CONTENT -->
-                                    <div class="tab-content mt-3" id="productTabsContent-{{ $crossItem['article'] }}" class="productTabsContent">
-
-                                        <div class="tab-pane fade show active info-description"
-                                            id="description-{{ $crossItem['article'] }}"
-                                            role="tabpanel">
-                                            <ul class="info-description-sizes">
-                                                <li>
-                                                    <b>Размеры</b>
-                                                </li>
-                                                <li>Ширина: {{ $crossItem['info']['params']['sizes']['width'] ?? '' }}</li>
-                                                <li>Высота: {{ $crossItem['info']['params']['sizes']['height'] ?? '' }}</li>
-                                                <li>Толщина: {{ $crossItem['info']['params']['sizes']['depth'] ?? ''}}</li>
-                                            </ul>
-                                        </div>
-
-                                        <div class="tab-pane fade info-oem-numbers"
-                                            id="original-{{ $crossItem['article'] }}"
-                                            role="tabpanel">
-                                                @if (array_key_exists('OEM', $crossItem['info']['params']))
-                                                    @foreach($crossItem['info']['params']['OEM'] as $oem_number)
-                                                        {{ $oem_number }}
-                                                    @endforeach
-                                                @endif
-                                                
-                                        </div>
-
-                                        <div class="tab-pane fade"
-                                            id="usage-{{ $crossItem['article'] }}"
-                                            role="tabpanel">
-                                            <p>
-                                                
-                                            </p>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            </div>
-                        @else
-                            <i class="fas fa-circle-info spare-part-info-lookup"
-                               data-article="{{ $crossItem['article'] }}"
-                               data-brand="{{ $crossItem['brand'] }}"
-                               style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
-                        @endif
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery parts-on-stock">
-                        <span class="badge gp-delivery-badge" style="padding:5px 10px;border-radius:6px;font-size:0.85rem;display:inline-block;min-width:80px;text-align:center;">
-                            <i class="fas fa-clock"></i> {{ $crossItem['delivery_time'] }}
-                        </span>
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
-                        <div class="stock-item stock-item-qty">
-                            {{ $crossItem['qty'] }}
-                        </div>
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
-                        <div class="stock-item stock-item-price">
-                            {{ number_format($crossItem['priceWithMargine'], 0, '.', ' ') }}
-                        </div>
-                    </div>
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
-                        <div class="stock-item-cart">
-                            <div class="stock-item-cart-btn">
-                                <i class="fas fa-cart-shopping stock-item-cart-img" style="color: #042D4D; font-size: 20px;"></i>
-                            </div>
-                            <div class="stock-item-cart-qty">
-                                <input type='number' value="1" min="1" max="{{ $crossItem['qty'] }}" class="form-control">
-                            </div>
-                            <input type="hidden" value="{{ $crossItem['price'] }}">
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-
-            @endif
-
-            @if (count($finalArr['crosses_to_order']) > 0)
-            
-            <div class="searchResForRequestPartNumber">
-                <div class="searchResForRequestPartNumberHeader">
-                    Аналоги на заказ
-                </div>
-            </div>
-            
-            <div id="crossesContainer-to-order">
-                @foreach ($finalArr['crosses_to_order'] as $index => $crossItem)
-                <div class="requestPartNumberContainer-item">
-                    @auth
-                    @if(auth()->user()->user_role == "admin")
-                        <div class="form-check">
-                            <input class="form-check-input shadow-none copy_text" name="copy_text" type="checkbox" style="width: 0.9em; height: 0.9em;">
-                        </div>
-                    @endif
-                    @endauth
-
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-supplier">
-                        @auth
-                            @if (auth()->user()->user_role == "admin")
-                                {{ $crossItem['supplier_name'] }}
-                            @else
-                                {{ $crossItem['supplier_city'] }}
-                            @endif
-                        @else
-                            {{ $crossItem['supplier_city'] }}
-                        @endauth
-                    </div>
-
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
-                        {{ $crossItem['brand'] }}
-                    </div>
-
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-partnumber">
-                        {{ $crossItem['article'] }}
-                    </div>
-
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-name">
-                        {{ $crossItem['name'] }}
-                    </div>
-
-                    <div class="requestPartNumberContainer-item-entity requestPartNumber-info">
-                        <i class="fas fa-circle-info spare-part-info-lookup"
-                           data-article="{{ $crossItem['article'] }}"
-                           data-brand="{{ $crossItem['brand'] }}"
-                           style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
-                    </div>
-
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-delivery">
-                        @php
-                            $dt = $crossItem['delivery_time'] ?? '';
-                            $days = strtotime($dt) ? max(1, (int) ceil((strtotime($dt) - time()) / 86400)) : null;
-                        @endphp
-                        @if ($days)
-                            <span class="badge" style="background:transparent;color:#6c757d;border:1px solid #dee2e6;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:500;min-width:80px;text-align:center;display:inline-block;">
-                                {{ $days }} дн.
-                            </span>
-                        @else
-                            <span class="text-muted small">уточняйте</span>
-                        @endif
-                    </div>
-
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-count">
-                        @foreach ($crossItem['stocks'] as $stockItem)
-                            <div class="stock-item stock-item-qty">
-                                {{ $stockItem['qty'] }}
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-price">
-                        @foreach ($crossItem['stocks'] as $stockItem)
-                            <div class="stock-item stock-item-price">
-                                {{ number_format($crossItem['priceWithMargine'], 0, '.', ' ') }}
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <div class="requestPartNumberContainer-item-entity cross-item-countable requestPartNumber-cart">
-                        @foreach ($crossItem['stocks'] as $stockItem)
-                            <div class="stock-item-cart">
-                                <div class="stock-item-cart-btn">
-                                    <i class="fas fa-cart-shopping stock-item-cart-img" style="color: #042D4D; font-size: 20px;"></i>
-                                </div>
-                                <div class="stock-item-cart-qty">
-                                    <input type='number' value="1" min="1" max="{{ $stockItem['qty'] }}" class="form-control">
-                                </div>
-                                <input type="hidden" value="{{ $crossItem['price'] }}">
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endforeach
-            </div>
-
-            @endif
+            {{-- ВРЕМЕННО: прогрессивная загрузка. Скелет (шапки секций + пустые
+                 контейнеры) рендерится сразу, контроллер (SparePartControllerTest::
+                 getSearchedPartAndCrossesShell) при этом не делает НИ ОДНОГО запроса
+                 к поставщикам. Дальше JS в конце файла параллельно тянет 2 фрагмента
+                 (searchRosskoFragment/searchRestFragment — только строки, не целые
+                 секции) и досыпает их в уже отрисованные контейнеры. Чтобы откатить —
+                 см. git-историю этого файла до правки прогрессивной загрузки. --}}
+            @include('partials.searchResultsBody', ['finalArr' => $finalArr])
             <nav aria-label="..." class="pagination-nav">
                 <ul class="pagination pagination-sm">
                     <li class="page-item active">
@@ -791,4 +247,291 @@
 
 @include('components.footer-bar-mini')
 @include('components.footer')
+
+{{-- ВРЕМЕННО: прогрессивная подгрузка. Скелет секций уже на странице (см.
+     partials.searchResultsBody выше) — фрагменты теперь возвращают JSON с
+     HTML ТОЛЬКО новых строк по каждой из 4 секций (searchedNumber/
+     crossesInOffice/crossesOnStock/crossesToOrder), а не секцию целиком —
+     это и позволяет Rossko и "остальным" садиться в ОДИН и тот же блок без
+     задвоенных заголовков. Плавная посадка строк — обычный CSS-transition
+     (см. <style> ниже), без сторонней JS-библиотеки: тут её негде было бы
+     подключить так, чтобы не тащить лишнюю зависимость в кодовую базу, где
+     таких библиотек сейчас вообще нет, а чистого fade+slide через
+     transition для этого с избытком хватает. --}}
+<script>
+    (function () {
+        const brand = {!! json_encode($chosenBrand ?? '') !!};
+        const partnumber = {!! json_encode($finalArr['originNumber'] ?? '') !!};
+        const guid = {!! json_encode($guid ?? '') !!};
+        const rosskoNeedToSearch = {!! json_encode($rosskoNeedToSearch ?? false) !!};
+        const onlyOnStock = {!! json_encode($onlyOnStock ?? false) !!};
+
+        // Единый потолок ожидания на КАЖДОГО поставщика — не тюнинг под
+        // каждого отдельно (у них и так разные таймауты внутри PHP: где-то
+        // curl CONNECTION_TIMEOUT/TIMEOUT, где-то Http::timeout(15), где-то
+        // SOAP вообще без явного лимита на весь вызов) — а страховка со
+        // стороны браузера поверх всего этого: что бы ни случилось на
+        // бэкенде у конкретного поставщика, этот шаг в цепочке не растянется
+        // дольше 10 сек и не задержит следующие. Если понадобится — можно
+        // сделать таймаут своим для медленных поставщиков персонально, но
+        // начинать проще с одного числа на всех.
+        const SUPPLIER_TIMEOUT_MS = 10000;
+
+        // Автозакуп (Tradesoft) — реальный внешний хоп до чужого апстрима,
+        // не наша локальная БД и не быстрый REST: сам Tradesoft может
+        // ждать ответ от поставщика несколько секунд (см. 'timelimit' в
+        // searchAvtozakup() на бэкенде — сейчас 12 сек), и если дать этому
+        // шагу тот же бюджет 10 сек, что и остальным, — почти без запаса на
+        // наш собственный сетевой круг + рендер. Раньше это и было причиной
+        // "Автозакуп не отвечает" в бейдже: сервер честно досчитывал и
+        // отдавал данные, просто уже ПОСЛЕ того, как браузер обрывал запрос
+        // по таймауту. Роман подтвердил — по заказным позициям покупатель
+        // готов подождать. 18 сек — с запасом сверх 12-секундного лимита на
+        // стороне Tradesoft (сеть + рендер Blade), не впритык к нему.
+        const STEP_TIMEOUTS_MS = { avtozakup: 18000 };
+
+        // Ключ из JSON-конверта → id секции (шапка, скрыта через d-none пока
+        // пусто) + id контейнера строк внутри неё (см. partials.searchResultsBody).
+        const SECTIONS = {
+            searchedNumber:  { sectionId: 'section-searched-number',   containerId: 'requestPartNumberContainer' },
+            crossesInOffice: { sectionId: 'section-crosses-in-office', containerId: 'crossesContainer-in-office' },
+            crossesOnStock:  { sectionId: 'section-crosses-on-stock',  containerId: 'crossesContainer-on-stock' },
+            crossesToOrder:  { sectionId: 'section-crosses-to-order',  containerId: 'crossesContainer-to-order' },
+        };
+
+        const STEP_LABELS = {
+            rossko: 'Rossko', locals: 'Локальные склады', armtek: 'Армтек',
+            shatem: 'Шатэм', treid: 'Треид', phaeton: 'Фаэтон',
+            forumauto: 'ФорумАвто', tiss: 'ТИСС', kulan: 'Кулан',
+            febest: 'Фебест', gerat: 'Герат', autopiter: 'Автопитер',
+            avtozakup: 'Автозакуп',
+        };
+
+        function insertRows(key, html) {
+            if (!html || !html.trim()) return;
+
+            const cfg = SECTIONS[key];
+            const section = document.getElementById(cfg.sectionId);
+            const container = document.getElementById(cfg.containerId);
+            if (!section || !container) return;
+
+            section.classList.remove('d-none');
+
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            const newNodes = Array.from(temp.children);
+
+            // В requestPartNumberContainer внутри ещё лежит "Показать ещё
+            // 10" (#show-other-items) — новые строки вставляем ПЕРЕД ним,
+            // а не в конец контейнера.
+            const showMore = container.querySelector('#show-other-items');
+
+            // Если секция ДО этой пачки была пустой — это первая заливка
+            // данных в неё, а не "новые строки среди уже видимых". Зелёная
+            // подсветка тут не нужна (нечему сигналить "вот что добавилось"
+            // на фоне пустоты) — включаем её только когда в контейнере уже
+            // что-то отрисовано.
+            const hadExistingItems = container.querySelector(':scope > .requestPartNumberContainer-item') !== null;
+
+            // Animate.css вместо самописного CSS-transition (подключена в
+            // layouts/app.blade.php) — те же классы, что и в
+            // global_product.blade.php::renderOfferRow(), один визуальный
+            // язык анимаций на весь сайт вместо своего для каждой страницы.
+            newNodes.forEach(node => {
+                // animate__* — влёт строки (везде), progressive-highlight —
+                // мягкая зелёная подсветка "это только что подгрузилось",
+                // только десктоп (сама анимация объявлена внутри
+                // @media (min-width:1024px) в partSearchRes.css — на
+                // мобиле класс просто ни на что не влияет).
+                node.classList.add('animate__animated', 'animate__fadeInDown', 'animate__faster');
+                if (hadExistingItems) {
+                    node.classList.add('progressive-highlight');
+                }
+                if (showMore) {
+                    container.insertBefore(node, showMore);
+                } else {
+                    container.appendChild(node);
+                }
+
+                // sortContainerByPrice ниже переставляет ВЕСЬ контейнер на
+                // каждую новую пачку, включая уже отрисованные строки — само
+                // перемещение узла в DOM (insertBefore) заставляет браузер
+                // заново проиграть CSS-анимацию, если класс всё ещё на
+                // узле. Без этой очистки к моменту прихода Армтека у строк
+                // Rossko класс 'progressive-highlight' всё ещё висел (снят
+                // никогда не был), и пересортировка "зажигала" зелёным сразу
+                // все строки, а не только новые. Снимаем классы, когда
+                // анимация точно уже отыграла (1.5s — подсветка, faster у
+                // Animate.css короче) — тогда перестановке нечего запускать
+                // заново на старых строках.
+                setTimeout(() => {
+                    node.classList.remove('animate__animated', 'animate__fadeInDown', 'animate__faster', 'progressive-highlight');
+                }, 1700);
+            });
+
+            sortContainerByPrice(container, showMore);
+        }
+
+        // Каждый шаг (Rossko, Армтек, Шатэм...) отсортирован по цене САМ
+        // ВНУТРИ СЕБЯ на сервере, но пачки просто дописывались друг за
+        // другом — визуально это выглядело как группировка по поставщику/
+        // бренду ("один бренд — 2 предложения, второй — 3"), а не единый
+        // порядок по цене. Тут пересортировываем ВЕСЬ контейнер целиком при
+        // каждой новой пачке — appendChild на уже существующем узле его не
+        // клонирует, а просто переставляет, так что просто заново
+        // расставляем все строки в нужном порядке по data-price.
+        function sortContainerByPrice(container, pinnedTail) {
+            const items = Array.from(container.querySelectorAll(':scope > .requestPartNumberContainer-item'));
+            items.sort((a, b) => (parseInt(a.dataset.price, 10) || 0) - (parseInt(b.dataset.price, 10) || 0));
+            items.forEach(node => container.insertBefore(node, pinnedTail || null));
+        }
+
+        // Только для админа — сам элемент рендерится в разметке только под
+        // user_role=admin, тут просто подстраховка на случай, если его нет
+        // в DOM (напр. гость).
+        const suppliersBadge = document.getElementById('suppliers-responded-badge');
+        const failedListEl = document.getElementById('suppliers-failed-list');
+        let respondedCount = 0;
+        const failedSuppliers = [];
+
+        // Прогресс-бар — для ВСЕХ посетителей, не только админа (сам
+        // элемент в разметке не гейтится ролью, см. HTML выше).
+        const progressWrapper = document.getElementById('customer-search-progress');
+        const progressFill    = document.getElementById('customer-search-progress-fill');
+        const progressIcon    = document.getElementById('customer-search-progress-icon');
+        const progressPercent = document.getElementById('customer-search-progress-percent');
+
+        function renderProgress(totalPhases) {
+            const percent = Math.round((respondedCount / totalPhases) * 100);
+
+            if (progressFill && progressIcon && progressPercent) {
+                progressFill.style.width = percent + '%';
+                progressIcon.style.left = percent + '%';
+                progressPercent.textContent = percent + '%';
+
+                if (percent >= 100 && progressWrapper) {
+                    // Всё загрузилось — иконка останавливается и бар прячется,
+                    // не занимает место над уже готовыми результатами.
+                    progressIcon.style.animation = 'none';
+                    setTimeout(() => { progressWrapper.style.display = 'none'; }, 400);
+                }
+            }
+
+            // Дальше — только для админа, элементов нет в DOM у остальных.
+            if (!suppliersBadge) return;
+            suppliersBadge.style.display = 'inline-block';
+            suppliersBadge.textContent = respondedCount + ' из ' + totalPhases + ' поставщиков ответили';
+
+            if (!failedListEl) return;
+            if (failedSuppliers.length === 0) {
+                failedListEl.style.display = 'none';
+                return;
+            }
+            failedListEl.style.display = 'block';
+            failedListEl.textContent = 'Не ответили: ' + failedSuppliers.join(', ');
+        }
+
+        // loadFragment НИКОГДА не реджектится — success:false (таймаут,
+        // сетевая ошибка, не-200, битый JSON) это тоже штатный исход шага,
+        // цепочка шагов должна продолжаться в любом случае.
+        function loadFragment(url, label, timeoutMs) {
+            return fetch(url, { signal: AbortSignal.timeout(timeoutMs || SUPPLIER_TIMEOUT_MS) })
+                .then(res => {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
+                .then(json => {
+                    Object.keys(SECTIONS).forEach(key => insertRows(key, json[key]));
+                    return { success: true };
+                })
+                .catch(err => {
+                    console.error('Fragment load error (' + label + '):', url, err);
+                    return { success: false };
+                });
+        }
+
+        // Очередь неответивших — не ретраим на месте (это снова растянуло бы
+        // именно ЭТОТ шаг цепочки), а копим и опрашиваем повторно ОДИН раз,
+        // когда основной проход по всем поставщикам уже закончился. Менеджеру
+        // важна честная финальная картина ("не ответил даже после повтора"),
+        // а не "не успел с первого раза" — если сервер поставщика просто был
+        // на секунду медленнее таймаута, повтор его почти наверняка вытащит.
+        const failedQueue = []; // { label, url, timeoutMs }
+
+        function markPhaseResult(label, result, url, totalPhases, timeoutMs) {
+            respondedCount += 1;
+            if (!result.success) {
+                failedSuppliers.push(label);
+                failedQueue.push({ label, url, timeoutMs });
+            }
+            renderProgress(totalPhases);
+        }
+
+        function runRetryQueue(queue) {
+            if (queue.length === 0) return;
+
+            const [item, ...rest] = queue;
+
+            loadFragment(item.url, item.label + ' (повтор)', item.timeoutMs)
+                .then(result => {
+                    if (result.success) {
+                        const idx = failedSuppliers.indexOf(item.label);
+                        if (idx !== -1) failedSuppliers.splice(idx, 1);
+                        renderProgress(TOTAL_PHASES);
+                    }
+                    runRetryQueue(rest);
+                });
+        }
+
+        // Пошагово, один поставщик за раз — каждый следующий запрос уходит
+        // только ПОСЛЕ того, как предыдущий отрисовался. Это специально
+        // медленнее по общему времени, чем параллельный пул (curl_multi
+        // внутри всё ещё используется для phaeton/forumauto/tiss/kulan/
+        // febest/gerat, просто по одному шагу на поставщика вместо всех
+        // сразу) — зато ощущается "живее": видно, как последовательно
+        // подтягиваются Rossko → локальные склады → Армтек → Шатэм → ...
+        const STEP_ORDER = [
+            'locals', 'armtek', 'shatem', 'treid',
+            'phaeton', 'forumauto', 'tiss', 'kulan', 'febest', 'gerat',
+            'autopiter', 'avtozakup',
+        ];
+
+        const TOTAL_PHASES = 1 + STEP_ORDER.length; // Rossko + все шаги
+
+        function runStepsSequentially(steps) {
+            if (steps.length === 0) {
+                // Основной проход закончился — теперь один повторный проход
+                // по тем, кто не ответил (если такие есть).
+                runRetryQueue(failedQueue.splice(0, failedQueue.length));
+                return;
+            }
+
+            const [step, ...rest] = steps;
+            const params = new URLSearchParams({
+                brand, partnumber, step,
+                only_on_stock: onlyOnStock ? '1' : '',
+            });
+            const url = '/test/search-step-fragment?' + params.toString();
+            const label = STEP_LABELS[step] ?? step;
+            const timeoutMs = STEP_TIMEOUTS_MS[step];
+
+            loadFragment(url, label, timeoutMs)
+                .then(result => {
+                    markPhaseResult(label, result, url, TOTAL_PHASES, timeoutMs);
+                    runStepsSequentially(rest);
+                });
+        }
+
+        const rosskoParams = new URLSearchParams({
+            brand, partnumber, guid,
+            rossko_need_to_search: rosskoNeedToSearch ? '1' : '',
+        });
+        const rosskoUrl = '/test/search-rossko-fragment?' + rosskoParams.toString();
+        loadFragment(rosskoUrl, STEP_LABELS.rossko)
+            .then(result => {
+                markPhaseResult(STEP_LABELS.rossko, result, rosskoUrl, TOTAL_PHASES);
+                runStepsSequentially(STEP_ORDER);
+            });
+    })();
+</script>
 @endsection

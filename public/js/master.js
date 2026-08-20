@@ -121,7 +121,12 @@ $('#social-media-container-close').on('click', function () {
 
 $('.spare-part-info-show').on('click', function () {
     $('#curtain-grey-searchpartres').css({ 'display': 'block' });
-    $(this).next().slideDown(400);
+    // .css({display:'flex'}) — тот же приём, что и для #social-media-container
+    // выше: jQuery сам угадывает display при slideDown() и для div всегда
+    // угадывает "block", даже если в CSS написано flex. Без этого на мобиле
+    // .info-block-pictures/.info-block-information не работают как flex-колонка
+    // (картинка+текст скроллятся одним куском, а не текст отдельно внутри себя).
+    $(this).next().slideDown(400).css({ 'display': 'flex' });
 });
 
 $('.block-info-item-close').on('click', function () {
@@ -150,7 +155,9 @@ $(document).on('click', '.spare-part-info-lookup', function () {
     $('#ajaxInfoDescription').html('');
     $('#ajaxInfoSpecs').html('');
     $('#ajaxInfoApplicability').html('');
-    $('#ajaxInfoBlock').slideDown(400);
+    // .css({display:'flex'}) — см. комментарий у .spare-part-info-show выше,
+    // тот же самый приём против jQuery-угадывания display.
+    $('#ajaxInfoBlock').slideDown(400).css({ 'display': 'flex' });
 
     $.ajax({
         url: '/api/part-info',
@@ -187,12 +194,16 @@ $(document).on('click', '.spare-part-info-lookup', function () {
             if (data.specifications && data.specifications.length > 0) {
                 let specsHtml = '';
                 data.specifications.forEach(function (section) {
-                    specsHtml += '<div class="mb-3"><div class="fw-semibold small text-uppercase text-muted mb-1">' + escapeHtml(section.name) + '</div><table class="table table-sm table-bordered"><tbody>';
+                    // .table-responsive — встроенный Bootstrap-механизм
+                    // горизонтальной прокрутки, а не своя вёрстка — таблица
+                    // с длинными значениями теперь скроллится внутри себя,
+                    // а не распирает модалку.
+                    specsHtml += '<div class="mb-3"><div class="fw-semibold small text-uppercase text-muted mb-1">' + escapeHtml(section.name) + '</div><div class="table-responsive"><table class="table table-sm table-bordered mb-0"><tbody>';
                     (section.features || []).forEach(function (feature) {
                         const values = (feature.featureValues || []).map(function (v) { return v.value; }).join(', ');
                         specsHtml += '<tr><td class="text-muted" style="width:280px;">' + escapeHtml(feature.name) + '</td><td>' + escapeHtml(values) + '</td></tr>';
                     });
-                    specsHtml += '</tbody></table></div>';
+                    specsHtml += '</tbody></table></div></div>';
                 });
                 $('#ajaxInfoSpecs').html(specsHtml);
             } else {

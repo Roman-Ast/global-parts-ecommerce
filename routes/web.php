@@ -51,12 +51,28 @@ Route::get('/test-host-error', function () {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::redirect('/home', '/', 301);
 
-Route::post('/getPart', [SparePartController::class, 'getSearchedPartAndCrosses'])->name('getPart');
+// ВРЕМЕННО переключено на SparePartControllerTest::getSearchedPartAndCrossesShell
+// (см. блок ниже) — рендерит partSearchRes мгновенно, без единого обращения
+// к поставщику, дальше страница сама подгружает 2 HTML-фрагмента через JS.
+// Чтобы откатить — вернуть [SparePartController::class, 'getSearchedPartAndCrosses'].
+Route::post('/getPart', [\App\Http\Controllers\SparePartControllerTest::class, 'getSearchedPartAndCrossesShell'])->name('getPart');
 Route::get('/fetch-images', [GlobalProductController::class, 'fetchGoogleImages'])->name('product.fetchImages');
 Route::get('/getCatalog', [SparePartController::class, 'catalogSearch']);
 
 Route::get('/api/search-prices', [GlobalProductController::class, 'getApiPrices']);
 Route::get('/api/search-rossko', [GlobalProductController::class, 'getRosskoApi']);
+
+// ─── ВРЕМЕННО: тест прогрессивного поиска (SparePartControllerTest.php) ───────
+// Rossko рисуется первым (быстрый SOAP), остальные поставщики догружаются
+// следом отдельным запросом и домешиваются в таблицу по цене. Не трогает
+// боевой SparePartController — можно откатить, просто убрав эти роуты и
+// вернув строку /getPart выше на боевой класс.
+Route::get('/test/progressive-search', fn () => view('test-progressive-search'));
+Route::get('/test/search-rossko', [\App\Http\Controllers\SparePartControllerTest::class, 'searchRosskoFast']);
+Route::get('/test/search-rest', [\App\Http\Controllers\SparePartControllerTest::class, 'searchRestOfSuppliers']);
+Route::get('/test/search-rossko-fragment', [\App\Http\Controllers\SparePartControllerTest::class, 'searchRosskoFragment']);
+Route::get('/test/search-rest-fragment', [\App\Http\Controllers\SparePartControllerTest::class, 'searchRestFragment']);
+Route::get('/test/search-step-fragment', [\App\Http\Controllers\SparePartControllerTest::class, 'searchSupplierStepFragment']);
 
 Route::post('/sparepart-request', [SparePartRequestController::class, 'store']);
 Route::post('/simpleAISearchWithoutVin', [AISimpleSearchController::class, 'searchArticlesByGPT']);
