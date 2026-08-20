@@ -1,5 +1,5 @@
                 @foreach ($items as $index => $crossItem)
-                <div class="requestPartNumberContainer-item" data-price="{{ (int) ($crossItem['priceWithMargine'] ?? 0) }}">
+                <div class="requestPartNumberContainer-item" data-price="{{ (int) ($crossItem['priceWithMargine'] ?? 0) }}" data-brand="{{ strtoupper(trim($crossItem['brand'] ?? '')) }}">
                    @auth
                     @if(auth()->user()->user_role == "admin")
                         <div class="form-check">

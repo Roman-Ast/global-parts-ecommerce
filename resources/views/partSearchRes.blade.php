@@ -24,7 +24,11 @@
                 </div>
                 <div class="search-res-filter-item-content">
                     <ul>
-                        <li>
+                        {{-- id для JS: при прогрессивной загрузке $brands на сервере
+                             всегда пуст (шелл рендерится до единого обращения к
+                             поставщику) — список брендов собирается на лету из
+                             data-brand каждой пришедшей строки, см. <script> внизу. --}}
+                        <li id="brand-filter-list">
                             @foreach ($brands as $brand)
                                 <div class="form-check">
                                     <input class="form-check-input brand-filter" type="checkbox" value="{{ $brand }}" id="flexCheckDefault">
@@ -307,6 +311,72 @@
             avtozakup: 'Автозакуп',
         };
 
+        // ─── Фильтр по брендам (слева) ─────────────────────────────────
+        // $brands на сервере при прогрессивной загрузке всегда пуст (шелл
+        // рендерится до единого обращения к поставщику) — список собираем
+        // на лету из data-brand каждой пришедшей строки. Разные поставщики
+        // отдают один и тот же бренд в разном регистре (BREMBO / Brembo) —
+        // все data-brand уже нормализованы в верхний регистр на бэкенде
+        // (strtoupper(trim(...)) в partials/items/*.blade.php), поэтому
+        // "Brembo" и "BREMBO" схлопываются в одну строку фильтра и находятся
+        // одним и тем же чекбоксом независимо от регистра у конкретного
+        // поставщика.
+        const brandFilterList = document.getElementById('brand-filter-list');
+        const knownBrands = new Set();
+
+        function registerBrand(brand) {
+            if (!brand || knownBrands.has(brand) || !brandFilterList) return;
+            knownBrands.add(brand);
+
+            const id = 'brand-filter-' + knownBrands.size;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'form-check';
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.className = 'form-check-input brand-filter';
+            input.value = brand;
+            input.id = id;
+
+            const label = document.createElement('label');
+            label.className = 'form-check-label filter-brand-name';
+            label.htmlFor = id;
+            label.textContent = brand;
+
+            wrapper.appendChild(input);
+            wrapper.appendChild(label);
+
+            // Вставляем по алфавиту, а не в конец — иначе список скачет
+            // вразнобой по мере прихода поставщиков одного за другим.
+            const existingLabels = Array.from(brandFilterList.querySelectorAll('.filter-brand-name'));
+            const next = existingLabels.find(el => el.textContent > brand);
+            if (next) {
+                brandFilterList.insertBefore(wrapper, next.closest('.form-check'));
+            } else {
+                brandFilterList.appendChild(wrapper);
+            }
+        }
+
+        // Пустой выбор = показываем всё. ile.style.display = '' (не жёстко
+        // 'grid') — сбрасывает инлайн-стиль и отдаёт управление обратно
+        // CSS-классу, который сам разный на десктопе (grid) и мобиле (flex).
+        function applyBrandFilter() {
+            const checked = Array.from(document.querySelectorAll('.brand-filter:checked')).map(el => el.value);
+            document.querySelectorAll('.requestPartNumberContainer-item[data-brand]').forEach(item => {
+                item.style.display = (checked.length === 0 || checked.includes(item.dataset.brand)) ? '' : 'none';
+            });
+        }
+
+        if (brandFilterList) {
+            // Делегирование на #filter-brands — чекбоксы добавляются в DOM
+            // динамически по мере поступления новых брендов, обычный
+            // .on('change', ...) на конкретных элементах их бы не поймал.
+            document.getElementById('filter-brands').addEventListener('change', function (e) {
+                if (e.target.classList.contains('brand-filter')) applyBrandFilter();
+            });
+        }
+
         function insertRows(key, html) {
             if (!html || !html.trim()) return;
 
@@ -367,9 +437,16 @@
                 setTimeout(() => {
                     node.classList.remove('animate__animated', 'animate__fadeInDown', 'animate__faster', 'progressive-highlight');
                 }, 1700);
+
+                registerBrand(node.dataset.brand);
             });
 
             sortContainerByPrice(container, showMore);
+
+            // Если фильтр уже активен (пользователь отметил бренд раньше,
+            // чем пришла эта пачка), новые строки должны сразу подчиниться
+            // текущему выбору, а не мелькнуть видимыми на долю секунды.
+            applyBrandFilter();
         }
 
         // Каждый шаг (Rossko, Армтек, Шатэм...) отсортирован по цене САМ
