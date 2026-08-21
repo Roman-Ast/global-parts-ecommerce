@@ -403,6 +403,191 @@ Kaspi. API-загрузка протестирована, модерация п�
 (4.5–13.5% от суммы заказа) при трансграничной доставке в РФ. Экономику по марже нужно
 понимать через ERP до полноценного запуска.
 
+## Halyk Market — план экспансии (в изучении, август 2026)
+
+**СЛЕДУЮЩИЙ ШАГ (если не успели 2026-08-21 — продолжать отсюда):**
+1. Срочное/простое: вписать `HALYK_MERCHANT_BIN` в `.env` НА СЕРВЕРЕ (не только
+   локально), выполнить `php artisan halyk:generate-xml` на сервере — файл появится
+   на `https://shop.globalparts.kz/halyk_feed.xml`, ссылку отправить менеджеру Halyk
+   (это то, что менеджер просил дословно — "ссылку, где лежит фид"). Код уже задеплоен
+   через git push, самого запуска команды на сервере ещё не было.
+2. Параллельно/дальше: выбить у менеджера Halyk `client_id` (формат `HMM_<БИН>`) и
+   `client_secret` — для полноценного API-пилота (`halyk:search-sku`/`halyk:match`/
+   `halyk:bind`, точнее и быстрее статик-фида, но пока не заработал вживую).
+3. Самому в кабинете `partners.halykmarket.com` найти коды города и точки продаж
+   (кабинет уже проверен Романом — пустой на эту информацию, скорее всего тоже
+   придётся спрашивать у менеджера).
+4. Вписать все 4 значения в `.env`: `HALYK_CLIENT_ID`, `HALYK_CLIENT_SECRET`,
+   `HALYK_CITY_CODE`, `HALYK_POINT_CODE` (сейчас там пустые строки).
+5. Прогнать по порядку: `php artisan halyk:search-sku --limit=100` →
+   `php artisan halyk:match` → `php artisan halyk:bind`.
+Код всех пяти команд уже написан — писать заново не нужно, см. разделы "Пилот на
+100 позициях" и "Простой статик-фид" ниже за подробностями по каждой команде.
+
+Halyk Market — маркетплейс от Halyk Bank, аналог Kaspi Marketplace. Роман только
+зарегистрировался продавцом. Менеджеры Halyk обещали сами перенести карточки с Kaspi,
+но темпы не устроили — вместо ожидания решили сразу попробовать пилот своими силами
+на 100 позициях (2026-08-21).
+
+**Статус реализации**: пилот search → match → bind написан и лежит в репо (миграция
+`halyk_sku_candidates`, `App\Services\HalykMarketClient`, команды
+`halyk:search-sku`/`halyk:match`/`halyk:bind`) — см. "Пилот на 100 позициях" ниже.
+**Живьём не тестировался** — нет `HALYK_CLIENT_ID`/`HALYK_CLIENT_SECRET` (выдаёт
+менеджер Halyk, формат `client_id: HMM_<БИН>`) и `HALYK_CITY_CODE`/`HALYK_POINT_CODE`
+(коды берутся в кабинете `partners.halykmarket.com`) — все четыре сейчас пустые
+строки в `.env`. `halyk:bind` при пустых кодах явно падает с понятной ошибкой, не
+привязывает молча в никуда. Как только Роман получит креды — можно сразу гонять
+`halyk:search-sku --limit=100` → `halyk:match` → `halyk:bind`. `halyk:generate-xml`
+(сам XML-фид под привязанные позиции) ещё не написан — следующий шаг ПОСЛЕ того, как
+привязка на пилоте подтвердится рабочей на реальных данных.
+
+### Чем отличается от Kaspi — важно
+У Kaspi нет self-service загрузки фида: ссылку на XML нужно передавать персональному
+менеджеру Halyk Market вручную, который сам настраивает импорт (~раз в час опрос) — это
+подтверждено и официальным гайдом, и вики стороннего инструмента MarketRadar. **НО** у
+Halyk Market есть отдельный полноценный REST API (`zagruzka-tovarov-po-api` в доках),
+который куда ближе к Ozon, чем к статик-фиду Kaspi: реальный upload-эндпоинт с
+возвращаемым ID и опросом статуса построчно (successCount/failCount/notMappedCount),
+плюс отдельные эндпоинты на поиск/привязку к существующей карточке и на создание новой
+карточки с нуля. Разбираться нужно именно в этом API, а не в ручной передаче ссылки
+менеджеру.
+
+### Документация
+- Гайд для партнёра: https://halyk-market.gitbook.io/halyk-market-gid-dlya-partnera
+- Полный индекс страниц (удобно смотреть за раз): добавить `/llms.txt` к базовому URL
+  гайда — отдаёт список всех разделов с прямыми ссылками на `.md`-версии страниц.
+- Кабинет продавца: https://partners.halykmarket.com/
+- XSD-схема фида и пример XML — см. историю чата (namespace `halyk_market`, порядок
+  `model → brand → barcodes → stocks → deliveryOptions → price|cityprices → sale_price
+  → loanPeriod`, `sku` до 64 символов).
+
+### Авторизация
+OAuth2 client credentials.
+- `POST https://halykmarket.kz/gw/auth/token`
+- Тело: `{"grant_type":"client_credentials","client_id":"HMM_<БИН>","client_secret":"..."}`
+- `client_id` — выдаёт менеджер (формат `HMM_<БИН магазина>`), `client_secret` —
+  приходит на почту при включении API.
+- Ответ: `access_token` + `token_type=Bearer` + `expires_in=7199` (~2 часа) — токен
+  нужно кэшировать и обновлять по истечении (тот же паттерн, что уже есть для
+  Shatem-токена в `SparePartControllerTest::getShatemToken()` — `Cache::lock()` вокруг
+  `cache()->remember()`, чтобы не долбить auth-эндпоинт на каждый вызов).
+- Тестовый контур: `test2.halykmarket.com` / `test2-api.halykmarket.com` (для
+  сравнения: prod — `halykmarket.kz` / `api.halykmarket.com`, БЕЗ `test2`).
+
+### Поиск и привязка к существующей карточке (аналог kaspi:parse-sku → kaspi:match → kaspi:bind-products)
+1. **Поиск**: `GET /gw/merchant/public/skus/search?q=<название или артикул>&page=&size=`
+   → возвращает список кандидатов с `skuId` (главное поле, нужен на следующем шаге),
+   `name`, `imageUrl`, `category{id,name,level}`, `marketUrl`.
+2. **Привязка**: `PUT /gw/merchant/public/product/remaining/save-and-map-sku`
+   Тело: `skuId`, `merchantProductCode` (наш артикул), `city.code`, `price`,
+   `points.code` + `points.amount` (склад/остаток), `loanPeriod` (допустимо только
+   3/6/12/24). Товар переходит в статус "На продаже".
+   **Критично**: привязанный товар обязательно должен присутствовать в каждой
+   последующей выгрузке фида, иначе автоматически уходит в архив — прямая аналогия с
+   колонкой `bound` в `kaspi_feed_items`, тот же принцип нужно повторить в новой
+   таблице под Halyk.
+
+### Загрузка фида (аналог kaspi:generate-xml + отправка)
+- **Загрузка**: `POST https://api.halykmarket.com/api/merchant/v1/offers/upload`
+  (`multipart/form-data`, поле `file` — путь до XML) → `{"id": 11111}`.
+- **Статус**: `GET /api/merchant/v1/offers/upload/status/{id}` →
+  `status` (`CREATED`/`PROCESSING`/`COMPLETED`/`FAILED`/`SKIPPED` — последнее означает
+  "идентичен предыдущей загрузке, не обработан повторно"), плюс `totalCount`/
+  `successCount`/`notMappedCount`/`failCount`/`message`. `notMappedCount` — готовый
+  сигнал, какие позиции нужно перепривязать через `save-and-map-sku`.
+
+### Создание новой карточки (для того, что не найдётся поиском — самый трудоёмкий кусок)
+Перед созданием доки явно требуют: "убедиться, что такого товара действительно нет в
+каталоге" (сначала поиск, создание — только если не нашлось). Полный поток из 6 шагов:
+1. `GET /gw/merchant/public/category/search?q=...` — поиск категории **3-го уровня**
+   (обязательно самый глубокий уровень, не 1/2).
+2. Поиск ID бренда (отдельный эндпоинт, аналогичный по форме категорийному).
+3. `GET /gw/merchant/public/form/product/feature?categoryId=<id>` — форма характеристик
+   под конкретную категорию: `classAttrAssignmentId`, `classAttrType`
+   (`NUMBER`/`ENUM`/`STRING`/`BOOLEAN`), `required`, у `ENUM` — фиксированный список
+   `classAttrValues` (значение выбирается, а не вводится свободным текстом).
+4. Загрузка фото.
+5. Отправка заполненной формы на модерацию.
+6. Опрос статуса модерации.
+
+**Почему это отдельная фаза работы, а не "просто ещё один шаг пайплайна"**: категории,
+бренды и значения характеристик у Halyk — **своя таксономия**, не совпадающая с тем, что
+есть в `parts_catalog` со скрейпинга карточек Kaspi. Нужен маппинг: наши
+`category_top_code`/`category_group_code` → `categoryId` Halyk, наши бренды → `brandId`
+Halyk, наши произвольные строки характеристик → конкретные `classAttrValueId` из ENUM.
+Это разовая (и потом поддерживаемая) работа сопоставления справочников, качественно
+сложнее, чем поиск+привязка к уже существующим карточкам.
+
+### Архитектура пайплайна (по образцу Kaspi)
+```
+halyk:search-sku   → halyk:match → halyk:bind →
+halyk:generate-xml → halyk:upload-feed → halyk:check-feed-status   [ещё не написаны]
+                                              ↑
+                              halyk:create-card (для notMappedCount / не найденных поиском)  [не написано]
+```
+Первая ветка (поиск → сопоставление → привязка) выбрана стартовой сознательно —
+`halyk:create-card` вынесен в отдельную фазу (маппинг категорий/брендов/характеристик,
+см. выше — качественно более трудоёмкая задача).
+
+### Пилот на 100 позициях (реализовано 2026-08-21, не протестировано вживую)
+- `database/migrations/2026_08_21_000001_create_halyk_sku_candidates_table.php` —
+  `halyk_sku_candidates`: один `request_article` может иметь до 5 строк-кандидатов
+  (топ выдачи поиска), `matched`/`bound` — булевы флаги состояния пайплайна.
+- `app/Services/HalykMarketClient.php` — тонкий клиент: `token()` (OAuth2 client
+  credentials, кэш на ~2 часа через `Cache::lock()`+`cache()->remember()`, тот же
+  приём, что и `getShatemToken()` в `SparePartControllerTest`), `searchSku()`,
+  `bindSku()`. Переключение прод/тест-контур — `HALYK_USE_TEST_ENV` в `.env`.
+- `halyk:search-sku {--limit=100}` — источник артикулов: `kaspi_initial_products`
+  (`sku`+`brand` там — реальный производственный артикул, не наш внутренний ID,
+  проверено на случайной выборке: `101905611A`/vag, `PBK6905H`/patron и т.д., а не
+  только внешне похожие на ID записи вроде `100001`/motodor). Строит запрос
+  `"{brand} {sku}"`, шлёт в `GET /skus/search`, пишет топ-5 кандидатов на артикул.
+- `halyk:match` — строгое сопоставление кандидата по артикулу: нормализация
+  (`mb_strtoupper` + убрать дефисы) и regex с проверкой границы токена
+  `(?<![A-Z0-9])артикул(?![A-Z0-9])`, портировано 1:1 из
+  `ParseKaspiSkuCommand::filterByExactArticle()` — та же защита от бага BW0010
+  (короткий артикул матчился по substring на карточки вида `BW0010-07-2`).
+- `halyk:bind {--limit=100}` — `PUT save-and-map-sku` для сопоставленных;
+  цена/остаток берутся из `kaspi_initial_products` (`price`/`stock`), `loanPeriod=3`
+  (минимальный из допустимых 3/6/12/24, не обсуждали отдельно — безопасный дефолт).
+  Явно падает с понятной ошибкой, если `HALYK_CITY_CODE`/`HALYK_POINT_CODE` не заданы
+  — не привязывает молча в никуда.
+- **Заблокировано на live-тест**: нужны `HALYK_CLIENT_ID`/`HALYK_CLIENT_SECRET` от
+  менеджера Halyk и `HALYK_CITY_CODE`/`HALYK_POINT_CODE` из кабинета
+  `partners.halykmarket.com` — все четыре сейчас пустые строки в `.env`. Прогон без
+  кредов проверен — падает на `Halyk auth failed: HTTP 401`, не тихо, а с понятной
+  причиной.
+- Порядок запуска, когда креды появятся: `halyk:search-sku --limit=100` →
+  `halyk:match` → (заполнить `HALYK_CITY_CODE`/`HALYK_POINT_CODE`) → `halyk:bind`.
+
+### Простой статик-фид (реализовано 2026-08-21, работает, не требует API-кредов)
+Пока с API-кредами тормозят, менеджер Halyk попросил прямо то же, что просят у Kaspi —
+"ссылку, где лежит фид". Сделали по аналогии: `halyk:generate-xml` (по образцу
+`kaspi:generate-xml`) генерирует `public/halyk_feed.xml` из `kaspi_initial_products`
+(весь каталог целиком, ~95к позиций на 2026-08-21) по XSD-схеме `halyk_market`
+(разобрана выше) — `XMLWriter`, порядок `model → brand → price → loanPeriod`
+(barcodes/stocks/deliveryOptions/sale_price — опциональны по XSD, не заполняем: нет
+per-city цен и multi-warehouse остатков для Halyk), `stockLevel` — атрибут `<offer>`,
+`loanPeriod=3` (минимальный допустимый, тот же дефолт, что и в `halyk:bind`). Та же
+защита `EXCLUDED_NAME_PATTERNS`, что и в `kaspi:generate-xml` (проблемные MEYLE-карточки
+по названию).
+- **Нужен `HALYK_MERCHANT_BIN` в `.env`** (БИН продавца, идёт в `<merchantid>`) — без
+  него команда пишет заглушку `"УКАЖИТЕ_БИН"` в файл и явно предупреждает в консоли,
+  Halyk такой фид не примет.
+- Файл гитигнорится (`public/halyk_feed.xml` в `.gitignore`, та же причина, что и у
+  `kaspi_feed.xml` — сгенерированный артефакт, история с git deploy уже поймала эту
+  ошибку один раз, см. коммит "Stop tracking generated kaspi_feed.xml in git").
+  Генерируется КОМАНДОЙ НА СЕРВЕРЕ (`php artisan halyk:generate-xml`), не пушится
+  готовым файлом — агент может задеплоить код команды через git push, но сам файл
+  на проде появляется только после ручного запуска команды (прямого доступа к
+  серверу/SSH у агента нет, `kaspi:generate-xml` работает по тому же принципу и
+  тоже не стоит на автоматическом расписании, см. `routes/console.php`).
+- Как только файл появится на сервере — он живой по адресу
+  `https://shop.globalparts.kz/halyk_feed.xml`, ссылку отправить менеджеру Halyk.
+- Это НЕ то же самое, что `POST /offers/upload` из API-пилота выше — тот путь
+  (реальный upload-эндпоинт с опросом статуса) всё ещё не реализован, статик-фид —
+  временное решение, пока нет API-кредов.
+
 ## GSC / SEO — статус
 
 Проиндексированные страницы просели с ~88к до 28.9к (середина июня 2026, причина —
