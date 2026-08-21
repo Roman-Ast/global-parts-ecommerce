@@ -67,26 +67,23 @@
 
             {{-- Прогресс-бар для ВСЕХ посетителей (не только админа) — пока
                  идёт прогрессивная подгрузка (см. <script> в конце файла),
-                 показываем % по числу ответивших поставщиков, с иконкой
-                 логотипа (шестерёнка+машина, без текста — полный логотип с
-                 текстом слишком вытянутый для такого), едущей по краю
-                 заполненной полосы. Прячется сам, как только всё загрузилось. --}}
+                 показываем % по числу ответивших поставщиков, с иконкой-лупой
+                 (Font Awesome, не вращается — только едет по краю
+                 заполненной полосы вместе с ростом %), в фирменных цветах:
+                 полоса — навy, лупа — красная на белом кружке. Прячется сам,
+                 как только всё загрузилось. --}}
             <div id="customer-search-progress" class="my-3">
                 <div class="small text-muted mb-1">
-                    Ищем запчасти у поставщиков… <span id="customer-search-progress-percent">0%</span>
+                    Ищем предложения… <span id="customer-search-progress-percent">0%</span>
                 </div>
                 <div style="position: relative; height: 8px; background: #e9ecef; border-radius: 999px;">
-                    <div id="customer-search-progress-fill" style="height: 100%; width: 0%; background: #0d6efd; border-radius: 999px; transition: width 0.4s ease;"></div>
-                    <img id="customer-search-progress-icon" src="{{ asset('images/favicon-master-512.png') }}" alt=""
-                         style="position: absolute; top: 50%; left: 0%; width: 26px; height: 26px; transform: translate(-50%, -50%); transition: left 0.4s ease; filter: drop-shadow(0 1px 3px rgba(0,0,0,.35)); animation: customer-progress-spin 1.8s linear infinite;">
+                    <div id="customer-search-progress-fill" style="height: 100%; width: 0%; background: #042D4D; border-radius: 999px; transition: width 0.4s ease;"></div>
+                    <span id="customer-search-progress-icon"
+                         style="position: absolute; top: 50%; left: 0%; width: 26px; height: 26px; transform: translate(-50%, -50%); transition: left 0.4s ease; display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.35);">
+                        <i class="fas fa-magnifying-glass" style="color: #DA251C; font-size: 13px;"></i>
+                    </span>
                 </div>
             </div>
-            <style>
-                @keyframes customer-progress-spin {
-                    from { transform: translate(-50%, -50%) rotate(0deg); }
-                    to   { transform: translate(-50%, -50%) rotate(360deg); }
-                }
-            </style>
 
             <div id="search-res-part-header">
                 <div class="search-res-part-header-item">
@@ -358,13 +355,25 @@
             }
         }
 
-        // Пустой выбор = показываем всё. ile.style.display = '' (не жёстко
-        // 'grid') — сбрасывает инлайн-стиль и отдаёт управление обратно
-        // CSS-классу, который сам разный на десктопе (grid) и мобиле (flex).
+        // Видимость строки зависит от ДВУХ независимых условий — фильтра по
+        // бренду и постраничной подгрузки "искомого артикула" ниже — оба
+        // пишут в свой dataset-флаг, а не сразу в style.display, иначе один
+        // механизм затирал бы решение другого. Итоговый display — просто
+        // "спрятана, если хоть кто-то из двух её прячет".
+        function syncItemVisibility(item) {
+            const hidden = item.dataset.brandHidden === '1' || item.dataset.pageHidden === '1';
+            // '' (не жёстко 'grid'/'flex') — сбрасывает инлайн-стиль и
+            // отдаёт управление обратно CSS-классу, который сам разный на
+            // десктопе (grid) и мобиле (flex-карточка).
+            item.style.display = hidden ? 'none' : '';
+        }
+
+        // Пустой выбор = показываем всё.
         function applyBrandFilter() {
             const checked = Array.from(document.querySelectorAll('.brand-filter:checked')).map(el => el.value);
             document.querySelectorAll('.requestPartNumberContainer-item[data-brand]').forEach(item => {
-                item.style.display = (checked.length === 0 || checked.includes(item.dataset.brand)) ? '' : 'none';
+                item.dataset.brandHidden = (checked.length > 0 && !checked.includes(item.dataset.brand)) ? '1' : '0';
+                syncItemVisibility(item);
             });
         }
 
@@ -374,6 +383,52 @@
             // .on('change', ...) на конкретных элементах их бы не поймал.
             document.getElementById('filter-brands').addEventListener('change', function (e) {
                 if (e.target.classList.contains('brand-filter')) applyBrandFilter();
+            });
+        }
+
+        // ─── "N из M" под "Запрошенный артикул" ────────────────────────
+        // Строки в #requestPartNumberContainer уже идут по возрастанию
+        // цены (sortContainerByPrice) — просто показываем первые
+        // PAGE_SIZE по DOM-порядку, это и есть "самые дешёвые". Остальное
+        // скрыто до клика по ссылке, которая всегда остаётся последним
+        // элементом контейнера (pinnedTail в sortContainerByPrice/insertRows
+        // не даёт нормальным строкам обогнать её при пересортировке).
+        const SEARCHED_NUMBER_PAGE_SIZE = 10;
+        let searchedNumberVisibleCount = SEARCHED_NUMBER_PAGE_SIZE;
+
+        function updateSearchedNumberPagination() {
+            const container = document.getElementById('requestPartNumberContainer');
+            const showMoreEl = document.getElementById('show-other-items');
+            if (!container) return;
+
+            const items = Array.from(container.querySelectorAll(':scope > .requestPartNumberContainer-item'));
+
+            items.forEach((item, idx) => {
+                item.dataset.pageHidden = (idx < searchedNumberVisibleCount) ? '0' : '1';
+                syncItemVisibility(item);
+            });
+
+            if (!showMoreEl) return;
+            const total = items.length;
+            const shown = Math.min(searchedNumberVisibleCount, total);
+            const link = showMoreEl.querySelector('a');
+
+            if (total > searchedNumberVisibleCount) {
+                showMoreEl.style.display = 'block';
+                if (link) link.textContent = shown + ' из ' + total;
+            } else {
+                // Всё уже показано — прятать саму строку с "N из M" нечего
+                // ждать дальше, некликабельный остаток тут только мешал бы.
+                showMoreEl.style.display = 'none';
+            }
+        }
+
+        const showMoreLink = document.getElementById('show-other-items-link');
+        if (showMoreLink) {
+            showMoreLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                searchedNumberVisibleCount += SEARCHED_NUMBER_PAGE_SIZE;
+                updateSearchedNumberPagination();
             });
         }
 
@@ -447,6 +502,14 @@
             // чем пришла эта пачка), новые строки должны сразу подчиниться
             // текущему выбору, а не мелькнуть видимыми на долю секунды.
             applyBrandFilter();
+
+            // "N из M" пересчитывается заново на каждую пачку — секция
+            // "Запрошенный артикул" пополняется не только локальным
+            // поиском, но и Rossko/Армтек/... по мере ответа, общее число M
+            // растёт по ходу прогрузки.
+            if (key === 'searchedNumber') {
+                updateSearchedNumberPagination();
+            }
         }
 
         // Каждый шаг (Rossko, Армтек, Шатэм...) отсортирован по цене САМ
@@ -487,9 +550,8 @@
                 progressPercent.textContent = percent + '%';
 
                 if (percent >= 100 && progressWrapper) {
-                    // Всё загрузилось — иконка останавливается и бар прячется,
-                    // не занимает место над уже готовыми результатами.
-                    progressIcon.style.animation = 'none';
+                    // Всё загрузилось — бар прячется, не занимает место над
+                    // уже готовыми результатами.
                     setTimeout(() => { progressWrapper.style.display = 'none'; }, 400);
                 }
             }

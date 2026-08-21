@@ -406,7 +406,7 @@
 
     #show-other-items a {
         font-size: 13px;
-        font-style: normal;
+        font-style: italic;
     }
 
     /* --- "Аналоги в наличии" — лёгкий зелёный тон карточки, как у конкурента.

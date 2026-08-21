@@ -22,21 +22,14 @@ window.addEventListener('pageshow', function (event) {
 
 $(window).on('load', function () {
 
-    // ---- "показать ещё" в блоке requestPartNumberContainer ----
-    let counter = 0;
-    $('#requestPartNumberContainer').children().each(function () {
-        if (counter > 10) {
-            $(this).css({ 'display': 'none' });
-        }
-        counter++;
-    });
-
-    if (counter > 10) {
-        $('#show-other-items').css({ 'display': 'block' });
-        $('#show-other-items a').text(
-            `Показать еще ${$('#requestPartNumberContainer').children().length - Number($('#show-other-items').attr('counter'))} из ${$('#requestPartNumberContainer').children().length} (по 10)`
-        );
-    }
+    // "Показать ещё" в #requestPartNumberContainer раньше считался тут —
+    // удалено: при прогрессивной подгрузке контейнер в момент window.load
+    // всё ещё пуст (данные приходят позже через fetch), так что это было
+    // мёртвым кодом (см. CLAUDE.md), а теперь ещё и активно конфликтовало
+    // бы с новым JS-обработчиком "N из M" (updateSearchedNumberPagination
+    // в partSearchRes.blade.php) — их клик-хендлер на #show-other-items
+    // ниже перехватывал бы всплывающий клик с новой ссылки внутри и портил
+    // состояние. Рабочая логика теперь целиком в partSearchRes.blade.php.
 
     // ---- пагинация кроссов "под заказ" ----
     const perPage = 50;
@@ -239,28 +232,12 @@ $('.start-api-search').on('click', function () {
     if (el) el.scrollIntoView({ behavior: "smooth", 'block': 'start' });
 });
 
-$('#show-other-items').on('click', function () {
-    let counter1 = Number($(this).attr('counter'));
-    let step = 10;
-    counter1 += step;
-
-    $('#show-other-items a').text(
-        `Показать еще ${($('#requestPartNumberContainer').children().length - $(this).attr('counter')) - 10} из ${$('#requestPartNumberContainer').children().length} (по ${step})`
-    );
-
-    $('#requestPartNumberContainer').children().each(function (key, elem) {
-        if (counter1 > $('#requestPartNumberContainer').children().length) {
-            $('#show-other-items').css({ 'display': 'none' });
-            return false;
-        }
-        if (counter1 == key) {
-            $('#show-other-items').attr('counter', key);
-            return false;
-        } else {
-            $(elem).css({ 'display': 'grid' });
-        }
-    });
-});
+// Старый клик-хендлер "показать ещё 10" на #show-other-items удалён —
+// он использовал $(this).attr('counter'), атрибут которого больше нет в
+// разметке (partials/searchResultsBody.blade.php), плюс события клика по
+// новой ссылке #show-other-items-link внутри всплывали бы и на этот div,
+// перехватывая клик и портя состояние поверх новой рабочей логики
+// (updateSearchedNumberPagination в partSearchRes.blade.php).
 
 $('.page-link').on('click', function () {
     $('.page-item').removeClass('active');

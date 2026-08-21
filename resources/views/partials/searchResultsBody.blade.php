@@ -18,8 +18,13 @@
                 <div id="requestPartNumberContainer">
                     <input type="hidden" value="{{ $finalArr['originNumber'] }}" id="originNumber">
                     @include('partials.items.searchedNumber', ['items' => $finalArr['searchedNumber']])
-                    <div id="show-other-items" counter="10">
-                        <a href="###">Показать еще 10</a>
+                    {{-- "N из M" — показываем 10 самых дешёвых (строки и так
+                         отсортированы по цене), остальное скрыто до клика.
+                         Текст/видимость целиком под управлением JS (см.
+                         updateSearchedNumberPagination в <script> внизу файла) —
+                         тут просто пустая ссылка-заглушка. --}}
+                    <div id="show-other-items">
+                        <a href="#" id="show-other-items-link"></a>
                     </div>
                 </div>
             </div>
