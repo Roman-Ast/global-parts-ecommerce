@@ -118,6 +118,10 @@ class GenerateHalykXml extends Command
                     $xml->startElement('stocks');
                     $xml->startElement('stock');
                     $xml->writeAttribute('storeId', $storeId);
+                    // Наш единственный склад (Global_Parts_pp1) — пункт
+                    // выдачи, отсюда isPP="yes" (см. пример в XSD-доке:
+                    // PP1/PP2 с isPP="yes").
+                    $xml->writeAttribute('isPP', 'yes');
                     $xml->writeAttribute('available', $item->stock > 0 ? 'yes' : 'no');
                     $xml->writeAttribute('stockLevel', (int) $item->stock);
                     $xml->endElement(); // stock
