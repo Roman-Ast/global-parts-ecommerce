@@ -14,9 +14,17 @@ use Illuminate\Support\Facades\DB;
  *
  * Источник данных — kaspi_initial_products напрямую (не kaspi_feed_items,
  * не привязка через API halyk:bind): это первый, самый простой фид без
- * per-city цен и без multi-warehouse остатков — используем offer[@stockLevel]
- * и одиночный <price>, оба минимально достаточны по XSD (stocks/cityprices/
- * deliveryOptions — все опциональны, minOccurs="0").
+ * per-city цен (одиночный <price>) и без multi-warehouse остатков (один
+ * <stock> на точку продаж).
+ *
+ * <stocks> ОБЯЗАТЕЛЕН несмотря на minOccurs="0" в XSD — сама схема технически
+ * это разрешает через offer[@stockLevel] как альтернативу, но по факту без
+ * <stocks><stock storeId=.../></stocks> Halyk не считает товар доступным к
+ * покупке (обратная связь от их менеджера, 2026-08-21) — комментарий в XSD
+ * "should not be used if stockLevel specified inside any of availability-
+ * element" на самом деле означает "используй ЛИБО то, ЛИБО другое", но на
+ * практике им нужен именно вариант с <stocks>, привязанный к конкретной
+ * точке продаж.
  */
 class GenerateHalykXml extends Command
 {
@@ -41,6 +49,17 @@ class GenerateHalykXml extends Command
         if (!$merchantBin) {
             $this->warn('HALYK_MERCHANT_BIN не задан в .env — в фид уйдёт заглушка вместо реального БИН, Halyk такое не примет. Впиши БИН и перезапусти команду перед тем, как слать ссылку менеджеру.');
         }
+
+        // storeId для <stocks><stock> — тот же код точки продаж, что нужен и
+        // для halyk:bind (HALYK_POINT_CODE), просто под другим именем в этой
+        // части их API/фида. Отдельная переменная HALYK_STORE_ID — на случай,
+        // если на практике окажется другим значением, но по умолчанию берём
+        // тот же код точки продаж, раз лично не проверяли, что они разные.
+        $storeId = env('HALYK_STORE_ID', env('HALYK_POINT_CODE'));
+        if (!$storeId) {
+            $this->warn('HALYK_STORE_ID / HALYK_POINT_CODE не заданы в .env — в фид уйдёт заглушка вместо реального storeId, Halyk не примет товар как доступный к покупке без привязки к точке продаж. Впиши код и перезапусти команду перед тем, как слать ссылку менеджеру.');
+        }
+        $storeId = $storeId ?: 'УКАЖИТЕ_STORE_ID';
 
         $publicPath = public_path('halyk_feed.xml');
 
@@ -67,7 +86,7 @@ class GenerateHalykXml extends Command
             ->where('stock', '>', 0)
             ->where('price', '>', 0)
             ->orderBy('sku')
-            ->chunk(1000, function ($items) use ($xml, &$totalCount, &$skippedCount, &$excludedCount) {
+            ->chunk(1000, function ($items) use ($xml, $storeId, &$totalCount, &$skippedCount, &$excludedCount) {
                 foreach ($items as $item) {
                     $name = trim(str_replace(['¶', '"', "'"], '', $item->title));
                     if (empty($name)) {
@@ -87,14 +106,23 @@ class GenerateHalykXml extends Command
 
                     $xml->startElement('offer');
                     $xml->writeAttribute('sku', $sku);
-                    $xml->writeAttribute('stockLevel', (int) $item->stock);
 
                     // Порядок элементов строго по XSD: model → brand →
                     // barcodes → stocks → deliveryOptions → price|cityprices
-                    // → sale_price → loanPeriod. Barcodes/stocks/
-                    // deliveryOptions/sale_price опциональны — их нет.
+                    // → sale_price → loanPeriod. Barcodes/deliveryOptions/
+                    // sale_price опциональны — их нет, stocks — обязателен
+                    // на практике (см. комментарий класса).
                     $xml->writeElement('model', $name);
                     $xml->writeElement('brand', mb_strtoupper($item->brand));
+
+                    $xml->startElement('stocks');
+                    $xml->startElement('stock');
+                    $xml->writeAttribute('storeId', $storeId);
+                    $xml->writeAttribute('available', $item->stock > 0 ? 'yes' : 'no');
+                    $xml->writeAttribute('stockLevel', (int) $item->stock);
+                    $xml->endElement(); // stock
+                    $xml->endElement(); // stocks
+
                     $xml->writeElement('price', (int) $item->price);
                     // Минимальный из допустимых периодов рассрочки — не
                     // обсуждали отдельно с Романом, взял как безопасный
