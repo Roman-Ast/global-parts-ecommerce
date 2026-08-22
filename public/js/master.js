@@ -112,7 +112,12 @@ $('#social-media-container-close').on('click', function () {
     $('.whatsapp-fixed-btn-only-to-open-block').fadeIn(400);
 });
 
-$('.spare-part-info-show').on('click', function () {
+// $(document).on(...) — делегированное связывание: строки поставщиков (в
+// т.ч. модалка Gerat, для которой эти два обработчика) при прогрессивной
+// подгрузке дорисовываются в DOM уже ПОСЛЕ загрузки страницы, прямой
+// $(el).on() навешивался бы только на то, что уже было на странице при
+// выполнении этого кода — те же грабли, что и с корзиной, см. выше.
+$(document).on('click', '.spare-part-info-show', function () {
     $('#curtain-grey-searchpartres').css({ 'display': 'block' });
     // .css({display:'flex'}) — тот же приём, что и для #social-media-container
     // выше: jQuery сам угадывает display при slideDown() и для div всегда
@@ -122,7 +127,7 @@ $('.spare-part-info-show').on('click', function () {
     $(this).next().slideDown(400).css({ 'display': 'flex' });
 });
 
-$('.block-info-item-close').on('click', function () {
+$(document).on('click', '.block-info-item-close', function () {
     $(this).parent().parent().slideUp(400);
     $('#curtain-grey-searchpartres').fadeOut(600);
 });
@@ -305,7 +310,13 @@ $(document).on('input change', '.stock-item-cart-qty input[type="number"]', func
 });
 
 // ---- добавление товара в корзину (обычный поиск) ----
-$('.stock-item-cart-btn').on('click', function () {
+// $(document).on(...) — делегированное связывание, не прямое $(el).on(...):
+// при прогрессивной подгрузке строки поставщиков дорисовываются в DOM уже
+// ПОСЛЕ загрузки страницы (см. partSearchRes.blade.php), а прямой .on()
+// навешивается только на элементы, существующие в момент выполнения этого
+// кода — новые строки его физически не получали, кнопка "в корзину" на
+// них молча ничего не делала.
+$(document).on('click', '.stock-item-cart-btn', function () {
     const regExp = /\*|%|#|\n|&|\$/g;
 
     const qtyInput = $(this).next().children().first();
