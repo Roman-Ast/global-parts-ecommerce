@@ -35,7 +35,7 @@ class HalykMarketClient
                     'client_secret' => env('HALYK_CLIENT_SECRET'),
                 ]);
 
-                if (!$response->ok()) {
+                if (!$response->successful()) {
                     throw new \RuntimeException('Halyk auth failed: HTTP ' . $response->status() . ' ' . $response->body());
                 }
 
@@ -66,7 +66,7 @@ class HalykMarketClient
                 'size' => $size,
             ]);
 
-        if (!$response->ok()) {
+        if (!$response->successful()) {
             return [];
         }
 
@@ -92,7 +92,151 @@ class HalykMarketClient
             ->put($this->baseUrl() . '/gw/merchant/public/product/remaining/save-and-map-sku', $payload);
 
         return [
-            'ok'     => $response->ok(),
+            'ok'     => $response->successful(),
+            'status' => $response->status(),
+            'body'   => $response->json() ?? $response->body(),
+        ];
+    }
+
+    /**
+     * Поиск категории для создания новой карточки. Нужен именно 3-й
+     * (глубочайший) уровень — вызывающий код сам фильтрует по level===3,
+     * этот метод просто возвращает сырые кандидаты.
+     * GET /gw/merchant/public/category/search?q=&page=&size=
+     *
+     * @return array<int, array{id:int,name:string,level:int}>
+     */
+    public function searchCategory(string $query, int $page = 1, int $size = 10): array
+    {
+        $response = Http::withToken($this->token())
+            ->timeout(15)
+            ->get($this->baseUrl() . '/gw/merchant/public/category/search', [
+                'q' => $query, 'page' => $page, 'size' => $size,
+            ]);
+
+        if (!$response->successful()) {
+            return [];
+        }
+
+        return $response->json('content') ?? $response->json() ?? [];
+    }
+
+    /**
+     * Поиск ID бренда — та же форма ответа, что и у category/search.
+     * GET /gw/merchant/public/brand/search?q=&page=&size=
+     *
+     * @return array<int, array{id:int,name:string,code:?string,url:?string}>
+     */
+    public function searchBrand(string $query, int $page = 1, int $size = 10): array
+    {
+        $response = Http::withToken($this->token())
+            ->timeout(15)
+            ->get($this->baseUrl() . '/gw/merchant/public/brand/search', [
+                'q' => $query, 'page' => $page, 'size' => $size,
+            ]);
+
+        if (!$response->successful()) {
+            return [];
+        }
+
+        return $response->json('content') ?? $response->json() ?? [];
+    }
+
+    /**
+     * Форма характеристик под конкретную категорию 3-го уровня —
+     * classAttrAssignmentId/classAttrType(NUMBER|ENUM|STRING|BOOLEAN)/
+     * required/attrValue.classAttrValueId (для ENUM — фиксированный список).
+     * GET /gw/merchant/public/form/product/feature?categoryId=
+     *
+     * @return array
+     */
+    public function getCharacteristicsForm(int $categoryId): array
+    {
+        $response = Http::withToken($this->token())
+            ->timeout(15)
+            ->get($this->baseUrl() . '/gw/merchant/public/form/product/feature', [
+                'categoryId' => $categoryId,
+            ]);
+
+        if (!$response->successful()) {
+            return [];
+        }
+
+        return $response->json() ?? [];
+    }
+
+    /**
+     * Загрузка фото товара (до создания карточки) — обычный multipart-
+     * аплоад файлов, НЕ ссылок. requirements по их доке (белый фон,
+     * квадрат 500-2000px, минимум 3 шт) на практике НЕ проверяются самим
+     * upload-эндпоинтом (проверено вживую 2026-08-22 — приняли 403×500,
+     * не квадрат, HTTP 200) — похоже, это soft-guidance для модерации, а
+     * не hard-валидация при загрузке.
+     * POST /gw/merchant/public/file/image/upload/multiple
+     *
+     * @param array<int, array{name: string, contents: string}> $files
+     * @return array<int, array{id:int,assetUrl:string}>
+     */
+    public function uploadPhotos(array $files): array
+    {
+        $request = Http::withToken($this->token())->timeout(30);
+
+        foreach ($files as $file) {
+            $request = $request->attach('files', $file['contents'], $file['name']);
+        }
+
+        $response = $request->post($this->baseUrl() . '/gw/merchant/public/file/image/upload/multiple');
+
+        if (!$response->successful()) {
+            return [];
+        }
+
+        return $response->json() ?? [];
+    }
+
+    /**
+     * Отправка заполненной формы нового товара на модерацию.
+     * POST /gw/merchant/public/draft/product/moderation
+     *
+     * Успешный ответ: {"productDraftStatus":"CHECK","id":<int>} — id нужен
+     * для последующего опроса статуса модерации (getDraftStatus).
+     *
+     * @return array{ok:bool,status:int,body:mixed}
+     */
+    public function submitForModeration(array $payload): array
+    {
+        $response = Http::withToken($this->token())
+            ->asJson()
+            ->timeout(20)
+            ->post($this->baseUrl() . '/gw/merchant/public/draft/product/moderation', $payload);
+
+        // successful() (весь диапазон 2xx), не ok() (строго 200 у Laravel)
+        // — этот эндпоинт отвечает 202 Accepted на успех (проверено вживую
+        // 2026-08-22: HTTP 202 + productDraftStatus:"CHECK" + реальный id —
+        // с ok() это ошибочно считалось провалом).
+        return [
+            'ok'     => $response->successful(),
+            'status' => $response->status(),
+            'body'   => $response->json() ?? $response->body(),
+        ];
+    }
+
+    /**
+     * Статус модерации созданной карточки: MODERATION (в очереди) / REJECT
+     * (ошибки в характеристиках) / DELETED (дубль или неверная категория) /
+     * SUCCESS (на витрине).
+     * GET /gw/merchant/public/draft/product/{id}
+     *
+     * @return array{ok:bool,status:int,body:mixed}
+     */
+    public function getDraftStatus(int $productId): array
+    {
+        $response = Http::withToken($this->token())
+            ->timeout(15)
+            ->get($this->baseUrl() . "/gw/merchant/public/draft/product/{$productId}");
+
+        return [
+            'ok'     => $response->successful(),
             'status' => $response->status(),
             'body'   => $response->json() ?? $response->body(),
         ];
