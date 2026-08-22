@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Console\Commands\Halyk;
 
 use App\Services\HalykMarketClient;
 use Illuminate\Console\Command;
