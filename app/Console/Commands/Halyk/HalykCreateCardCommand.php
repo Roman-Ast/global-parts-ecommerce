@@ -187,7 +187,7 @@ class HalykCreateCardCommand extends Command
             'height'      => self::DEFAULT_HEIGHT_CM,
             'depth'       => self::DEFAULT_DEPTH_CM,
             'info'        => [
-                'merchantProductCode' => $card->article,
+                'merchantProductCode' => $this->resolveMerchantProductCode($card),
                 'pointByCity'         => [[
                     'city' => [
                         'name'   => 'Astana',
@@ -447,6 +447,46 @@ class HalykCreateCardCommand extends Command
         $uploaded = $client->uploadPhotos($files);
 
         return array_map(fn ($u) => ['id' => $u['id'], 'link' => $u['assetUrl']], $uploaded);
+    }
+
+    /**
+     * merchantProductCode для Halyk — по просьбе Романа не выдумываем новую
+     * нумерацию, а переиспользуем тот же SKU, что уже используется для
+     * этого товара на Kaspi (kaspi_initial_products.sku), чтобы один и тот
+     * же физический товар имел один и тот же артикул на обеих площадках —
+     * удобно для учёта/выполнения заказов независимо от канала продажи.
+     *
+     * parts_catalog шире, чем kaspi_initial_products (скрейпинг ЛЮБЫХ
+     * карточек Kaspi под наши артикулы, а не только то, что реально
+     * продаём сами на Kaspi) — так что совпадение будет не всегда. Если
+     * товара на Kaspi у нас нет вовсе — синтетический 8-значный код,
+     * детерминированный от id parts_catalog (один и тот же товар всегда
+     * получает один и тот же код при повторных запусках, не рандом).
+     */
+    private function resolveMerchantProductCode(PartsCatalog $card): string
+    {
+        // Точное совпадение по (sku, brand) — есть составной уникальный
+        // индекс kaspi_initial_products_sku_brand_unique, лукап быстрый.
+        // Полный скан с нормализацией сюда намеренно не добавлен — 95к
+        // строк на каждую карточку без точного совпадения было бы слишком
+        // дорого; parts_catalog.article и kaspi_initial_products.sku оба
+        // происходят из одного и того же источника (Kaspi), формат должен
+        // совпадать в подавляющем большинстве случаев.
+        $exact = DB::table('kaspi_initial_products')
+            ->where('sku', $card->article)
+            ->where('brand', $card->brand)
+            ->first();
+
+        if ($exact) {
+            return $exact->sku;
+        }
+
+        // На Kaspi этого товара у нас нет вовсе (parts_catalog шире,
+        // включает любые скрейпленные карточки под наши артикулы, а не
+        // только то, что реально продаём сами) — синтетический 8-значный
+        // код, детерминированный от id parts_catalog: один и тот же товар
+        // всегда получает один и тот же код при повторных запусках.
+        return '1' . str_pad((string) $card->id, 7, '0', STR_PAD_LEFT);
     }
 
     private function recordResult(
