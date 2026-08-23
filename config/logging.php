@@ -89,6 +89,16 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
+        // Та же диагностика, что и у 'phaeton' выше, только под ТИСС —
+        // известная (см. CLAUDE.md) проблема "API иногда возвращает пустой
+        // offers при реальном наличии на сайте". Файл:
+        // storage/logs/tiss.log (НЕ tiss_log.log).
+        'tiss' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/tiss.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', env('LOG_STACK', 'single')),

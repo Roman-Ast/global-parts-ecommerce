@@ -700,6 +700,16 @@ do {
         // это, чтобы передать честный supplierOk во фронт.
         $status = [];
 
+        // Детальное логирование — только для задач из этой карты (key
+        // задачи => имя канала в config/logging.php), чтобы не сорить в
+        // общий лог для стабильных поставщиков. Расширять сюда же, когда
+        // понадобится присмотреться к ещё какому-то поставщику.
+        $detailedLogChannels = [
+            'phaeton_ast'   => 'phaeton',
+            'phaeton_local' => 'phaeton',
+            'tiss'          => 'tiss',
+        ];
+
         foreach ($handles as $i => $item) {
             $ch   = $item['ch'];
             $task = $item['task'];
@@ -711,16 +721,13 @@ do {
             curl_multi_remove_handle($mh, $ch);
             curl_close($ch);
 
-            // Детальное логирование — пока только для Phaeton (нестабилен,
-            // IP для их API захардкожен, живьём проверить можно только на
-            // проде), см. config/logging.php канал 'phaeton'. Для
-            // остальных задач пула лишний шум в общем логе не нужен.
-            $isPhaeton = in_array($task['key'], ['phaeton_ast', 'phaeton_local'], true);
+            $isPhaeton   = $task['key'] === 'phaeton_ast' || $task['key'] === 'phaeton_local';
+            $logChannel  = $detailedLogChannels[$task['key']] ?? null;
 
             if (!$raw) {
                 $status[$task['key']] = false;
-                if ($isPhaeton) {
-                    \Log::channel('phaeton')->warning('Пустой ответ (curl)', [
+                if ($logChannel) {
+                    \Log::channel($logChannel)->warning('Пустой ответ (curl)', [
                         'key' => $task['key'], 'brand' => $brand, 'article' => $partnumber,
                         'http_code' => $httpCode, 'curl_errno' => $curlErrno, 'curl_error' => $curlError,
                     ]);
@@ -730,10 +737,17 @@ do {
 
             try {
                 $data = json_decode($raw);
-                if (!$data) {
+                // ВАЖНО: json_last_error(), а не голая проверка !$data —
+                // валидный пустой массив "[]" (например, ТИСС честно
+                // отвечает "предложений нет") в PHP falsy, !$data на нём
+                // тоже true, и такой легитимный "пусто" ответ раньше
+                // ошибочно считался "не распарсился"/провалом наравне с
+                // реально битым JSON. Настоящий провал парсинга —
+                // отдельная, узнаваемая по коду ошибка json_decode.
+                if (json_last_error() !== JSON_ERROR_NONE) {
                     $status[$task['key']] = false;
-                    if ($isPhaeton) {
-                        \Log::channel('phaeton')->warning('Ответ пришёл, но не распарсился как JSON', [
+                    if ($logChannel) {
+                        \Log::channel($logChannel)->warning('Ответ пришёл, но не распарсился как JSON', [
                             'key' => $task['key'], 'brand' => $brand, 'article' => $partnumber,
                             'http_code' => $httpCode, 'raw_head' => mb_substr($raw, 0, 500),
                         ]);
@@ -741,13 +755,27 @@ do {
                     continue;
                 }
 
-                if ($isPhaeton) {
+                if ($logChannel === 'phaeton') {
                     \Log::channel('phaeton')->info('Ответ получен', [
                         'key' => $task['key'], 'brand' => $brand, 'article' => $partnumber,
                         'http_code' => $httpCode,
                         'is_error' => $data->IsError ?? null,
                         'error_message' => $data->ErrorMessage ?? ($data->Message ?? null),
                         'items_count' => isset($data->Items) && is_array($data->Items) ? count($data->Items) : null,
+                    ]);
+                } elseif ($logChannel === 'tiss') {
+                    // ТИСС отвечает голым массивом предложений (не объектом
+                    // с флагом ошибки, как Phaeton) — items_count=0 тут
+                    // может означать и реальный сбой, и честное "нет
+                    // предложений", по одному этому логу не отличить, зато
+                    // видно http_code и сам факт валидного/невалидного ответа.
+                    \Log::channel('tiss')->info('Ответ получен', [
+                        'key' => $task['key'], 'brand' => $brand, 'article' => $partnumber,
+                        'http_code' => $httpCode,
+                        // (array) безопасно работает и для массива, и для
+                        // stdClass — на случай, если ТИСС когда-то отдаст
+                        // объект вместо массива.
+                        'items_count' => count((array) $data),
                     ]);
                 }
 
@@ -765,13 +793,18 @@ do {
                 $parser = $task['parser'];
                 $extraArg = $task['partnumber_for_parser'] ?? null;
                 $this->$parser($data, $brand, $partnumber, $extraArg);
+                // Пустой (но валидный) ответ ставим success=true — это
+                // честное "поставщик ответил, предложений нет", а не сбой
+                // (см. комментарий про json_last_error() выше). Иначе для
+                // ТИСС каждый обычный "нет в наличии" результат считался
+                // бы "не ответил", раздувая счётчик отказов вхолостую.
                 $status[$task['key']] = true;
 
             } catch (\Throwable $e) {
                 $status[$task['key']] = false;
                 \Log::error("Parser {$task['parser']} failed: " . $e->getMessage());
-                if ($isPhaeton) {
-                    \Log::channel('phaeton')->error('Исключение в парсере', [
+                if ($logChannel) {
+                    \Log::channel($logChannel)->error('Исключение в парсере', [
                         'key' => $task['key'], 'brand' => $brand, 'article' => $partnumber,
                         'message' => $e->getMessage(),
                     ]);
