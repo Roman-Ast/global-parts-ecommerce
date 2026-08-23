@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 use Carbon;
 use Collator;
 
@@ -44,7 +45,6 @@ class SparePartControllerTest extends Controller
     const ARMTEK_SBIT_ORG = '8000';
     const ARMTEK_CUSTOMER = '43387356'; 
     const ARMTEK_STOCK_ASTANA = 'MOV0005505';
-    const TISS_API_KEY = 'QXO7oqkH1_aifhVdi8W1GiMx4SEwzkPMTdwYjgcktOjW70aX_ve_xGDC7bTRBmQ37rH1k2ETsA3ZdCIfja0yHosRNNGwaYGGXuXFR6U4TADCRZF6lLvyjfKcg-zS5y4xQT4SNpi86vVPN5zOEFdhiZfRaKGh_U1MfHJz9IpAsyuc0ZHDHRaw0dO1tDHgQw2N4uPP0sq0kStch43q9zfZKhMsqTSNtgGVBnGRzaCkJzzuaXmfrL4Ot5ODBJ3x1tXnyVGW-p5IeZXOtIfeRWZMSnw3luiMztyY1m7p84r_qWJeVvr1J_3rR0R1EP7qAHjvX_QEnud83oqMCJppN4RCnD4sb5_fkylpyrEyuXRVvqviPx2-xiNhBwwLLkt67cNaZYBbtcaLcaZT5apXtVFW4B0IcwMHyqt_Oy3USMl3bkiBiJ7fGW6bOBidnoRCE6OqS1JTWKCkAZEoqY8rOX4A7p8YZTkamldmGbzf7sveBYhPSJvwmaUVWvzju6iEr7cB';
     const SHATEM_API_KEY = '{a9000264-381b-4c69-9af4-51fdd93b8eda}';
     const ROUND_LIMIT = -1;
     const KULAN_API_KEY='UYWUVoxme116qJlmeSzl7uCsI7Mrlv0D4symnBbR0tyVjMdOMnzkhys5hOvvRoEhcOJYc8Ntcf9sM9tDpUvpz60HTFcMcnJ1mpVU5PNbxuDxJR4DyLhf10y317musSOo';
@@ -56,6 +56,17 @@ class SparePartControllerTest extends Controller
     // ответа при нестрогом подборе аналогов у Автозакупа.
     const PRICE_STRATIFY_BUCKETS = 10;
     const PRICE_STRATIFY_PER_BUCKET = 15;
+
+    // См. searchRadle() — Radle агрегирует несколько поставщиков сразу, и
+    // даже строгое совпадение по артикулу+бренду может дать десятки
+    // предложений одного и того же товара с разных складов (замер:
+    // 186 шт.). Партиал searchedNumber, в отличие от crosses_to_order, не
+    // группирует их в stocks[] (как и у всех остальных поставщиков в этом
+    // файле — там searchedNumber всегда плоский список), поэтому такой
+    // наплыв заваливал клиентскую пагинацию "первые 10 по цене" — самые
+    // дешёвые из десятков предложений Radle вытесняли уже показанные
+    // Phaeton/Автозакуп со страницы (баг, найденный живьём 2026-08-23).
+    const SEARCHED_NUMBER_RADLE_CAP = 5;
 
     public $partNumber = '';
 
@@ -448,8 +459,10 @@ class SparePartControllerTest extends Controller
                     $supplierOk = in_array(true, $status, true);
                     break;
                 case 'tiss':
-                    $status = $this->runParallelSuppliers($brand, $partnumber, ['tiss']);
-                    $supplierOk = in_array(true, $status, true);
+                    // v2, не через runParallelSuppliers — см. докблок
+                    // searchTiss(). isInStockInHomeWarehousesOnly передаём
+                    // их же родным параметром, а не пропускаем шаг целиком.
+                    $this->searchTiss($brand, $partnumber, (bool) $request->only_on_stock);
                     break;
                 case 'kulan':
                     $status = $this->runParallelSuppliers($brand, $partnumber, ['kulan_main', 'kulan_analogs']);
@@ -473,6 +486,11 @@ class SparePartControllerTest extends Controller
                 case 'avtozakup':
                     if (!$request->only_on_stock) {
                         $this->searchAvtozakup($brand, $partnumber);
+                    }
+                    break;
+                case 'radle':
+                    if (!$request->only_on_stock) {
+                        $this->searchRadle($brand, $partnumber);
                     }
                     break;
             }
@@ -600,16 +618,9 @@ class SparePartControllerTest extends Controller
             'parser' => 'parseForumAuto',
         ];
 
-        // --- Tiss ---
-        $tasks[] = [
-            'key'    => 'tiss',
-            'url'    => 'api.tiss.parts/api/StockByArticle?' . http_build_query([
-                'JSONparameter' => "{'Brand': '{$brand}', 'Article': '{$partnumber}', 'is_main_warehouse': 1}",
-            ]),
-            'method' => 'GET',
-            'parser' => 'parseTiss',
-            'headers' => ['Authorization: Bearer ' . self::TISS_API_KEY],
-        ];
+        // Tiss убран отсюда 2026-08-23 — v2 требует POST+JSON-тело, этот
+        // curl_multi-пул поддерживает только GET (см. searchTiss() выше,
+        // теперь отдельный шаг через Http::, как Radle/Avtozakup).
 
         // --- Kulan (productCart) ---
         $tasks[] = [
@@ -707,7 +718,6 @@ do {
         $detailedLogChannels = [
             'phaeton_ast'   => 'phaeton',
             'phaeton_local' => 'phaeton',
-            'tiss'          => 'tiss',
         ];
 
         foreach ($handles as $i => $item) {
@@ -935,51 +945,6 @@ do {
                     'delivery_time'  => '2-2.5 часа',
                     'supplier_city'  => 'Астана',
                     'supplier_color' => '#333',
-                ]);
-            }
-        }
-    }
-
-    private function parseTiss($data, string $brand, string $partnumber, $extra = null): void
-    {
-        if (empty($data)) return;
-
-        foreach ($data as $item) {
-            if (strtolower($item->article) === strtolower($this->finalArr['originNumber'])) {
-                array_push($this->finalArr['searchedNumber'], [
-                    'brand'            => $item->brand,
-                    'article'          => $item->article,
-                    'name'             => $item->article_name,
-                    'price'            => $item->min_price,
-                    'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
-                    'qty'              => $item->warehouse_offers[0]->quantity,
-                    'supplier_name'    => 'tss',
-                    'supplier_city'    => 'ast',
-                    'supplier_color'   => '#7bafcf',
-                    'deliveryStart'    => date('d.m.Y'),
-                ]);
-            } else {
-                $stocks = [];
-                foreach ($item->warehouse_offers as $offer) {
-                    $stocks[] = [
-                        'qty'              => $offer->quantity,
-                        'price'            => $offer->price,
-                        'priceWithMargine' => round($this->setPrice($offer->price), self::ROUND_LIMIT),
-                    ];
-                }
-                array_push($this->finalArr['crosses_on_stock'], [
-                    'brand'            => $item->brand,
-                    'article'          => $item->article,
-                    'name'             => $item->article_name,
-                    'qty'              => $item->warehouse_offers[0]->quantity,
-                    'price'            => $item->min_price,
-                    'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
-                    'stocks'           => $stocks,
-                    'supplier_name'    => 'tss',
-                    'stock_legend'     => $item->warehouse_offers[0]->warehouse_name,
-                    'delivery_time'    => '1.5-2 часа',
-                    'supplier_city'    => 'ast',
-                    'supplier_color'   => '#7bafcf',
                 ]);
             }
         }
@@ -2284,74 +2249,159 @@ do {
         return;
     }
 
-    public function searchTiss(String $brand, String $partnumber)
+    /**
+     * TISS (tabys.parts) API v2 — заменяет устаревший v1
+     * (api.tiss.parts/StockByArticle через $tasks в runParallelSuppliers +
+     * parseTiss(), оба удалены). TISS в переписке 2026-08-23 сам сказал,
+     * что v1 "уже не поддерживается" и рекомендовал v2 — на этот же v1
+     * ссылалась открытая проблема в CLAUDE.md ("сайт показывает остаток,
+     * API — пустой offers").
+     *
+     * v2 требует POST с JSON-телом — общий curl_multi-пул в
+     * runParallelSuppliers физически поддерживает только GET (в его коде
+     * просто нет CURLOPT_POST/POSTFIELDS, комментарий про 'method' =>
+     * 'GET'|'POST' там был давно неактуален), поэтому TISS теперь
+     * отдельный шаг через Http::, как Radle/Avtozakup.
+     *
+     * Хост/метод/формат тела подтверждены ЖИВЫМ запросом 2026-08-23 — их
+     * официальная дока даёт путь без хоста и ошибочно помечает метод как
+     * "Get" (реальный GET отвечает 405, нужен POST на api.tabys.parts).
+     * Там же выяснилось: поля priceFrom/priceTo/deliveryMinDays/
+     * deliveryMaxDays обязаны физически присутствовать в теле (пусть и
+     * null) — без них 400 REQUEST_FORMAT_ERROR, хотя вводный текст доки
+     * говорит, что они опциональны. Живой ответ также показал два поля,
+     * которых нет в доке вообще: offeringBlockType имеет третье значение
+     * "AnalogOnOrderProduct" (аналог под заказ, не с физического склада —
+     * offers[].warehouseId тогда null), и deliveryInfo несёт ещё
+     * guaranteedDate/allowed.
+     *
+     * isInStockInHomeWarehousesOnly — родной параметр их API под ровно ту
+     * же семантику, что и наш $onlyOnStock, поэтому TISS (в отличие от
+     * Autopiter/Avtozakup/Radle) не пропускается целиком при
+     * only_on_stock — просто передаём флаг дальше, пусть TISS сам
+     * отфильтрует на своей стороне.
+     */
+    public function searchTiss(String $brand, String $partnumber, bool $onlyOnStock = false)
     {
-        //$start = microtime(true);
-        $ch1 = curl_init(); 
-        
-        $fields = array("JSONparameter" => "{'Brand': '".$brand."', 'Article': '".$partnumber."', 'is_main_warehouse': ".'1'." }" );
-        
-        $headers = array(         
-            'Authorization: Bearer '. self::TISS_API_KEY
-        );
-        curl_setopt($ch1, CURLOPT_URL, "api.tiss.parts/api/StockByArticle?". http_build_query($fields));
-        curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch1, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
-        curl_setopt($ch1, CURLOPT_TIMEOUT, self::TIMEOUT);
-        curl_setopt($ch1, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        $apiKey     = env('TISS_API_KEY');
+        $contractId = env('TISS_CONTRACT_ID');
+        $outletId   = env('TISS_OUTLET_ID');
+
+        if (empty($apiKey) || empty($contractId) || empty($outletId)) {
+            \Log::warning('TISS v2: не заданы TISS_API_KEY/TISS_CONTRACT_ID/TISS_OUTLET_ID в .env');
+            return;
+        }
 
         try {
-            $result = json_decode(curl_exec($ch1));
-        } catch (\Throwable $th) {
-            return;
-        }
-        
-        if (empty($result)) {
-            return;
-        }
-        
-        foreach ($result as $key => $item) {
-            if (strtolower($item->article) == strtolower($this->finalArr['originNumber']) ) {
-                array_push($this->finalArr['searchedNumber'], [
-                    'brand' => $item->brand,
-                    'article' => $item->article,
-                    'name' => $item->article_name,
-                    'price' => $item->min_price,
-                    'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
-                    'qty' => $item->warehouse_offers[0]->quantity,
-                    'supplier_name' => 'tss',
-                    'supplier_city' => 'ast',
-                    'supplier_color' => '#7bafcf',
-                    'deliveryStart' => date('d.m.Y'),
+            $response = Http::timeout(10)
+                ->withHeaders(['X-External-Api-Key' => $apiKey])
+                ->post('https://api.tabys.parts/v1/product-offers/by-brand-and-product-code', [
+                    'products' => [[
+                        'productCode' => $partnumber,
+                        'brandName'   => $brand,
+                    ]],
+                    'contractId'                     => $contractId,
+                    'outletId'                        => $outletId,
+                    'priceFrom'                       => null,
+                    'priceTo'                          => null,
+                    'deliveryMinDays'                 => null,
+                    'deliveryMaxDays'                 => null,
+                    'offersMaxNum'                     => 50,
+                    'orderByPrice'                     => true,
+                    'enableAnalog'                     => true,
+                    'warehouses'                       => [],
+                    'isInStockInHomeWarehousesOnly'    => $onlyOnStock,
                 ]);
-            } else {
-                $stocks = [];
-                foreach ($item->warehouse_offers as $key => $offer) {
-                    array_push($stocks, [
-                        'qty' => $offer->quantity,
-                        'price' => $offer->price,
-                        'priceWithMargine' => round($this->setPrice($offer->price), self::ROUND_LIMIT)
-                    ]);
-                }
-                array_push($this->finalArr['crosses_on_stock'], [
-                    'brand' => $item->brand,
-                    'article' => $item->article,
-                    'name' => $item->article_name,
-                    'qty' => $item->warehouse_offers[0]->quantity,
-                    'price' => $item->min_price,
-                    'priceWithMargine' => round($this->setPrice($item->min_price), self::ROUND_LIMIT),
-                    'stocks' => $stocks,
-                    'supplier_name' => 'tss',
-                    'stock_legend' => $item->warehouse_offers[0]->warehouse_name,
-                    'delivery_time' => '1.5-2 часа',
-                    'supplier_city' => 'ast',
-                    'supplier_color' => '#7bafcf',
+
+            if (!$response->successful()) {
+                \Log::warning('TISS v2 non-2xx response', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
                 ]);
+                return;
             }
+
+            $groups = $response->json();
+            if (empty($groups)) {
+                return;
+            }
+
+            foreach ($groups as $group) {
+                foreach ($group['items'] ?? [] as $item) {
+                    // Только реально доступные прямо сейчас предложения —
+                    // тот же принцип, что и у остальных поставщиков в этом
+                    // файле (price<=0 пропускаем). expectedAmount/
+                    // expectedArrivalDate (товар в пути) есть в ответе, но
+                    // пока не используются — см. докблок метода.
+                    $offers = array_values(array_filter($item['offers'] ?? [], function ($offer) {
+                        return (float) ($offer['price'] ?? 0) > 0 && (int) ($offer['amount'] ?? 0) > 0;
+                    }));
+
+                    if (empty($offers)) {
+                        continue;
+                    }
+
+                    usort($offers, fn($a, $b) => ($a['price'] ?? 0) <=> ($b['price'] ?? 0));
+                    $cheapest = $offers[0];
+                    $price = (float) $cheapest['price'];
+
+                    $stocks = array_map(function ($offer) {
+                        $offerPrice = (float) $offer['price'];
+                        return [
+                            'qty'              => (int) ($offer['amount'] ?? 0),
+                            'price'            => $offerPrice,
+                            'priceWithMargine' => round($this->setPrice($offerPrice), self::ROUND_LIMIT),
+                            'delivery_time'    => $offer['deliveryInfo']['date'] ?? null,
+                            'supplier_city'    => $this->tissCityFromWarehouseName($offer['warehouseName'] ?? ''),
+                        ];
+                    }, $offers);
+
+                    $entry = [
+                        'brand'            => $item['brandName'] ?? '',
+                        'article'          => $item['displayProductCode'] ?? ($item['productCode'] ?? ''),
+                        'name'             => $item['productName'] ?? '',
+                        'price'            => $price,
+                        'priceWithMargine' => round($this->setPrice($price), self::ROUND_LIMIT),
+                        'qty'              => (int) ($cheapest['amount'] ?? 0),
+                        'delivery_time'    => $cheapest['deliveryInfo']['date'] ?? null,
+                        'deliveryStart'    => $cheapest['deliveryInfo']['date'] ?? null,
+                        'supplier_name'    => 'tss',
+                        'supplier_city'    => $this->tissCityFromWarehouseName($cheapest['warehouseName'] ?? ''),
+                        'supplier_color'   => '#7bafcf',
+                        'stocks'           => $stocks,
+                    ];
+
+                    array_push($this->finalArr['brands'], $item['brandName'] ?? '');
+
+                    if (($item['offeringBlockType'] ?? '') === 'RequestedProduct') {
+                        array_push($this->finalArr['searchedNumber'], $entry);
+                    } else {
+                        array_push($this->finalArr['crosses_to_order'], $entry);
+                    }
+                }
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('TISS v2 exception', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
         }
-        //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. tiss';
-        return;
+    }
+
+    // "Алматы, Микрорайон Алгабас, улица 7, дом 130/13" → "Алматы" — их v2
+    // отдаёт реальный адрес склада, а не только город, для supplier_city
+    // (видно всем посетителям, как и у остальных поставщиков) хватает
+    // первого сегмента до запятой.
+    private function tissCityFromWarehouseName(?string $warehouseName): string
+    {
+        if (empty($warehouseName)) {
+            return 'ast';
+        }
+        $parts = explode(',', $warehouseName);
+        $city = trim($parts[0]);
+        return $city !== '' ? $city : 'ast';
     }
 
     public function searchKulan(String $brand, String $partnumber)
@@ -3319,6 +3369,220 @@ do {
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
+            ]);
+        }
+    }
+
+    /**
+     * Radlekz (radle.kz) — заказной агрегатор нескольких поставщиков,
+     * опрашивается ПОСЛЕ Phaeton и Avtozakup (см. STEP_ORDER в
+     * partSearchRes.blade.php — так попросил Роман). По их официальной
+     * доке: таймаут — не меньше 60 сек, первый запрос по новому артикулу
+     * реально идёт 10-15 сек (поставщики опрашиваются вживую), повтор по
+     * тому же артикулу отдаётся из ИХ кэша за доли секунды (кэш живёт до
+     * 10 минут). Http::timeout(65) — небольшой запас сверх их минимума,
+     * тот же приём, что и в searchAvtozakup (20 сек клиент против 12 сек
+     * апстрима).
+     */
+    public function searchRadle(String $brand, String $partnumber)
+    {
+        $apiKey = env('RADLE_API_KEY');
+        if (empty($apiKey)) {
+            \Log::warning('Radle API key not configured (RADLE_API_KEY)');
+            return;
+        }
+
+        try {
+            // Их доке: X-Request-ID можно передать своим — пройдёт насквозь
+            // в их журнал, трассировка на нашей стороне не порвётся.
+            $requestId = (string) Str::uuid();
+
+            $response = Http::timeout(65)
+                ->withHeaders([
+                    'x-api-key'    => $apiKey,
+                    'X-Request-ID' => $requestId,
+                ])
+                ->get('https://radle.kz/api/v1/search', [
+                    'article' => $partnumber,
+                ]);
+
+            $data = $response->json();
+
+            // По их доке проверять надо именно success в теле, а не только
+            // HTTP-код — ошибка тоже валидный JSON (400/401/403/429/500).
+            if (empty($data['success'])) {
+                // 429 (после Retry-After) и 500 (с бэкоффом) по их
+                // чек-листу стоило бы повторить — но это синхронный шаг
+                // живой прогрессивной подгрузки с собственным клиентским
+                // таймаутом (STEP_TIMEOUTS_MS.radle), реальное ожидание
+                // Retry-After почти наверняка не уложится и оборвётся
+                // браузером раньше. Логируем и отдаём пустой шаг; настоящий
+                // retry имеет смысл только в batch/cron-сценарии, не здесь.
+                \Log::warning('Radle error response', [
+                    'http_status' => $response->status(),
+                    'code'        => $data['error']['code'] ?? null,
+                    'message'     => $data['error']['message'] ?? null,
+                    'request_id'  => $data['meta']['requestId'] ?? $requestId,
+                ]);
+                return;
+            }
+
+            $parts = $data['data']['parts'] ?? [];
+            if (empty($parts)) {
+                // success:true с пустым parts — по их доке НЕ ошибка,
+                // просто ничего не нашлось по артикулу.
+                return;
+            }
+
+            $searchArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $partnumber));
+            $searchBrandLower = strtolower(trim($brand));
+
+            // Коды из supplier (KAZ/ALM/UAE/RUS...) — реальный источник,
+            // через который Radle закупает. Роман явно попросил (2026-08-23,
+            // по первым живым результатам): для обычных посетителей это
+            // сворачивается до страны — все казахстанские подкоды (KAZ,
+            // ALM — Алматы) показываются просто как "KZ", UAE остаётся
+            // "UAE" как есть. Список неполный (доке даёт только пример KAZ,
+            // остальное — из живых ответов) — для не перечисленных кодов
+            // просто показываем код как есть, это не более раскрывающе, чем
+            // сам факт страны. Точную детализацию (rdl KAZ / rdl ALM / rdl
+            // UAE) видит только админ через supplier_name, как и раньше.
+            $radleCustomerCountryLabels = [
+                'KAZ' => 'KZ',
+                'ALM' => 'KZ',
+                'UAE' => 'UAE',
+                'RUS' => 'РФ',
+            ];
+
+            foreach ($parts as $part) {
+                $price = (float) ($part['price'] ?? 0);
+                if ($price <= 0) {
+                    continue;
+                }
+
+                $itemArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $part['article'] ?? ''));
+
+                // Баг, найденный живьём 2026-08-23 (Роман: "все остальное
+                // исчезает с экрана"): Radle агрегирует МНОГО поставщиков
+                // сразу, и по ходовым артикулам (напр. "OC90") десятки
+                // РАЗНЫХ производителей выпускают деталь под тем же кодом
+                // (замер: 305 предложений от 11 разных брендов на один
+                // артикул). Раньше isExact сверял только артикул — все 305
+                // уходили в searchedNumber ("Запрошенный артикул"),
+                // sortContainerByPrice пересортировывал ВЕСЬ контейнер по
+                // цене, а updateSearchedNumberPagination показывает только
+                // первые 10 после сортировки — уже отрисованные строки
+                // Phaeton/Автозакупа проваливались за пределы видимой
+                // страницы. Теперь для searchedNumber требуем совпадения
+                // ЕЩЁ и бренда (нестрого — тем же приёмом, что и в
+                // searchAutopiter выше: подстрока в любую сторону, регистр
+                // не важен), иначе — в crosses_to_order как кросс/аналог,
+                // что этим предложениям и является на самом деле.
+                $itemBrandLower = strtolower(trim($part['manufacturer'] ?? ''));
+                $isBrandMatch = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                    $itemBrandLower === $searchBrandLower ||
+                    str_contains($itemBrandLower, $searchBrandLower) ||
+                    str_contains($searchBrandLower, $itemBrandLower)
+                );
+                $isExact = $isBrandMatch && $itemArticleClean === $searchArticleClean;
+
+                // deliveryTime — человекочитаемая строка вида "0-1 день", их
+                // доке явно говорит "формат может меняться, не парсите для
+                // расчётов". Наш блейд-партиал crossesToOrder тем не менее
+                // считает срок через strtotime($delivery_time), и Роман
+                // явно просил отсекать RUS с долгим ожиданием (см. ниже) —
+                // best-effort берём верхнюю границу диапазона; если строка
+                // не содержит числа вообще — просто не проставляем дату,
+                // партиал в этом случае покажет "уточняйте".
+                $deliveryTimeText = (string) ($part['deliveryTime'] ?? '');
+                preg_match_all('/\d+/', $deliveryTimeText, $dayMatches);
+                $deliveryDate = null;
+                $maxDeliveryDays = null;
+                if (!empty($dayMatches[0])) {
+                    $maxDeliveryDays = (int) end($dayMatches[0]);
+                    $deliveryDate = date('Y-m-d', strtotime('+' . $maxDeliveryDays . ' days'));
+                }
+
+                $warehouse = (string) ($part['warehouse'] ?? '');
+                $supplierCode = strtoupper((string) ($part['supplier'] ?? ''));
+
+                // Роман (2026-08-23, по первым живым результатам): RUS с
+                // ожиданием больше 14 дней вообще не показывать — не только
+                // клиенту, целиком, такая позиция бесполезна при живых
+                // сроках доставки день-в-день/на следующий день, которые и
+                // есть конкурентное преимущество магазина.
+                if ($supplierCode === 'RUS' && $maxDeliveryDays !== null && $maxDeliveryDays > 14) {
+                    continue;
+                }
+
+                // warehouse/supplier — внутренние коды Radle, раскрывают,
+                // ЧЕРЕЗ КОГО Radle реально закупает. Полная детализация —
+                // только в supplier_name (рендерится лишь при
+                // user_role===admin, см. protect-supplier-identity в памяти
+                // агента), "rdl" вместо "radle" — короче, в одном стиле с
+                // остальными короткими кодами поставщиков в этом файле
+                // (atptr/vtzkp и т.п.). supplier_city — версия для всех
+                // посетителей, сворачивает конкретный подкод до страны
+                // (см. $radleCustomerCountryLabels выше).
+                $adminLabel = 'rdl' . ($supplierCode !== '' ? ' ' . $supplierCode : ($warehouse !== '' ? ' ' . $warehouse : ''));
+                $customerLabel = $radleCustomerCountryLabels[$supplierCode] ?? ($supplierCode !== '' ? $supplierCode : 'Radle');
+
+                $entry = [
+                    'brand'            => $part['manufacturer'] ?? '',
+                    'article'          => $part['article'] ?? '',
+                    'name'             => $part['name'] ?? '',
+                    'price'            => $price,
+                    'priceWithMargine' => round($this->setPrice($price), self::ROUND_LIMIT),
+                    'qty'              => (int) ($part['quantity'] ?? 0),
+                    'delivery_time'    => $deliveryDate ?? $deliveryTimeText,
+                    'deliveryStart'    => $deliveryDate,
+                    'supplier_name'    => $adminLabel,
+                    'supplier_city'    => $customerLabel,
+                    'supplier_color'   => 'linear-gradient(135deg, #0f172a, #16a34a)',
+                    'stocks'           => [[
+                        'qty'              => (int) ($part['quantity'] ?? 0),
+                        'price'            => $price,
+                        'priceWithMargine' => round($this->setPrice($price), self::ROUND_LIMIT),
+                        'delivery_time'    => $deliveryDate ?? $deliveryTimeText,
+                        'supplier_city'    => $customerLabel,
+                    ]],
+                ];
+
+                array_push($this->finalArr['brands'], $part['manufacturer'] ?? '');
+
+                if ($isExact) {
+                    array_push($this->finalArr['searchedNumber'], $entry);
+                } else {
+                    array_push($this->finalArr['crosses_to_order'], $entry);
+                }
+            }
+
+            // По их же доке — "по ходовому артикулу 1000+ предложений" — та
+            // же проблема раздутого ответа, что и у Автозакупа (см.
+            // stratifyByPrice выше), только тут это не баг нестрогого
+            // подбора, а нормальный документированный объём ответа.
+            if (count($this->finalArr['crosses_to_order']) > self::PRICE_STRATIFY_BUCKETS * self::PRICE_STRATIFY_PER_BUCKET) {
+                $this->finalArr['crosses_to_order'] = $this->stratifyByPrice(
+                    $this->finalArr['crosses_to_order'],
+                    self::PRICE_STRATIFY_BUCKETS,
+                    self::PRICE_STRATIFY_PER_BUCKET
+                );
+            }
+
+            // См. SEARCHED_NUMBER_RADLE_CAP — оставляем только самые дешёвые,
+            // остальное не теряется полностью (Radle всё равно доступен
+            // через crosses_to_order при неточном совпадении бренда), просто
+            // не монополизирует первую страницу "Запрошенного артикула".
+            if (count($this->finalArr['searchedNumber']) > self::SEARCHED_NUMBER_RADLE_CAP) {
+                usort($this->finalArr['searchedNumber'], fn($a, $b) => ($a['priceWithMargine'] ?? 0) <=> ($b['priceWithMargine'] ?? 0));
+                $this->finalArr['searchedNumber'] = array_slice($this->finalArr['searchedNumber'], 0, self::SEARCHED_NUMBER_RADLE_CAP);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Radle exception', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
             ]);
         }
     }
