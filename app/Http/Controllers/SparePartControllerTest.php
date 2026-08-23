@@ -409,7 +409,15 @@ class SparePartControllerTest extends Controller
         $partnumber = $this->removeAllUnnecessaries(trim((string) $request->partnumber));
         $step       = (string) $request->step;
 
-        $this->finalArr['originNumber'] = $partnumber;
+        // По умолчанию true — для шагов без runParallelSuppliers (locals/
+        // armtek/shatem/treid/autopiter/avtozakup) сохраняем старое
+        // поведение ("не бросило исключение — считаем ответившим").
+        // Для шести шагов через runParallelSuppliers ниже перезаписываем
+        // honest-статусом из её возврата (см. докблок метода) — раньше
+        // "N из 13 ответили" в partSearchRes.blade.php всегда засчитывал
+        // эти шаги как ответившие, даже если поставщик молча ничего не
+        // прислал (пустой ответ / битый JSON / бизнес-ошибка).
+        $supplierOk = true;
 
         try {
             switch ($step) {
@@ -432,22 +440,28 @@ class SparePartControllerTest extends Controller
                     $this->searchTreid($brand, $partnumber);
                     break;
                 case 'phaeton':
-                    $this->runParallelSuppliers($brand, $partnumber, ['phaeton_ast', 'phaeton_local']);
+                    $status = $this->runParallelSuppliers($brand, $partnumber, ['phaeton_ast', 'phaeton_local']);
+                    $supplierOk = in_array(true, $status, true);
                     break;
                 case 'forumauto':
-                    $this->runParallelSuppliers($brand, $partnumber, ['forumauto']);
+                    $status = $this->runParallelSuppliers($brand, $partnumber, ['forumauto']);
+                    $supplierOk = in_array(true, $status, true);
                     break;
                 case 'tiss':
-                    $this->runParallelSuppliers($brand, $partnumber, ['tiss']);
+                    $status = $this->runParallelSuppliers($brand, $partnumber, ['tiss']);
+                    $supplierOk = in_array(true, $status, true);
                     break;
                 case 'kulan':
-                    $this->runParallelSuppliers($brand, $partnumber, ['kulan_main', 'kulan_analogs']);
+                    $status = $this->runParallelSuppliers($brand, $partnumber, ['kulan_main', 'kulan_analogs']);
+                    $supplierOk = in_array(true, $status, true);
                     break;
                 case 'febest':
-                    $this->runParallelSuppliers($brand, $partnumber, ['febest']);
+                    $status = $this->runParallelSuppliers($brand, $partnumber, ['febest']);
+                    $supplierOk = in_array(true, $status, true);
                     break;
                 case 'gerat':
-                    $this->runParallelSuppliers($brand, $partnumber, ['gerat']);
+                    $status = $this->runParallelSuppliers($brand, $partnumber, ['gerat']);
+                    $supplierOk = in_array(true, $status, true);
                     break;
                 case 'autopiter':
                     // Как и в боевом getSearchedPartAndCrosses() — пропускаем,
@@ -462,9 +476,14 @@ class SparePartControllerTest extends Controller
                     }
                     break;
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+            $supplierOk = false;
+        }
 
-        return response()->json($this->renderItemsEnvelope());
+        return response()->json(array_merge(
+            ['supplierOk' => $supplierOk],
+            $this->renderItemsEnvelope()
+        ));
     }
 
     /**
@@ -524,8 +543,14 @@ class SparePartControllerTest extends Controller
      * просто на каждый шаг фильтруем до одного поставщика вместо разом
      * восьми. При $onlyKeys=null (по умолчанию) ведёт себя как раньше —
      * весь пул разом, это путь runRestOfSuppliers()/старого 2-фазного JSON.
+     *
+     * @return array<string,bool> key задачи => реально ли что-то получили
+     *         (не просто "curl не упал", а именно валидный непустой ответ
+     *         без бизнес-ошибки). runRestOfSuppliers() этот результат
+     *         игнорирует (там нет пошагового индикатора), а
+     *         searchSupplierStepFragment передаёт его в JSON как supplierOk.
      */
-    private function runParallelSuppliers(string $brand, string $partnumber, ?array $onlyKeys = null): void
+    private function runParallelSuppliers(string $brand, string $partnumber, ?array $onlyKeys = null): array
     {
         // Определяем все HTTP-запросы которые надо выполнить параллельно
         // Каждый элемент: ['url' => ..., 'method' => 'GET'|'POST', 'data' => [...], 'parser' => 'methodName']
@@ -633,7 +658,7 @@ class SparePartControllerTest extends Controller
         }
 
         if (empty($tasks)) {
-            return;
+            return [];
         }
 
         // ── curl_multi — запускаем все параллельно ──────────────────────────────
@@ -665,32 +690,98 @@ do {
         } while ($running > 0);
 \Log::info('curl_multi pool выполнен за: ' . round(microtime(true) - $startTotal, 2) . 's');
 
-        // Собираем результаты
+        // Собираем результаты. $status — по одному булю на key задачи:
+        // раньше эта функция была void и ЛЮБОЙ из 3 видов молчаливого
+        // провала (пустой $raw / невалидный JSON / бизнес-ошибка вроде
+        // IsError у Phaeton) не отражался никак — вызывающий код (и в
+        // итоге бейдж "N из 13 ответили" в partSearchRes.blade.php) не
+        // мог отличить "поставщик реально ответил" от "тихо ничего не
+        // прислал". См. searchSupplierStepFragment ниже — использует
+        // это, чтобы передать честный supplierOk во фронт.
+        $status = [];
+
         foreach ($handles as $i => $item) {
             $ch   = $item['ch'];
             $task = $item['task'];
 
-            $raw = curl_multi_getcontent($ch);
+            $raw       = curl_multi_getcontent($ch);
+            $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErrno = curl_errno($ch);
+            $curlError = curl_error($ch);
             curl_multi_remove_handle($mh, $ch);
             curl_close($ch);
 
-            if (!$raw) continue;
+            // Детальное логирование — пока только для Phaeton (нестабилен,
+            // IP для их API захардкожен, живьём проверить можно только на
+            // проде), см. config/logging.php канал 'phaeton'. Для
+            // остальных задач пула лишний шум в общем логе не нужен.
+            $isPhaeton = in_array($task['key'], ['phaeton_ast', 'phaeton_local'], true);
+
+            if (!$raw) {
+                $status[$task['key']] = false;
+                if ($isPhaeton) {
+                    \Log::channel('phaeton')->warning('Пустой ответ (curl)', [
+                        'key' => $task['key'], 'brand' => $brand, 'article' => $partnumber,
+                        'http_code' => $httpCode, 'curl_errno' => $curlErrno, 'curl_error' => $curlError,
+                    ]);
+                }
+                continue;
+            }
 
             try {
                 $data = json_decode($raw);
-                if (!$data) continue;
+                if (!$data) {
+                    $status[$task['key']] = false;
+                    if ($isPhaeton) {
+                        \Log::channel('phaeton')->warning('Ответ пришёл, но не распарсился как JSON', [
+                            'key' => $task['key'], 'brand' => $brand, 'article' => $partnumber,
+                            'http_code' => $httpCode, 'raw_head' => mb_substr($raw, 0, 500),
+                        ]);
+                    }
+                    continue;
+                }
+
+                if ($isPhaeton) {
+                    \Log::channel('phaeton')->info('Ответ получен', [
+                        'key' => $task['key'], 'brand' => $brand, 'article' => $partnumber,
+                        'http_code' => $httpCode,
+                        'is_error' => $data->IsError ?? null,
+                        'error_message' => $data->ErrorMessage ?? ($data->Message ?? null),
+                        'items_count' => isset($data->Items) && is_array($data->Items) ? count($data->Items) : null,
+                    ]);
+                }
+
+                // Phaeton может вернуть валидный JSON с флагом IsError=true
+                // (бизнес-ошибка на их стороне) — это тоже провал, просто
+                // не curl-уровня и не JSON-уровня. Раньше parsePhaeton/
+                // parsePhaetonLocal тихо делали return в этом случае, и
+                // задача считалась "выполненной".
+                if ($isPhaeton && !empty($data->IsError)) {
+                    $status[$task['key']] = false;
+                    continue;
+                }
 
                 // Вызываем нужный парсер
                 $parser = $task['parser'];
                 $extraArg = $task['partnumber_for_parser'] ?? null;
                 $this->$parser($data, $brand, $partnumber, $extraArg);
+                $status[$task['key']] = true;
 
             } catch (\Throwable $e) {
+                $status[$task['key']] = false;
                 \Log::error("Parser {$task['parser']} failed: " . $e->getMessage());
+                if ($isPhaeton) {
+                    \Log::channel('phaeton')->error('Исключение в парсере', [
+                        'key' => $task['key'], 'brand' => $brand, 'article' => $partnumber,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
             }
         }
 
         curl_multi_close($mh);
+
+        return $status;
     }
 
     private function parsePhaeton($data, string $brand, string $partnumber, $extra = null): void

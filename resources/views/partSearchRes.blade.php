@@ -581,7 +581,16 @@
                 })
                 .then(json => {
                     Object.keys(SECTIONS).forEach(key => insertRows(key, json[key]));
-                    return { success: true };
+                    // supplierOk есть только в ответе searchSupplierStepFragment
+                    // (searchRosskoFragment/searchRestFragment его не отдают —
+                    // undefined !== false, старое поведение для них не меняется).
+                    // false означает "наш сервер ответил 200, но конкретный
+                    // поставщик молча ничего не прислал" (пустой ответ /
+                    // битый JSON / бизнес-ошибка вроде IsError у Phaeton) —
+                    // раньше runParallelSuppliers в SparePartControllerTest
+                    // это тоже засчитывал как "ответил", т.к. был void и
+                    // ничего не сообщал наружу о реальном исходе.
+                    return { success: json.supplierOk !== false };
                 })
                 .catch(err => {
                     console.error('Fragment load error (' + label + '):', url, err);

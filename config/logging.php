@@ -76,6 +76,19 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
+        // Диагностика нестабильности Phaeton API (SparePartControllerTest::
+        // runParallelSuppliers) — Phaeton иногда молча не отдаёт товар,
+        // который реально есть, IP для их API захардкожен и проверить
+        // живьём можно только на проде. Каждый вызов phaeton_ast/
+        // phaeton_local логируется сюда: и успех, и любой из 3 видов
+        // молчаливого провала (пустой ответ curl / невалидный JSON /
+        // IsError=true), чтобы не гадать, а увидеть реальную картину.
+        'phaeton' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/phaeton.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', env('LOG_STACK', 'single')),
