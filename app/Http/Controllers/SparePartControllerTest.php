@@ -450,9 +450,22 @@ class SparePartControllerTest extends Controller
                 case 'treid':
                     $this->searchTreid($brand, $partnumber);
                     break;
-                case 'phaeton':
-                    $status = $this->runParallelSuppliers($brand, $partnumber, ['phaeton_ast', 'phaeton_local']);
-                    $supplierOk = in_array(true, $status, true);
+                case 'phaeton_ast':
+                    // Разделено 2026-08-23 (было одним шагом 'phaeton' с
+                    // объединённым supplierOk через ИЛИ) — Роман: phaeton_local
+                    // стабильно падает по IP-вайтлисту (см. переписку с
+                    // Фаэтоном, ждут понедельника), из-за чего в общем ИЛИ
+                    // это маскировалось, но ему критично отдельно видеть,
+                    // не глючит ли именно АСТ-склад — он ищет позиции,
+                    // заказанные на Kaspi, напрямую у Фаэтона, когда сайт
+                    // говорит "не найдено", и должен отличать "реально нет"
+                    // от "АСТ тихо не ответил".
+                    $status = $this->runParallelSuppliers($brand, $partnumber, ['phaeton_ast']);
+                    $supplierOk = $status['phaeton_ast'] ?? false;
+                    break;
+                case 'phaeton_local':
+                    $status = $this->runParallelSuppliers($brand, $partnumber, ['phaeton_local']);
+                    $supplierOk = $status['phaeton_local'] ?? false;
                     break;
                 case 'forumauto':
                     $status = $this->runParallelSuppliers($brand, $partnumber, ['forumauto']);
