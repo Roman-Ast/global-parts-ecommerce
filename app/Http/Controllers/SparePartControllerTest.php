@@ -3540,10 +3540,18 @@ do {
                 $adminLabel = 'rdl' . ($supplierCode !== '' ? ' ' . $supplierCode : ($warehouse !== '' ? ' ' . $warehouse : ''));
                 $customerLabel = $radleCustomerCountryLabels[$supplierCode] ?? ($supplierCode !== '' ? $supplierCode : 'Radle');
 
+                // Роман заметил живьём 2026-08-23: name иногда пустой или
+                // просто скобки без текста внутри (напр. "()") — считаем
+                // название осмысленным только если в нём есть хоть одна
+                // буква или цифра, иначе показываем заглушку вместо пустой
+                // или бессмысленной строки.
+                $rawName = trim((string) ($part['name'] ?? ''));
+                $name = preg_match('/[\p{L}\p{N}]/u', $rawName) === 1 ? $rawName : 'Запчасть';
+
                 $entry = [
                     'brand'            => $part['manufacturer'] ?? '',
                     'article'          => $part['article'] ?? '',
-                    'name'             => $part['name'] ?? '',
+                    'name'             => $name,
                     'price'            => $price,
                     'priceWithMargine' => round($this->setPrice($price), self::ROUND_LIMIT),
                     'qty'              => (int) ($part['quantity'] ?? 0),
