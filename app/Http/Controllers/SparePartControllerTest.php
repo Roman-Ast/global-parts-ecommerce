@@ -610,13 +610,11 @@ class SparePartControllerTest extends Controller
                 'Brand'          => $brand,
                 'Sources[]'      => '2',
                 'UserGuid'       => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
-                // Эксперимент 2026-08-24 (Роман): собственный ApiKey Local
-                // ('LnxrDfpQVZz1ncuoI14e') стабильно ловит 403 по IP-
-                // вайтлисту (см. переписку с Фаэтоном), пробуем ключ,
-                // который точно работает на AST — вдруг вайтлист привязан
-                // к ключу, а не к паре ключ+Sources. Если снова 403 —
-                // вернуть 'LnxrDfpQVZz1ncuoI14e' обратно.
-                'ApiKey'         => '0UKIrpU3W3AnAfDf97Nr',
+                // Эксперимент 2026-08-24 с общим ApiKey от AST — откачен:
+                // Роман подтвердил, что после этого перестал отвечать даже
+                // AST (похоже, дублирование одного ключа на оба запроса
+                // задело и его). Возврат к собственному ключу Local.
+                'ApiKey'         => 'LnxrDfpQVZz1ncuoI14e',
                 'includeAnalogs' => 'true',
             ]),
             'method' => 'GET',
