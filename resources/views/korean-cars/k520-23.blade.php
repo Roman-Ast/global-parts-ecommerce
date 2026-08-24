@@ -16,6 +16,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="86511L2000">
+                <input type="hidden" name="guid" value="86511L2000">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <div class="" id="main-img-container">
@@ -29,6 +31,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="92402L2000">
+                <input type="hidden" name="guid" value="92402L2000">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -39,6 +43,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="92102L2000">
+                <input type="hidden" name="guid" value="92102L2000">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -49,6 +55,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="92101p6110">
+                <input type="hidden" name="guid" value="92101p6110">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -59,6 +67,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="92409L2040">
+                <input type="hidden" name="guid" value="92409L2040">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -69,6 +79,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="58101-L0A10">
+                <input type="hidden" name="guid" value="58101-L0A10">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -79,6 +91,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="86351L2000">
+                <input type="hidden" name="guid" value="86351L2000">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -89,6 +103,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="51730L1000">
+                <input type="hidden" name="guid" value="51730L1000">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -99,6 +115,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="54650L2000">
+                <input type="hidden" name="guid" value="54650L2000">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -109,6 +127,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="86531L2000">
+                <input type="hidden" name="guid" value="86531L2000">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -119,6 +139,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="86542L2310">
+                <input type="hidden" name="guid" value="86542L2310">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -129,6 +151,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="25310L2230">
+                <input type="hidden" name="guid" value="25310L2230">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -139,6 +163,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="54500L1100">
+                <input type="hidden" name="guid" value="54500L1100">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
             <form class="santafe18-21container-item" method="post" action="{{ route('getPart') }}" target="_blank">
@@ -149,6 +175,8 @@
                 </div>
                 <input type="hidden" name="brand" value="Hyundai-Kia">
                 <input type="hidden" name="partnumber" value="66310L2000">
+                <input type="hidden" name="guid" value="66310L2000">
+                <input type="hidden" name="rossko_need_to_search" value="1">
                 <button type="submit" class="btn btn-sm btn-link car-form-btn">Узнать цену</button>
             </form>
         </div>
