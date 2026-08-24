@@ -32,8 +32,17 @@ class GlobalProductController extends Controller
      *  восстановить исходное написание бренда из URL-слага нечем, а
      *  гадать по эвристике (дефис↔пробел) ненадёжно.
      */
-    public function show($brand, $article)
+    public function show($brand = '', $article = '')
     {
+        // Роут '/product/{brand}/{article}' объявлен с ->where('brand', '.*')
+        // — это намеренно (бренды со слэшем, напр. "Citroen/Peugeot"), но
+        // тем же разрешает пустой сегмент бренда. На "/product//АРТИКУЛ"
+        // (двойной слэш — старые URL с NULL/пустым брендом в прежней
+        // global_catalog, реально всплыли в GSC как 500 на ГАЗ/ВАЗ-позициях
+        // 2026-08-24) Laravel резолвит только ОДИН параметр из двух, и без
+        // значений по умолчанию здесь падал ArgumentCountError — фатально,
+        // ещё до проверки $brandSlug === '' ниже, которая для этого и
+        // написана.
         $rawBrand = urldecode($brand);
         $rawArticle = urldecode($article);
 
