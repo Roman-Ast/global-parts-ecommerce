@@ -610,11 +610,14 @@ class SparePartControllerTest extends Controller
                 'Brand'          => $brand,
                 'Sources[]'      => '2',
                 'UserGuid'       => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
-                // Эксперимент 2026-08-24 с общим ApiKey от AST — откачен:
-                // Роман подтвердил, что после этого перестал отвечать даже
-                // AST (похоже, дублирование одного ключа на оба запроса
-                // задело и его). Возврат к собственному ключу Local.
-                'ApiKey'         => 'LnxrDfpQVZz1ncuoI14e',
+                // Второй заход 2026-08-24 — на этот раз по прямому
+                // подтверждению программиста Фаэтона: один и тот же ApiKey
+                // должен использоваться для обоих запросов (Sources=1 и
+                // Sources=2). Первая попытка (до подтверждения от них)
+                // временно ломала и AST тоже — возможно, на их стороне
+                // тогда ещё не было донастроено под общий ключ. Если снова
+                // отвалится AST — откатить на 'LnxrDfpQVZz1ncuoI14e'.
+                'ApiKey'         => '0UKIrpU3W3AnAfDf97Nr',
                 'includeAnalogs' => 'true',
             ]),
             'method' => 'GET',
@@ -1231,7 +1234,7 @@ do {
             'Brand' => $brand,
             'Sources[]' => '2',
             'UserGuid' => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
-            'ApiKey' => 'LnxrDfpQVZz1ncuoI14e',
+            'ApiKey' => '0UKIrpU3W3AnAfDf97Nr',
             'includeAnalogs' => 'true'
         ];
 
