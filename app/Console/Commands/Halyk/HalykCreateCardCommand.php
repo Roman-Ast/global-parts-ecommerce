@@ -99,9 +99,18 @@ class HalykCreateCardCommand extends Command
             $query->where('article', $onlyArticle);
         }
 
+        // Без сортировки кандидаты шли строго по id — а строки одного
+        // бренда/категории лежат в БД подряд (одна партия скрейпа), так
+        // что при системном пробеле в характеристиках у конкретного
+        // бренда (см. докблок flattenCharacteristics — живой случай
+        // 2026-08-24, 1151 SAT-радиатор подряд без "Модель автомобиля")
+        // весь --limit мог уйти на один и тот же неудачный участок вместо
+        // распределения по всей очереди. inRandomOrder() — на ~56к строк
+        // не проблема для батч-команды, не в горячем пути.
+        //
         // Берём с запасом (в 5 раз больше лимита) — часть отсеется на
         // attachOffers (нет в наличии ни у одного поставщика).
-        $pool = $query->limit($limit * 5)->get();
+        $pool = $query->inRandomOrder()->limit($limit * 5)->get();
 
         $pool = (new SupplierOfferPricer())->attach($pool);
 
@@ -337,9 +346,9 @@ class HalykCreateCardCommand extends Command
             foreach (($block['attrs'] ?? []) as $attr) {
                 $attrName = mb_strtolower(trim($attr['attrValue']['name'] ?? ''));
                 $required = (bool) ($attr['required'] ?? false);
-                $ourValue = $ourFeatures[$attrName] ?? null;
+                $ourValues = $ourFeatures[$attrName] ?? null;
 
-                if ($ourValue === null) {
+                if ($ourValues === null) {
                     if ($required) {
                         $missingRequired = $attr['attrValue']['name'] ?? $attr['code'] ?? '?';
                         return [];
@@ -348,7 +357,7 @@ class HalykCreateCardCommand extends Command
                 }
 
                 if (($attr['classAttrType'] ?? null) === 'ENUM') {
-                    $matchedOption = $this->matchEnumOption($attr['attrValue']['classAttrValues'] ?? [], $ourValue);
+                    $matchedOption = $this->matchEnumOption($attr['attrValue']['classAttrValues'] ?? [], $ourValues);
                     if ($matchedOption === null) {
                         if ($required) {
                             $missingRequired = $attr['attrValue']['name'] ?? $attr['code'] ?? '?';
@@ -358,7 +367,7 @@ class HalykCreateCardCommand extends Command
                     }
                     $attrs[] = ['id' => $attr['classAttrAssignmentId'], 'value' => $matchedOption];
                 } else {
-                    $attrs[] = ['id' => $attr['classAttrAssignmentId'], 'value' => (string) $ourValue];
+                    $attrs[] = ['id' => $attr['classAttrAssignmentId'], 'value' => (string) $ourValues[0]];
                 }
             }
         }
@@ -370,7 +379,16 @@ class HalykCreateCardCommand extends Command
      * parts_catalog.characteristics — array (Eloquent-каст модели) вида
      * {specifications:[{features:[{name, featureValues:[{value}]}]}]}
      * (скрейпинг с Kaspi). Схлопываем в плоский
-     * [имя_характеристики_lowercase => первое_значение].
+     * [имя_характеристики_lowercase => все_значения (array)].
+     *
+     * Раньше брали только featureValues[0] — одна деталь часто подходит
+     * под НЕСКОЛЬКО моделей/годов (напр. Volvo 850/S70/V70 одним
+     * радиатором), и если ENUM Halyk не совпадал именно с первым
+     * значением, карточка целиком пропускалась как missing_required_attr,
+     * хотя второе/третье значение вполне могло совпасть. Найдено живьём
+     * 2026-08-24 — весь прогон на 1000 карточек застрял на SAT-радиаторах
+     * именно по этой причине (1151 кандидат в очереди, 0 успешных
+     * отправок за первые 52 попытки).
      */
     private function flattenCharacteristics(?array $data): array
     {
@@ -383,10 +401,13 @@ class HalykCreateCardCommand extends Command
         foreach (($data['specifications'] ?? []) as $spec) {
             foreach (($spec['features'] ?? []) as $feature) {
                 $name = mb_strtolower(trim($feature['name'] ?? ''));
-                $value = $feature['featureValues'][0]['value'] ?? null;
+                $values = array_values(array_filter(array_map(
+                    fn($fv) => $fv['value'] ?? null,
+                    $feature['featureValues'] ?? []
+                ), fn($v) => $v !== null && $v !== ''));
 
-                if ($name !== '' && $value !== null && $value !== '') {
-                    $flat[$name] = $value;
+                if ($name !== '' && !empty($values)) {
+                    $flat[$name] = $values;
                 }
             }
         }
@@ -396,19 +417,24 @@ class HalykCreateCardCommand extends Command
 
     /**
      * Ищет среди вариантов ENUM тот, чьё имя совпадает (регистронезависимо,
-     * с проверкой вхождения в обе стороны) с нашим значением характеристики.
-     * Возвращает ИМЯ варианта (не classAttrValueId — см. buildAttrs).
+     * с проверкой вхождения в обе стороны) с ЛЮБЫМ из наших значений
+     * характеристики (деталь может подходить под несколько моделей/годов —
+     * см. докблок flattenCharacteristics). Возвращает ИМЯ варианта (не
+     * classAttrValueId — см. buildAttrs), либо null, если ни одно из наших
+     * значений не совпало ни с одним вариантом Halyk.
      */
-    private function matchEnumOption(array $options, string $ourValue): ?string
+    private function matchEnumOption(array $options, array $ourValues): ?string
     {
-        $ourLower = mb_strtolower(trim($ourValue));
+        foreach ($ourValues as $ourValue) {
+            $ourLower = mb_strtolower(trim((string) $ourValue));
 
-        foreach ($options as $opt) {
-            $optName = trim($opt['name'] ?? '');
-            $optLower = mb_strtolower($optName);
+            foreach ($options as $opt) {
+                $optName = trim($opt['name'] ?? '');
+                $optLower = mb_strtolower($optName);
 
-            if ($optLower === $ourLower || str_contains($ourLower, $optLower) || str_contains($optLower, $ourLower)) {
-                return $optName;
+                if ($optLower === $ourLower || str_contains($ourLower, $optLower) || str_contains($optLower, $ourLower)) {
+                    return $optName;
+                }
             }
         }
 
