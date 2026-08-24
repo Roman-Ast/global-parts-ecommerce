@@ -3331,6 +3331,8 @@ do {
                     'delivery_time'    => $deliveryDate,
                     'deliveryStart'    => $deliveryDate,
                     'deliverydays_min' => $deliveryDaysMin,
+                    // Автозакуп — поставки из РФ, международный возврат
+                    'returnable'       => false,
                     'supplier_name'    => 'vtzkp',
                     'supplier_city'    => 'msk',
                     'supplier_color'   => 'linear-gradient(135deg, #1a1a1a, #cc0000)',
@@ -3564,6 +3566,10 @@ do {
                     'qty'              => (int) ($part['quantity'] ?? 0),
                     'delivery_time'    => $deliveryDate ?? $deliveryTimeText,
                     'deliveryStart'    => $deliveryDate,
+                    // Radle — поставки из ОАЭ, международный возврат
+                    // невозможен (по всем позициям, независимо от
+                    // конкретного города-источника — Роман 2026-08-24).
+                    'returnable'       => false,
                     'supplier_name'    => $adminLabel,
                     'supplier_city'    => $customerLabel,
                     'supplier_color'   => 'linear-gradient(135deg, #0f172a, #16a34a)',

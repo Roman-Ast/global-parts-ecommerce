@@ -144,6 +144,15 @@
                                        style="color:#042D4D;font-size:18px;cursor:pointer;"></i>
                                 @endif
                             </div>
+                            <div class="requestPartNumberContainer-item-entity requestPartNumber-return">
+                                @php $isReturnable = $searchItem['returnable'] ?? true; @endphp
+                                <i class="fas fa-triangle-exclamation {{ $isReturnable ? 'text-success' : 'text-warning' }}"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="{{ $isReturnable
+                                       ? 'Возврат возможен в течение 14 дней с момента получения товара в ПВЗ при сохранении товарного вида: целая чистая упаковка, без следов установки/эксплуатации, при наличии чека.'
+                                       : 'Поставщик — из РФ или ОАЭ, международный возврат по этой позиции невозможен.' }}"></i>
+                            </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-delivery">
                                 @php
                                     $ds = $searchItem['deliveryStart'] ?? '';

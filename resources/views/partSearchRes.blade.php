@@ -503,6 +503,14 @@
                 }, 1700);
 
                 registerBrand(node.dataset.brand);
+
+                // Иконка возврата (requestPartNumber-return) несёт
+                // data-bs-toggle="tooltip" — Bootstrap не активирует такие
+                // атрибуты сам по себе, нужен явный new bootstrap.Tooltip()
+                // на каждый элемент. Строки подгружаются пачками уже после
+                // первого рендера страницы, поэтому инициализация — здесь,
+                // на каждый новый узел, а не один раз при загрузке.
+                node.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
             });
 
             sortContainerByPrice(container, showMore);
