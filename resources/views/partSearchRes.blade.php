@@ -56,10 +56,21 @@
                          это знать незачем. position:fixed — держится в углу
                          экрана независимо от скролла (не position:absolute,
                          тот прокрутился бы вместе со страницей — тут именно
-                         "прилипание" к вьюпорту, оно и нужно). --}}
-                    <div id="suppliers-progress-widget" style="position: fixed; top: 90px; right: 16px; z-index: 1050; text-align: right;">
-                        <span id="suppliers-responded-badge" class="badge rounded-pill bg-success" style="display: none;"></span>
-                        <div id="suppliers-failed-list" class="small text-danger mt-1" style="display: none;"></div>
+                         "прилипание" к вьюпорту, оно и нужно).
+                         Вид — как у стандартного bootstrap-тоста сайта (см.
+                         showStatusChangeToast() в master.js, тот же приём:
+                         bg-success/bg-danger + text-white + rounded + shadow,
+                         без самого компонента .toast — он по умолчанию сам
+                         прячется через пару секунд, а тут нужно, чтобы виджет
+                         жил и обновлялся весь проход поиска).
+                         Перетаскивание — makeSuppliersWidgetDraggable() ниже:
+                         мышью на десктопе, зажатием (long-press) на мобиле,
+                         чтобы можно было убрать виджет, если он что-то
+                         закрывает. cursor:grab — сразу подсказывает, что
+                         можно тащить. --}}
+                    <div id="suppliers-progress-widget" style="position: fixed; top: 90px; right: 16px; z-index: 1050; text-align: right; cursor: grab; user-select: none;">
+                        <div id="suppliers-responded-badge" class="text-white bg-success rounded shadow-sm px-3 py-2 mb-2" style="display: none; font-size: .85rem; font-weight: 600;"></div>
+                        <div id="suppliers-failed-list" class="text-white bg-danger rounded shadow-sm px-3 py-2" style="display: none; font-size: .8rem;"></div>
                     </div>
                 @endif
                 @endauth
@@ -550,6 +561,84 @@
         const failedListEl = document.getElementById('suppliers-failed-list');
         let respondedCount = 0;
         const failedSuppliers = [];
+
+        // Перетаскивание виджета счётчика поставщиков — мышью на десктопе,
+        // зажатием (long-press) на мобиле, чтобы Роман мог убрать его,
+        // если он закрывает собой что-то на странице. Изначально виджет
+        // спозиционирован через top+right (см. разметку выше) — при первом
+        // же движении переключаемся на top+left в px, иначе перетаскивание
+        // "прыгает" (right и left одновременно не имеют смысла). top у
+        // виджета на мобиле переопределён в partSearchRes-mini.css через
+        // !important (не залезать на переключатель "Только в наличии") —
+        // setProperty(..., 'important') на инлайн-стиле перебивает его
+        // (инлайн всегда весомее любого правила из подключённого файла).
+        (function makeSuppliersWidgetDraggable() {
+            const widget = document.getElementById('suppliers-progress-widget');
+            if (!widget) return;
+
+            let dragging = false;
+            let offsetX = 0;
+            let offsetY = 0;
+            let longPressTimer = null;
+
+            function setPos(left, top) {
+                const maxLeft = window.innerWidth - widget.offsetWidth;
+                const maxTop = window.innerHeight - widget.offsetHeight;
+                left = Math.max(0, Math.min(maxLeft, left));
+                top = Math.max(0, Math.min(maxTop, top));
+                widget.style.setProperty('left', left + 'px', 'important');
+                widget.style.setProperty('top', top + 'px', 'important');
+                widget.style.setProperty('right', 'auto', 'important');
+            }
+
+            function startDrag(clientX, clientY) {
+                dragging = true;
+                const rect = widget.getBoundingClientRect();
+                offsetX = clientX - rect.left;
+                offsetY = clientY - rect.top;
+                widget.style.cursor = 'grabbing';
+            }
+
+            function moveDrag(clientX, clientY) {
+                if (!dragging) return;
+                setPos(clientX - offsetX, clientY - offsetY);
+            }
+
+            function endDrag() {
+                dragging = false;
+                widget.style.cursor = 'grab';
+            }
+
+            // ---- десктоп ----
+            widget.addEventListener('mousedown', function (e) {
+                startDrag(e.clientX, e.clientY);
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', function (e) { moveDrag(e.clientX, e.clientY); });
+            document.addEventListener('mouseup', endDrag);
+
+            // ---- мобилка: зажать, потом тащить (иначе обычный тап/скролл
+            // страницы стал бы двигать виджет) ----
+            const LONG_PRESS_MS = 350;
+            widget.addEventListener('touchstart', function (e) {
+                const touch = e.touches[0];
+                longPressTimer = setTimeout(function () {
+                    startDrag(touch.clientX, touch.clientY);
+                }, LONG_PRESS_MS);
+            }, { passive: true });
+
+            widget.addEventListener('touchmove', function (e) {
+                if (!dragging) return;
+                const touch = e.touches[0];
+                moveDrag(touch.clientX, touch.clientY);
+                e.preventDefault(); // не даём странице скроллиться, пока тащим виджет
+            }, { passive: false });
+
+            widget.addEventListener('touchend', function () {
+                clearTimeout(longPressTimer);
+                endDrag();
+            });
+        })();
 
         // Прогресс-бар — для ВСЕХ посетителей, не только админа (сам
         // элемент в разметке не гейтится ролью, см. HTML выше).

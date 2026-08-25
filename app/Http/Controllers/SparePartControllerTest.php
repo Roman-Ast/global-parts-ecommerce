@@ -965,7 +965,7 @@ do {
                     'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
                     'supplier_name'  => 'frmt',
                     'delivery_date'  => '',
-                    'delivery_time'  => '2-2.5 часа',
+                    'delivery_time'  => '2 часа',
                     'supplier_city'  => 'Астана',
                     'supplier_color' => '#333',
                 ]);
@@ -1043,7 +1043,7 @@ do {
                 'qty'              => $item->amount,
                 'supplier_name'    => 'fbst',
                 'stock_legend'     => 'Астана',
-                'delivery_time'    => '2-2.5 часа',
+                'delivery_time'    => '2 часа',
                 'supplier_city'    => 'ast',
                 'supplier_color'   => '#a27745',
             ]);
@@ -1350,7 +1350,7 @@ do {
                         'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
                         'supplier_name' => 'frmt',
                         'delivery_date' => '',
-                        'delivery_time' => '2-2.5 часа',
+                        'delivery_time' => '2 часа',
                         'supplier_city' => 'Астана',
                         'supplier_color' => '#34689e'
                     ]);
@@ -2572,7 +2572,7 @@ do {
                 'qty' => $item->amount,
                 'supplier_name' => 'fbst',
                 'stock_legend' => 'Астана',
-                'delivery_time' => '2-2.5 часа',
+                'delivery_time' => '2 часа',
                 'supplier_city' => 'ast',
                 'supplier_color' => '#a27745',
             ]);
