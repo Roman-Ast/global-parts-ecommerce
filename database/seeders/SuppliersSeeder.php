@@ -39,6 +39,7 @@ class SuppliersSeeder extends Seeder
             'Krn_tnt' => ['Корея Танат', null, 0],
             'kln' => ['Кулан', null, 0],
             'frmt' => ['Форумавто', null, 0],
+            'ntrkm' => ['Интерком', null, 0],
             'china_ata' => ['Китайцы Алматы', null, 0],
             'china_igor' => ['Китай Игорь', null, 0],
             'voltag_ast' => ['Вольтаж Астана', null, 0],
