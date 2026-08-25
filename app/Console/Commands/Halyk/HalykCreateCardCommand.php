@@ -134,10 +134,18 @@ class HalykCreateCardCommand extends Command
     {
         // 1. Проверка "не существует ли уже" — та же строгая проверка по
         // границе токена, что и в halyk:match (защита от бага BW0010).
+        //
+        // ИЗМЕНЕНО 2026-08-25: раньше просто пропускали найденный дубль.
+        // Роман прислал реальный комментарий Halyk с уже удалённой (после
+        // отправки) карточки — "Такая карточка уже существует... Просьба
+        // привязаться к существующей карточке товара" — это их прямая,
+        // официальная рекомендация, не наша догадка. Раз карточка уже
+        // есть — используем ту же привязку, что и в halyk:bind
+        // (save-and-map-sku), вместо того чтобы просто ничего не делать.
         $existing = $client->searchSku(trim("{$card->brand} {$card->article}"), 1, 5);
-        if ($this->hasStrictMatch($existing, $card->article)) {
-            $this->line('  ⨯ уже есть на Halyk (найдено строгим поиском) — пропуск');
-            $this->recordResult($card, status: 'skipped', skipReason: 'already_exists_on_halyk');
+        $match = $this->findStrictMatch($existing, $card->article);
+        if ($match) {
+            $this->bindToExisting($client, $card, $match, $dryRun);
             return;
         }
 
@@ -246,7 +254,10 @@ class HalykCreateCardCommand extends Command
      * Строгая проверка по границе токена — портировано из halyk:match /
      * ParseKaspiSkuCommand::filterByExactArticle() (защита от бага BW0010).
      */
-    private function hasStrictMatch(array $results, string $article): bool
+    /**
+     * @return array{skuId:int,name:string,imageUrl:?string,category:array,marketUrl:?string}|null
+     */
+    private function findStrictMatch(array $results, string $article): ?array
     {
         $normalized = mb_strtoupper(str_replace('-', '', $article));
         $pattern = '/(?<![A-Z0-9])' . preg_quote($normalized, '/') . '(?![A-Z0-9])/u';
@@ -254,11 +265,58 @@ class HalykCreateCardCommand extends Command
         foreach ($results as $r) {
             $nameNormalized = mb_strtoupper(str_replace('-', '', $r['name'] ?? ''));
             if ($nameNormalized !== '' && preg_match($pattern, $nameNormalized)) {
-                return true;
+                return $r;
             }
         }
 
-        return false;
+        return null;
+    }
+
+    /**
+     * Привязка к уже существующей карточке вместо создания новой —
+     * PUT save-and-map-sku, тот же вызов, что и в halyk:bind (см. его
+     * докблок про HALYK_CITY_CODE/HALYK_POINT_CODE). merchantProductCode —
+     * та же логика приватности, что и в resolveMerchantProductCode() для
+     * новых карточек (реальный Kaspi SKU, не голый артикул производителя).
+     */
+    private function bindToExisting(HalykMarketClient $client, PartsCatalog $card, array $match, bool $dryRun): void
+    {
+        $cityCode = env('HALYK_CITY_CODE');
+        $pointCode = env('HALYK_POINT_CODE');
+
+        if (!$cityCode || !$pointCode) {
+            $this->line('  ⨯ уже есть на Halyk, но HALYK_CITY_CODE/HALYK_POINT_CODE не заданы в .env — не могу привязаться, пропуск');
+            $this->recordResult($card, status: 'skipped', skipReason: 'already_exists_on_halyk_no_bind_config');
+            return;
+        }
+
+        $payload = [
+            'skuId'               => $match['skuId'],
+            'merchantProductCode' => $this->resolveMerchantProductCode($card),
+            'city'                => ['code' => $cityCode],
+            'price'               => (int) $card->offer['retail_price'],
+            'points'              => [[
+                'code'   => $pointCode,
+                'amount' => (int) $card->offer['stock'],
+            ]],
+            'loanPeriod'          => 3,
+        ];
+
+        if ($dryRun) {
+            $this->line('  · уже есть на Halyk (skuId=' . $match['skuId'] . '), dry-run — не привязываю: ' . json_encode($payload, JSON_UNESCAPED_UNICODE));
+            $this->recordResult($card, status: 'dry_run_bind', skipReason: null);
+            return;
+        }
+
+        $result = $client->bindSku($payload);
+
+        if ($result['ok']) {
+            $this->line('  ✓ уже была на Halyk (skuId=' . $match['skuId'] . ') — привязался вместо создания новой');
+            $this->recordResult($card, status: 'bound', skipReason: null, halykProductId: $match['skuId']);
+        } else {
+            $this->line('  ⨯ уже есть на Halyk, но привязка не удалась: HTTP ' . $result['status'] . ' — ' . json_encode($result['body'], JSON_UNESCAPED_UNICODE));
+            $this->recordResult($card, status: 'skipped', skipReason: 'bind_failed:' . $result['status']);
+        }
     }
 
     /**
