@@ -631,8 +631,22 @@ Halyk Market есть отдельный полноценный REST API (`zagru
 
 ### Документация
 - Гайд для партнёра: https://halyk-market.gitbook.io/halyk-market-gid-dlya-partnera
-- Полный индекс страниц (удобно смотреть за раз): добавить `/llms.txt` к базовому URL
-  гайда — отдаёт список всех разделов с прямыми ссылками на `.md`-версии страниц.
+- Отдельное gitbook-пространство "Anyqtama" (2026-08-25, прислал Роман) — подробнее по
+  загрузке через API/фид: https://halyk-market.gitbook.io/anyqtama/zagruzka-tovarov-po-api/zagruzka-tovarov-prais-listom/sostavlenie-prais-lista-v-xml-formate
+  Публично доступна (в отличие от wiki.tabys.parts у TISS, авторизация не требуется).
+  Подтверждено: `sku` в фиде — "артикул в складской системе мерчанта" (наш
+  внутренний код, не идентификатор Halyk для сопоставления карточек), обязательный
+  `date`-атрибут на `<merchant_offers>` (уже есть в `GenerateHalykXml`, не источник
+  бага с падением ~500 позиций), правила отклонения по промо-цене (`sale_price` мы
+  не пишем — не причина). Сам механизм сопоставления фида с существующими
+  карточками эта страница не описывает вообще — предположительно по тексту
+  `model`+`brand` (см. `notMappedCount` в статусе загрузки), не подтверждено
+  живьём — `halyk:upload-feed`/`halyk:check-feed-status` ещё не написаны (см.
+  архитектуру пайплайна выше).
+- Полный индекс страниц гайда для партнёра (удобно смотреть за раз): добавить
+  `/llms.txt` к базовому URL — отдаёт список всех разделов с прямыми ссылками на
+  `.md`-версии страниц. Не проверено, работает ли тот же приём для пространства
+  "Anyqtama".
 - Кабинет продавца: https://partners.halykmarket.com/
 - XSD-схема фида и пример XML — см. историю чата (namespace `halyk_market`, порядок
   `model → brand → barcodes → stocks → deliveryOptions → price|cityprices → sale_price
