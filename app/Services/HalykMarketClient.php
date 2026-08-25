@@ -25,6 +25,72 @@ class HalykMarketClient
             : 'https://halykmarket.kz';
     }
 
+    /**
+     * Загрузка/статус фида живут на ОТДЕЛЬНОМ хосте от остального API
+     * (/gw/... на halykmarket.kz) — см. CLAUDE.md, "Авторизация": прод —
+     * api.halykmarket.com, тест — test2-api.halykmarket.com (БЕЗ "2" в
+     * "api", только в "test2"). Не проверено вживую до 2026-08-25, тот ли
+     * это OAuth-токен, что и для /gw/... — пробуем тот же token(), это
+     * единственный токен, который у нас вообще есть.
+     */
+    private function apiBaseUrl(): string
+    {
+        return env('HALYK_USE_TEST_ENV', false)
+            ? 'https://test2-api.halykmarket.com'
+            : 'https://api.halykmarket.com';
+    }
+
+    /**
+     * Загрузка XML-фида (см. GenerateHalykXml) — единственный bulk-путь у
+     * Halyk, аналог kaspi:sync-feed, но с реальным ответом с id вместо
+     * ручной передачи ссылки менеджеру.
+     * POST /api/merchant/v1/offers/upload (multipart/form-data, поле file)
+     *
+     * @return array{ok:bool,status:int,body:mixed}
+     */
+    public function uploadFeed(string $filePath): array
+    {
+        $response = Http::withToken($this->token())
+            ->timeout(60)
+            ->attach('file', file_get_contents($filePath), basename($filePath))
+            ->post($this->apiBaseUrl() . '/api/merchant/v1/offers/upload');
+
+        return [
+            'ok'     => $response->successful(),
+            'status' => $response->status(),
+            'body'   => $response->json() ?? $response->body(),
+        ];
+    }
+
+    /**
+     * Статус обработки загруженного фида — status
+     * (CREATED/PROCESSING/COMPLETED/FAILED/SKIPPED), totalCount/
+     * successCount/notMappedCount/failCount/message. SKIPPED — фид
+     * идентичен предыдущей загрузке, не обработан повторно.
+     * GET /api/merchant/v1/offers/upload/status/{id}
+     *
+     * @return array{ok:bool,status:int,body:mixed}
+     */
+    public function getFeedUploadStatus(int $uploadId): array
+    {
+        // GET без явного Content-Type ловил 415 ("content type not
+        // supported") — их API (в отличие от /gw/... эндпоинтов) требует
+        // Content-Type: application/json даже на чтение без тела, одного
+        // Accept недостаточно (проверено вживую 2026-08-25 — curl с
+        // Content-Type прошёл, без него/только с Accept — нет).
+        $response = Http::withToken($this->token())
+            ->contentType('application/json')
+            ->acceptJson()
+            ->timeout(15)
+            ->get($this->apiBaseUrl() . "/api/merchant/v1/offers/upload/status/{$uploadId}");
+
+        return [
+            'ok'     => $response->successful(),
+            'status' => $response->status(),
+            'body'   => $response->json() ?? $response->body(),
+        ];
+    }
+
     public function token(): string
     {
         return Cache::lock('halyk_token_lock', 10)->block(5, function () {
