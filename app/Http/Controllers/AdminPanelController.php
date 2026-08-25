@@ -22,6 +22,7 @@ use App\Models\OfficePrice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use App\Traits\HasCustomerLogic;
+use App\Models\SupplierCredit;
 
 class AdminPanelController extends Controller
 {
@@ -73,7 +74,7 @@ class AdminPanelController extends Controller
         //$settlements = Setlement::all();
         $users = User::all();
         $payments = Payment::all();
-        $sumOrders = $user->orders->sum('sum');
+        $sumOrders = $user->orders->sum('sum_with_margine');
         $qtyOrders = $user->orders->count();
         $customers = Order::all()->where('customer_phone', !null)->pluck('customer_phone')->toArray();
         $supplerSettlements = SupplierSettlement::orderBy('created_at', 'desc')->get();
@@ -122,7 +123,7 @@ class AdminPanelController extends Controller
             ->groupBy('sale_channel', 'accounting_month')
             ->get();
 
-        $channelKeys = ['kaspi', '2gis', 'olx', 'friends', 'site', 'repeat_request'];
+        $channelKeys = ['kaspi', '2gis', 'olx', 'friends', 'site', 'satu', 'repeat_request'];
 
         $salesStatisticsByMonth = [];
 
@@ -195,7 +196,7 @@ class AdminPanelController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->user_role,
-                'sumOrders' => $user->orders->sum('sum'),
+                'sumOrders' => $user->orders->sum('sum_with_margine'),
                 'qtyOrders' => $user->orders->count(),
             ];
         }
@@ -356,6 +357,8 @@ class AdminPanelController extends Controller
 
         $financeDashboard = $this->getFinanceDashboardData($request);
         $supplierSettlementsDebts = $this->getSuppliersSettlements($request);
+        $receivables = $this->getReceivablesData($request);
+        $supplierCredits = $this->getSupplierCreditsData();
         
         //dd($supplierSettlementsDebts);
 
@@ -410,10 +413,35 @@ class AdminPanelController extends Controller
             'end'                        => $end,
         ], 
         $financeDashboard, 
-        $supplierSettlementsDebts
+        $supplierSettlementsDebts,
+        $receivables,
+        $supplierCredits
         ));
     }
 
+    private function getSupplierCreditsData(): array
+    {
+        $supplierCredits = SupplierCredit::selectRaw('supplier_id, SUM(amount) as balance')
+            ->groupBy('supplier_id')
+            ->having('balance', '>', 0)
+            ->get()
+            ->map(function ($row) {
+                $supplier = Suppliers::find($row->supplier_id);
+                return [
+                    'name' => $supplier?->name ?? 'Неизвестный поставщик',
+                    'amount' => round((float) $row->balance, 2),
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $totalSupplierCredits = round($supplierCredits->sum('amount'), 2);
+
+        return [
+            'supplierCredits' => $supplierCredits,
+            'totalSupplierCredits' => $totalSupplierCredits,
+        ];
+    }
     private function getFinanceDashboardData(Request $request): array
     {
         $dateFrom = Carbon::parse(
@@ -546,7 +574,9 @@ class AdminPanelController extends Controller
 
         $customerPaid = (clone $returnsQuery)->sum('customer_refund_paid');
 
-        $supplierReceived = (clone $returnsQuery)->sum('supplier_refund_received');
+        $supplierReceived = (clone $returnsQuery)
+            ->where('supplier_refund_status', 'received') // только реальные деньги, не зачёты
+            ->sum('supplier_refund_received');
 
         $financeReturnsStats = [
             'open_count' => $openCount,
@@ -587,6 +617,65 @@ class AdminPanelController extends Controller
             'financeExpenseBreakdown' => $financeExpenseBreakdown,
             'financeReturnsStats' => $financeReturnsStats,
             'financeLatestTransactions' => $financeLatestTransactions,
+        ];
+    }
+
+    private function getReceivablesData(Request $request): array
+    {
+        // Дебиторка от поставщиков за возвраты (сгруппировано по поставщику)
+        $supplierReturnReceivablesRaw = CustomerReturn::where('supplier_refund_status', 'pending')
+            ->whereRaw('supplier_refund_amount > supplier_refund_received')
+            ->get();
+
+        $supplierReturnReceivables = $supplierReturnReceivablesRaw
+            ->groupBy('supplier_name')
+            ->map(function ($group, $supplierName) {
+                return [
+                    'name' => $supplierName ?: 'Неизвестный поставщик',
+                    'amount' => round($group->sum(fn ($ret) => (float) $ret->supplier_refund_amount - (float) $ret->supplier_refund_received), 2),
+                    'count' => $group->count(),
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $totalSupplierReturnReceivable = round($supplierReturnReceivables->sum('amount'), 2);
+
+        // Дебиторка от клиентов (недоплата по заказу), сгруппировано по телефону
+        $paidByOrder = OrderPayment::selectRaw("order_id, SUM(CASE WHEN type = 'payment' THEN amount WHEN type = 'refund' THEN -amount ELSE 0 END) as paid")
+            ->groupBy('order_id')
+            ->pluck('paid', 'order_id');
+
+        $customerReceivablesRaw = Order::all()->map(function ($order) use ($paidByOrder) {
+            $paid = (float) ($paidByOrder[$order->id] ?? 0);
+            $due = round((float) $order->sum_with_margine - $paid, 2);
+
+            return [
+                'order_id' => $order->id,
+                'customer_phone' => $order->customer_phone ?: 'Без телефона',
+                'due' => $due,
+            ];
+        })->filter(fn ($row) => $row['due'] > 0);
+
+        $customerReceivables = $customerReceivablesRaw
+            ->groupBy('customer_phone')
+            ->map(function ($group, $phone) {
+                return [
+                    'name' => $phone,
+                    'amount' => round($group->sum('due'), 2),
+                    'count' => $group->count(),
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $totalCustomerReceivable = round($customerReceivables->sum('amount'), 2);
+
+        return [
+            'supplierReturnReceivables' => $supplierReturnReceivables,
+            'totalSupplierReturnReceivable' => $totalSupplierReturnReceivable,
+            'customerReceivables' => $customerReceivables,
+            'totalCustomerReceivable' => $totalCustomerReceivable,
         ];
     }
 
@@ -697,27 +786,6 @@ class AdminPanelController extends Controller
 
     public function makeCustomerReturn(Request $request)
     {
-        //dd($request);
-        //если поставщик сразу вернул деньги или возврат записывается постфактум, когда все процессы завершены
-        if ($request->account_id_in) {
-            $cashflowTransactionIn = CashflowTransactions::create([
-                'txn_at' => $request->return_date, // дата фактической оплаты
-                'direction' => 'in',
-                'cashflow_category_id' => 4, // например: "Оплата от клиента"
-                'expense_category_id' => null,
-                'supplier_id' => $request->supplier_id,
-                'user_id' => $request->user_id,
-                'account_id' => $request->account_id_in,
-                'amount' => $request->supplier_refund_received,
-                'subcategory' => 'возврат от поставщика',
-                'counterparty' => $request->supplier_name ?? null,
-                'related_table' => 'customer_returns',
-                'related_id' => null,
-                'comment' => $request->comment == '' ? 'Возврат от поставщика по заказу №' . $request->order_id : $request->comment,
-            ]);
-        } 
-
-        //запись в cashflow_transactions расхода по возврату клиенту
         $cashflowTransactionOut = CashflowTransactions::create([
             'txn_at' => $request->return_date,
             'direction' => 'out',
@@ -731,10 +799,10 @@ class AdminPanelController extends Controller
             'counterparty' => $request->customer_phone ?? null,
             'related_table' => 'customer_returns',
             'related_id' => null,
-            'comment' => $request->comment == '' ? 'Возврат клиенту по заказу номер ' . $request->order_id : $request->comment,
+            'comment' => $request->comment ?: 'Возврат клиенту по заказу номер ' . $request->order_id,
         ]);
 
-        $customer_id = $request->customer_id = 'нет данных' ? null : $request->customer_id;
+        $customer_id = $request->customer_id === 'нет данных' ? null : $request->customer_id;
 
         $customer_returns = CustomerReturn::create([
             'customer_id' => $customer_id,
@@ -750,29 +818,19 @@ class AdminPanelController extends Controller
             'supplier_purchase_price' => $request->supplier_purchase_price,
             'supplier_refund_amount' => $request->supplier_refund_amount,
             'customer_refund_paid' => $request->customer_refund_paid,
-            'supplier_refund_received' => $request->supplier_refund_received,
+            'supplier_refund_received' => 0,
             'return_date' => $request->return_date,
             'customer_refund_date' => $request->customer_refund_date,
-            'supplier_refund_date' => $request->supplier_refund_date,
-            'closed_at' => $request->closed_at,
             'reason' => $request->reason,
             'comment' => $request->comment,
             'status' => $request->status,
-            'supplier_refund_status' => $request->supplier_refund_status,
+            'supplier_refund_status' => 'pending',
             'customer_cashflow_transaction_id' => $cashflowTransactionOut->id,
-            'supplier_cashflow_transaction_id' => $request->supplier_cashflow_transaction_id,
         ]);
 
         $cashflowTransactionOut->update(['related_id' => $customer_returns->id]);
-        
-        if (isset($cashflowTransactionIn)) {
-            $cashflowTransactionIn->update(['related_id' => $customer_returns->id]);
-        }
 
-        return back()->with([
-                'message' => 'возврат успешно сохранен!',
-            ]
-        );
+        return back()->with(['message' => 'Возврат клиенту успешно сохранён!']);
     }
 
     public function pay(Request $request)
@@ -1009,11 +1067,11 @@ class AdminPanelController extends Controller
             ]
         );
 
-        /*if (!$newCustomer->name && $customerName) {
+        if (!$newCustomer->name && $customerName) {
             $newCustomer->update([
                 'name' => $customerName
             ]);
-        }*/
+        }
 
         $order = Order::create([
             'user_id' => $request->data['orderInfo'][0],
@@ -1027,7 +1085,7 @@ class AdminPanelController extends Controller
             'sale_channel' => $request->data['orderInfo'][4]
         ]);
 
-        /*$orderPayment = OrderPayment::create([
+        $orderPayment = OrderPayment::create([
             'order_id' => $order->id,
             'account_id' => $request->data['paymentInfo'][0],
             'paid_at' => $request->data['paymentInfo'][1],
@@ -1053,17 +1111,15 @@ class AdminPanelController extends Controller
             'related_table' => 'orders',
             'related_id' => $order->id,
             'comment' => ($orderPayment->type === 'refund' ? 'Возврат по заказу №' : 'Оплата по заказу №') . $order->id,
-        ]);*/
+        ]);
 
         foreach ($request->data['products'] as $product) {
-            /*$supplierId = (int)$product[6];
-            $supplierCode = Suppliers::find($supplierId)?->code;
-
-            $supplier = Suppliers::find($supplierId);*/
+            $supplierId = (int)$product[6];
+            $supplier = Suppliers::find($supplierId);
 
             $orderProduct = OrderProduct::create([
                 'order_id' => $order->id,
-                //'supplier_id' => $supplierId ?: null,
+                'supplier_id' => $supplierId ?: null,
                 'article' => $product[0],
                 'brand' => $product[1],
                 'name' => $product[2],
@@ -1073,10 +1129,10 @@ class AdminPanelController extends Controller
                 'item_sum' => (float)$product[4] * (int)$product[3],
                 'itemSumWithMargine' => (float)$product[5] * (int)$product[3],
                 'searched_number' => '',
-                'fromStock' => $product[6],
+                'fromStock' => $supplier?->name ?? 'Неизвестно', // теперь всегда имя
                 'deliveryTime' => $product[7],
-                //'payment_policy_snapshot' => $supplier?->payment_policy,
-                //'payment_delay_days_snapshot' => $supplier?->payment_delay_days ?? 0,
+                'payment_policy_snapshot' => $supplier?->payment_policy,
+                'payment_delay_days_snapshot' => $supplier?->payment_delay_days ?? 0,
                 'status' => 'payment_waiting'
             ]);
             $paymentDueDate = null;
@@ -1096,12 +1152,12 @@ class AdminPanelController extends Controller
             SupplierSettlement::create([
                 'order_id' => $order->id,
                 'product_id' => $orderProduct->id,
-                'supplier' => $product[6],
-                //'supplier_id' => $supplierId ?: null,
+                'supplier' => $supplier?->name,
+                'supplier_id' => $supplierId ?: null,
                 'sum' => -((float)$product[4] * (int)$product[3]),
                 'date' => $request->data['orderInfo'][1],
                 'operation' => 'realization',
-                //'payment_due_date' => $paymentDueDate,
+                'payment_due_date' => $paymentDueDate,
             ]);
         }
 
