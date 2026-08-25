@@ -122,7 +122,7 @@ class AdminPanelController extends Controller
             ->groupBy('sale_channel', 'accounting_month')
             ->get();
 
-        $channelKeys = ['kaspi', '2gis', 'olx', 'friends', 'site', 'repeat_request'];
+        $channelKeys = ['kaspi', '2gis', 'olx', 'friends', 'site', 'satu', 'repeat_request'];
 
         $salesStatisticsByMonth = [];
 

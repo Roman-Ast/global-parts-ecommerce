@@ -562,6 +562,7 @@
                             'olx':            ['📦 OLX',         'secondary'],
                             'friends':        ['👥 Сарафан',     'success'],
                             'site':           ['🌐 Сайт',        'primary'],
+                            'satu':           ['🛍️ Satu',        'danger'],
                             'repeat_request': ['🔁 Повторные',   'dark'],
                         };
 
@@ -761,6 +762,7 @@
                                         'olx'            => ['📦 OLX',             'secondary'],
                                         'friends'        => ['👥 Сарафан',         'success'],
                                         'site'           => ['🌐 Сайт',            'primary'],
+                                        'satu'           => ['🛍️ Satu',            'danger'],
                                         'repeat_request' => ['🔁 Повторные',       'dark'],
                                     ];
                                     $label = $channelLabels[$channel][0] ?? $channel;
@@ -1671,6 +1673,7 @@
                                 <option value="site">Сайт</option>
                                 <option value="friends">Свои</option>
                                 <option value="kaspi">Каспи</option>
+                                <option value="satu">Satu</option>
                                 <option value="repeat_request">Повторное обращение</option>
                             </select>
                         </div>
