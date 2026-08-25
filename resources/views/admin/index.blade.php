@@ -12,9 +12,6 @@
 @section('title', 'Панель администратора')
 
 @section('content')
-    <script>
-        window.suppliersList = @json($suppliers);
-    </script>
     <div id="admin-main-container">
         <div id="container-header">
             <a href="/"> Global Parts</a> админ панель вы вошли как: {{ auth()->user()->name }}
@@ -265,72 +262,6 @@
                                                             {{ number_format($totalSupplierDebt ?? 0, 0, '.', ' ') }} ₸
                                                         </div>
                                                         <div class="small text-muted mt-2">Общая сумма долга поставщикам</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-12 col-md-6">
-                                                <div class="card border-0 shadow-sm h-100">
-                                                    <div class="card-header bg-white border-0 pb-0">
-                                                        <div class="text-muted small mb-1">Дебиторка от клиентов</div>
-                                                        <div class="fs-3 fw-bold text-primary">
-                                                            {{ number_format($totalCustomerReceivable ?? 0, 0, '.', ' ') }} ₸
-                                                        </div>
-                                                        <div class="small text-muted mt-1">Клиенты должны доплатить</div>
-                                                    </div>
-                                                    <div class="card-body pt-2">
-                                                        @forelse($customerReceivables ?? [] as $row)
-                                                            <div class="d-flex justify-content-between py-1 border-bottom">
-                                                                <span>{{ $row['name'] }}</span>
-                                                                <span class="fw-semibold">{{ number_format($row['amount'], 0, '.', ' ') }} ₸</span>
-                                                            </div>
-                                                        @empty
-                                                            <div class="text-muted small">Нет долгов от клиентов</div>
-                                                        @endforelse
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-12 col-md-6">
-                                                <div class="card border-0 shadow-sm h-100">
-                                                    <div class="card-header bg-white border-0 pb-0">
-                                                        <div class="text-muted small mb-1">Дебиторка от поставщиков (возвраты)</div>
-                                                        <div class="fs-3 fw-bold text-primary">
-                                                            {{ number_format($totalSupplierReturnReceivable ?? 0, 0, '.', ' ') }} ₸
-                                                        </div>
-                                                        <div class="small text-muted mt-1">Поставщики должны вернуть за возвраты</div>
-                                                    </div>
-                                                    <div class="card-body pt-2">
-                                                        @forelse($supplierReturnReceivables ?? [] as $row)
-                                                            <div class="d-flex justify-content-between py-1 border-bottom">
-                                                                <span>{{ $row['name'] }}</span>
-                                                                <span class="fw-semibold">{{ number_format($row['amount'], 0, '.', ' ') }} ₸</span>
-                                                            </div>
-                                                        @empty
-                                                            <div class="text-muted small">Нет долгов от поставщиков</div>
-                                                        @endforelse
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-12 col-md-6">
-                                                <div class="card border-0 shadow-sm h-100">
-                                                    <div class="card-header bg-white border-0 pb-0">
-                                                        <div class="text-muted small mb-1">Сальдо у поставщиков (зачёт)</div>
-                                                        <div class="fs-3 fw-bold text-info">
-                                                            {{ number_format($totalSupplierCredits ?? 0, 0, '.', ' ') }} ₸
-                                                        </div>
-                                                        <div class="small text-muted mt-1">Деньги на балансе у поставщиков — зачтутся в след. закупку</div>
-                                                    </div>
-                                                    <div class="card-body pt-2">
-                                                        @forelse($supplierCredits ?? [] as $row)
-                                                            <div class="d-flex justify-content-between py-1 border-bottom">
-                                                                <span>{{ $row['name'] }}</span>
-                                                                <span class="fw-semibold">{{ number_format($row['amount'], 0, '.', ' ') }} ₸</span>
-                                                            </div>
-                                                        @empty
-                                                            <div class="text-muted small">Нет сальдо у поставщиков</div>
-                                                        @endforelse
                                                     </div>
                                                 </div>
                                             </div>
@@ -631,7 +562,6 @@
                             'olx':            ['📦 OLX',         'secondary'],
                             'friends':        ['👥 Сарафан',     'success'],
                             'site':           ['🌐 Сайт',        'primary'],
-                            'satu':           ['🛍️ Satu',        'danger'],
                             'repeat_request': ['🔁 Повторные',   'dark'],
                         };
 
@@ -831,7 +761,6 @@
                                         'olx'            => ['📦 OLX',             'secondary'],
                                         'friends'        => ['👥 Сарафан',         'success'],
                                         'site'           => ['🌐 Сайт',            'primary'],
-                                        'satu'           => ['🛍️ Satu',            'danger'],
                                         'repeat_request' => ['🔁 Повторные',       'dark'],
                                     ];
                                     $label = $channelLabels[$channel][0] ?? $channel;
@@ -1270,7 +1199,7 @@
 
                                 <div class="col-md-3">
                                     <label class="form-label">Данные клиента</label>
-                                    <input type="text" id="customer_data" class="form-control" value="{{ old('customer_id') }}" readonly>
+                                    <input type="text" name="customer_id" id="customer_data" class="form-control" value="{{ old('customer_id') }}">
                                 </div>
 
                                 <div class="col-md-3">
@@ -1343,7 +1272,7 @@
 
                             <hr class="my-4">
 
-                            <h5 class="mb-3">Данные по поставщику (план)</h5>
+                            <h5 class="mb-3">Данные по поставщику</h5>
 
                             <div class="row g-3">
                                 <div class="col-md-4">
@@ -1354,6 +1283,36 @@
                                 <div class="col-md-4">
                                     <label class="form-label">Ожидаемая сумма от поставщика</label>
                                     <input type="number" step="0.01" min="0" name="supplier_refund_amount" class="form-control supplier-refund-amount-input" id="supplier_refund_amount" value="0">
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Фактически получено от поставщика</label>
+                                    <input type="number" step="0.01" min="0" name="supplier_refund_received" class="form-control" value="{{ old('supplier_refund_received', 0) }}">
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Дата поступления от поставщика</label>
+                                    <input type="date" name="supplier_refund_date" class="form-control" value="{{ old('supplier_refund_date') }}">
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Статус компенсации от поставщика</label>
+                                    <select name="supplier_refund_status" class="form-select">
+                                        <option value="pending" {{ old('supplier_refund_status') == 'pending' ? 'selected' : '' }}>Ожидается</option>
+                                        <option value="received" {{ old('supplier_refund_status') == 'received' ? 'selected' : '' }}>Получено</option>
+                                        <option value="not_expected" {{ old('supplier_refund_status') == 'not_expected' ? 'selected' : '' }}>Не ожидается</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Возврат на счет</label>
+                                    
+                                     <select name="account_id_in" class="form-control" id="account_id_in">
+                                        <option selected disabled>выбери счет</option>
+                                        @foreach ($accounts as $account)
+                                            <option value="{{ $account['id'] }}">{{ $account['name'] }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
 
@@ -1514,7 +1473,7 @@
                             <select name="user_id" class="form-control" name="user_id">
                                 <option value="empty" selected></option>
                                 @foreach ($users as $user)
-                                    <option value="{{ $user->id }}">{{ $user->name }} | {{ $user->phone}}</option>
+                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -1712,7 +1671,6 @@
                                 <option value="site">Сайт</option>
                                 <option value="friends">Свои</option>
                                 <option value="kaspi">Каспи</option>
-                                <option value="satu">Satu</option>
                                 <option value="repeat_request">Повторное обращение</option>
                             </select>
                         </div>
@@ -1736,7 +1694,7 @@
                         </button>
                     </li>
 
-                    <li class="nav-item" role="presentation">
+                    <!--<li class="nav-item" role="presentation">
                         <button
                         class="nav-link"
                         id="tab2-tab"
@@ -1749,7 +1707,7 @@
                         >
                         Детали оплаты
                         </button>
-                    </li>
+                    </li>-->
                     </ul>
 
                     <!-- TAB CONTENT -->
@@ -1786,7 +1744,7 @@
                                         <select name="from_stock" class="order_product_item_supplier">
                                             <option disabled selected>Выбери поставщика</option>
                                             @foreach ($suppliers as $supplier)
-                                                <option value="{{ $supplier['id'] }}">{{ $supplier['name'] }}</option>
+                                                <option value="{{ $supplier['name'] }}">{{ $supplier['name'] }}</option>
                                             @endforeach
                                         </select>
                                         <input type="date" class="form-control" name="deliveryTime" value="{{ date('Y-m-d') }}" required>
