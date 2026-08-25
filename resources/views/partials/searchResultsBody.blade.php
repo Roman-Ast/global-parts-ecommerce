@@ -64,3 +64,15 @@
                     @include('partials.items.crossesToOrder', ['items' => $finalArr['crosses_to_order']])
                 </div>
             </div>
+
+            {{-- Показывается JS-ом (finalizeSearch() в <script> внизу файла),
+                 когда прогрессивная подгрузка полностью закончилась (включая
+                 повторный проход по неответившим) и ни одна из 4 секций
+                 выше так и не получила ни одной строки — без этого пустой
+                 результат выглядел как страница, которая просто ничего не
+                 показывает, без единого объяснения. --}}
+            <div id="search-no-results" class="d-none text-center text-muted py-5">
+                <i class="fas fa-magnifying-glass" style="font-size: 2rem; opacity: .35; display: block; margin-bottom: 12px;"></i>
+                <div style="font-size: 1.1rem;">Ничего не найдено по этому артикулу</div>
+                <div class="small mt-1">Проверьте правильность артикула или уточните бренд</div>
+            </div>

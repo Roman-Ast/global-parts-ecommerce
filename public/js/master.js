@@ -316,6 +316,15 @@ $(document).on('input change', '.stock-item-cart-qty input[type="number"]', func
 // навешивается только на элементы, существующие в момент выполнения этого
 // кода — новые строки его физически не получали, кнопка "в корзину" на
 // них молча ничего не делала.
+//
+// Поля раньше читались счётом .prev() от кнопки корзины (фиксированное
+// число соседей назад по DOM) — сломалось 2026-08-25, когда в строку
+// товара добавили колонку "возврат" (см. requestPartNumber-return во всех
+// 4 partials/items/*.blade.php): все счётчики съехали на один, brand/
+// article/name/stockFrom стали читать текст ЧУЖИХ соседних колонок, в
+// корзину улетали неверные данные без единой ошибки на экране. Теперь —
+// поиск по стабильным классам внутри строки, не зависит от порядка/
+// количества колонок.
 $(document).on('click', '.stock-item-cart-btn', function () {
     const regExp = /\*|%|#|\n|&|\$/g;
 
@@ -328,26 +337,20 @@ $(document).on('click', '.stock-item-cart-btn', function () {
         qtyInput.val(maxQty);
     }
 
-    let params = {
-        'brand': '',
-        'article': '',
-        'name': '',
-        'price': '',
-        'qty': requestedQty,
-        'deliveryTime': '',
-        'stockFrom': '',
-        'searchedNumber': '',
-        'priceWithMargine': ''
-    };
+    const row = $(this).closest('.requestPartNumberContainer-item');
+    const fieldText = (selector) => row.find(selector).first().text();
 
-    params.brand = $(this).parent().parent().prev().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
-    params.article = $(this).parent().parent().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
-    params.name = $(this).parent().parent().prev().prev().prev().prev().prev().text().replaceAll(regExp, '');
-    params.priceWithMargine = $(this).parent().parent().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
-    params.deliveryTime = $(this).parent().parent().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
-    params.stockFrom = $(this).parent().parent().prev().prev().prev().prev().prev().prev().prev().prev().text().replaceAll(' ', '').replaceAll(regExp, '');
-    params.searchedNumber = $('#search-res-header-val').html();
-    params.price = $(this).next().next().val();
+    let params = {
+        'brand': fieldText('.requestPartNumber-brand').replaceAll(' ', '').replaceAll(regExp, ''),
+        'article': fieldText('.requestPartNumber-partnumber').replaceAll(' ', '').replaceAll(regExp, ''),
+        'name': fieldText('.requestPartNumber-name').replaceAll(regExp, ''),
+        'price': $(this).next().next().val(),
+        'qty': requestedQty,
+        'deliveryTime': fieldText('.requestPartNumber-delivery').replaceAll(' ', '').replaceAll(regExp, ''),
+        'stockFrom': fieldText('.requestPartNumber-supplier').replaceAll(' ', '').replaceAll(regExp, ''),
+        'searchedNumber': $('#search-res-header-val').html(),
+        'priceWithMargine': fieldText('.requestPartNumber-price').replaceAll(' ', '').replaceAll(regExp, '')
+    };
 
     $(this).children().first().removeClass('fa-cart-shopping').addClass('fa-check').css('color', '#4bc828');
     $(this).css({ 'border': '1px solid #4bc828' });

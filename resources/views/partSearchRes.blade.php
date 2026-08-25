@@ -632,8 +632,28 @@
             renderProgress(totalPhases);
         }
 
+        // Финальная проверка — вызывается РОВНО ОДИН РАЗ, когда полностью
+        // закончился и основной проход по всем 14 шагам (Rossko + STEP_ORDER),
+        // и повторный проход по неответившим. Если ни одна из 4 секций так и
+        // не вышла из d-none — значит ни один поставщик ничего не нашёл,
+        // показываем "Ничего не найдено" вместо молча пустой страницы.
+        function finalizeSearch() {
+            const emptyState = document.getElementById('search-no-results');
+            if (!emptyState) return;
+
+            const hasResults = Object.values(SECTIONS).some(function (cfg) {
+                const section = document.getElementById(cfg.sectionId);
+                return section && !section.classList.contains('d-none');
+            });
+
+            emptyState.classList.toggle('d-none', hasResults);
+        }
+
         function runRetryQueue(queue) {
-            if (queue.length === 0) return;
+            if (queue.length === 0) {
+                finalizeSearch();
+                return;
+            }
 
             const [item, ...rest] = queue;
 

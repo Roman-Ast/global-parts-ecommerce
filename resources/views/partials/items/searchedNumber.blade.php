@@ -156,14 +156,14 @@
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-delivery">
                                 @php
                                     $ds = $searchItem['deliveryStart'] ?? '';
-                                    $isToday = $ds == 'в офисе' || $ds == '1.5-2 часа' || (strtotime($ds) && date('Y-m-d', strtotime($ds)) == date('Y-m-d'));
+                                    $isToday = $ds == 'в офисе' || $ds == '2 часа' || (strtotime($ds) && date('Y-m-d', strtotime($ds)) == date('Y-m-d'));
                                     $isDate = !$isToday && strtotime($ds);
                                     $days = $isDate ? max(1, (int) ceil((strtotime($ds) - time()) / 86400)) : 0;
                                 @endphp
 
                                 @if ($isToday)
                                     <span class="badge" style="background:#d1e7dd;color:#0a6640;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:600;min-width:80px;text-align:center;display:inline-block;">
-                                        {{ $ds == 'в офисе' ? 'в офисе' : '1.5-2 часа' }}
+                                        {{ $ds == 'в офисе' ? 'в офисе' : '2 часа' }}
                                     </span>
                                 @elseif ($isDate)
                                     <span class="badge" style="background:transparent;color:#6c757d;border:1px solid #dee2e6;padding:5px 10px;border-radius:6px;font-size:0.85rem;font-weight:500;min-width:80px;text-align:center;display:inline-block;">
