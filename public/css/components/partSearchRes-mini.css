@@ -177,12 +177,15 @@
         z-index: 2;
     }
 
-    /* иконка возврата — противоположный уголок карточки от info */
+    /* иконка возврата — рядом с info, тот же (единственно свободный)
+       правый верхний угол карточки. Раньше стояла в левом верхнем углу —
+       ровно там же, где уже рендерится бейдж бренда (order:1, тот же
+       padding 12px 14px карточки), иконки садились друг на друга. */
     .requestPartNumber-return {
         display: flex !important;
         position: absolute;
         top: 10px;
-        left: 10px;
+        right: 34px;
         margin: 0;
         font-size: 15px;
         z-index: 2;
@@ -356,7 +359,7 @@
     }
 
     /* --- бейджи доставки --- */
-    /* зелёный (1.5-2 часа / в офисе) — Bootstrap success */
+    /* зелёный (2 часа / в офисе) — Bootstrap success */
     .requestPartNumber-delivery .badge.bg-success {
         background-color: #198754 !important;
         color: #fff !important;
@@ -460,7 +463,7 @@
         color: #5bc0de !important;
     }
 
-    /* плашка "1.5-2 часа" на мобилке — карточка и так зелёная (см. выше),
+    /* плашка "2 часа" на мобилке — карточка и так зелёная (см. выше),
        поэтому саму плашку оставляем прозрачной с navy-текстом, а не зелёной */
     .gp-delivery-badge {
         background: transparent;

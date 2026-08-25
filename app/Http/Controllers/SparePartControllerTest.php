@@ -890,7 +890,7 @@ do {
                     'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
                     'supplier_name'  => 'phtn',
                     'delivery_date'  => '',
-                    'delivery_time'  => '1.5-2 часа',
+                    'delivery_time'  => '2 часа',
                     'supplier_city'  => $item->Warehouse,
                     'supplier_color' => '#feed00',
                 ]);
@@ -912,6 +912,9 @@ do {
                 'price'          => $item->Price,
                 'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
                 'delivery_time'  => date('d.m.Y', strtotime('+' . $item->GuaranteedDelivery . 'day')),
+                // Фаэтон Локал (Sources=2) — по просьбе Романа 2026-08-25,
+                // как и Автозакуп/Radle, международный возврат невозможен.
+                'returnable'     => false,
                 'stocks'         => [[
                     'qty'              => $item->AvailableCount,
                     'price'            => $item->Price,
@@ -1012,7 +1015,7 @@ do {
                     'qty'              => $store->quantity,
                     'price'            => $store->price,
                     'priceWithMargine' => round($this->setPrice($store->price), self::ROUND_LIMIT),
-                    'delivery_time'    => '1.5-2 часа',
+                    'delivery_time'    => '2 часа',
                     'stocks'           => [[
                         'qty'              => $store->quantity,
                         'price'            => $store->price,
@@ -1088,7 +1091,7 @@ do {
                         'supplier_name'    => 'grt',
                         'supplier_city'    => 'Астана',
                         'supplier_color'   => '#7bafcf',
-                        'deliveryStart'    => '1.5-2 часа',
+                        'deliveryStart'    => '2 часа',
                         'info'             => [
                             'pictures' => $item->picture ?? '',
                             'params'   => $infoParams,
@@ -1102,7 +1105,7 @@ do {
                         'qty'              => $item->count,
                         'price'            => $item->price,
                         'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                        'delivery_time'    => '1.5-2 часа',
+                        'delivery_time'    => '2 часа',
                         'info'             => [
                             'pictures' => $item->picture ?? 0,
                             'params'   => $infoParams,
@@ -1196,7 +1199,7 @@ do {
                         'priceWithMargine' => round($this->setPrice($item->Price), self::ROUND_LIMIT),
                         'supplier_name' => 'phtn',
                         'delivery_date' => '',
-                        'delivery_time' => '1.5-2 часа',
+                        'delivery_time' => '2 часа',
                         'supplier_city' => $item->Warehouse,
                         'supplier_color' => '#34689e'
                     ]);
@@ -1550,7 +1553,7 @@ do {
                                 'photo' => ''
                             ],
                             'delivery_date' => '',
-                            'delivery_time' => '1.5-2 часа',
+                            'delivery_time' => '2 часа',
                             'supplier_city' => 'ast',
                             'supplier_color' => '#34689e'
                         ]); 
@@ -1666,7 +1669,7 @@ do {
                                     'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
                                     'priceWithMargine' => round($this->setPrice($innerArr['price']), self::ROUND_LIMIT),
-                                    'delivery_time' => '1.5-2 часа',
+                                    'delivery_time' => '2 часа',
                                 ];
                                 array_push($this->finalArr['brands'], $part_stock['brand']);
 
@@ -1679,7 +1682,7 @@ do {
                                     'qty' => $innerArr['count'],
                                     'priceWithMargine' => round($this->setPrice($innerArr['price']), self::ROUND_LIMIT),
                                     'stocks' => $crosses_stocks,
-                                    'delivery_time' => '1.5-2 часа',
+                                    'delivery_time' => '2 часа',
                                     'supplier_name' => 'rssk',
                                     'supplier_city' => 'ast',
                                     'supplier_color' => '#ed2d2f'
@@ -1721,7 +1724,7 @@ do {
                                         'qty' => $item['count'],
                                         'price' => round($item['price']),
                                         'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                                        'delivery_time' => '1.5-2 часа'
+                                        'delivery_time' => '2 часа'
                                     ];
                                     array_push($this->finalArr['brands'],  $part_stock['brand']);
 
@@ -1734,7 +1737,7 @@ do {
                                         'price' => round($item['price']),
                                         'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
                                         'stocks' => $crosses_stocks,
-                                        'delivery_time' => '1.5-2 часа',
+                                        'delivery_time' => '2 часа',
                                         'supplier_name' => 'rssk',
                                         'supplier_city' => 'ast',
                                         'supplier_color' => '#ed2d2f'
@@ -1782,7 +1785,7 @@ do {
                                     'qty' => $innerArr['count'],
                                     'price' => round($innerArr['price']),
                                     'priceWithMargine' => round($this->setPrice($innerArr['price']), self::ROUND_LIMIT),
-                                    'delivery_time' => '1.5-2 часа'
+                                    'delivery_time' => '2 часа'
                                 ];
                                 array_push($this->finalArr['brands'], $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand']);
                                 
@@ -1795,7 +1798,7 @@ do {
                                     'price' => round($innerArr['price']),
                                     'priceWithMargine' => round($this->setPrice($innerArr['price']), self::ROUND_LIMIT),
                                     'stocks' => $crosses_stocks,
-                                    'delivery_time' => '1.5-2 часа',
+                                    'delivery_time' => '2 часа',
                                     'supplier_name' => 'rssk',
                                     'supplier_city' => 'ast',
                                     'supplier_color' => '#ed2d2f'
@@ -1837,7 +1840,7 @@ do {
                                         'qty' => $item['count'],
                                         'price' => round($item['price']),
                                         'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                                        'delivery_time' => '1.5-2 часа'
+                                        'delivery_time' => '2 часа'
                                     ];
                                     array_push($this->finalArr['brands'], $result['SearchResult']['PartsList']['Part']['crosses']['Part']['brand']);
                                     
@@ -1850,7 +1853,7 @@ do {
                                         'price' => round($item['price']),
                                         'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
                                         'stocks' => $crosses_stocks,
-                                        'delivery_time' => '1.5-2 часа',
+                                        'delivery_time' => '2 часа',
                                         'supplier_name' => 'rssk',
                                         'supplier_city' => 'ast',
                                         'supplier_color' => '#ed2d2f'
@@ -1966,7 +1969,7 @@ do {
                         'qty'     => (int)($stock['count'] ?? 0),
                         'price'   => $stock['price'],
                         'priceWithMargine' => $this->setPrice($stock['price']),
-                        'delivery_time'    => $isAstana ? '1.5-2 часа' : ($stock['deliveryEnd'] ?? '3-5 дней'),
+                        'delivery_time'    => $isAstana ? '2 часа' : ($stock['deliveryEnd'] ?? '3-5 дней'),
                         'supplier_city'    => $isAstana ? 'ast' : ($stock['description'] ?? 'РФ/Склад')
                     ];
                 }
@@ -2071,7 +2074,7 @@ do {
                         'qty' => $crossItem->RVALUE,
                         'price' => round($crossItem->PRICE),
                         'priceWithMargine' => round($this->setPrice($crossItem->PRICE), self::ROUND_LIMIT),
-                        'delivery_time' => '1.5-2 часа',
+                        'delivery_time' => '2 часа',
                         'stocks' => [
                             [
                                 'qty' => $crossItem->RVALUE,
@@ -2210,7 +2213,7 @@ do {
                             'supplier_city' => 'ast',
                             'supplier_name' => 'shtm',
                             'supplier_color' => '#6b6b6b',
-                            'delivery_time' => '1.5-2 часа',
+                            'delivery_time' => '2 часа',
                         ]);
                     }
                 }
@@ -2226,7 +2229,7 @@ do {
                             'qty' => $priceItem->quantity->available,
                             'price' => $priceItem->price->value,
                             'priceWithMargine' => round($this->setPrice($priceItem->price->value), self::ROUND_LIMIT),
-                            'delivery_time' => '1.5-2 часа',
+                            'delivery_time' => '2 часа',
                             'stocks' => [
                                 [
                                     'qty' => $priceItem->quantity->available,
@@ -2516,7 +2519,7 @@ do {
                         'qty' => $store->quantity,
                         'price' => $store->price,
                         'priceWithMargine' => round($this->setPrice($store->price), self::ROUND_LIMIT),
-                        'delivery_time' => '1.5-2 часа',
+                        'delivery_time' => '2 часа',
                         'stocks' => [
                             [
                                 'qty' => $store->quantity,
@@ -2617,7 +2620,7 @@ do {
                             'supplier_name' => 'grt',
                             'supplier_city' => 'Астана',
                             'supplier_color' => '#7bafcf',
-                            'deliveryStart' => '1.5-2 часа',
+                            'deliveryStart' => '2 часа',
                             'info' => [
                                 'pictures' => $item->picture ?? '',
                                 'params' => count($item->param) <=3 ? [] : [
@@ -2666,7 +2669,7 @@ do {
                             'qty' => $item->count,
                             'price' => $item->price,
                             'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                            'delivery_time' => "1.5-2 часа",
+                            'delivery_time' => "2 часа",
                             'info' => [
                                 'pictures' => $item->picture ?? 0,
                                 'params' => $infoParams, // Вставляем уже подготовленный массив
@@ -3116,7 +3119,7 @@ do {
                     'qty' => $item['qty'],
                     'price' => $item['price'],
                     'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                    'delivery_time' => '1.5-2 часа',
+                    'delivery_time' => '2 часа',
                     'stocks' => [
                         [
                             'qty' => $item['qty'],
