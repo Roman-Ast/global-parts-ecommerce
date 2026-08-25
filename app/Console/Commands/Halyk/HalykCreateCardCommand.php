@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Http;
  */
 class HalykCreateCardCommand extends Command
 {
-    protected $signature = 'halyk:create-card {--limit=10} {--article=} {--dry-run}';
+    protected $signature = 'halyk:create-card {--limit=10} {--article=} {--dry-run} {--category=}';
 
     protected $description = 'Пилот: создаёт новые полноценные карточки на Halyk Market из parts_catalog (только в наличии)';
 
@@ -48,8 +48,9 @@ class HalykCreateCardCommand extends Command
         $limit = (int) $this->option('limit');
         $dryRun = (bool) $this->option('dry-run');
         $onlyArticle = $this->option('article');
+        $onlyCategory = $this->option('category');
 
-        $cards = $this->pickCandidates($limit, $onlyArticle);
+        $cards = $this->pickCandidates($limit, $onlyArticle, $onlyCategory);
 
         if ($cards->isEmpty()) {
             $this->info('Нечего создавать — либо лимит исчерпан, либо нет позиций в наличии с фото и ещё не обработанных.');
@@ -78,13 +79,23 @@ class HalykCreateCardCommand extends Command
      * каталоге сайта) — только реально в наличии, с фото, ещё не
      * обработанные (нет строки в halyk_created_cards).
      */
-    private function pickCandidates(int $limit, ?string $onlyArticle)
+    private function pickCandidates(int $limit, ?string $onlyArticle, ?string $onlyCategory = null)
     {
         $query = PartsCatalog::query()
             ->where('scrape_status', 'done')
             ->whereNotNull('name')
             ->whereNotNull('images')
             ->where('images', '!=', '[]');
+
+        // --category=... — сузить на конкретную категорию 3-го уровня
+        // Kaspi. Добавлено 2026-08-25: живой прогон на 1000 позиций
+        // показал 100% успех модерации на "Амортизаторы" и 0% на всех
+        // остальных 30 протестированных категориях (см. CLAUDE.md) —
+        // пока не разберёмся с attrs-маппингом по остальным категориям
+        // отдельно, продолжаем только тем, что доказанно работает.
+        if ($onlyCategory) {
+            $query->where('characteristics->category_leaf_title', $onlyCategory);
+        }
 
         // --article=... — прицельный тест/повтор конкретного артикула,
         // игнорируем историю halyk_created_cards намеренно (иначе
