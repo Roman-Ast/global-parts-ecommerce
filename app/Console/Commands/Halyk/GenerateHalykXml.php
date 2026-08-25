@@ -104,6 +104,19 @@ class GenerateHalykXml extends Command
                     // защитная страховка, не рассчитываем, что сработает.
                     $sku = mb_substr((string) $item->sku, 0, 64);
 
+                    // Kaspi у многих позиций отдаёт общий шаблонный title без
+                    // привязки к бренду/артикулу (напр. "Пружины подвески |
+                    // перед прав/лев |" — живьём встретилось 254 раза у
+                    // РАЗНЫХ товаров). Halyk отклоняет фид именно на этом:
+                    // "Название товара дублируется в данном файле" — живой
+                    # разбор 2026-08-25 через реальную загрузку показал ровно
+                    // столько отклонений (~42к из 95к), сколько и совпадающих
+                    // по title строк. Бренд+артикул уникальны по построению
+                    // (unique index sku+brand), добавляем в название — чинит
+                    // и дубли, и заодно ту же "для большей информативности
+                    // покупателей", на которую жаловался Halyk и в create-card.
+                    $uniqueName = $name . ' — ' . mb_strtoupper($item->brand) . ' ' . $sku;
+
                     $xml->startElement('offer');
                     $xml->writeAttribute('sku', $sku);
 
@@ -112,7 +125,7 @@ class GenerateHalykXml extends Command
                     // → sale_price → loanPeriod. Barcodes/deliveryOptions/
                     // sale_price опциональны — их нет, stocks — обязателен
                     // на практике (см. комментарий класса).
-                    $xml->writeElement('model', $name);
+                    $xml->writeElement('model', $uniqueName);
                     $xml->writeElement('brand', mb_strtoupper($item->brand));
 
                     $xml->startElement('stocks');
