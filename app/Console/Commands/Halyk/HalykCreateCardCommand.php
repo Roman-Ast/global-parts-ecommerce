@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Http;
  */
 class HalykCreateCardCommand extends Command
 {
-    protected $signature = 'halyk:create-card {--limit=10} {--article=} {--dry-run} {--category=}';
+    protected $signature = 'halyk:create-card {--limit=10} {--article=} {--dry-run} {--category=} {--exclude-category=}';
 
     protected $description = 'Пилот: создаёт новые полноценные карточки на Halyk Market из parts_catalog (только в наличии)';
 
@@ -49,8 +49,9 @@ class HalykCreateCardCommand extends Command
         $dryRun = (bool) $this->option('dry-run');
         $onlyArticle = $this->option('article');
         $onlyCategory = $this->option('category');
+        $excludeCategory = $this->option('exclude-category');
 
-        $cards = $this->pickCandidates($limit, $onlyArticle, $onlyCategory);
+        $cards = $this->pickCandidates($limit, $onlyArticle, $onlyCategory, $excludeCategory);
 
         if ($cards->isEmpty()) {
             $this->info('Нечего создавать — либо лимит исчерпан, либо нет позиций в наличии с фото и ещё не обработанных.');
@@ -79,7 +80,7 @@ class HalykCreateCardCommand extends Command
      * каталоге сайта) — только реально в наличии, с фото, ещё не
      * обработанные (нет строки в halyk_created_cards).
      */
-    private function pickCandidates(int $limit, ?string $onlyArticle, ?string $onlyCategory = null)
+    private function pickCandidates(int $limit, ?string $onlyArticle, ?string $onlyCategory = null, ?string $excludeCategory = null)
     {
         $query = PartsCatalog::query()
             ->where('scrape_status', 'done')
@@ -95,6 +96,18 @@ class HalykCreateCardCommand extends Command
         // отдельно, продолжаем только тем, что доказанно работает.
         if ($onlyCategory) {
             $query->where('characteristics->category_leaf_title', $onlyCategory);
+        }
+
+        // --exclude-category=... — обратное: явно ИСКЛЮЧИТЬ категорию.
+        // Нужно для контролируемого теста "остальные категории" — без
+        // фильтра в очереди ещё тысячи амортизаторов, и без явного
+        // исключения они бы просто разбавили выборку, а не дали чистый
+        // ответ "проходят ли остальные категории вообще".
+        if ($excludeCategory) {
+            $query->where(function ($q) use ($excludeCategory) {
+                $q->where('characteristics->category_leaf_title', '!=', $excludeCategory)
+                  ->orWhereNull('characteristics->category_leaf_title');
+            });
         }
 
         // --article=... — прицельный тест/повтор конкретного артикула,
