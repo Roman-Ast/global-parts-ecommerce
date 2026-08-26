@@ -1388,13 +1388,23 @@ do {
     public function searchTreid (String $brand, String $partnumber) 
     {
         //$start = microtime(true);
-        if ($brand == 'Hyundai/Kia') {
+        // Живой баг 2026-08-26: собственные лендинги (resources/views/
+        // china-cars/*.blade.php) шлют "Hyundai-Kia" через ДЕФИС, а эта
+        // проверка ждала "Hyundai/Kia" через СЛЭШ — ни разу не совпадало,
+        // Treid получал буквальный "Hyundai-Kia" как имя бренда (которого
+        // у них нет) и честно отвечал Ok с пустым items — не ошибка API,
+        // просто мы ни разу не распознавали склеенный бренд. Проверяем
+        // оба варианта разделителя на все 4 склеенных бренда — слэш
+        // встречается у брендов из kaspi_initial_products (см. CLAUDE.md,
+        // GlobalProductController — "Citroen/Peugeot" через слэш).
+        $brandNormalized = str_replace('/', '-', $brand);
+        if ($brandNormalized == 'Hyundai-Kia') {
             $brand = 'Hyundai';
-        } else if ($brand == 'Peugeot/Citroen') {
+        } else if ($brandNormalized == 'Peugeot-Citroen' || $brandNormalized == 'Citroen-Peugeot') {
             $brand = 'Peugeot';
-        } else if ($brand == 'TOYOTA/LEXUS') {
+        } else if ($brandNormalized == 'TOYOTA-LEXUS') {
             $brand = 'Toyota';
-        } else if ($brand == 'NISSAN/INFINITI') {
+        } else if ($brandNormalized == 'NISSAN-INFINITI') {
             $brand = 'Nissan';
         }
 
