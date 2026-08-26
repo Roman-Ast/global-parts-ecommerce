@@ -99,6 +99,18 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
+        // Диагностика Treid/Автотрейд (searchTreid()) — живой случай
+        // 2026-08-26: артикул реально в наличии, но выпал из выдачи, а
+        // счётчик молчал об этом (см. коммит про searchTreid()). Логируем
+        // сырой ответ на КАЖДЫЙ вызов (не только провалы) — чтобы
+        // сравнить успешный и неуспешный ответ бок о бок, если рейт-лимит
+        // Treid снова словится.
+        'treid' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/treid.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', env('LOG_STACK', 'single')),

@@ -1443,6 +1443,18 @@ do {
         // этом молчал, как будто Treid ответил нормально.
         $ok = $result !== null && isset($result['message']) && strlen($result['message']) <= 2;
 
+        // Логируем КАЖДЫЙ вызов (не только провалы) — по просьбе Романа
+        // 2026-08-26, чтобы видеть сырой ответ Treid и сравнивать успешные
+        // и неуспешные случаи бок о бок вместо гадания.
+        \Log::channel('treid')->info($ok ? 'Ответ получен' : 'Провал (не Ok)', [
+            'brand' => $brand,
+            'article' => $partnumber,
+            'ok' => $ok,
+            'message' => $result['message'] ?? null,
+            'items_count' => is_array($result['items'] ?? null) ? count($result['items']) : null,
+            'raw_head' => mb_substr((string) $html, 0, 1000),
+        ]);
+
         //помещаем найденные позиции в итоговый массив
         if ($ok && !empty($result)) {
             foreach ($result['items'] as $key => $item) {
