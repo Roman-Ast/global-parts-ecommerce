@@ -15,6 +15,16 @@ class RepriceKaspiCommand extends Command
     const TAX        = 0.04;  // 4%
     const LOGISTICS  = 1700;  // тенге
 
+    // Надбавка сверх эталонной цены, когда конкуренции по факту нет —
+    // либо конкурентов нет вообще (etalon_no_competitors), либо есть, но
+    // ни один не везёт "завтра" (etalon_alone_tomorrow), то есть мы
+    // де-факто единственный быстрый вариант. Раньше оба сценария брали
+    // тот же $etalonPrice, что и при живой конкуренции — отсутствие
+    // конкуренции никак не использовалось. Добавлено 2026-08-26 по
+    // просьбе Романа: пример на закупе 15000 — цена 29881 (чистая маржа
+    // 27,6% от цены) становится 34363 (маржа ~34,9%).
+    const NO_COMPETITION_PREMIUM = 1.15;
+
     // Порог отклонения новой цены от текущей для флага "требует проверки"
     const PRICE_ANOMALY_THRESHOLD = 0.30; // 30%
 
@@ -203,11 +213,11 @@ class RepriceKaspiCommand extends Command
                 $scenario = 'etalon_low_purchase_fixed';
 
             } elseif ($competitorsTotal === 0 || $competitorMinAll === null) {
-                $ourPrice = $etalonPrice;
+                $ourPrice = $etalonPrice * self::NO_COMPETITION_PREMIUM;
                 $scenario = 'etalon_no_competitors';
 
             } elseif ($tomorrowCount === 0) {
-                $ourPrice = $etalonPrice;
+                $ourPrice = $etalonPrice * self::NO_COMPETITION_PREMIUM;
                 $scenario = 'etalon_alone_tomorrow';
 
             } else {
