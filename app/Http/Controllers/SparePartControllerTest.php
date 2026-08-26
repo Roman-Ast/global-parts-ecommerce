@@ -3781,54 +3781,15 @@ do {
         return strtolower(implode('', $arr));
     }
 
+    // Раньше считало свою отдельную шкалу наценки и потом делило по роли
+    // (common — как есть, opt — минус 7%, admin — через
+    // SetPrice::setPriceForAdmin()). Роман попросил (2026-08-26) убрать
+    // это деление — одна и та же шкала SetPrice::setPriceForAdmin() для
+    // всех, кроме Kaspi (у Kaspi своя KaspiPriceCalculator с зашитой
+    // комиссией площадки, её это не касается).
     function setPrice($price)
     {
-        $priceWithMargin = 0;
-
-        if ($price > 0 && $price <= 900) {
-            $priceWithMargin = $price * 3.2; 
-        } else if ($price > 900 && $price <= 3000) {
-            $priceWithMargin = $price * 2.2;
-        } else if ($price > 3000 && $price <= 6000) {
-            $priceWithMargin = $price * 1.9;
-        } else if ($price > 6000 && $price <= 10000) {
-            $priceWithMargin = $price * 1.55;
-        } else if ($price > 10000 && $price <= 15000) {
-            $priceWithMargin = $price * 1.42;
-        } else if ($price > 15000 && $price <= 20000) {
-            $priceWithMargin = $price * 1.39;
-        } else if ($price > 20000 && $price <= 30000) {
-            $priceWithMargin = $price * 1.33;
-        } else if ($price > 30000 && $price <= 40000) {
-            $priceWithMargin = $price * 1.35;
-        } else if ($price > 40000 && $price <= 50000) {
-            $priceWithMargin = $price * 1.33;
-        } else if ($price > 50000 && $price <= 60000) {
-            $priceWithMargin = $price * 1.31;
-        } else if ($price > 60000 && $price <= 70000) {
-            $priceWithMargin = $price * 1.295;
-        } else if ($price > 70000 && $price <= 80000) {
-            $priceWithMargin = $price * 1.265;
-        } else if ($price > 80000 && $price <= 90000) {
-            $priceWithMargin = $price * 1.24;
-        } else if ($price > 90000 && $price <= 100000) {
-            $priceWithMargin = $price * 1.22;
-        } else if ($price > 100000 && $price <= 120000) {
-            $priceWithMargin = $price * 1.21;
-        } else if ($price > 120000) {
-            $priceWithMargin = $price * 1.216;
-        }
-        
-        if (Auth()->user() && Auth()->user()->user_role == 'common') {
-            return $priceWithMargin;
-        } else if(Auth()->user() && Auth()->user()->user_role == 'opt') {
-            return $priceWithMargin - ($priceWithMargin * 0.07);
-        } elseif(Auth()->user() && Auth()->user()->user_role == 'admin') {
-            $priceWithMargin = SetPrice::setPriceForAdmin($price);
-            return $priceWithMargin;
-        } else {
-            return $priceWithMargin;
-        }
+        return SetPrice::setPriceForAdmin($price);
     }
 
     /**
