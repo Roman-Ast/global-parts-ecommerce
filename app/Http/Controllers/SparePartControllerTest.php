@@ -721,6 +721,22 @@ do {
         } while ($running > 0);
 \Log::info('curl_multi pool выполнен за: ' . round(microtime(true) - $startTotal, 2) . 's');
 
+        // Реальный код завершения (CURLE_*) для КАЖДОГО handle доступен
+        // ТОЛЬКО через curl_multi_info_read() — curl_errno($ch)/curl_error($ch)
+        // ниже на handle из curl_multi-пула почти всегда возвращают 0/"",
+        // даже когда транспорт реально упал (таймаут, обрыв соединения и
+        // т.п.) — это разные внутренние хранилища ошибки в PHP-обвязке curl,
+        // "последняя ошибка" per-handle не заполняется тем же путём при
+        // curl_multi_exec(), что и при обычном curl_exec(). Раньше лог
+        // "Пустой ответ (curl)" писал curl_errno=0/curl_error="" даже на
+        // реальных таймаутах — выглядело как "непонятно что сломалось",
+        // хотя причина(даже транспортная) была прекрасно известна curl,
+        // просто не в том поле. Читаем сюда карту handle => реальный код.
+        $multiResults = [];
+        while ($info = curl_multi_info_read($mh)) {
+            $multiResults[(int) $info['handle']] = (int) $info['result'];
+        }
+
         // Собираем результаты. $status — по одному булю на key задачи:
         // раньше эта функция была void и ЛЮБОЙ из 3 видов молчаливого
         // провала (пустой $raw / невалидный JSON / бизнес-ошибка вроде
@@ -746,8 +762,13 @@ do {
 
             $raw       = curl_multi_getcontent($ch);
             $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlErrno = curl_errno($ch);
-            $curlError = curl_error($ch);
+            // Реальный код транспорта — из curl_multi_info_read() выше, не
+            // curl_errno($ch)/curl_error($ch) (см. комментарий там же, почему
+            // они здесь ненадёжны). curl_strerror() переводит CURLE_*-код в
+            // читаемый текст (напр. 28 => "Timeout was reached").
+            $multiResult = $multiResults[(int) $ch] ?? null;
+            $curlErrno   = $multiResult ?? 0;
+            $curlError   = ($multiResult && $multiResult !== CURLE_OK) ? curl_strerror($multiResult) : '';
             curl_multi_remove_handle($mh, $ch);
             curl_close($ch);
 
