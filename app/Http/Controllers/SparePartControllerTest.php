@@ -448,7 +448,10 @@ class SparePartControllerTest extends Controller
                     $this->searchShatem($brand, $partnumber);
                     break;
                 case 'treid':
-                    $this->searchTreid($brand, $partnumber);
+                    // Теперь честный статус вместо всегда-true — см.
+                    // докблок внутри searchTreid() про рейт-лимит Treid,
+                    // из-за которого счётчик молчал о реальном провале.
+                    $supplierOk = $this->searchTreid($brand, $partnumber);
                     break;
                 case 'phaeton_ast':
                     // Разделено 2026-08-23 (было одним шагом 'phaeton' с
@@ -1424,17 +1427,25 @@ do {
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         $html = curl_exec($ch);
         curl_close($ch);
-        
-        try {
-            $result = json_decode($html, true);
-        } catch (\Throwable $th) {
-            return;
-        }
-        
+
+        $result = json_decode($html, true);
+
+        // Честный статус ответа — раньше метод был void и ЛЮБОЙ silent-
+        // провал этого конкретного запроса (пустое тело, битый JSON,
+        // бизнес-ошибка Treid вроде рейт-лимита "Превышено ограничение по
+        // числу поисковых запросов...") ничем не отличался от легитимного
+        // "нет в наличии": просто ничего не добавлялось в finalArr, а
+        // счётчик "N из M ответили" в partSearchRes.blade.php всё равно
+        // засчитывал шаг как успешный (searchSupplierStepFragment,
+        // случай 'treid', раньше не читал возврат вообще). Живой случай
+        // 2026-08-26: артикул реально в наличии у Treid (подтверждено
+        // прямым запросом к их API), но не попал в выдачу — счётчик при
+        // этом молчал, как будто Treid ответил нормально.
+        $ok = $result !== null && isset($result['message']) && strlen($result['message']) <= 2;
+
         //помещаем найденные позиции в итоговый массив
-        if ($result && strlen($result['message']) <= 2 && !empty($result)) {
+        if ($ok && !empty($result)) {
             foreach ($result['items'] as $key => $item) {
-                if (strlen($result['message']) <= 2) {
                     if ($item['price']) {
                         $searched_number_stocks = 0;
                             foreach ($item['stocks'] as $key => $stock) {
@@ -1467,10 +1478,9 @@ do {
                                 ]);
                             }
                         }
-                    }
             }
         }
-        
+
         $request_data_search_crosses = array(
             "auth_key" => self::API_KEY_TREID,
             "method" => "getReplacesAndCrosses",
@@ -1493,19 +1503,20 @@ do {
         $html = curl_exec($ch);
         curl_close($ch);
 
-        try {
-            $result = json_decode($html, true);
-        } catch (\Throwable $th) {
-            return;
-        }
-        
+        $result = json_decode($html, true);
+
+        // Провал этого (второго) запроса или следующего (третьего) не
+        // переопределяет $ok, установленный по первому запросу выше —
+        // "Запрошенный артикул" (searchedNumber) уже корректно отражён,
+        // а кроссы/аналоги на честность ответа отдельно пока не
+        // заводили (не то, из-за чего Роман заметил проблему).
         if (empty($result) || !$result) {
-            return;
+            return $ok;
         } else if (array_key_exists('message', $result) && $result['message'] != 'Ok') {
-            return;
+            return $ok;
         }
-        
-        //проверка остатков кросс-номеров на складе 
+
+        //проверка остатков кросс-номеров на складе
         $crossArr = [];
         
         foreach ($result['items'] as $resultItem) {
@@ -1534,17 +1545,13 @@ do {
         $html = curl_exec($ch);
         curl_close($ch);
 
-        try {
-            $result = json_decode($html, true);
-        } catch (\Throwable $th) {
-            return;
-        }
+        $result = json_decode($html, true);
         if(!$result) {
-			return;
+			return $ok;
 		}
         if (!array_key_exists('items', $result) || empty($result['items'] || array_key_exists('message', $result))) {
-            return;
-        } 
+            return $ok;
+        }
        
         //помещаем кроссы в наличии в итоговый массив
         foreach ($result['items'] as $item) {
@@ -1584,7 +1591,7 @@ do {
         }
 
         //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. trd';
-        return;
+        return $ok;
     }
 
     public function searchRossko(String $brand, String $partNumber, String $guid)
