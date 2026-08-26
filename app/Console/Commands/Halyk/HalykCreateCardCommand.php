@@ -43,6 +43,34 @@ class HalykCreateCardCommand extends Command
 
     const MAX_PHOTOS = 5;
 
+    /**
+     * Halyk прямым текстом (обратная связь по карточке, 2026-08-26):
+     * "во всех карточках необходимо заполнить доп информацию и особенности" —
+     * оба поля в их форме приходят как STRING/optional, ни один Kaspi-
+     * характеристик с таким именем у нас нет, поэтому раньше оба всегда
+     * оставались пустыми (buildAttrs() просто пропускал их как
+     * незаполненные необязательные). Теперь заполняются принудительно —
+     * см. buildAttrs().
+     */
+    // Префикс, не точная строка — разные категории называют это поле
+    // по-разному: живьём встретились и "Дополнительно" (Амортизаторы,
+    // Тормозные диски), и "Дополнительная информация" (Головка блока
+    // цилиндров) — оба начинаются одинаково, str_starts_with() ловит
+    // оба варианта разом.
+    const FIELD_ADDITIONAL_INFO_PREFIX = 'дополнит';
+    const FIELD_FEATURES = 'особенности';
+
+    /**
+     * "Особенности" — у нас нет структурированного источника под этот
+     * конкретный смысл (не путать с fitment/OEM, которые есть). Роман
+     * подтвердил: не критичный параметр, годится стандартная фраза, лишь
+     * бы не пусто.
+     */
+    const FALLBACK_FEATURES_TEXT = 'Деталь для замены оригинальной или изношенной аналогичной детали.';
+
+    /** Если у товара вообще нет description (25% каталога) — тоже нельзя оставлять пустым. */
+    const FALLBACK_ADDITIONAL_INFO_TEXT = 'Информацию по применимости уточняйте у продавца перед заказом.';
+
     public function handle(HalykMarketClient $client): int
     {
         $limit = (int) $this->option('limit');
@@ -220,7 +248,7 @@ class HalykCreateCardCommand extends Command
             'name'        => mb_substr($card->name, 0, 250),
             'category'    => $categoryId,
             'brand'       => $brandId,
-            'description' => mb_substr(trim(strip_tags($card->description ?? $card->name)), 0, 3000),
+            'description' => mb_substr($this->cleanDescription($card->description ?? $card->name), 0, 3000),
             'attrs'       => $attrs,
             'media'       => $media,
             'weight'      => self::DEFAULT_WEIGHT_KG,
@@ -430,6 +458,21 @@ class HalykCreateCardCommand extends Command
                 $required = (bool) ($attr['required'] ?? false);
                 $ourValues = $ourFeatures[$attrName] ?? null;
 
+                // "Дополнительная информация"/"Особенности" — у Kaspi нет
+                // характеристики с таким именем, $ourValues тут ВСЕГДА null,
+                // и раньше оба поля так и оставались пустыми во всех
+                // карточках. Halyk прямым текстом попросил (2026-08-26)
+                // заполнять их всегда — см. константы выше. Подставляем
+                // ДО общей проверки на null, дальше код отрабатывает как
+                // обычно (для этих двух полей всегда STRING, не ENUM).
+                if ($ourValues === null && str_starts_with($attrName, self::FIELD_ADDITIONAL_INFO_PREFIX)) {
+                    $desc = $this->cleanDescription($card->description ?? '');
+                    $ourValues = [$desc !== '' ? mb_substr($desc, 0, 1000) : self::FALLBACK_ADDITIONAL_INFO_TEXT];
+                }
+                if ($ourValues === null && $attrName === self::FIELD_FEATURES) {
+                    $ourValues = [self::FALLBACK_FEATURES_TEXT];
+                }
+
                 if ($ourValues === null) {
                     if ($required) {
                         $missingRequired = $attr['attrValue']['name'] ?? $attr['code'] ?? '?';
@@ -449,7 +492,22 @@ class HalykCreateCardCommand extends Command
                     }
                     $attrs[] = ['id' => $attr['classAttrAssignmentId'], 'value' => $matchedOption];
                 } else {
-                    $attrs[] = ['id' => $attr['classAttrAssignmentId'], 'value' => (string) $ourValues[0]];
+                    // СТРОКОВОЕ поле (не ENUM) с несколькими нашими значениями
+                    // (напр. "Модель автомобиля"/"Год выпуска автомобиля" —
+                    // деталь подходит под несколько моделей/лет сразу) —
+                    // раньше брали только $ourValues[0], первое попавшееся.
+                    // Kaspi хранит марку/модель/год как ТРИ НЕЗАВИСИМЫХ
+                    // плоских списка без связи между собой (не тройки
+                    // "марка+модель+год" одного применения), так что
+                    // "первое из каждого списка" могло склеить несуществующую
+                    // комбинацию — живой случай 2026-08-26: получили
+                    // "Honda CR-V 1988", хотя CR-V выпускается только с
+                    // 1995-го, а 1988 относился к другой модели из того же
+                    // списка (Opel Corsa). Склеиваем ВСЕ значения через
+                    // запятую — это не утверждает ложную узкую комбинацию,
+                    // просто честно показывает весь диапазон совместимости.
+                    $joined = implode(', ', array_unique($ourValues));
+                    $attrs[] = ['id' => $attr['classAttrAssignmentId'], 'value' => mb_substr($joined, 0, 800)];
                 }
             }
         }
@@ -472,6 +530,19 @@ class HalykCreateCardCommand extends Command
      * именно по этой причине (1151 кандидат в очереди, 0 успешных
      * отправок за первые 52 попытки).
      */
+    /**
+     * strip_tags() убирает HTML-теги, но НЕ разэкранирует HTML-сущности —
+     * часть description в parts_catalog это сгенерированные карточки с
+     * эмодзи через числовые сущности (напр. "&#x1f697;" вместо 🚗),
+     * strip_tags() их не трогает, в итоге в текст, который видит
+     * модератор Halyk, улетал буквальный код сущности. html_entity_decode
+     * убирает и это.
+     */
+    private function cleanDescription(string $raw): string
+    {
+        return trim(html_entity_decode(strip_tags($raw), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    }
+
     private function flattenCharacteristics(?array $data): array
     {
         if (!$data) {
