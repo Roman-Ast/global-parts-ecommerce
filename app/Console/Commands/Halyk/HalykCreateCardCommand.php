@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Http;
  */
 class HalykCreateCardCommand extends Command
 {
-    protected $signature = 'halyk:create-card {--limit=10} {--article=} {--dry-run} {--category=} {--exclude-category=}';
+    protected $signature = 'halyk:create-card {--limit=10} {--article=} {--dry-run} {--category=} {--exclude-category=} {--require-description}';
 
     protected $description = 'Пилот: создаёт новые полноценные карточки на Halyk Market из parts_catalog (только в наличии)';
 
@@ -78,8 +78,9 @@ class HalykCreateCardCommand extends Command
         $onlyArticle = $this->option('article');
         $onlyCategory = $this->option('category');
         $excludeCategory = $this->option('exclude-category');
+        $requireDescription = (bool) $this->option('require-description');
 
-        $cards = $this->pickCandidates($limit, $onlyArticle, $onlyCategory, $excludeCategory);
+        $cards = $this->pickCandidates($limit, $onlyArticle, $onlyCategory, $excludeCategory, $requireDescription);
 
         if ($cards->isEmpty()) {
             $this->info('Нечего создавать — либо лимит исчерпан, либо нет позиций в наличии с фото и ещё не обработанных.');
@@ -108,13 +109,24 @@ class HalykCreateCardCommand extends Command
      * каталоге сайта) — только реально в наличии, с фото, ещё не
      * обработанные (нет строки в halyk_created_cards).
      */
-    private function pickCandidates(int $limit, ?string $onlyArticle, ?string $onlyCategory = null, ?string $excludeCategory = null)
+    private function pickCandidates(int $limit, ?string $onlyArticle, ?string $onlyCategory = null, ?string $excludeCategory = null, bool $requireDescription = false)
     {
         $query = PartsCatalog::query()
             ->where('scrape_status', 'done')
             ->whereNotNull('name')
             ->whereNotNull('images')
             ->where('images', '!=', '[]');
+
+        // --require-description — сузить на карточки с непустым description.
+        // Добавлено 2026-08-26 для контролируемого теста фикса attrs (join
+        // марки/модели/года + доп.информация из description вместо
+        // заглушки): на выборке из 200 карточек с description у 92% ещё и
+        // >=2 блока характеристик (не только "Основные", но и "Общие" с
+        // маркой/моделью/годом) — то есть это заодно и прокси на "полные
+        // характеристики", отдельный фильтр под это не заводили.
+        if ($requireDescription) {
+            $query->whereNotNull('description')->where('description', '!=', '');
+        }
 
         // --category=... — сузить на конкретную категорию 3-го уровня
         // Kaspi. Добавлено 2026-08-25: живой прогон на 1000 позиций
