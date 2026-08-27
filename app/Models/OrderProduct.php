@@ -23,6 +23,7 @@ class OrderProduct extends Model
         'searched_number',
         'fromStock',
         'deliveryTime',
+        'price_strategy',
         'qty',
         'status',
         'supplier_id',
