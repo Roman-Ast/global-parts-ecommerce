@@ -1118,6 +1118,13 @@ class AdminPanelController extends Controller
         ]);*/
 
         foreach ($request->data['products'] as $product) {
+            // product[6] из формы — это supplier_id (число) из выпадающего списка,
+            // а не имя. Раньше писалось как есть в fromStock/supplier — отсюда
+            // "2"/"8"/"3" и т.д. вместо названия поставщика в статистике.
+            // Резолвим в имя, с фолбэком на исходное значение на случай,
+            // если когда-нибудь придёт уже текстом.
+            $fromStockName = Suppliers::find((int)$product[6])?->name ?? $product[6];
+
             /*$supplierId = (int)$product[6];
             $supplierCode = Suppliers::find($supplierId)?->code;
 
@@ -1135,7 +1142,7 @@ class AdminPanelController extends Controller
                 'item_sum' => (float)$product[4] * (int)$product[3],
                 'itemSumWithMargine' => (float)$product[5] * (int)$product[3],
                 'searched_number' => '',
-                'fromStock' => $product[6],
+                'fromStock' => $fromStockName,
                 'deliveryTime' => $product[7],
                 //'payment_policy_snapshot' => $supplier?->payment_policy,
                 //'payment_delay_days_snapshot' => $supplier?->payment_delay_days ?? 0,
@@ -1158,7 +1165,7 @@ class AdminPanelController extends Controller
             SupplierSettlement::create([
                 'order_id' => $order->id,
                 'product_id' => $orderProduct->id,
-                'supplier' => $product[6],
+                'supplier' => $fromStockName,
                 //'supplier_id' => $supplierId ?: null,
                 'sum' => -((float)$product[4] * (int)$product[3]),
                 'date' => $request->data['orderInfo'][1],
