@@ -975,8 +975,7 @@ class AdminPanelController extends Controller
             $settlement->sumWithMargine = $newItemSumWithMargine;
             $settlement->save();
 
-            $supplierSettlement = SupplierSettlement::where('product_id', $product->id)->delete();
-            $supplierSettlement->save();
+            SupplierSettlement::where('product_id', $product->id)->delete();
         } else {
             $product->status = $data['new_status'];
             $product->save();

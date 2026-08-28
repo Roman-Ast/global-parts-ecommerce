@@ -557,7 +557,7 @@ $('.settlement-item-id').on('click', function (e) {
 // ---- смена статуса заказа (админка) ----
 $('.change_status_submit').on('click', function () {
     let productId = $(this).prev().val();
-    let newStatus = $(this).parent().prev().children().first().val();
+    let newStatus = $(this).parent().prev().val();
 
     if (!newStatus) {
         alert('Игорь, смени статус бля!');
