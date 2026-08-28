@@ -685,6 +685,91 @@
                         renderMonthlyStats('{{ $currentAccountingMonthKey }}');
                     </script>
 
+                    <div id="admin-panel-supplier-stats-wrapper" style="width:80% !important" class="mt-4">
+                        <div id="admin-panel-supplier-stats-header">
+                            <div>Статистика по поставщикам</div>
+                        </div>
+                        <div id="admin-panel-supplier-stats">
+
+                            <div class="mt-3 mb-3" style="max-width:250px">
+                                <select id="supplier-stats-selector" class="form-select">
+                                    <option value="all">Весь период</option>
+                                    @foreach ($monthsSorted as $monthKey)
+                                        <option value="{{ $monthKey }}" {{ $monthKey === $currentAccountingMonthKey ? 'selected' : '' }}>
+                                            {{ $monthKey }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="table-responsive mt-3">
+                                <table class="table table-hover align-middle" style="font-size:.9em">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Поставщик</th>
+                                            <th class="text-end">Позиций</th>
+                                            <th class="text-end">Заказов</th>
+                                            <th class="text-end">Сумма</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="supplier-stats-tbody"></tbody>
+                                    <tfoot class="table-light fw-bold" id="supplier-stats-tfoot"></tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        const supplierStatisticsByMonth = @json($supplierStatisticsByMonth);
+
+                        function renderSupplierStats(monthKey) {
+                            const data = supplierStatisticsByMonth[monthKey];
+                            const tbody = document.getElementById('supplier-stats-tbody');
+                            const tfoot = document.getElementById('supplier-stats-tfoot');
+                            tbody.innerHTML = '';
+                            tfoot.innerHTML = '';
+
+                            if (!data) return;
+
+                            // От большей суммы к меньшей — то, что и просили.
+                            const sortedEntries = Object.entries(data).sort((a, b) => b[1].totalSum - a[1].totalSum);
+
+                            let totalPositions = 0, totalOrders = 0, totalSum = 0, i = 1;
+
+                            for (const [supplier, d] of sortedEntries) {
+                                totalPositions += d.positionsCount;
+                                totalOrders    += d.ordersCount;
+                                totalSum       += d.totalSum;
+
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td class="text-muted">${i++}</td>
+                                    <td>${supplier}</td>
+                                    <td class="text-end">${d.positionsCount}</td>
+                                    <td class="text-end">${d.ordersCount}</td>
+                                    <td class="text-end fw-semibold">${fmt(d.totalSum)}</td>
+                                `;
+                                tbody.appendChild(row);
+                            }
+
+                            tfoot.innerHTML = `
+                                <tr>
+                                    <td colspan="2">Итого</td>
+                                    <td class="text-end">${totalPositions}</td>
+                                    <td class="text-end">${totalOrders}</td>
+                                    <td class="text-end">${fmt(totalSum)}</td>
+                                </tr>
+                            `;
+                        }
+
+                        document.getElementById('supplier-stats-selector').addEventListener('change', function () {
+                            renderSupplierStats(this.value);
+                        });
+
+                        renderSupplierStats('{{ $currentAccountingMonthKey }}');
+                    </script>
+
                     <!-- Заказы за текущий расчётный период (08 текущего – 07 следующего включительно) 
                     <div id="admin-panel-current-period-orders-wrapper" style="width:80% !important" class="mt-4">
                         <h4>Заказы за текущий расчётный период ({{ $start->format('d.m.Y') }} – {{ $end->format('d.m.Y') }})</h4>

@@ -181,6 +181,67 @@ class AdminPanelController extends Controller
 
         $marginClear = round($totalSalesSum - $totalPrimeCostSum - $kaspiComission);
 
+        // Помесячная статистика по поставщикам (тот же учётный период —
+        // с 8 числа по 7-е, что и у каналов продаж выше), для таблицы
+        // "Статистика по поставщикам" в админке. Группируем по
+        // op.fromStock (текстовое имя поставщика на order_product), а не
+        // supplier_id — исторически supplier_id заполнялся не всегда,
+        // fromStock проставляется на каждой позиции с самого начала (см.
+        // AdminPanelController::manuallyMakeOrder()).
+        $supplierStatsRaw = DB::table('order_product as op')
+            ->join('orders as o', 'o.id', '=', 'op.order_id')
+            ->select(
+                'op.fromStock as supplier_name',
+                DB::raw("
+                    DATE_FORMAT(
+                        CASE
+                            WHEN DAY(o.date) >= 8 THEN o.date
+                            ELSE DATE_SUB(o.date, INTERVAL 1 MONTH)
+                        END,
+                        '%m.%Y'
+                    ) as accounting_month
+                "),
+                DB::raw('COUNT(*) as positions_count'),
+                DB::raw('COUNT(DISTINCT op.order_id) as orders_count'),
+                DB::raw('SUM(op.item_sum) as total_cost_sum')
+            )
+            ->whereNotNull('op.fromStock')
+            ->where('op.fromStock', '!=', '')
+            ->groupBy('op.fromStock', 'accounting_month')
+            ->get();
+
+        $supplierStatisticsByMonth = [];
+        foreach ($supplierStatsRaw as $row) {
+            $supplierStatisticsByMonth[$row->accounting_month][$row->supplier_name] = [
+                'positionsCount' => (int) $row->positions_count,
+                'ordersCount'    => (int) $row->orders_count,
+                'totalSum'       => (float) $row->total_cost_sum,
+            ];
+        }
+
+        // "Весь период" — та же идея, что и у $salesStatisticsByMonth['all']
+        // выше, но без промежуточной from_begin-переменной — считаем сразу.
+        $supplierStatsAllRaw = DB::table('order_product as op')
+            ->select(
+                'op.fromStock as supplier_name',
+                DB::raw('COUNT(*) as positions_count'),
+                DB::raw('COUNT(DISTINCT op.order_id) as orders_count'),
+                DB::raw('SUM(op.item_sum) as total_cost_sum')
+            )
+            ->whereNotNull('op.fromStock')
+            ->where('op.fromStock', '!=', '')
+            ->groupBy('op.fromStock')
+            ->get();
+
+        $supplierStatisticsByMonth['all'] = [];
+        foreach ($supplierStatsAllRaw as $row) {
+            $supplierStatisticsByMonth['all'][$row->supplier_name] = [
+                'positionsCount' => (int) $row->positions_count,
+                'ordersCount'    => (int) $row->orders_count,
+                'totalSum'       => (float) $row->total_cost_sum,
+            ];
+        }
+
         // Сортировка по доле в продажах
         uasort($sales_statistics, function($a, $b) use ($totalSalesSum) {
             $shareA = $totalSalesSum ? $a['totalSalesSum'] / $totalSalesSum : 0;
@@ -406,10 +467,11 @@ class AdminPanelController extends Controller
             'salesStatisticsByMonth'     => $salesStatisticsByMonth,
             'monthsSorted'               => $monthsSorted,
             'currentAccountingMonthKey'  => $currentAccountingMonthKey,
+            'supplierStatisticsByMonth'  => $supplierStatisticsByMonth,
             'start'                      => $start,
             'end'                        => $end,
-        ], 
-        $financeDashboard, 
+        ],
+        $financeDashboard,
         $supplierSettlementsDebts
         ));
     }
