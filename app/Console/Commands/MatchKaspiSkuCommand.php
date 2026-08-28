@@ -28,6 +28,12 @@ class MatchKaspiSkuCommand extends Command
         'forumauto_lp', // прайс давно не обновлялся, временно исключён 2026-08-08
     ];
 
+    // kaspi_sku карточек, которые нужно навсегда исключить из фида
+    // (напр. по прямой просьбе Романа — проблемная позиция).
+    const EXCLUDED_KASPI_SKUS = [
+        '163373452', // Winkod W338713SA/W343418SA, 4 шт — исключено 2026-08-28
+    ];
+
     /**
      * См. подробный комментарий в RepriceKaspiCommand — тормозные диски
      * АвтоТрейда идут по цене за пару, но это частность конкретного
@@ -193,11 +199,26 @@ class MatchKaspiSkuCommand extends Command
         $supplier = $this->option('supplier');
         $dryRun   = $this->option('dry-run');
 
+        // Принудительно деактивируем уже существующие в фиде исключённые SKU —
+        // просто не матчить их заново недостаточно, старая активная строка
+        // из прошлых прогонов иначе так и останется висеть в фиде навсегда.
+        if (!$dryRun && !empty(self::EXCLUDED_KASPI_SKUS)) {
+            $forceDeactivated = DB::table('kaspi_feed_items')
+                ->whereIn('kaspi_sku', self::EXCLUDED_KASPI_SKUS)
+                ->where('is_active', 1)
+                ->update(['is_active' => 0, 'updated_at' => now()]);
+
+            if ($forceDeactivated > 0) {
+                $this->warn("Принудительно деактивировано исключённых SKU: {$forceDeactivated}");
+            }
+        }
+
         $query = DB::table('kaspi_initial_products as kip')
             ->join('kaspi_sku_test as kst', 'kst.request_article', '=', 'kip.sku')
             ->where('kip.stock', '>=', 2)
             ->whereNotIn('kip.supplier_name', self::DISABLED_SUPPLIERS)   // ← добавить
             ->where('kst.sku', '!=', 'NOT_FOUND')
+            ->whereNotIn('kst.sku', self::EXCLUDED_KASPI_SKUS)
             ->whereNotNull('kip.brand')
             ->where('kip.brand', '!=', '')
             ->whereRaw('LOWER(kst.name) LIKE CONCAT("%", LOWER(kip.brand), "%")')
