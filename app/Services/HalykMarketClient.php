@@ -148,14 +148,39 @@ class HalykMarketClient
      * $payload: skuId, merchantProductCode, city.code, price, points[].code,
      * points[].amount, loanPeriod (только 3/6/12/24).
      *
+     * ВАЖНО (2026-08-28): реальное тело запроса, подтверждённое живьём
+     * менеджером Halyk (взяли наши креды, вручную выполнили запрос — оба
+     * тестовых skuId успешно привязались), оборачивает merchantProductCode/
+     * loanPeriod и city+price+points в "info.pointByCity[]", а не кладёт их
+     * плоско на верхний уровень рядом со skuId. Это и объясняет старую
+     * персистентную ошибку 500 "getInfo() is null" — тело физически не
+     * содержало ключ "info" вообще. Оставляем сигнатуру метода (плоский
+     * $payload) прежней, чтобы не трогать вызывающий код в HalykBindCommand/
+     * HalykCreateCardCommand — просто оборачиваем здесь, в одном месте.
+     *
      * @return array{ok:bool,status:int,body:mixed}
      */
     public function bindSku(array $payload): array
     {
+        $body = [
+            'skuId' => $payload['skuId'],
+            'info'  => [
+                'merchantProductCode' => $payload['merchantProductCode'],
+                'pointByCity'         => [
+                    [
+                        'city'   => $payload['city'],
+                        'price'  => $payload['price'],
+                        'points' => $payload['points'],
+                    ],
+                ],
+                'loanPeriod' => $payload['loanPeriod'],
+            ],
+        ];
+
         $response = Http::withToken($this->token())
             ->asJson()
             ->timeout(15)
-            ->put($this->baseUrl() . '/gw/merchant/public/product/remaining/save-and-map-sku', $payload);
+            ->put($this->baseUrl() . '/gw/merchant/public/product/remaining/save-and-map-sku', $body);
 
         return [
             'ok'     => $response->successful(),
