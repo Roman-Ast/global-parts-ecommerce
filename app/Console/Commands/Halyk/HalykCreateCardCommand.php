@@ -71,6 +71,23 @@ class HalykCreateCardCommand extends Command
     /** Если у товара вообще нет description (25% каталога) — тоже нельзя оставлять пустым. */
     const FALLBACK_ADDITIONAL_INFO_TEXT = 'Информацию по применимости уточняйте у продавца перед заказом.';
 
+    /**
+     * Категория "Тормозные колодки": обязательный ENUM-атрибут "Тип" у
+     * Halyk означает дисковые/барабанные колодки — совсем другая ось, чем
+     * наше "Назначение" (перед/зад), у нас такого поля просто нет вообще
+     * (проверено 2026-08-29). Живой замер по всем 3765 карточкам
+     * категории: только у 41 (1.1%) в названии встречается слово
+     * "барабан" — подавляющее большинство сегодня это дисковые колодки,
+     * поэтому по умолчанию проставляем дисковые, и только по явному
+     * ключевому слову в названии — барабанные. Решение подтверждено
+     * Романом 2026-08-29 с осознанным риском для необозначенных явно
+     * барабанных колодок.
+     */
+    const BRAKE_PADS_CATEGORY = 'Тормозные колодки';
+    const DRUM_KEYWORD = 'барабан';
+    const BRAKE_PAD_TYPE_DISC = 'Дисковые тормозные колодки';
+    const BRAKE_PAD_TYPE_DRUM = 'Барабанные тормозные колодки';
+
     public function handle(HalykMarketClient $client): int
     {
         $limit = (int) $this->option('limit');
@@ -468,7 +485,7 @@ class HalykCreateCardCommand extends Command
 
         foreach ($blocks as $block) {
             foreach (($block['attrs'] ?? []) as $attr) {
-                $attrName = mb_strtolower(trim($attr['attrValue']['name'] ?? ''));
+                $attrName = $this->normalizeHomoglyphs(mb_strtolower(trim($attr['attrValue']['name'] ?? '')));
                 $required = (bool) ($attr['required'] ?? false);
                 $ourValues = $ourFeatures[$attrName] ?? null;
 
@@ -485,6 +502,21 @@ class HalykCreateCardCommand extends Command
                 }
                 if ($ourValues === null && $attrName === self::FIELD_FEATURES) {
                     $ourValues = [self::FALLBACK_FEATURES_TEXT];
+                }
+
+                // "Тип" (дисковые/барабанные) в "Тормозные колодки" — см.
+                // константы выше. По умолчанию дисковые, барабанные только
+                // если название явно это говорит.
+                if (
+                    $ourValues === null
+                    && $attrName === 'тип'
+                    && ($card->characteristics['category_leaf_title'] ?? null) === self::BRAKE_PADS_CATEGORY
+                ) {
+                    $ourValues = [
+                        str_contains(mb_strtolower($card->name ?? ''), self::DRUM_KEYWORD)
+                            ? self::BRAKE_PAD_TYPE_DRUM
+                            : self::BRAKE_PAD_TYPE_DISC,
+                    ];
                 }
 
                 if ($ourValues === null) {
@@ -557,6 +589,29 @@ class HalykCreateCardCommand extends Command
         return trim(html_entity_decode(strip_tags($raw), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
 
+    /**
+     * Найдено живьём 2026-08-29: у Halyk атрибут "Тип" в категориях
+     * "Тормозные колодки"/"Элементы привода" на самом деле называется
+     * "Tип" — первая буква латинская T (U+0054), не кириллическая Т
+     * (U+0422). Визуально неотличимо, но как строка это другое значение,
+     * поэтому точное сравнение имён атрибутов никогда не совпадало —
+     * 100% пропусков missing_required_attr:Тип в этих двух категориях
+     * объяснялись именно этим, а не нехваткой данных с нашей стороны.
+     * Подменяем самые частые латинские "двойники" кириллических букв на
+     * кириллицу — с обеих сторон сравнения (см. вызовы ниже и в
+     * buildAttrs()), чтобы не зависеть от того, откуда взялась опечатка.
+     */
+    private function normalizeHomoglyphs(string $s): string
+    {
+        static $map = [
+            'A' => 'А', 'B' => 'В', 'E' => 'Е', 'K' => 'К', 'M' => 'М', 'H' => 'Н',
+            'O' => 'О', 'P' => 'Р', 'C' => 'С', 'T' => 'Т', 'X' => 'Х', 'Y' => 'У',
+            'a' => 'а', 'e' => 'е', 'o' => 'о', 'p' => 'р', 'c' => 'с', 't' => 'т', 'x' => 'х', 'y' => 'у',
+        ];
+
+        return strtr($s, $map);
+    }
+
     private function flattenCharacteristics(?array $data): array
     {
         if (!$data) {
@@ -567,7 +622,7 @@ class HalykCreateCardCommand extends Command
 
         foreach (($data['specifications'] ?? []) as $spec) {
             foreach (($spec['features'] ?? []) as $feature) {
-                $name = mb_strtolower(trim($feature['name'] ?? ''));
+                $name = $this->normalizeHomoglyphs(mb_strtolower(trim($feature['name'] ?? '')));
                 $values = array_values(array_filter(array_map(
                     fn($fv) => $fv['value'] ?? null,
                     $feature['featureValues'] ?? []
