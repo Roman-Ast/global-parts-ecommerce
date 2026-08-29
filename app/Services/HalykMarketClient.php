@@ -126,6 +126,7 @@ class HalykMarketClient
     {
         $response = Http::withToken($this->token())
             ->timeout(15)
+            ->retry(2, 500)
             ->get($this->baseUrl() . '/gw/merchant/public/skus/search', [
                 'q'    => $query,
                 'page' => $page,
@@ -201,6 +202,7 @@ class HalykMarketClient
     {
         $response = Http::withToken($this->token())
             ->timeout(15)
+            ->retry(2, 500)
             ->get($this->baseUrl() . '/gw/merchant/public/category/search', [
                 'q' => $query, 'page' => $page, 'size' => $size,
             ]);
@@ -222,6 +224,7 @@ class HalykMarketClient
     {
         $response = Http::withToken($this->token())
             ->timeout(15)
+            ->retry(2, 500)
             ->get($this->baseUrl() . '/gw/merchant/public/brand/search', [
                 'q' => $query, 'page' => $page, 'size' => $size,
             ]);
@@ -245,6 +248,7 @@ class HalykMarketClient
     {
         $response = Http::withToken($this->token())
             ->timeout(15)
+            ->retry(2, 500)
             ->get($this->baseUrl() . '/gw/merchant/public/form/product/feature', [
                 'categoryId' => $categoryId,
             ]);
@@ -324,6 +328,7 @@ class HalykMarketClient
     {
         $response = Http::withToken($this->token())
             ->timeout(15)
+            ->retry(2, 500)
             ->get($this->baseUrl() . "/gw/merchant/public/draft/product/{$productId}");
 
         return [
