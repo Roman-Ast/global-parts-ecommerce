@@ -26,6 +26,7 @@ class MatchKaspiSkuCommand extends Command
 
     const DISABLED_SUPPLIERS = [
         'forumauto_lp', // прайс давно не обновлялся, временно исключён 2026-08-08
+        'shatem', // временно отключён по просьбе Романа 2026-08-29
     ];
 
     // kaspi_sku карточек, которые нужно навсегда исключить из фида
@@ -210,6 +211,21 @@ class MatchKaspiSkuCommand extends Command
 
             if ($forceDeactivated > 0) {
                 $this->warn("Принудительно деактивировано исключённых SKU: {$forceDeactivated}");
+            }
+        }
+
+        // То же самое для отключённых поставщиков (DISABLED_SUPPLIERS) —
+        // исключение из запроса ниже останавливает только НОВЫЕ офферы от
+        // этого поставщика, уже стоящие в фиде активные строки сами по
+        // себе никуда не денутся, пока их явно не деактивировать.
+        if (!$dryRun && !empty(self::DISABLED_SUPPLIERS)) {
+            $forceDeactivatedSuppliers = DB::table('kaspi_feed_items')
+                ->whereIn('supplier_name', self::DISABLED_SUPPLIERS)
+                ->where('is_active', 1)
+                ->update(['is_active' => 0, 'updated_at' => now()]);
+
+            if ($forceDeactivatedSuppliers > 0) {
+                $this->warn("Принудительно деактивировано позиций отключённых поставщиков: {$forceDeactivatedSuppliers}");
             }
         }
 
