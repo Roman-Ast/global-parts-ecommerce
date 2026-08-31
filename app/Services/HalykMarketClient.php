@@ -180,7 +180,8 @@ class HalykMarketClient
 
         $response = Http::withToken($this->token())
             ->asJson()
-            ->timeout(15)
+            ->timeout(25)
+            ->retry(2, 500, throw: false)
             ->put($this->baseUrl() . '/gw/merchant/public/product/remaining/save-and-map-sku', $body);
 
         return [
