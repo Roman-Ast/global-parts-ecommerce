@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class OzonFeedGenerator
+class GenerateOzonYml
 {
     public function generate(): string
     {
