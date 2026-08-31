@@ -31,7 +31,19 @@ class HalykCheckCardStatusCommand extends Command
         }
 
         foreach ($rows as $row) {
-            $result = $client->getDraftStatus($row->halyk_product_id);
+            // Живой случай 2026-08-31: на ~2800 строк опроса сетевой сбой
+            // на ОДНОЙ позиции (ConnectionException — таймаут/обрыв, не
+            // просто плохой HTTP-статус, retry(throw:false) на это не
+            // распространяется) ронял всю команду целиком, ни одна строка
+            // после сбойной не успевала обновиться. Ловим тут же, на
+            // конкретной позиции — остальные обрабатываются как ни в чём
+            // не бывало.
+            try {
+                $result = $client->getDraftStatus($row->halyk_product_id);
+            } catch (\Throwable $e) {
+                $this->error("  ⨯ {$row->article} (id={$row->halyk_product_id}) — исключение: {$e->getMessage()}");
+                continue;
+            }
 
             if (!$result['ok']) {
                 $this->error("  ⨯ {$row->article} (id={$row->halyk_product_id}) — HTTP {$result['status']}");
