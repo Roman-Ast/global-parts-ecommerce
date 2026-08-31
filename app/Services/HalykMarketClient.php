@@ -125,7 +125,7 @@ class HalykMarketClient
     public function searchSku(string $query, int $page = 1, int $size = 10): array
     {
         $response = Http::withToken($this->token())
-            ->timeout(15)
+            ->timeout(25)
             ->retry(2, 500, throw: false)
             ->get($this->baseUrl() . '/gw/merchant/public/skus/search', [
                 'q'    => $query,
@@ -201,7 +201,7 @@ class HalykMarketClient
     public function searchCategory(string $query, int $page = 1, int $size = 10): array
     {
         $response = Http::withToken($this->token())
-            ->timeout(15)
+            ->timeout(25)
             ->retry(2, 500, throw: false)
             ->get($this->baseUrl() . '/gw/merchant/public/category/search', [
                 'q' => $query, 'page' => $page, 'size' => $size,
@@ -223,7 +223,7 @@ class HalykMarketClient
     public function searchBrand(string $query, int $page = 1, int $size = 10): array
     {
         $response = Http::withToken($this->token())
-            ->timeout(15)
+            ->timeout(25)
             ->retry(2, 500, throw: false)
             ->get($this->baseUrl() . '/gw/merchant/public/brand/search', [
                 'q' => $query, 'page' => $page, 'size' => $size,
@@ -247,7 +247,7 @@ class HalykMarketClient
     public function getCharacteristicsForm(int $categoryId): array
     {
         $response = Http::withToken($this->token())
-            ->timeout(15)
+            ->timeout(25)
             ->retry(2, 500, throw: false)
             ->get($this->baseUrl() . '/gw/merchant/public/form/product/feature', [
                 'categoryId' => $categoryId,
