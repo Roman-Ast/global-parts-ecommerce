@@ -329,11 +329,18 @@ class HalykCreateCardCommand extends Command
      */
     private function findStrictMatch(array $results, string $article): ?array
     {
-        $normalized = mb_strtoupper(str_replace('-', '', $article));
+        // Найдено живьём 2026-08-31: Halyk в названиях карточек иногда
+        // пишет артикул с пробелом между буквенным префиксом и цифрами
+        // (напр. "PDS 1961" вместо "PDS1961") — раньше отсюда убирались
+        // только дефисы, пробел ломал совпадение целиком, дубль не
+        // находился, и карточка уходила в повторное создание вместо
+        // привязки (694 таких случаев за первый прогон 2026-08-31, часть
+        // из них — именно эта причина, не только реальные "не нашли").
+        $normalized = mb_strtoupper(str_replace(['-', ' '], '', $article));
         $pattern = '/(?<![A-Z0-9])' . preg_quote($normalized, '/') . '(?![A-Z0-9])/u';
 
         foreach ($results as $r) {
-            $nameNormalized = mb_strtoupper(str_replace('-', '', $r['name'] ?? ''));
+            $nameNormalized = mb_strtoupper(str_replace(['-', ' '], '', $r['name'] ?? ''));
             if ($nameNormalized !== '' && preg_match($pattern, $nameNormalized)) {
                 return $r;
             }
