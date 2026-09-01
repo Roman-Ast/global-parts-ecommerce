@@ -316,6 +316,22 @@ class GlobalProductController extends Controller
             (int)$request->retail_price        // $priceWithMargine (продажа)
         );
 
+        // Клиенту в поиске видна только обезличенная метка склада
+        // (stockFrom, напр. "ast"/"москва") — реального поставщика его
+        // браузер никогда не получает (защита от Network-инспекции
+        // конкурентами). Поэтому здесь, на сервере, best-effort находим
+        // реального поставщика заново по article+brand+цена закупа, чтобы
+        // админ видел его в заказе, а не ту же обезличенную метку, что и
+        // клиент.
+        $lastIndex = count($cart->items) - 1;
+        if ($lastIndex >= 0) {
+            $cart->items[$lastIndex]['adminSupplierName'] = $this->resolveAdminSupplierName(
+                (string) $request->article,
+                (string) $request->brand,
+                (float) $request->price
+            );
+        }
+
         // 4. Сохраняем ОБЪЕКТ обратно.
         // Теперь и старый поиск, и новый метод видят одну и ту же структуру.
         session()->put('cart', $cart);
@@ -325,6 +341,41 @@ class GlobalProductController extends Controller
             'cart_count' => $cart->count(),
             'message' => 'Товар добавлен в корзину'
         ]);
+    }
+
+    /**
+     * Best-effort поиск реального поставщика для позиции, добавленной в
+     * корзину — только для отображения админу в заказе, см. миграцию
+     * 2026_09_01_000006 за подробным разбором зачем. Сначала пробуем
+     * точное совпадение цены закупа (самый надёжный сигнал), если не
+     * нашлось — берём ближайшую по цене среди совпадений по артикулу и
+     * бренду.
+     */
+    private function resolveAdminSupplierName(string $article, string $brand, float $purchasePrice): ?string
+    {
+        $articleNorm = SeedOwnPartsCatalogCommand::normalizeArticle($article);
+        $brandNorm = SeedOwnPartsCatalogCommand::normalizeBrand($brand);
+
+        if ($articleNorm === '' || $brandNorm === '') {
+            return null;
+        }
+
+        $candidates = DB::table('supplier_offers')
+            ->where('sku_normalized', $articleNorm)
+            ->where('brand_normalized', $brandNorm)
+            ->select('supplier_name', 'purchase_price')
+            ->get();
+
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        $exact = $candidates->first(fn ($row) => abs((float) $row->purchase_price - $purchasePrice) < 0.01);
+        if ($exact) {
+            return $exact->supplier_name;
+        }
+
+        return $candidates->sortBy(fn ($row) => abs((float) $row->purchase_price - $purchasePrice))->first()->supplier_name;
     }
 
 }

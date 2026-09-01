@@ -1114,6 +1114,15 @@
                 </div>
                 
 
+                @php
+                    $gpStatusClass = function ($status) {
+                        $s = mb_strtolower($status ?? '');
+                        if (str_contains($s, 'выдан') || str_contains($s, 'заверш')) return 'gp-status-done';
+                        if (str_contains($s, 'возврат') || str_contains($s, 'отмен')) return 'gp-status-bad';
+                        if (str_contains($s, 'путь') || str_contains($s, 'собран') || str_contains($s, 'достав')) return 'gp-status-progress';
+                        return 'gp-status-wait';
+                    };
+                @endphp
                 @foreach ($orders as $orderItem)
                     <div class="gp-order">
                         <div class="gp-head">
@@ -1124,7 +1133,7 @@
                                     <span class="gp-phone">{{ $orderItem->customer_phone }}</span>
                                 @endif
                             </span>
-                            <span class="gp-status"><img src="/images/clock-wait-16.png" style="width:13px;vertical-align:-1px">{{ $orderItem->status }}</span>
+                            <span class="gp-status {{ $gpStatusClass($orderItem->status) }}">{{ $orderItem->status }}</span>
                             <span class="gp-date">{{ $orderItem->date->format('d.m.y') }}</span>
                             <span class="gp-channel gp-chan-{{ $orderItem->sale_channel }}">{{ $orderItem->sale_channel }}</span>
                             <span class="gp-sum">
@@ -1135,6 +1144,25 @@
                             </span>
                         </div>
 
+                        @if ($orderItem->delivery_type || $orderItem->address || $orderItem->vin || $orderItem->comment)
+                            <div class="gp-delivery-info">
+                                @if ($orderItem->delivery_type === 'pickup')
+                                    <span class="gp-delivery-badge gp-delivery-pickup"><i class="fas fa-store"></i> Самовывоз</span>
+                                @elseif ($orderItem->delivery_type)
+                                    <span class="gp-delivery-badge gp-delivery-courier"><i class="fas fa-truck"></i> Доставка</span>
+                                @endif
+                                @if ($orderItem->city || $orderItem->address)
+                                    <span class="gp-delivery-address">{{ trim(($orderItem->city ?? '') . ', ' . ($orderItem->address ?? ''), ', ') }}</span>
+                                @endif
+                                @if ($orderItem->vin)
+                                    <span class="gp-delivery-vin">VIN: {{ $orderItem->vin }}</span>
+                                @endif
+                                @if ($orderItem->comment)
+                                    <span class="gp-delivery-comment" title="{{ $orderItem->comment }}">💬 {{ mb_strimwidth($orderItem->comment, 0, 60, '...') }}</span>
+                                @endif
+                            </div>
+                        @endif
+
                         @foreach ($orderItem->products as $product)
                         <div class="gp-row">
                             <span class="gp-art">{{ $product->article }}</span>
@@ -1143,7 +1171,7 @@
                             <span class="gp-num">{{ $product->qty }}</span>
                             <span class="gp-num">{{ number_format($product->priceWithMargine, 0, ',', ' ') }}</span>
                             <span class="gp-num">{{ number_format($product->itemSumWithMargine, 0, ',', ' ') }}</span>
-                            <span class="gp-stock">{{ $product->fromStock }}</span>
+                            <span class="gp-stock" title="{{ $product->fromStock }}">{{ $product->admin_supplier_name ?? $product->fromStock }}</span>
                             <span class="gp-stock">{{ $product->deliveryTime }}</span>
                             <select name="order_product_status" class="order_product_status gp-sel">
                                 @foreach ($statuses as $key => $status)

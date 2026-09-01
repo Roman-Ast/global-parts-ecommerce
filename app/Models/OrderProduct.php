@@ -22,6 +22,7 @@ class OrderProduct extends Model
         'itemSumWithMargine',
         'searched_number',
         'fromStock',
+        'admin_supplier_name',
         'deliveryTime',
         'price_strategy',
         'qty',

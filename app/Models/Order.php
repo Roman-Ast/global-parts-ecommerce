@@ -21,7 +21,12 @@ class Order extends Model
         'sum_with_margine',
         'status',
         'customer_phone',
-        'sale_channel'
+        'sale_channel',
+        'delivery_type',
+        'city',
+        'address',
+        'vin',
+        'comment',
     ];
 
     protected $casts = [

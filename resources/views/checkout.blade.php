@@ -45,23 +45,49 @@
                         <h5 class="fw-bold mb-4 border-bottom pb-2">2. Детали доставки и авто</h5>
                         <div class="row g-3">
                             <div class="col-md-12">
+                                <label class="small text-muted mb-2 d-block">Способ получения</label>
+                                <div class="btn-group w-100" role="group" aria-label="Способ получения">
+                                    <input type="radio" class="btn-check" name="delivery_type" id="delivery_type_delivery" value="delivery" checked>
+                                    <label class="btn btn-outline-primary rounded-start-pill" for="delivery_type_delivery">
+                                        <i class="fas fa-truck me-1"></i> Доставка
+                                    </label>
+                                    <input type="radio" class="btn-check" name="delivery_type" id="delivery_type_pickup" value="pickup">
+                                    <label class="btn btn-outline-primary rounded-end-pill" for="delivery_type_pickup">
+                                        <i class="fas fa-store me-1"></i> Самовывоз
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
                                 <label class="small text-muted mb-1">VIN-код (для проверки совместимости)</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white border-end-0"><i class="fas fa-car text-muted"></i></span>
-                                    <input type="text" name="vin" class="form-control border-start-0 rounded-end-3" 
+                                    <input type="text" name="vin" class="form-control border-start-0 rounded-end-3"
                                            maxlength="17" placeholder="17 знаков">
                                 </div>
                                 <div class="extra-small text-primary mt-1" style="font-size: 0.75rem;">
                                     <i class="fas fa-info-circle me-1"></i> Рекомендуем указать VIN, чтобы мы проверили заказ.
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="small text-muted mb-1">Город</label>
-                                <input type="text" name="city" class="form-control rounded-3" placeholder="Астана" required>
+                            <div id="delivery-fields" class="col-md-12">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="small text-muted mb-1">Город</label>
+                                        <input type="text" name="city" id="checkout-city" class="form-control rounded-3" placeholder="Астана" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted mb-1">Адрес / Район</label>
+                                        <input type="text" name="address" id="checkout-address" class="form-control rounded-3" placeholder="Ул. Абая, дом 10" required>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="small text-muted mb-1">Адрес / Район</label>
-                                <input type="text" name="address" class="form-control rounded-3" placeholder="Ул. Абая, дом 10" required>
+                            <div id="pickup-fields" class="col-md-12 d-none">
+                                <div class="alert alert-info rounded-3 mb-0 d-flex align-items-center">
+                                    <i class="fas fa-store fa-lg me-3"></i>
+                                    <div>
+                                        <div class="fw-bold">Забрать самим можно здесь:</div>
+                                        <div>{{ \App\Http\Controllers\OrderController::PICKUP_ADDRESS }}</div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-12">
                                 <label class="small text-muted mb-1">Комментарий к заказу</label>
@@ -143,6 +169,28 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
         }
     });
+
+    const deliveryFields = document.getElementById('delivery-fields');
+    const pickupFields = document.getElementById('pickup-fields');
+    const cityInput = document.getElementById('checkout-city');
+    const addressInput = document.getElementById('checkout-address');
+    const deliveryTypeInputs = document.querySelectorAll('input[name="delivery_type"]');
+
+    function toggleDeliveryType() {
+        const isPickup = document.getElementById('delivery_type_pickup').checked;
+
+        deliveryFields.classList.toggle('d-none', isPickup);
+        pickupFields.classList.toggle('d-none', !isPickup);
+
+        cityInput.required = !isPickup;
+        addressInput.required = !isPickup;
+    }
+
+    deliveryTypeInputs.forEach(function (input) {
+        input.addEventListener('change', toggleDeliveryType);
+    });
+
+    toggleDeliveryType();
 });
 </script>
 @endsection

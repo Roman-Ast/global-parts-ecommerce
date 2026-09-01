@@ -27,7 +27,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
         {{-- 3. Твой главный монолитный файл стилей (Bootstrap + твои стили + Cache Busting) --}}
-        <link href="{{ asset('css/master.css') }}?v=22" rel="stylesheet">
+        <link href="{{ asset('css/master.css') }}?v=23" rel="stylesheet">
 
         {{-- Иконки: в проекте используются классы и Bootstrap Icons (bi bi-*), и Font
              Awesome (fas/far/fab fa-*), но ни один шрифт нигде не подключался — иконки

@@ -47,6 +47,10 @@ class OrderController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    // Единственный склад/пункт выдачи — тот же адрес, что и в Halyk
+    // (HALYK_POINT_CODE=Global_Parts_pp1), см. CLAUDE.md.
+    const PICKUP_ADDRESS = 'мкр. Целинный 5/1, ТД Акку, офис 6';
+
     public function store(Request $request)
     {
         $request->validate([
@@ -56,14 +60,17 @@ class OrderController extends Controller
                 'regex:/^\+7\s\(\d{3}\)\s\d{3}-\d{2}-\d{2}$/'
             ],
             'name' => 'required|string|max:255',
-            'city' => 'required|string',
-            'address' => 'required|string',
+            'delivery_type' => 'required|in:pickup,delivery',
+            'city' => 'required_if:delivery_type,delivery|nullable|string',
+            'address' => 'required_if:delivery_type,delivery|nullable|string',
         ], [
             'customer_phone.regex' => 'Введите номер телефона в формате +7 (7xx) xxx-xx-xx',
         ]);
         $cart = $request->session()->get('cart');
 
         $customer = $this->getOrCreateCustomer($request->customer_phone, $request->name);
+
+        $isPickup = $request->delivery_type === 'pickup';
 
         $order = Order::create([
             'user_id' => auth()->id(),
@@ -74,10 +81,17 @@ class OrderController extends Controller
             'sum_with_margine' => $cart->totalWithMargine(),
             'status' => 'заказано',
             'customer_phone' => $customer?->phone ?? $request->customer_phone,
-            'sale_channel' => 'site'
+            'sale_channel' => 'site',
+            'delivery_type' => $request->delivery_type,
+            // При самовывозе адрес — только наш, серверный (не то, что
+            // могло прийти от клиента) — исключает любое расхождение.
+            'city' => $isPickup ? 'Астана' : $request->city,
+            'address' => $isPickup ? self::PICKUP_ADDRESS : $request->address,
+            'vin' => $request->vin,
+            'comment' => $request->comment,
         ]);
 
-        
+
         foreach ($cart->content() as $cartItem) {
             $orderProduct = OrderProduct::create([
                 'order_id' => $order->id,
@@ -91,6 +105,7 @@ class OrderController extends Controller
                 'itemSumWithMargine' => $cartItem['priceWithMargine'] * $cartItem['qty'],
                 'searched_number' => $cartItem['originNumber'],
                 'fromStock' => $cartItem['stockFrom'],
+                'admin_supplier_name' => $cartItem['adminSupplierName'] ?? null,
                 'deliveryTime' => $cartItem['deliveryTime'],
                 'status' => 'payment_waiting'
             ]);
