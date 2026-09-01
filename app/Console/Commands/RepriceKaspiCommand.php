@@ -83,6 +83,18 @@ class RepriceKaspiCommand extends Command
     ];
 
     /**
+     * Тумблер надбавки для АвтоТрейда (Астана + Алматы) — 0 выключает,
+     * 1 включает. Роман переключает по просьбе, ничего больше в коде
+     * менять не нужно. Применяется в самом конце, поверх уже посчитанной
+     * по обычной логике розничной цены (эталон/конкуренты/минимальная
+     * маржа) — просто добавляет процент сверху, не участвует в выборе
+     * сценария цены.
+     */
+    const AUTOTRADE_MARKUP_ENABLED = 1;
+    const AUTOTRADE_MARKUP_PCT = 0.35;
+    const AUTOTRADE_SUPPLIERS = ['autotrade_ast', 'autotrade_alm'];
+
+    /**
      * Проверяет, относится ли товар к категории с фиксированной
      * себестоимостью для КОНКРЕТНОГО поставщика (см. SUPPLIER_FIXED_COST_KEYWORDS).
      */
@@ -245,6 +257,10 @@ class RepriceKaspiCommand extends Command
                         $scenario = 'min_margin_dumping';
                     }
                 }
+            }
+
+            if (self::AUTOTRADE_MARKUP_ENABLED && in_array($item->supplier_name, self::AUTOTRADE_SUPPLIERS, true)) {
+                $ourPrice *= (1 + self::AUTOTRADE_MARKUP_PCT);
             }
 
             $ourPrice = round($ourPrice);
