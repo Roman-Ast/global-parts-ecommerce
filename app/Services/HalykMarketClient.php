@@ -133,8 +133,23 @@ class HalykMarketClient
                 'size' => $size,
             ]);
 
+        // КРИТИЧНО (найдено 2026-09-01): раньше "не успешно" тут молча
+        // превращалось в "[]" — то же самое значение, что и у настоящего
+        // "результатов нет". HalykCreateCardCommand использует пустой
+        // результат этого метода как сигнал "дубля не существует, можно
+        // создавать новую карточку" — а значит временный сбой их API
+        // (напр. живьём пойман устойчивый 504 "upstream request timeout"
+        // на этом самом эндпоинте) молча приводил к попытке создать
+        // карточку, которая на самом деле уже существует — именно так,
+        // судя по всему, десятками процентов и набрались тысячи "already
+        // exists" в статусе deleted, а не из-за реальных пробелов поиска.
+        // Теперь бросаем исключение — вызывающий код (уже оборачивает
+        // обработку каждой карточки в try/catch) корректно остановится
+        // на этой карточке вместо того чтобы создавать дубль.
         if (!$response->successful()) {
-            return [];
+            throw new \RuntimeException(
+                "Halyk skus/search недоступен: HTTP {$response->status()} — " . mb_substr($response->body(), 0, 200)
+            );
         }
 
         // Спринговая пагинация (Page<T>) — элементы лежат в "content".
@@ -208,8 +223,12 @@ class HalykMarketClient
                 'q' => $query, 'page' => $page, 'size' => $size,
             ]);
 
+        // Тот же принцип, что и в searchSku() — не путать "сбой запроса" с
+        // "категория не найдена".
         if (!$response->successful()) {
-            return [];
+            throw new \RuntimeException(
+                "Halyk category/search недоступен: HTTP {$response->status()} — " . mb_substr($response->body(), 0, 200)
+            );
         }
 
         return $response->json('content') ?? $response->json() ?? [];
@@ -231,7 +250,9 @@ class HalykMarketClient
             ]);
 
         if (!$response->successful()) {
-            return [];
+            throw new \RuntimeException(
+                "Halyk brand/search недоступен: HTTP {$response->status()} — " . mb_substr($response->body(), 0, 200)
+            );
         }
 
         return $response->json('content') ?? $response->json() ?? [];
@@ -255,7 +276,9 @@ class HalykMarketClient
             ]);
 
         if (!$response->successful()) {
-            return [];
+            throw new \RuntimeException(
+                "Halyk form/product/feature недоступен: HTTP {$response->status()} — " . mb_substr($response->body(), 0, 200)
+            );
         }
 
         return $response->json() ?? [];
