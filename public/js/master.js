@@ -348,6 +348,10 @@ $(document).on('click', '.stock-item-cart-btn', function () {
         'qty': requestedQty,
         'deliveryTime': fieldText('.requestPartNumber-delivery').replaceAll(' ', '').replaceAll(regExp, ''),
         'stockFrom': fieldText('.requestPartNumber-supplier').replaceAll(' ', '').replaceAll(regExp, ''),
+        // Токен, за которым на сервере прячется реальный поставщик — сам
+        // токен ничего не палит конкурентам, см. tokenizeSupplierNames()
+        // в SparePartControllerTest.
+        'supplierToken': row.find('.requestPartNumber-supplier-token').first().val() || '',
         'searchedNumber': $('#search-res-header-val').html(),
         'priceWithMargine': fieldText('.requestPartNumber-price').replaceAll(' ', '').replaceAll(regExp, '')
     };

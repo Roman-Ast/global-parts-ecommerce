@@ -17,6 +17,7 @@
                                 @else
                                 {{ $searchItem['supplier_city'] }}
                                 @endauth
+                                <input type="hidden" class="requestPartNumber-supplier-token" value="{{ $searchItem['supplier_token'] ?? '' }}">
                             </div>
                             <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">
                                 {{ $searchItem['brand'] }}

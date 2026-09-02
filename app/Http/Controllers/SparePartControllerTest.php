@@ -354,11 +354,38 @@ class SparePartControllerTest extends Controller
         usort($this->finalArr['crosses_to_order'], fn($a, $b) => ($a['priceWithMargine'] ?? 0) <=> ($b['priceWithMargine'] ?? 0));
 
         return [
-            'searchedNumber'  => (string) view('partials.items.searchedNumber', ['items' => $this->finalArr['searchedNumber']]),
-            'crossesInOffice' => (string) view('partials.items.crossesInOffice', ['items' => $this->finalArr['crosses_in_office']]),
-            'crossesOnStock'  => (string) view('partials.items.crossesOnStock', ['items' => $this->finalArr['crosses_on_stock']]),
-            'crossesToOrder'  => (string) view('partials.items.crossesToOrder', ['items' => $this->finalArr['crosses_to_order']]),
+            'searchedNumber'  => (string) view('partials.items.searchedNumber', ['items' => $this->tokenizeSupplierNames($this->finalArr['searchedNumber'])]),
+            'crossesInOffice' => (string) view('partials.items.crossesInOffice', ['items' => $this->tokenizeSupplierNames($this->finalArr['crosses_in_office'])]),
+            'crossesOnStock'  => (string) view('partials.items.crossesOnStock', ['items' => $this->tokenizeSupplierNames($this->finalArr['crosses_on_stock'])]),
+            'crossesToOrder'  => (string) view('partials.items.crossesToOrder', ['items' => $this->tokenizeSupplierNames($this->finalArr['crosses_to_order'])]),
         ];
+    }
+
+    /**
+     * Реальный код поставщика (supplier_name, напр. "rssk"/"phtn") виден
+     * в HTML только админу (см. партиалы) — но при добавлении в корзину
+     * нужен серверу, чтобы потом показать админу в заказе, КТО реально
+     * поставщик, а не только то, что видит клиент (город). Просто
+     * положить его в hidden input открытым текстом нельзя — это будет
+     * видно любому через "Просмотр кода страницы", то есть ровно та
+     * утечка поставщиков конкурентам, от которой supplier_city и
+     * задумывался (см. CLAUDE.md, Radle). Поэтому кладём в hidden input
+     * не сам код, а бессмысленный токен, а сопоставление "токен → код
+     * поставщика" держим только на сервере (кэш, 2 часа — с запасом на
+     * то, что клиент может держать открытую вкладку поиска долго перед
+     * тем, как оформить заказ). Разворачивается обратно в
+     * CartController::store()/GlobalProductController::addToCartApi().
+     */
+    private function tokenizeSupplierNames(array $items): array
+    {
+        foreach ($items as &$item) {
+            if (!empty($item['supplier_name'])) {
+                $token = \Illuminate\Support\Str::random(16);
+                Cache::put("supplier_token:{$token}", $item['supplier_name'], now()->addHours(2));
+                $item['supplier_token'] = $token;
+            }
+        }
+        return $items;
     }
 
     /**

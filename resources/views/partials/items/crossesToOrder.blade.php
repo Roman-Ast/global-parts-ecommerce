@@ -18,6 +18,7 @@
                         @else
                             {{ $crossItem['supplier_city'] }}
                         @endauth
+                        <input type="hidden" class="requestPartNumber-supplier-token" value="{{ $crossItem['supplier_token'] ?? '' }}">
                     </div>
 
                     <div class="requestPartNumberContainer-item-entity requestPartNumber-brand">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Cart;
 use App\Console\Commands\SeedOwnPartsCatalogCommand;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
@@ -72,12 +73,22 @@ class CartController extends Controller
         );
 
         // Клиенту виден только обезличенный stockFrom — реальный
-        // поставщик находится best-effort на сервере, для отображения
-        // админу (см. GlobalProductController::resolveAdminSupplierName
-        // за подробным разбором, та же логика).
+        // поставщик для отображения админу берётся ИЗ ТОКЕНА (см.
+        // SparePartControllerTest::tokenizeSupplierNames() — сервер
+        // положил его в кэш ещё на этапе поиска, hidden input донёс
+        // токен досюда, не сам код поставщика). Если токена почему-то
+        // нет (старая открытая вкладка поиска до этого фикса, кэш токена
+        // истёк за >2 часа и т.п.) — откатываемся на прежний best-effort
+        // поиск по supplier_offers, полное покрытие которого ограничено
+        // только "файловыми" поставщиками (см. resolveAdminSupplierName).
         $lastIndex = count($cart->items) - 1;
         if ($lastIndex >= 0) {
-            $cart->items[$lastIndex]['adminSupplierName'] = $this->resolveAdminSupplierName(
+            $supplierToken = (string) ($request->data['supplierToken'] ?? '');
+            $adminSupplierName = $supplierToken !== ''
+                ? Cache::get("supplier_token:{$supplierToken}")
+                : null;
+
+            $cart->items[$lastIndex]['adminSupplierName'] = $adminSupplierName ?? $this->resolveAdminSupplierName(
                 (string) $request->data['article'],
                 (string) $request->data['brand'],
                 (float) $request->data['price']
