@@ -525,7 +525,7 @@ class RepriceKaspiCommand extends Command
         }
 
         if ($skippedBundled > 0) {
-            $this->info("↷ Пропущено как уже-комплект (SAT/Baikal у АвтоТрейда и т.п.): {$skippedBundled}");
+            $this->info("↷ Пропущено как уже-комплект (SAT/Baikor у АвтоТрейда и т.п.): {$skippedBundled}");
         }
 
         // === Точечные override по конкретным артикулам (QTY_OVERRIDE_ARTICLES) ===

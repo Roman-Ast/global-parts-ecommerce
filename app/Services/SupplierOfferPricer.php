@@ -20,32 +20,22 @@ class SupplierOfferPricer
     /**
      * Заголовок карточки со скрейпинга Kaspi иногда сам говорит "нужно
      * НЕСКОЛЬКО штук на 1 применение" (напр. "Комплект тормозных дисков
-     * (передние 2 шт)") — а supplier_offers.purchase_price при этом может
-     * быть ценой за ОДНУ штуку у конкретного поставщика (не у всех —
-     * некоторые, например АвтоТрейд, наоборот сразу квотируют цену за
-     * пару, см. SUPPLIER_ALREADY_KIT_PRICED ниже). Без этой поправки
-     * розница считалась от цены за 1 шт, хотя реально нужно закупить 2 —
-     * живой случай 2026-09-05: заказ №2018, F136W, диск Gerat реально
-     * 36400 за штуку, а в заказ попало ~18928 (по сути цена за половину
-     * комплекта). Тот же паттерн, что уже применяется в Kaspi-пайплайне
-     * (RepriceKaspiCommand/MatchKaspiSkuCommand — PAIR_QTY_MARKER_PATTERN),
-     * просто раньше не был подключён к этому, отдельному пайплайну цен
-     * для собственного каталога сайта.
+     * (передние 2 шт)") — а supplier_offers.purchase_price при этом почти
+     * всегда цена за ОДНУ штуку. Без этой поправки розница считалась от
+     * цены за 1 шт, хотя реально нужно закупить 2 — живой случай
+     * 2026-09-05: заказ №2018, F136W, диск Gerat реально 36400 за штуку,
+     * а в заказ попало ~18928 (по сути цена за половину комплекта).
+     *
+     * НЕ путать с SUPPLIER_FIXED_COST_KEYWORDS/PAIR_ALREADY_BUNDLED в
+     * Kaspi-пайплайне (RepriceKaspiCommand и т.д.) — те решают другую
+     * задачу (не доверять полю kaspi_qty у конкретных категорий/брендов),
+     * не про явный текстовый маркер "N шт" в названии. Роман подтвердил
+     * 2026-09-05: у АвтоТрейда парами продаются только пружины, все
+     * остальные категории (включая диски) считаются как обычно — поэтому
+     * тут сознательно НЕТ поставщик-специфичных исключений, маркер "N шт"
+     * в названии умножает себестоимость одинаково для всех поставщиков.
      */
     const QTY_MARKER_PATTERN = '/\b(\d+)\s*шт\b/ui';
-
-    /**
-     * Поставщики, у которых цена в supplier_offers УЖЕ за комплект (не за
-     * 1 шт) для перечисленных ключевых слов — для них умножать нельзя,
-     * иначе задвоим то, что и так посчитано верно. Те же ключи/слова, что
-     * и SUPPLIER_FIXED_COST_KEYWORDS в Kaspi-пайплайне (RepriceKaspiCommand
-     * и т.д.) — supplier_name там и тут берётся из одной и той же таблицы
-     * supplier_offers, значения совпадают.
-     */
-    const SUPPLIER_ALREADY_KIT_PRICED = [
-        'autotrade_ast' => ['диск'],
-        'autotrade_alm' => ['диск'],
-    ];
 
     /**
      * Мутирует каждую карточку на месте: добавляет ->offer — null, если
@@ -81,7 +71,7 @@ class SupplierOfferPricer
             $inStock = $matches->where('stock', '>', 0)->sortBy('purchase_price')->first();
             $best = $inStock ?? $matches->sortBy('purchase_price')->first();
 
-            $qty = $this->detectKitQty($card->name ?? '', $best->supplier_name);
+            $qty = $this->detectKitQty($card->name ?? '');
             $unitCost = (float) $best->purchase_price;
             $totalCost = $unitCost * $qty;
 
@@ -100,30 +90,16 @@ class SupplierOfferPricer
 
     /**
      * Возвращает реальное число единиц, которое нужно закупить под эту
-     * карточку — 1, если явного маркера количества нет или поставщик уже
-     * квотирует цену за комплект целиком.
+     * карточку — 1, если явного маркера количества нет в названии.
      */
-    private function detectKitQty(string $name, ?string $supplierName): int
+    private function detectKitQty(string $name): int
     {
         if (!preg_match(self::QTY_MARKER_PATTERN, $name, $m)) {
             return 1;
         }
 
         $qty = (int) $m[1];
-        if ($qty < 2) {
-            return 1;
-        }
 
-        $keywords = self::SUPPLIER_ALREADY_KIT_PRICED[$supplierName] ?? null;
-        if ($keywords) {
-            $nameLower = mb_strtolower($name);
-            foreach ($keywords as $keyword) {
-                if (str_contains($nameLower, mb_strtolower($keyword))) {
-                    return 1; // этот поставщик уже посчитал за комплект
-                }
-            }
-        }
-
-        return $qty;
+        return $qty >= 2 ? $qty : 1;
     }
 }
