@@ -1258,7 +1258,11 @@ do {
             } else {
                 array_push($this->finalArr['brands'], $item->Brand);
 
-                array_push($this->finalArr['crosses_to_order'], [
+                // Раньше все НЕ-Астанинские склады уходили в "под заказ"
+                // без разбора, даже если артикул совпадал буквально с
+                // запрошенным — та же проверка, что и в ветке "Астана"
+                // выше, просто на другой склад/бакет.
+                array_push($this->finalArr[$item->Article == $partnumber ? 'searchedNumber' : 'crosses_to_order'], [
                     'brand' => $item->Brand,
                     'article' => $item->Article,
                     'name' => substr($item->Name, 0, 60),
@@ -1276,7 +1280,7 @@ do {
                     'supplier_name' => 'phtn',
                     'supplier_city' => $item->Warehouse,
                     'supplier_color' => '#feed00'
-                ]); 
+                ]);
             }
         }
 
@@ -1311,7 +1315,10 @@ do {
         foreach ($response1->Items as $item) {
             array_push($this->finalArr['brands'], $item->Brand);
 
-            array_push($this->finalArr['crosses_to_order'], [
+            // Тот же фикс, что и выше — раньше локальные поставщики
+            // безусловно уходили в "под заказ", даже точное совпадение
+            // артикула.
+            array_push($this->finalArr[$item->Article == $partnumber ? 'searchedNumber' : 'crosses_to_order'], [
                 'brand' => $item->Brand,
                 'article' => $item->Article,
                 'name' => substr($item->Name, 0, 60),
@@ -2139,11 +2146,27 @@ do {
             }
             
             
+            $searchBrandLower = strtolower(trim($brand));
+            $searchArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $partnumber));
+
             foreach ($json_responce_data->RESP as $key => $crossItem) {
                 if ($crossItem->KEYZAK == 'MOV0071371' || $crossItem->KEYZAK == 'MOV0009026') {
                     array_push($this->finalArr['brands'], $crossItem->BRAND);
-                    
-                    array_push($this->finalArr['crosses_on_stock'], [
+
+                    // Запрос к их API уже идёт с нашими BRAND+PIN, но ответ
+                    // всё равно может содержать похожие позиции другого
+                    // бренда/артикула — раньше всё безусловно уходило в
+                    // аналоги, даже точное совпадение.
+                    $itemBrandLower = strtolower(trim($crossItem->BRAND ?? ''));
+                    $isBrandMatch = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                        $itemBrandLower === $searchBrandLower ||
+                        str_contains($itemBrandLower, $searchBrandLower) ||
+                        str_contains($searchBrandLower, $itemBrandLower)
+                    );
+                    $itemArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $crossItem->PIN ?? ''));
+                    $isExact = $isBrandMatch && $itemArticleClean === $searchArticleClean;
+
+                    array_push($this->finalArr[$isExact ? 'searchedNumber' : 'crosses_on_stock'], [
                         'brand' => $crossItem->BRAND,
                         'article' => $crossItem->PIN,
                         'name' => $crossItem->NAME,
@@ -2639,8 +2662,24 @@ do {
         if (!$result) {
             return;
         }
+        $searchBrandLower = strtolower(trim($brand));
+        $searchArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $partnumber));
+
         foreach ($result as $item) {
-            array_push($this->finalArr['crosses_on_stock'], [
+            // Их API ищет по одному только коду — часто отдаёт этот же
+            // код у НЕСКОЛЬКИХ производителей сразу (аналоги под тем же
+            // номером), раньше всё уходило в аналоги без разбора, даже
+            // когда бренд+артикул совпадали буквально.
+            $itemBrandLower = strtolower(trim($item->manufacturer ?? ''));
+            $isBrandMatch = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                $itemBrandLower === $searchBrandLower ||
+                str_contains($itemBrandLower, $searchBrandLower) ||
+                str_contains($searchBrandLower, $itemBrandLower)
+            );
+            $itemArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $item->code ?? ''));
+            $isExact = $isBrandMatch && $itemArticleClean === $searchArticleClean;
+
+            array_push($this->finalArr[$isExact ? 'searchedNumber' : 'crosses_on_stock'], [
                 'brand' => $item->manufacturer,
                 'article' => $item->code,
                 'name' => $item->name,
@@ -2971,10 +3010,23 @@ do {
             return;
         }
         
+        $searchBrandLower = strtolower(trim($brand));
+
         foreach ($searchedPart as $item) {
             array_push($this->finalArr['brands'], $item['brand']);
 
-            array_push($this->finalArr['crosses_on_stock'], [
+            // Запрос уже фильтрует по oem === $partnumber (артикул точно
+            // совпал), не хватало только сверки бренда — раньше любой
+            // бренд с тем же oem уходил в аналоги как кросс, хотя по
+            // артикулу это уже точное совпадение.
+            $itemBrandLower = strtolower(trim($item['brand'] ?? ''));
+            $isExact = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                $itemBrandLower === $searchBrandLower ||
+                str_contains($itemBrandLower, $searchBrandLower) ||
+                str_contains($searchBrandLower, $itemBrandLower)
+            );
+
+            array_push($this->finalArr[$isExact ? 'searchedNumber' : 'crosses_on_stock'], [
                 'brand' => $item['brand'],
                 'article' => $item['oem'],
                 'name' => $item['article'] . ' ' . $item['name'],
@@ -2993,9 +3045,9 @@ do {
                 'supplier_name' => 'Хуйпойми',
                 'supplier_city' => 'Астана',
                 'supplier_color' => 'yellow',
-            ]);  
+            ]);
         }
-        
+
         return;
     }
 
@@ -3014,13 +3066,25 @@ do {
             return;
         }
 
+        $searchBrandLower = strtolower(trim($brand));
+
         foreach ($searchedPart as $item) {
             // Добавляем бренд в общий список брендов
             if (!in_array($item->brand, $this->finalArr['brands'])) {
                 array_push($this->finalArr['brands'], $item->brand);
             }
 
-            array_push($this->finalArr['crosses_to_order'], [
+            // Запрос уже гарантирует совпадение по oem/article/clean_article
+            // (артикул точно совпал), не хватало сверки бренда — раньше
+            // любой бренд с тем же кодом уходил в "под заказ" как кросс.
+            $itemBrandLower = strtolower(trim($item->brand ?? ''));
+            $isExact = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                $itemBrandLower === $searchBrandLower ||
+                str_contains($itemBrandLower, $searchBrandLower) ||
+                str_contains($searchBrandLower, $itemBrandLower)
+            );
+
+            array_push($this->finalArr[$isExact ? 'searchedNumber' : 'crosses_to_order'], [
                 'brand' => $item->brand,
                 'article' => $item->oem ?? $item->article, // Берем OEM, если пусто - артикул
                 'name' => $item->name,
@@ -3107,23 +3171,51 @@ do {
             ->get();
 
 
+        $searchBrandLower = strtolower(trim($brand));
+
         foreach ($searchedArticle as $item) {
             array_push($this->finalArr['brands'], $item->brand);
 
-            array_push($this->finalArr['searchedNumber'], [
-                'brand' => $item->brand,
-                'article' => $item->article,
-                'name' => $item->name,
-                'price' => $item->price,
-                'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                'qty' => $item->qty,
-                'supplier_city' => 'Астана',
-                'supplier_name' => 'в офисе',
-                'supplier_color' => 'lightgreen',
-                'deliveryStart' => 'в офисе'
-            ]);
+            // Артикул тут уже точно совпал (см. WHERE выше), но бренд ни
+            // разу не проверялся — раньше товар другого производителя под
+            // тем же кодом всё равно шёл как "запрошенный артикул".
+            $itemBrandLower = strtolower(trim($item->brand ?? ''));
+            $isBrandMatch = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                $itemBrandLower === $searchBrandLower ||
+                str_contains($itemBrandLower, $searchBrandLower) ||
+                str_contains($searchBrandLower, $itemBrandLower)
+            );
+
+            if ($isBrandMatch) {
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand' => $item->brand,
+                    'article' => $item->article,
+                    'name' => $item->name,
+                    'price' => $item->price,
+                    'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                    'qty' => $item->qty,
+                    'supplier_city' => 'Астана',
+                    'supplier_name' => 'в офисе',
+                    'supplier_color' => 'lightgreen',
+                    'deliveryStart' => 'в офисе'
+                ]);
+            } else {
+                array_push($this->finalArr['crosses_in_office'], [
+                    'brand' => $item->brand,
+                    'article' => $item->article,
+                    'name' => $item->name,
+                    'stock_legend' => 'в офисе',
+                    'qty' => $item->qty,
+                    'price' => $item->price,
+                    'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                    'delivery_time' => 'в офисе',
+                    'supplier_name' => 'в офисе',
+                    'supplier_city' => 'Астана',
+                    'supplier_color' => 'lightgreen',
+                ]);
+            }
         }
-        
+
         return;
     }
 
@@ -3139,21 +3231,60 @@ do {
             return;
         }
         
+        $searchBrandLower = strtolower(trim($brand));
+        $searchArticleLower = strtolower(trim($partnumber));
+
         foreach ($searchedPart as $item) {
             array_push($this->finalArr['brands'], $item['brand']);
 
-            array_push($this->finalArr['searchedNumber'], [
-                'brand' => $item['brand'],
-                'article' => $item['article'],
-                'name' => $item['name'],
-                'price' => $item['price'],
-                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                'qty' => $item['qty'],
-                'supplier_city' => 'Астана',
-                'supplier_name' => 'Ingvar',
-                'supplier_color' => '#77942e',
-                'deliveryStart' => '1 день',
-            ]);    
+            // Запрос ищет по oem ИЛИ article — article из найденной строки
+            // не обязательно совпадает буквально с $partnumber (могли
+            // найти по oem), плюс бренд вообще не проверялся: раньше ВСЁ
+            // подряд уходило в "Запрошенный артикул", включая чужие
+            // бренды и обычные кросс-номера.
+            $itemBrandLower = strtolower(trim($item['brand'] ?? ''));
+            $isBrandMatch = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                $itemBrandLower === $searchBrandLower ||
+                str_contains($itemBrandLower, $searchBrandLower) ||
+                str_contains($searchBrandLower, $itemBrandLower)
+            );
+            $isExact = $isBrandMatch && strtolower(trim($item['article'] ?? '')) === $searchArticleLower;
+
+            if ($isExact) {
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand' => $item['brand'],
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'price' => $item['price'],
+                    'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    'qty' => $item['qty'],
+                    'supplier_city' => 'Астана',
+                    'supplier_name' => 'Ingvar',
+                    'supplier_color' => '#77942e',
+                    'deliveryStart' => '1 день',
+                ]);
+            } else {
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand' => $item['brand'],
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'stock_legend' => '',
+                    'qty' => $item['qty'],
+                    'price' => $item['price'],
+                    'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    'delivery_time' => '1 день',
+                    'stocks' => [
+                        [
+                            'qty' => $item['qty'],
+                            'price' => $item['price'],
+                            'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                        ]
+                    ],
+                    'supplier_name' => 'Ingvar',
+                    'supplier_city' => 'Астана',
+                    'supplier_color' => '#77942e',
+                ]);
+            }
         }
 
         return;
@@ -3225,23 +3356,61 @@ do {
             return;
         }
         //dd($searchedPart);
+        $searchBrandLower = strtolower(trim($brand));
+        $searchArticleLower = strtolower(trim($partnumber));
+
         foreach ($searchedPart as $item) {
             array_push($this->finalArr['brands'], $item['brand']);
 
-            array_push($this->finalArr['searchedNumber'], [
-                'brand' => $item['brand'],
-                'article' => $item['article'],
-                'name' => $item['name'],
-                'price' => $item['price'],
-                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                'qty' => $item['qty'],
-                'supplier_city' => 'Астана',
-                'supplier_name' => 'blstr',
-                'supplier_color' => 'green',
-                'deliveryStart' => date('d.m.Y'),
-            ]);    
+            // Запрос ищет по oem ИЛИ article — не гарантирует буквальное
+            // совпадение article с $partnumber, а бренд вообще не
+            // проверялся: раньше всё подряд уходило в "Запрошенный
+            // артикул" (см. тот же фикс у Ingvar чуть выше).
+            $itemBrandLower = strtolower(trim($item['brand'] ?? ''));
+            $isBrandMatch = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                $itemBrandLower === $searchBrandLower ||
+                str_contains($itemBrandLower, $searchBrandLower) ||
+                str_contains($searchBrandLower, $itemBrandLower)
+            );
+            $isExact = $isBrandMatch && strtolower(trim($item['article'] ?? '')) === $searchArticleLower;
+
+            if ($isExact) {
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand' => $item['brand'],
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'price' => $item['price'],
+                    'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    'qty' => $item['qty'],
+                    'supplier_city' => 'Астана',
+                    'supplier_name' => 'blstr',
+                    'supplier_color' => 'green',
+                    'deliveryStart' => date('d.m.Y'),
+                ]);
+            } else {
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand' => $item['brand'],
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'stock_legend' => '',
+                    'qty' => $item['qty'],
+                    'price' => $item['price'],
+                    'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    'delivery_time' => date('d.m.Y'),
+                    'stocks' => [
+                        [
+                            'qty' => $item['qty'],
+                            'price' => $item['price'],
+                            'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                        ]
+                    ],
+                    'supplier_name' => 'blstr',
+                    'supplier_city' => 'Астана',
+                    'supplier_color' => 'green',
+                ]);
+            }
         }
-        
+
         return;
     }
 
@@ -3256,23 +3425,57 @@ do {
             return;
         }
         //dd($searchedPart);
+        $searchBrandLower = strtolower(trim($brand));
+        $searchArticleLower = strtolower(trim($partnumber));
+
         foreach ($searchedPart as $item) {
             array_push($this->finalArr['brands'], $item['brand']);
 
-            array_push($this->finalArr['searchedNumber'], [
-                'brand' => $item['brand'],
-                'article' => $item['article'],
-                'name' => $item['name'],
-                'price' => $item['price'],
-                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                'qty' => $item['qty'],
-                'supplier_city' => 'Астана',
-                'supplier_name' => 'ntrkm',
-                'supplier_color' => 'green',
-                'deliveryStart' => date('d.m.Y'),
-            ]);    
+            $itemBrandLower = strtolower(trim($item['brand'] ?? ''));
+            $isBrandMatch = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                $itemBrandLower === $searchBrandLower ||
+                str_contains($itemBrandLower, $searchBrandLower) ||
+                str_contains($searchBrandLower, $itemBrandLower)
+            );
+            $isExact = $isBrandMatch && strtolower(trim($item['article'] ?? '')) === $searchArticleLower;
+
+            if ($isExact) {
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand' => $item['brand'],
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'price' => $item['price'],
+                    'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    'qty' => $item['qty'],
+                    'supplier_city' => 'Астана',
+                    'supplier_name' => 'ntrkm',
+                    'supplier_color' => 'green',
+                    'deliveryStart' => date('d.m.Y'),
+                ]);
+            } else {
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand' => $item['brand'],
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'stock_legend' => '',
+                    'qty' => $item['qty'],
+                    'price' => $item['price'],
+                    'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    'delivery_time' => date('d.m.Y'),
+                    'stocks' => [
+                        [
+                            'qty' => $item['qty'],
+                            'price' => $item['price'],
+                            'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                        ]
+                    ],
+                    'supplier_name' => 'ntrkm',
+                    'supplier_city' => 'Астана',
+                    'supplier_color' => 'green',
+                ]);
+            }
         }
-        
+
         return;
     }
 
@@ -3287,23 +3490,57 @@ do {
             return;
         }
         //dd($searchedPart);
+        $searchBrandLower = strtolower(trim($brand));
+        $searchArticleLower = strtolower(trim($partnumber));
+
         foreach ($searchedPart as $item) {
             array_push($this->finalArr['brands'], $item['brand']);
 
-            array_push($this->finalArr['searchedNumber'], [
-                'brand' => $item['brand'],
-                'article' => $item['article'],
-                'name' => $item['name'],
-                'price' => $item['price'],
-                'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
-                'qty' => $item['qty'],
-                'supplier_city' => 'Астана',
-                'supplier_name' => 'adil',
-                'supplier_color' => 'green',
-                'deliveryStart' => date('d.m.Y'),
-            ]);    
+            $itemBrandLower = strtolower(trim($item['brand'] ?? ''));
+            $isBrandMatch = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                $itemBrandLower === $searchBrandLower ||
+                str_contains($itemBrandLower, $searchBrandLower) ||
+                str_contains($searchBrandLower, $itemBrandLower)
+            );
+            $isExact = $isBrandMatch && strtolower(trim($item['article'] ?? '')) === $searchArticleLower;
+
+            if ($isExact) {
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand' => $item['brand'],
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'price' => $item['price'],
+                    'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    'qty' => $item['qty'],
+                    'supplier_city' => 'Астана',
+                    'supplier_name' => 'adil',
+                    'supplier_color' => 'green',
+                    'deliveryStart' => date('d.m.Y'),
+                ]);
+            } else {
+                array_push($this->finalArr['crosses_on_stock'], [
+                    'brand' => $item['brand'],
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'stock_legend' => '',
+                    'qty' => $item['qty'],
+                    'price' => $item['price'],
+                    'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                    'delivery_time' => date('d.m.Y'),
+                    'stocks' => [
+                        [
+                            'qty' => $item['qty'],
+                            'price' => $item['price'],
+                            'priceWithMargine' => round($this->setPrice($item['price']), self::ROUND_LIMIT),
+                        ]
+                    ],
+                    'supplier_name' => 'adil',
+                    'supplier_city' => 'Астана',
+                    'supplier_color' => 'green',
+                ]);
+            }
         }
-        
+
         return;
     }
 

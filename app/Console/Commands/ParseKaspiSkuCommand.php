@@ -66,7 +66,23 @@ class ParseKaspiSkuCommand extends Command
                     'name'            => '',
                 ]);
             } else {
+                $anyBound = false;
+
                 foreach ($results as $result) {
+                    $signals = $this->fetchSpecificationSignals($result['sku']);
+
+                    // Карточка с явным цветом (напр. крашеный бампер под конкретный
+                    // цвет кузова) — тот же артикул, но другой товар и другая цена.
+                    // Роман поймал случай "номер совпал, а карточка дороже" именно
+                    // из-за этого — не привязываемся к таким карточкам вообще.
+                    if ($signals['has_color']) {
+                        $this->line("  ⨯ {$result['sku']} — {$result['name']} | пропущено: карточка с цветом");
+                        usleep(random_int(800000, 1500000));
+                        continue;
+                    }
+
+                    $anyBound = true;
+
                     $competitorData = $this->fetchOffers(
                         $result['sku'],
                         $result['brand'],
@@ -74,7 +90,7 @@ class ParseKaspiSkuCommand extends Command
                         $product->sku
                     );
 
-                    $kaspiQty = $this->fetchSpecifications($result['sku']);
+                    $kaspiQty = $signals['qty'];
 
                     $isBundlePriced = $this->isBundlePriced($product->title ?? $result['name']);
 
@@ -95,6 +111,18 @@ class ParseKaspiSkuCommand extends Command
                     $this->line("  ✓ {$result['sku']} — {$result['name']} | кол-во: {$kaspiQty}{$bundleNote} | мин.цена: {$competitorData['min_price']} | конкурентов завтра: {$competitorData['tomorrow_count']}/{$competitorData['total']}");
 
                     usleep(random_int(800000, 1500000));
+                }
+
+                // Все найденные кандидаты оказались цветными карточками — явно
+                // помечаем причину (не просто "ничего не сохранили молча"),
+                // чтобы при разборе было видно, что это осознанный пропуск,
+                // а не баг поиска.
+                if (!$anyBound) {
+                    DB::table('kaspi_sku_test')->insert([
+                        'request_article' => $product->sku,
+                        'sku'             => 'SKIPPED_COLOR',
+                        'name'            => '',
+                    ]);
                 }
             }
 
@@ -360,8 +388,24 @@ class ParseKaspiSkuCommand extends Command
         }
     }
 
-    private function fetchSpecifications(string $kaspiSku): int
+    /**
+     * Достаёт из specifications карточки Kaspi два сигнала за один запрос:
+     * - qty: сколько единиц реально в комплекте (влияет на себестоимость в
+     *   RepriceKaspiCommand/SyncKaspiFeedCommand — cost = purchase * qty).
+     *   Основной источник — фича с именем "количество". Но иногда (напр.
+     *   заводские свечи JAC 2.0 TURBO) число комплекта не вынесено в
+     *   отдельную фичу, а спрятано текстом внутри значения "Дополнительная
+     *   информация" ("...комплект из 4 штук...") — на этот случай fallback-
+     *   регэксп по значениям ВСЕХ фич, не только по имени "количество".
+     * - has_color: есть ли у карточки явная фича "цвет" — крашеные детали
+     *   под конкретный цвет кузова (напр. бампер) имеют тот же артикул, что
+     *   и обычная деталь, но другую цену — привязываться к таким карточкам
+     *   нельзя (см. handle()).
+     */
+    private function fetchSpecificationSignals(string $kaspiSku): array
     {
+        $default = ['qty' => 1, 'has_color' => false];
+
         try {
             $output = shell_exec(
                 "curl -s 'https://kaspi.kz/shop/p/-{$kaspiSku}/' " .
@@ -369,28 +413,53 @@ class ParseKaspiSkuCommand extends Command
                 "| grep -o '\"specifications\":\\[.*\\]' | head -c 50000"
             );
 
-            if (empty($output)) return 1;
+            if (empty($output)) return $default;
 
             $json = substr($output, strpos($output, '['));
             $json = substr($json, 0, strrpos($json, ']') + 1);
 
             $data = json_decode('{"specifications":' . $json . '}', true);
-            if (!$data) return 1;
+            if (!$data) return $default;
+
+            $qty      = null;
+            $hasColor = false;
 
             foreach ($data['specifications'] ?? [] as $section) {
                 foreach ($section['features'] ?? [] as $feature) {
-                    if (str_contains(mb_strtolower($feature['name'] ?? ''), 'количество')) {
+                    $nameLower = mb_strtolower($feature['name'] ?? '');
+
+                    if ($qty === null && str_contains($nameLower, 'количество')) {
                         $value = $feature['featureValues'][0]['value'] ?? '1';
-                        return max(1, (int) $value);
+                        $qty = max(1, (int) $value);
+                    }
+
+                    if (str_contains($nameLower, 'цвет')) {
+                        $hasColor = true;
+                    }
+
+                    // Fallback для количества: "комплект из N шт(ук)" внутри
+                    // произвольного текстового значения (напр. "Дополнительная
+                    // информация"), не в отдельной именованной фиче.
+                    if ($qty === null) {
+                        foreach ($feature['featureValues'] ?? [] as $featureValue) {
+                            $text = mb_strtolower((string) ($featureValue['value'] ?? ''));
+                            if (preg_match('/комплект[^0-9]*(\d+)\s*шт/u', $text, $m)) {
+                                $qty = max(1, (int) $m[1]);
+                                break;
+                            }
+                        }
                     }
                 }
             }
 
-            return 1;
+            return [
+                'qty'       => $qty ?? 1,
+                'has_color' => $hasColor,
+            ];
 
         } catch (\Exception $e) {
             $this->warn("  Ошибка спецификаций SKU {$kaspiSku}: " . $e->getMessage());
-            return 1;
+            return $default;
         }
     }
 }

@@ -26,7 +26,6 @@ class MatchKaspiSkuCommand extends Command
 
     const DISABLED_SUPPLIERS = [
         'forumauto_lp', // прайс давно не обновлялся, временно исключён 2026-08-08
-        'shatem', // временно отключён по просьбе Романа 2026-08-29
     ];
 
     // kaspi_sku карточек, которые нужно навсегда исключить из фида
@@ -233,7 +232,7 @@ class MatchKaspiSkuCommand extends Command
             ->join('kaspi_sku_test as kst', 'kst.request_article', '=', 'kip.sku')
             ->where('kip.stock', '>=', 2)
             ->whereNotIn('kip.supplier_name', self::DISABLED_SUPPLIERS)   // ← добавить
-            ->where('kst.sku', '!=', 'NOT_FOUND')
+            ->whereNotIn('kst.sku', ['NOT_FOUND', 'SKIPPED_COLOR'])
             ->whereNotIn('kst.sku', self::EXCLUDED_KASPI_SKUS)
             ->whereNotNull('kip.brand')
             ->where('kip.brand', '!=', '')
