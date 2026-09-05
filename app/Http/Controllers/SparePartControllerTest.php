@@ -2705,8 +2705,19 @@ do {
 
         curl_setopt($ch, CURLOPT_URL, 'https://gerat.kz/bitrix/catalog_export/dealer_opt.php');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECTION_TIMEOUT);
-        curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
+        // Полный фид Gerat — это ~2МБ XML (весь их каталог целиком, не
+        // выдача по конкретному запросу), реально скачивается ~2+ секунды
+        // (замер вживую 2026-09-05). Общий self::TIMEOUT=3 сек — почти
+        // впритык, любая обычная сетевая задержка обрывала загрузку раньше
+        // окончания, curl_exec() тихо возвращал false, и товар, реально
+        // присутствующий в фиде (живой случай: F136W, 96 шт. в наличии),
+        // отображался как "не найдено" — так и был неверно посчитан один
+        // реальный заказ (Роман поймал, что Gerat "вообще не находит"
+        // артикул, хотя он был в фиде). Даём этому конкретному запросу
+        // отдельный, более щедрый бюджет, не трогая общие константы для
+        // остальных (лёгких) поставщиков.
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 8);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
         $result = curl_exec($ch);
@@ -2720,88 +2731,99 @@ do {
         foreach ($json->shop->offers->offer as $item) {
             //dd($item);
             $cross_numbers = explode(', ', $item->description);
-            
+
+            // ФИКС 2026-09-05 (живой случай: заказ №2018, артикул F136W —
+            // товар реально есть у Gerat, 96 шт., но раньше эта проверка
+            // сидела ВНУТРИ foreach по $cross_numbers и не зависела от
+            // текущего $cross_number вообще — на каждый из N кросс-номеров
+            // в description одна и та же позиция пушилась в searchedNumber
+            // ЕЩЁ РАЗ, давая N одинаковых дублей вместо одной строки.
+            // Вынесено наружу, проверяется один раз на товар.
+            if (strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
+                array_push($this->finalArr['brands'], $item->vendor);
+                //dd($item);
+                array_push($this->finalArr['searchedNumber'], [
+                    'brand' => $item->vendor,
+                    'article' => $item->vendorCode,
+                    'name' => substr($item->model, 0, 60),
+                    'price' => $item->price,
+                    'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                    'qty' => $item->count,
+                    'supplier_name' => 'grt',
+                    'supplier_city' => 'Астана',
+                    'supplier_color' => '#7bafcf',
+                    'deliveryStart' => '2 часа',
+                    'info' => [
+                        'pictures' => $item->picture ?? '',
+                        'params' => count($item->param) <=3 ? [] : [
+                            'OEM' => explode(',', $item->param[3]),
+                            'suitable_to' => '',
+                            'tech_info' => '',
+                            'sizes' => count($item->param) > 4 ?[
+                                'width' => $item->param[6],
+                                'height' => $item->param[5],
+                                'depth' => $item->param[4]
+                            ] : [
+                                'width' => 'нет информации',
+                                'height' => 'нет информации',
+                                'depth' => 'нет информации'
+                            ]
+                        ],
+                    ],
+                ]);
+                continue;
+            }
+
             foreach ($cross_numbers as $cross_number) {
-                if (strtolower($cross_number) == strtolower($partnumber) || strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
-                    if (strtolower($partnumber) == strtolower($this->removeAllUnnecessaries($item->vendorCode))) {
-                        array_push($this->finalArr['brands'], $item->vendor);
-                        //dd($item);
-                        array_push($this->finalArr['searchedNumber'], [
-                            'brand' => $item->vendor,
-                            'article' => $item->vendorCode,
-                            'name' => substr($item->model, 0, 60),
-                            'price' => $item->price,
-                            'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                            'qty' => $item->count,
-                            'supplier_name' => 'grt',
-                            'supplier_city' => 'Астана',
-                            'supplier_color' => '#7bafcf',
-                            'deliveryStart' => '2 часа',
-                            'info' => [
-                                'pictures' => $item->picture ?? '',
-                                'params' => count($item->param) <=3 ? [] : [
-                                    'OEM' => explode(',', $item->param[3]),
-                                    'suitable_to' => '',
-                                    'tech_info' => '',
-                                    'sizes' => count($item->param) > 4 ?[
-                                        'width' => $item->param[6],
-                                        'height' => $item->param[5],
-                                        'depth' => $item->param[4]
-                                    ] : [
-                                        'width' => 'нет информации',
-                                        'height' => 'нет информации',
-                                        'depth' => 'нет информации'
-                                    ]
-                                ],
-                            ],
-                        ]);
-                    } else {
-                        array_push($this->finalArr['brands'], $item->vendor);
-                        //dd($item);
-                        // 1. Сначала готовим безопасные параметры
-                        $params = $item->param ?? [];
-                        $infoParams = [];
+                if (strtolower($cross_number) == strtolower($partnumber)) {
+                    array_push($this->finalArr['brands'], $item->vendor);
+                    //dd($item);
+                    // 1. Сначала готовим безопасные параметры
+                    $params = $item->param ?? [];
+                    $infoParams = [];
 
-                        // Проверяем, что в массиве хотя бы 4 элемента для OEM
-                        if (count($params) >= 4 && isset($params[3])) {
-                            $infoParams = [
-                                'OEM' => explode(',', $params[3]),
-                                'suitable_to' => '',
-                                'tech_info' => '',
-                                'sizes' => [
-                                    // Проверяем наличие каждого индекса отдельно, чтобы не поймать Undefined Key
-                                    'width' => isset($params[6]) ? $params[6] : 'нет информации',
-                                    'height' => isset($params[5]) ? $params[5] : 'нет информации',
-                                    'depth' => isset($params[4]) ? $params[4] : 'нет информации',
-                                ]
-                            ];
-                        }
-
-                        // 2. Теперь вставляем это в твой основной массив
-                        array_push($this->finalArr['crosses_on_stock'], [
-                            'brand' => $item->vendor,
-                            'article' => $item->vendorCode,
-                            'name' => substr($item->model, 0, 60),
-                            'qty' => $item->count,
-                            'price' => $item->price,
-                            'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                            'delivery_time' => "2 часа",
-                            'info' => [
-                                'pictures' => $item->picture ?? 0,
-                                'params' => $infoParams, // Вставляем уже подготовленный массив
-                            ],
-                            'stocks' => [
-                                [
-                                    'qty' => $item->count,
-                                    'price' => $item->price,
-                                    'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
-                                ]
-                            ],
-                            'supplier_name' => 'grt',
-                            'supplier_city' => 'Астана',
-                            'supplier_color' => '#feed00'
-                        ]);
+                    // Проверяем, что в массиве хотя бы 4 элемента для OEM
+                    if (count($params) >= 4 && isset($params[3])) {
+                        $infoParams = [
+                            'OEM' => explode(',', $params[3]),
+                            'suitable_to' => '',
+                            'tech_info' => '',
+                            'sizes' => [
+                                // Проверяем наличие каждого индекса отдельно, чтобы не поймать Undefined Key
+                                'width' => isset($params[6]) ? $params[6] : 'нет информации',
+                                'height' => isset($params[5]) ? $params[5] : 'нет информации',
+                                'depth' => isset($params[4]) ? $params[4] : 'нет информации',
+                            ]
+                        ];
                     }
+
+                    // 2. Теперь вставляем это в твой основной массив
+                    array_push($this->finalArr['crosses_on_stock'], [
+                        'brand' => $item->vendor,
+                        'article' => $item->vendorCode,
+                        'name' => substr($item->model, 0, 60),
+                        'qty' => $item->count,
+                        'price' => $item->price,
+                        'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                        'delivery_time' => "2 часа",
+                        'info' => [
+                            'pictures' => $item->picture ?? 0,
+                            'params' => $infoParams, // Вставляем уже подготовленный массив
+                        ],
+                        'stocks' => [
+                            [
+                                'qty' => $item->count,
+                                'price' => $item->price,
+                                'priceWithMargine' => round($this->setPrice($item->price), self::ROUND_LIMIT),
+                            ]
+                        ],
+                        'supplier_name' => 'grt',
+                        'supplier_city' => 'Астана',
+                        'supplier_color' => '#feed00'
+                    ]);
+                    // Один и тот же номер не повторяется дважды в одном
+                    // description, но на всякий случай не дублируем строку.
+                    break;
                 }
             }
         }
