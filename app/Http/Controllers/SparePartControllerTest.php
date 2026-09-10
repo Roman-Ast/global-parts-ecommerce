@@ -1540,10 +1540,18 @@ do {
         if ($ok && !empty($result['items'])) {
             foreach ($result['items'] as $key => $item) {
                     if ($item['price']) {
+                        // Живой случай 2026-09-10 (Роман, артикул 54610S1000):
+                        // "+= 1" считал КОЛИЧЕСТВО СКЛАДОВ с ненулевым
+                        // остатком, а не саму реальную сумму штук — у этого
+                        // артикула товар лежал только на одном складе
+                        // (Пушкина), поэтому показывало "1 шт" вместо
+                        // реальных 5. Блок кроссов ниже суммирует
+                        // quantity_unpacked правильно — здесь просто
+                        // забыли суммировать вместо инкремента счётчика.
                         $searched_number_stocks = 0;
                             foreach ($item['stocks'] as $key => $stock) {
                                 if ($stock['quantity_unpacked'] > 0) {
-                                    $searched_number_stocks += 1;
+                                    $searched_number_stocks += $stock['quantity_unpacked'];
                                 }
                             }
                             if(!empty($searched_number_stocks)) {
