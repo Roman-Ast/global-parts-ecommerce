@@ -26,14 +26,19 @@ class HalykSearchSkuCommand extends Command
     {
         $limit = (int) $this->option('limit');
 
-        $alreadySearched = DB::table('halyk_sku_candidates')->pluck('request_article')->all();
-
-        $products = DB::table('kaspi_initial_products')
-            ->where('stock', '>', 0)
-            ->whereNotIn('sku', $alreadySearched)
-            ->orderBy('id')
+        // Раньше был whereNotIn('sku', $alreadySearched) с массивом в памяти —
+        // рабочий, пока halyk_sku_candidates было мало, но при 68889+ строк
+        // упирается в лимит MySQL на количество плейсхолдеров в запросе
+        // (65535, ошибка "Prepared statement contains too many placeholders") —
+        // команда падала со старта на каждом прогоне. LEFT JOIN + whereNull
+        // не зависит от размера уже проверенного набора.
+        $products = DB::table('kaspi_initial_products as kip')
+            ->leftJoin('halyk_sku_candidates as hsc', 'hsc.request_article', '=', 'kip.sku')
+            ->where('kip.stock', '>', 0)
+            ->whereNull('hsc.request_article')
+            ->orderBy('kip.id')
             ->limit($limit)
-            ->get(['sku', 'brand', 'title']);
+            ->get(['kip.sku', 'kip.brand', 'kip.title']);
 
         if ($products->isEmpty()) {
             $this->info('Нечего искать — либо лимит --limit исчерпан, либо все уже проверены.');

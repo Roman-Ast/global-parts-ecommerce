@@ -1485,7 +1485,20 @@ do {
         // 2026-08-26: артикул реально в наличии у Treid (подтверждено
         // прямым запросом к их API), но не попал в выдачу — счётчик при
         // этом молчал, как будто Treid ответил нормально.
-        $ok = $result !== null && isset($result['message']) && strlen($result['message']) <= 2;
+        // Живой случай 2026-09-10 (Роман, артикул 56825b1300): Treid честно
+        // отвечает message="Артикул(ы) не найден(ы)." когда позиции просто
+        // нет у них в наличии — это ЧЕСТНЫЙ ответ, не сбой. Старая проверка
+        // strlen($message) <= 2 считала успехом только буквально "Ok" (2
+        // символа), а любое другое сообщение — включая легитимное "не
+        // найден" — приравнивала к настоящим ошибкам вроде рейт-лимита
+        // ("Превышено ограничение по числу поисковых запросов..."). Из-за
+        // этого позиция, которой у Treid реально нет, уходила в повтор и
+        // всё равно попадала в список "не ответивших", хотя ответ был.
+        $treidMessage = $result['message'] ?? null;
+        $ok = $result !== null && $treidMessage !== null && (
+            $treidMessage === 'Ok'
+            || str_contains(mb_strtolower($treidMessage), 'не найден')
+        );
 
         // Логируем КАЖДЫЙ вызов (не только провалы) — по просьбе Романа
         // 2026-08-26, чтобы видеть сырой ответ Treid и сравнивать успешные
@@ -1499,8 +1512,23 @@ do {
             'raw_head' => mb_substr((string) $html, 0, 1000),
         ]);
 
+        // Живой случай 2026-09-08 (Роман): первый под-запрос (точный
+        // артикул) иногда технически "проваливается" (пустой ответ и
+        // т.п.), пока ВТОРОЙ/третий под-запрос (кроссы) ниже всё равно
+        // успешно находит и вставляет реальные строки. Раньше $ok
+        // определялся ТОЛЬКО первым под-запросом — шаг уходил на повтор,
+        // хотя данные уже были вставлены, и при повторе кроссы
+        // вставлялись ЕЩЁ РАЗ (задвоение всего списка Treid на странице).
+        // $insertedAnything отслеживает реальную вставку строк — если
+        // хоть что-то вставлено, шаг честно успешен и повторяться не должен.
+        $insertedAnything = false;
+
         //помещаем найденные позиции в итоговый массив
-        if ($ok && !empty($result)) {
+        // "не найден" (см. $ok выше) — валидный $result без ключа 'items'
+        // вовсе (сырой ответ всего {"code":"6000","message":"..."}) —
+        // !empty($result['items']) вместо !empty($result), иначе foreach
+        // ниже словит warning на отсутствующем ключе.
+        if ($ok && !empty($result['items'])) {
             foreach ($result['items'] as $key => $item) {
                     if ($item['price']) {
                         $searched_number_stocks = 0;
@@ -1511,7 +1539,8 @@ do {
                             }
                             if(!empty($searched_number_stocks)) {
                                 array_push($this->finalArr['brands'], $item['brand']);
-                                
+                                $insertedAnything = true;
+
                                 array_push($this->finalArr['searchedNumber'], [
                                     'guid' => '',
                                     'brand' => $item['brand'],
@@ -1567,9 +1596,9 @@ do {
         // а кроссы/аналоги на честность ответа отдельно пока не
         // заводили (не то, из-за чего Роман заметил проблему).
         if (empty($result) || !$result) {
-            return $ok;
+            return $ok || $insertedAnything;
         } else if (array_key_exists('message', $result) && $result['message'] != 'Ok') {
-            return $ok;
+            return $ok || $insertedAnything;
         }
 
         //проверка остатков кросс-номеров на складе
@@ -1603,10 +1632,10 @@ do {
 
         $result = json_decode($html, true);
         if(!$result) {
-			return $ok;
+			return $ok || $insertedAnything;
 		}
         if (!array_key_exists('items', $result) || empty($result['items'] || array_key_exists('message', $result))) {
-            return $ok;
+            return $ok || $insertedAnything;
         }
        
         //помещаем кроссы в наличии в итоговый массив
@@ -1623,6 +1652,7 @@ do {
                 if (!empty($crosses_stocks)) {
                     if ($this->removeAllUnnecessaries($item['article']) != $partnumber) {
                         array_push( $this->finalArr['brands'], $item['brand']);
+                        $insertedAnything = true;
 
                         array_push($this->finalArr['crosses_on_stock'], [
                             'id' => $item['id'],
@@ -1647,7 +1677,7 @@ do {
         }
 
         //echo 'Время выполнения скрипта: '.round(microtime(true) - $start, 4).' сек. trd';
-        return $ok;
+        return $ok || $insertedAnything;
     }
 
     public function searchRossko(String $brand, String $partNumber, String $guid)
@@ -4096,12 +4126,26 @@ do {
         }
 
         return Cache::lock('shatem_token_lock', 10)->block(5, function () {
-            return cache()->remember('shatem_token', 3600, function () {
-                $response = Http::asForm()->post('https://api.shate-m.kz/api/v1/auth/loginByapiKey', [
-                    'ApiKey' => '{3f3b6eeb-709c-4dcb-be59-147ce8f9cb87}',
-                ]);
-                return $response->json()['access_token'] ?? null;
-            });
+            // Живой случай 2026-09-08 (Роман, артикул 338713): кэшировали
+            // на 3600с (час), а их токен реально живёт всего 1800с (30 мин,
+            // подтверждено полем expires_in в ответе) — вторые полчаса
+            // каждого часа Шатэм отвечал 401 на просроченный токен,
+            // json_decode давал пустоту, метод тихо завершался ничего не
+            // найдя (не таймаут — не попадало в список "не ответивших").
+            // Кэшируем ровно на expires_in из ответа (с запасом 60с), а не
+            // на захардкоженный час.
+            $response = Http::asForm()->post('https://api.shate-m.kz/api/v1/auth/loginByapiKey', [
+                'ApiKey' => '{3f3b6eeb-709c-4dcb-be59-147ce8f9cb87}',
+            ]);
+            $json = $response->json();
+            $token = $json['access_token'] ?? null;
+
+            if ($token) {
+                $ttl = max(60, (int) ($json['expires_in'] ?? 1800) - 60);
+                cache()->put('shatem_token', $token, $ttl);
+            }
+
+            return $token;
         });
     }
 } 

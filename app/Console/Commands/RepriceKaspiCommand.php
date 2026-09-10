@@ -134,6 +134,20 @@ class RepriceKaspiCommand extends Command
     ];
 
     /**
+     * Живой случай 2026-09-08 (Роман, артикул G41017R): "LYNXauto
+     * пневмобаллон в пружину G41017R" — это амортизирующая стойка со
+     * встроенной пружиной (1 деталь), но подстрока "пружину" всё равно
+     * ловится ключевым словом 'пружин' выше, из-за чего себестоимость
+     * задваивалась (142809 → 285618) и цена на Kaspi улетала до 529452
+     * вместо ожидаемых ~195220. Нашлось ещё 6 таких же ложных срабатываний
+     * (LYNXauto/PATRON "пневмобаллон в пружину") — исключаем по названию
+     * товара целиком, не только по ключевому слову qty.
+     */
+    const QTY_OVERRIDE_EXCLUDE_KEYWORDS = [
+        'пневмобаллон',
+    ];
+
+    /**
      * Точечные override по КОНКРЕТНОМУ артикулу (наш our_article), а не
      * по ключевому слову в названии — используется, когда категория
      * товара НЕОДНОРОДНА: часть карточек уже честно указывает цену за
@@ -491,6 +505,11 @@ class RepriceKaspiCommand extends Command
                     $q->orWhereRaw('LOWER(kfi.kaspi_name) LIKE ?', ['%' . mb_strtolower($kw) . '%']);
                 }
             })
+            ->where(function ($q) {
+                foreach (self::QTY_OVERRIDE_EXCLUDE_KEYWORDS as $kw) {
+                    $q->whereRaw('LOWER(kfi.kaspi_name) NOT LIKE ?', ['%' . mb_strtolower($kw) . '%']);
+                }
+            })
             ->select('kfi.id', 'kfi.kaspi_name', 'kip.supplier_name', 'kip.brand')
             ->get();
 
@@ -608,6 +627,13 @@ class RepriceKaspiCommand extends Command
     private function matchQtyOverrideMultiplier(string $title): ?int
     {
         $titleLower = mb_strtolower($title);
+
+        foreach (self::QTY_OVERRIDE_EXCLUDE_KEYWORDS as $kw) {
+            if (str_contains($titleLower, mb_strtolower($kw))) {
+                return null;
+            }
+        }
+
         foreach (self::QTY_OVERRIDE_KEYWORDS as $kw => $multiplier) {
             if (str_contains($titleLower, mb_strtolower($kw))) {
                 return $multiplier;
