@@ -624,7 +624,14 @@ class SparePartControllerTest extends Controller
                 'Article'        => $partnumber,
                 'Brand'          => $brand,
                 'Sources[]'      => '1',
-                'UserGuid'       => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
+                // Живой случай 2026-09-10: аккаунт romanpopadinets (старый
+                // GUID) стабильно не проходил с прод-IP (194.39.65.23) с
+                // 2026-09-02 — цепочка timeout'ов, см. phaeton.log. Менеджер
+                // Фаэтона подтвердил доступ для этого IP именно у аккаунта
+                // romanpopadinets, но Роман попросил попробовать второй
+                // аккаунт (igorpop111) по совету того же менеджера — если
+                // снова отвалится, откатить на '9F6414C4-9683-11EF-BBBC-F8F21E092C7D'.
+                'UserGuid'       => '5E9033B8-422B-11EE-BBB2-F8F21E092C7D',
                 'ApiKey'         => '0UKIrpU3W3AnAfDf97Nr',
                 'includeAnalogs' => 'true',
             ]),
@@ -639,7 +646,6 @@ class SparePartControllerTest extends Controller
                 'Article'        => $partnumber,
                 'Brand'          => $brand,
                 'Sources[]'      => '2',
-                'UserGuid'       => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
                 // Второй заход 2026-08-24 — на этот раз по прямому
                 // подтверждению программиста Фаэтона: один и тот же ApiKey
                 // должен использоваться для обоих запросов (Sources=1 и
@@ -647,6 +653,9 @@ class SparePartControllerTest extends Controller
                 // временно ломала и AST тоже — возможно, на их стороне
                 // тогда ещё не было донастроено под общий ключ. Если снова
                 // отвалится AST — откатить на 'LnxrDfpQVZz1ncuoI14e'.
+                // 2026-09-10 — GUID сменён на аккаунт igorpop111, см.
+                // комментарий у блока Sources=1 выше.
+                'UserGuid'       => '5E9033B8-422B-11EE-BBB2-F8F21E092C7D',
                 'ApiKey'         => '0UKIrpU3W3AnAfDf97Nr',
                 'includeAnalogs' => 'true',
             ]),
@@ -1291,7 +1300,7 @@ do {
             'Article' => $partnumber,
             'Brand' => $brand,
             'Sources[]' => '2',
-            'UserGuid' => '9F6414C4-9683-11EF-BBBC-F8F21E092C7D',
+            'UserGuid' => '5E9033B8-422B-11EE-BBB2-F8F21E092C7D',
             'ApiKey' => '0UKIrpU3W3AnAfDf97Nr',
             'includeAnalogs' => 'true'
         ];
