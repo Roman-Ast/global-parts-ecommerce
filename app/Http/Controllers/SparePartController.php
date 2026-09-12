@@ -44,7 +44,7 @@ class SparePartController extends Controller
     const KULAN_API_KEY='UYWUVoxme116qJlmeSzl7uCsI7Mrlv0D4symnBbR0tyVjMdOMnzkhys5hOvvRoEhcOJYc8Ntcf9sM9tDpUvpz60HTFcMcnJ1mpVU5PNbxuDxJR4DyLhf10y317musSOo';
     const KULAN_ASTSTORE_ID = '2198d63c-35f3-11eb-925f-00155d20f705';
     const CONNECTION_TIMEOUT = 2;
-    const TIMEOUT = 3;
+    const TIMEOUT = 5;
 
     public $partNumber = '';
 
@@ -1605,8 +1605,17 @@ class SparePartController extends Controller
             $brand = 'General Motors';
         } else if ($brand == 'nissan/infiniti') {
             $brand = 'nissan';
+        } else if (mb_strtolower($brand) === 'lemforder') {
+            // У Шатэма в каталоге этот бренд только под написанием "Lemfoerder"
+            // (TradeMarkNames — точное совпадение, не по подстроке) — наш
+            // канонiчный "lemforder" (см. BRAND_ALIASES в
+            // AggregateSupplierOffersCommand) даёт 0 результатов. Проверено
+            // живьём 2026-09-12: артикулы 3383801/3383901 реально есть у
+            // Шатэма (это же supplier_offers это подтверждают), просто поиск
+            // по бренду их не находил.
+            $brand = 'Lemfoerder';
         }
-        
+
         //получение токена
         $request_params = [
             'ApiKey' => '{3f3b6eeb-709c-4dcb-be59-147ce8f9cb87}',

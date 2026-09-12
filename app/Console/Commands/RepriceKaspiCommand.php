@@ -90,7 +90,7 @@ class RepriceKaspiCommand extends Command
      * маржа) — просто добавляет процент сверху, не участвует в выборе
      * сценария цены.
      */
-    const AUTOTRADE_MARKUP_ENABLED = 1;
+    const AUTOTRADE_MARKUP_ENABLED = 0;
     const AUTOTRADE_MARKUP_PCT = 0.35;
     const AUTOTRADE_SUPPLIERS = ['autotrade_ast', 'autotrade_alm'];
 
@@ -240,7 +240,16 @@ class RepriceKaspiCommand extends Command
             $competitorMinTomorrow  = $item->tomorrow_min_price ? (float) $item->tomorrow_min_price : null;
 
             // === ЛОГИКА ВЫБОРА ЦЕНЫ ===
-            if ($purchase < 10000) {
+            // Проверяем именно $cost (себестоимость ПОСЛЕ умножения на qty), а не
+            // $purchase (сырая цена одной строки прайса ДО умножения) — иначе
+            // комплект/набор из нескольких деталей с недорогой ценой за 1 шт
+            // (напр. 2 разные опоры амортизатора по ~7-8к каждая = комплект за
+            // ~15к) ошибочно считался "дешёвой одиночной позицией" и получал
+            // голую эталонную цену без надбавки за отсутствие конкуренции
+            // (+15%, см. NO_COMPETITION_PREMIUM) или честного сравнения с
+            // конкурентами — живой пример и разбор см. в переписке с Романом
+            // 2026-09-12 (Lemforder 3383901/3383801, kaspi_sku 157280779).
+            if ($cost < 10000) {
                 $ourPrice = $etalonPrice;
                 $scenario = 'etalon_low_purchase_fixed';
 
