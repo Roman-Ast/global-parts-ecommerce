@@ -152,4 +152,42 @@ class OzonClient
 
         return $response->successful() && (bool) $response->json('result');
     }
+
+    /**
+     * Передача остатка по FBS-складу — БЕЗ этого вызова карточка навсегда
+     * остаётся в "Готов к продаже" и никогда не переходит в "В продаже"
+     * (найдено живьём 2026-09-12: у ~3000 созданных карточек has_stock
+     * всегда false, потому что этот метод раньше нигде не вызывался —
+     * /v3/product/import создаёт карточку, но остаток передаётся ТОЛЬКО
+     * этим отдельным вызовом). warehouse_id — единственный FBS-склад
+     * аккаунта ("Офис", тот же адрес, что и склад Halyk), см. .env
+     * OZON_WAREHOUSE_ID, найден через POST /v2/warehouse/list (старый
+     * /v1/warehouse/list отвечает "obsolete method cannot be used").
+     *
+     * @return array{updated:bool, errors:array}
+     */
+    public function updateStock(string $offerId, int $stock, ?int $warehouseId = null): array
+    {
+        $warehouseId ??= (int) env('OZON_WAREHOUSE_ID');
+
+        $response = Http::timeout(20)->withHeaders($this->headers())
+            ->post(self::BASE_URL . '/v2/products/stocks', [
+                'stocks' => [[
+                    'offer_id' => $offerId,
+                    'warehouse_id' => $warehouseId,
+                    'stock' => $stock,
+                ]],
+            ]);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('Ozon products/stocks недоступен: HTTP ' . $response->status() . ' — ' . $response->body());
+        }
+
+        $result = $response->json('result.0') ?? [];
+
+        return [
+            'updated' => (bool) ($result['updated'] ?? false),
+            'errors' => $result['errors'] ?? [],
+        ];
+    }
 }

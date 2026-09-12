@@ -2370,6 +2370,12 @@ do {
                             'supplier_name' => 'shtm',
                             'supplier_color' => '#6b6b6b',
                             'delivery_time' => '2 часа',
+                            // partials/items/searchedNumber.blade.php читает именно
+                            // deliveryStart (не delivery_time) для бейджа
+                            // "сегодня/N дн." — без этого ключа строка молча
+                            // проваливалась в "уточняйте", хотя товар реально в
+                            // наличии в Астане (найдено живьём 2026-09-12, Романом).
+                            'deliveryStart' => '2 часа',
                         ]);
                     }
                 }

@@ -150,11 +150,10 @@ class OzonCreateCardCommand extends Command
             return;
         }
 
-        // 4. Цена — конвертация KZT→RUB по курсу-константе + наценка на
-        // комиссию Ozon, чтобы после её вычета оставалась та же маржа,
-        // что и в обычной рознице (см. докблок OzonCommissionRates —
-        // оба числа заглушки, ждут подтверждения Романа).
-        $priceRub = $this->calculatePriceRub((float) $card->offer['retail_price'], $typeId);
+        // 4. Цена — от СЕБЕСТОИМОСТИ (не розницы сайта), прогрессивная
+        // наценка + реальная комиссия Ozon FBS (47%+25RUB, подтверждено
+        // живьём 2026-09-12) — см. App\Services\OzonPriceCalculator.
+        $priceRub = \App\Services\OzonPriceCalculator::calculate((float) $card->offer['purchase_price']);
 
         $payload = [
             'offer_id' => $this->resolveOfferId($card),
@@ -401,21 +400,6 @@ class OzonCreateCardCommand extends Command
         }
 
         return ['dictionary_value_id' => (int) $results[0]['id']];
-    }
-
-    /**
-     * Цена в рублях = (себестоимость в KZT * курс) / (1 - комиссия/100) —
-     * то есть после вычета комиссии Ozon остаётся сумма, эквивалентная
-     * нашей обычной рознице в KZT. Оба параметра — заглушки
-     * (OzonCommissionRates), пересчитать при уточнении.
-     */
-    private function calculatePriceRub(float $retailPriceKzt, int $typeId): int
-    {
-        $rub = $retailPriceKzt * OzonCommissionRates::EXCHANGE_RATE_KZT_TO_RUB;
-        $commission = OzonCommissionRates::forType($typeId);
-        $withCommission = $rub / (1 - $commission / 100);
-
-        return (int) round($withCommission);
     }
 
     /**
