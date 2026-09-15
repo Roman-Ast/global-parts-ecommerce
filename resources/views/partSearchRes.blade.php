@@ -313,7 +313,11 @@
         // рендера и сети общий бюджет по умолчанию (10 сек) слишком
         // впритык, товар молча пропадал из выдачи (см. CLAUDE.md/
         // SparePartControllerTest::searchGerat, живой случай с F136W).
-        const STEP_TIMEOUTS_MS = { avtozakup: 18000, radle: 70000, gerat: 15000 };
+        // spartex: живым тестом 2026-09-15 выяснилось, что это ещё более
+        // тяжёлый агрегатор, чем Radle (10097 результатов/8.1МБ на один
+        // ходовой артикул, ответ на 23-й секунде) — таймаут поднят тем же
+        // приёмом, что у radle (см. searchSpartex в SparePartControllerTest).
+        const STEP_TIMEOUTS_MS = { avtozakup: 18000, radle: 70000, spartex: 70000, gerat: 15000 };
 
         // Ключ из JSON-конверта → id секции (шапка, скрыта через d-none пока
         // пусто) + id контейнера строк внутри неё (см. partials.searchResultsBody).
@@ -330,7 +334,7 @@
             phaeton_ast: 'Фаэтон АСТ', phaeton_local: 'Фаэтон Локал',
             forumauto: 'ФорумАвто', tiss: 'ТИСС', kulan: 'Кулан',
             febest: 'Фебест', gerat: 'Герат', autopiter: 'Автопитер',
-            avtozakup: 'Автозакуп', radle: 'Радле',
+            avtozakup: 'Автозакуп', spartex: 'Спартекс', radle: 'Радле',
         };
 
         // ─── Фильтр по брендам (слева) ─────────────────────────────────
@@ -781,7 +785,7 @@
         const STEP_ORDER = [
             'locals', 'armtek', 'shatem', 'treid',
             'phaeton_ast', 'phaeton_local', 'forumauto', 'tiss', 'kulan', 'febest', 'gerat',
-            'autopiter', 'avtozakup', 'radle',
+            'autopiter', 'avtozakup', 'spartex', 'radle',
         ];
 
         const TOTAL_PHASES = 1 + STEP_ORDER.length; // Rossko + все шаги

@@ -68,6 +68,13 @@ class SparePartControllerTest extends Controller
     // Phaeton/Автозакуп со страницы (баг, найденный живьём 2026-08-23).
     const SEARCHED_NUMBER_RADLE_CAP = 5;
 
+    // Тот же приём, что и SEARCHED_NUMBER_RADLE_CAP выше — Spartex живым
+    // тестом 2026-09-15 оказался ЕЩЁ более крупным агрегатором (10097
+    // предложений на один ходовой артикул против ~1370 у Radle),
+    // применяем ограничение превентивно, не дожидаясь того же бага
+    // "всё исчезает с экрана".
+    const SEARCHED_NUMBER_SPARTEX_CAP = 5;
+
     public $partNumber = '';
 
     public $finalArr = [
@@ -529,6 +536,11 @@ class SparePartControllerTest extends Controller
                 case 'avtozakup':
                     if (!$request->only_on_stock) {
                         $this->searchAvtozakup($brand, $partnumber);
+                    }
+                    break;
+                case 'spartex':
+                    if (!$request->only_on_stock) {
+                        $this->searchSpartex($brand, $partnumber);
                     }
                     break;
                 case 'radle':
@@ -3789,6 +3801,159 @@ do {
 
         } catch (\Exception $e) {
             \Log::error('Avtozakup exception', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+        }
+    }
+
+    /**
+     * Spartex.kz — ещё один поставщик "под заказ", того же типа, что
+     * Autopiter/Avtozakup/Radle (добавлен по просьбе Романа 2026-09-15) —
+     * в очереди СРАЗУ ПЕРЕД Radle (см. STEP_ORDER в partSearchRes.blade.php).
+     * Полностью невозвратный по всем позициям (Роман это явно подтвердил,
+     * не зависит от склада-источника) — 'returnable' => false, тот же
+     * принцип, что у Radle/Avtozakup/Autopiter (см. CLAUDE.md, "Иконка
+     * возврата в выдаче").
+     *
+     * API — простой GET по токену+артикулу (SPARTEX_API_TOKEN в .env), без
+     * бренда как отдельного параметра поиска — бренд есть только в ответе
+     * (`manufacturer`), поэтому isExact сверяем сами, тем же приёмом, что и
+     * в searchRadle (совпадение бренда нестрого — подстрока в любую
+     * сторону, плюс точное совпадение артикула). Цена в ответе уже в
+     * тенге — конвертация не нужна.
+     *
+     * `deliveryTime` в их ответе — строка "[от]-[до]" в днях, но это
+     * только их внутренний срок сборки/резерва, БЕЗ реальной доставки до
+     * Астаны — по прямому указанию Романа к обеим границам прибавляем
+     * ещё 3 дня.
+     *
+     * `supplier_name`/`supplier_city` — тот же принцип приватности, что и
+     * у Radle: их внутренний код склада (`supName`, напр. "RK") виден
+     * только админу через `supplier_name` ("sprtx RK"), обычным
+     * посетителям — обезличенный "KZ" в `supplier_city` (Spartex — сам
+     * .kz-домен, географию источников по факту они не документируют,
+     * так что детальнее не сворачиваем).
+     *
+     * Http::timeout(65) — живым тестом 2026-09-15 по их же примеру из
+     * доки (артикул "9091901164", свеча зажигания — ходовой генерик)
+     * выяснилось, что это ЕЩЁ более тяжёлый агрегатор, чем Radle:
+     * 10 097 результатов, 8.1 МБ JSON, ответ пришёл только на 23-й
+     * секунде. Изначальный Http::timeout(20) (как у Autopiter/Avtozakup)
+     * рвал соединение раньше, чем Spartex успевал ответить. STEP_TIMEOUTS_MS.spartex
+     * в partSearchRes.blade.php поднят синхронно (тем же приёмом, что и
+     * у radle — клиентский бюджет с запасом над бэкендом).
+     */
+    public function searchSpartex(String $brand, String $partnumber)
+    {
+        $token = env('SPARTEX_API_TOKEN');
+        if (empty($token)) {
+            \Log::warning('Spartex API token not configured (SPARTEX_API_TOKEN)');
+            return;
+        }
+
+        try {
+            $response = Http::timeout(65)->get('https://www.spartex.kz/api/v3/search/', [
+                'token'   => $token,
+                'article' => $partnumber,
+            ]);
+
+            if (!$response->ok()) {
+                \Log::warning('Spartex non-200 response', ['status' => $response->status()]);
+                return;
+            }
+
+            $data = $response->json();
+
+            if (!empty($data['error'])) {
+                \Log::warning('Spartex error response', ['error' => $data['error']]);
+                return;
+            }
+
+            if (empty($data['data'])) {
+                // Пустой data без error — по их формату просто "не нашли".
+                return;
+            }
+
+            $searchArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $partnumber));
+            $searchBrandLower = strtolower(trim($brand));
+
+            foreach ($data['data'] as $item) {
+                $price = (float) ($item['price'] ?? 0);
+                if ($price <= 0) {
+                    continue;
+                }
+
+                $itemArticleClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $item['article'] ?? ''));
+                $itemBrandLower = strtolower(trim($item['manufacturer'] ?? ''));
+                $isBrandMatch = $searchBrandLower !== '' && $itemBrandLower !== '' && (
+                    $itemBrandLower === $searchBrandLower ||
+                    str_contains($itemBrandLower, $searchBrandLower) ||
+                    str_contains($searchBrandLower, $itemBrandLower)
+                );
+                $isExact = $isBrandMatch && $itemArticleClean === $searchArticleClean;
+
+                // "[от]-[до]" дней — берём верхнюю границу, +3 дня по
+                // просьбе Романа (реальная доставка до Астаны их API не
+                // учитывает). Если в строке вообще нет чисел — 0 + 3 = 3
+                // дня как консервативный дефолт, не блокируем позицию.
+                $deliveryTimeText = (string) ($item['deliveryTime'] ?? '');
+                preg_match_all('/\d+/', $deliveryTimeText, $dayMatches);
+                $deliveryDaysMax = (!empty($dayMatches[0]) ? (int) end($dayMatches[0]) : 0) + 3;
+                $deliveryDate = date('Y-m-d', strtotime("+{$deliveryDaysMax} days"));
+
+                $supName = trim((string) ($item['supName'] ?? ''));
+
+                $entry = [
+                    'brand'            => $item['manufacturer'] ?? '',
+                    'article'          => $item['article'] ?? '',
+                    'name'             => $item['name'] ?? '',
+                    'price'            => $price,
+                    'priceWithMargine' => round($this->setPrice($price), self::ROUND_LIMIT),
+                    'qty'              => (int) ($item['quantity'] ?? 0),
+                    'delivery_time'    => $deliveryDate,
+                    'deliveryStart'    => $deliveryDate,
+                    // Spartex — полностью невозвратный (Роман 2026-09-15).
+                    'returnable'       => false,
+                    'supplier_name'    => 'sprtx' . ($supName !== '' ? ' ' . $supName : ''),
+                    'supplier_city'    => 'KZ',
+                    'supplier_color'   => 'linear-gradient(135deg, #1e3a8a, #f59e0b)',
+                    'stocks'           => [[
+                        'qty'              => (int) ($item['quantity'] ?? 0),
+                        'price'            => $price,
+                        'priceWithMargine' => round($this->setPrice($price), self::ROUND_LIMIT),
+                        'delivery_time'    => $deliveryDate,
+                        'supplier_city'    => 'KZ',
+                    ]],
+                ];
+
+                array_push($this->finalArr['brands'], $item['manufacturer'] ?? '');
+
+                if ($isExact) {
+                    array_push($this->finalArr['searchedNumber'], $entry);
+                } else {
+                    array_push($this->finalArr['crosses_to_order'], $entry);
+                }
+            }
+
+            if (count($this->finalArr['crosses_to_order']) > self::PRICE_STRATIFY_BUCKETS * self::PRICE_STRATIFY_PER_BUCKET) {
+                $this->finalArr['crosses_to_order'] = $this->stratifyByPrice(
+                    $this->finalArr['crosses_to_order'],
+                    self::PRICE_STRATIFY_BUCKETS,
+                    self::PRICE_STRATIFY_PER_BUCKET
+                );
+            }
+
+            // См. SEARCHED_NUMBER_SPARTEX_CAP — превентивно, тем же приёмом,
+            // что и у Radle.
+            if (count($this->finalArr['searchedNumber']) > self::SEARCHED_NUMBER_SPARTEX_CAP) {
+                usort($this->finalArr['searchedNumber'], fn($a, $b) => ($a['priceWithMargine'] ?? 0) <=> ($b['priceWithMargine'] ?? 0));
+                $this->finalArr['searchedNumber'] = array_slice($this->finalArr['searchedNumber'], 0, self::SEARCHED_NUMBER_SPARTEX_CAP);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Spartex exception', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
