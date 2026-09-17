@@ -74,6 +74,19 @@ class KanbanBoard extends Component
 
     // app/Livewire/Admin/KanbanBoard.php
 
+    /**
+     * Верхняя граница рабочей выборки — не по дате (Роман 2026-09-17: лид,
+     * молчавший 2 месяца, может написать сегодня и должен появиться), а по
+     * количеству самых свежих по `updated_at`. Написавший лид сразу
+     * поднимается наверх и попадает в лимит независимо от даты последнего
+     * сообщения — старые невостребованные лиды просто вытесняются из
+     * рабочей выборки, но остаются в БД (доска — не единственный доступ к
+     * данным). Без лимита `render()` тянул ВСЕХ лидов на каждый
+     * wire:poll.3s — с ростом базы это и есть тот рост нагрузки, о котором
+     * предупреждал Роман.
+     */
+    const LEADS_LIMIT = 200;
+
     public function render()
     {
         // lastMessage (latestOfMany) + withCount вместо with(['messages' =>
@@ -89,6 +102,7 @@ class KanbanBoard extends Component
             }])
             // СОРТИРОВКА ПО ОБНОВЛЕНИЮ: кто последний написал, тот и сверху
             ->orderByDesc('updated_at')
+            ->limit(self::LEADS_LIMIT)
             ->get()
             ->map(function($lead) {
                 $lead->has_new = $lead->unread_count > 0;

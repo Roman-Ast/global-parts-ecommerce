@@ -31,7 +31,7 @@
 
                         <div class="flex justify-between items-center">
                             <p class="text-sm text-gray-500 truncate pr-2">
-                                {{ $lead->messages->first()->message_text ?? 'Нет сообщений' }}
+                                {{ $lead->lastMessage->message_text ?? 'Нет сообщений' }}
                             </p>
                             @if($lead->last_vin)
                                 <span class="flex-shrink-0 bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold">

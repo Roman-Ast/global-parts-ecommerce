@@ -11,6 +11,21 @@ class WhatsappMessenger extends Component
     public $replyText = '';
     public $compactMode = false;
 
+    /** Тот же лимит и тот же принцип, что и в KanbanBoard::LEADS_LIMIT. */
+    const LEADS_LIMIT = 200;
+
+    /**
+     * Сколько последних сообщений подгружать для ОТКРЫТОГО чата. render()
+     * раньше грузил with(['messages' => latest()]) — ВСЮ историю ВСЕХ
+     * лидов на каждый рендер (список чатов при этом использовал только
+     * messages->first() ради превью — остальное впустую). Теперь список
+     * берёт lastMessage (latestOfMany, тот же приём, что уже есть в
+     * KanbanBoard), а полная история грузится только для activeLeadId и
+     * только последние N сообщений — открытому чату этого достаточно,
+     * прокрутка вверх за более старыми пока не реализована (не просили).
+     */
+    const ACTIVE_CHAT_MESSAGES_LIMIT = 60;
+
     protected $listeners = [
         'echo:messages,MessageReceived' => 'handleIncomingMessage', // Если используешь Laravel Echo
         'refreshChat' => '$refresh' // Обычный рефреш
@@ -82,17 +97,34 @@ class WhatsappMessenger extends Component
 
     public function render()
     {
-        // 1. Берем лидов именно для списка чатов (сортируем по дате сообщения)
-        $leads = \App\Models\WhatsappLead::with(['messages' => function($q) {
-                $q->latest();
-            }])
+        // 1. Список чатов слева — только превью (lastMessage), не вся история.
+        $leads = \App\Models\WhatsappLead::with('lastMessage')
             ->orderBy('last_seen_at', 'desc')
+            ->limit(self::LEADS_LIMIT)
             ->get();
 
-        // 2. ВОЗВРАЩАЕМ ВЬЮХУ МЕССЕНДЖЕРА, а не канбана!
+        // 2. Полную историю сообщений грузим только для реально открытого
+        // чата, последние ACTIVE_CHAT_MESSAGES_LIMIT штук, в хронологическом
+        // порядке (блейд рисует сверху вниз и скроллит к последнему).
+        $activeLead = null;
+        if ($this->activeLeadId) {
+            $activeLead = \App\Models\WhatsappLead::find($this->activeLeadId);
+            if ($activeLead) {
+                $recentMessages = \App\Models\WhatsappMessage::where('whatsapp_lead_id', $activeLead->id)
+                    ->latest()
+                    ->limit(self::ACTIVE_CHAT_MESSAGES_LIMIT)
+                    ->get()
+                    ->reverse()
+                    ->values();
+
+                $activeLead->setRelation('messages', $recentMessages);
+            }
+        }
+
+        // 3. ВОЗВРАЩАЕМ ВЬЮХУ МЕССЕНДЖЕРА, а не канбана!
         return view('livewire.admin.whatsapp-messenger', [
             'leads' => $leads,
-            'activeLead' => $this->activeLeadId ? \App\Models\WhatsappLead::find($this->activeLeadId) : null,
+            'activeLead' => $activeLead,
         ]);
     }
 
