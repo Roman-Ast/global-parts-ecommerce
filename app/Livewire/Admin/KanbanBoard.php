@@ -46,7 +46,7 @@ class KanbanBoard extends Component
         // заказов.
         'bought_waiting' => ['title' => 'Купил и ждёт', 'color' => 'bg-teal-500'],
 
-        'deal_closed'   => ['title' => 'Продано', 'color' => 'bg-sky-500'],
+        'deal_closed'   => ['title' => 'Продано (выдано)', 'color' => 'bg-sky-500'],
 
         // "Сделка закрыта" раньше смешивала "продали" и "не купили" в одном
         // статусе — по просьбе Романа 2026-09-17 разделено на два разных
