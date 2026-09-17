@@ -14,9 +14,30 @@
             <h1 class="text-2xl font-black text-slate-800 uppercase tracking-tight">Канбан CRM (Global Parts)</h1>
             <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Управление воронкой продаж</p>
         </div>
-        <div class="bg-white px-5 py-2 rounded-2xl shadow-sm border border-slate-200">
-            <span class="text-[10px] text-slate-400 font-black uppercase block">Всего лидов</span>
-            <span class="text-2xl font-black text-slate-900 leading-none">{{ $totalCount }}</span>
+        <div class="flex items-center gap-3">
+            <div class="bg-white px-5 py-2 rounded-2xl shadow-sm border border-slate-200">
+                <span class="text-[10px] text-slate-400 font-black uppercase block">Всего лидов</span>
+                <span class="text-2xl font-black text-slate-900 leading-none">{{ $totalCount }}</span>
+            </div>
+
+            {{-- "Корзина" для спама (просьба Романа 2026-09-17) — НЕ стадия
+                 воронки, поэтому не отдельная колонка со списком карточек:
+                 просто счётчик + Sortable drop-зона (id="status-spam" +
+                 class="kanban-column" — initKanban() находит её тем же общим
+                 селектором, что и обычные колонки). Содержимое смотрим
+                 изредка напрямую в БД, отдельную вьюху под это не делаем. --}}
+            <div
+                id="status-spam"
+                data-status="spam"
+                class="kanban-column flex items-center gap-2 bg-rose-50 px-4 py-2 rounded-2xl shadow-sm border border-dashed border-rose-300 min-h-[52px]"
+                title="Перетащите сюда, чтобы пометить лид как спам"
+            >
+                <svg class="w-4 h-4 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                <div>
+                    <span class="text-[10px] text-rose-400 font-black uppercase block leading-none">Спам</span>
+                    <span class="text-sm font-black text-rose-600 leading-none">{{ $spamCount }}</span>
+                </div>
+            </div>
         </div>
     </div>
 

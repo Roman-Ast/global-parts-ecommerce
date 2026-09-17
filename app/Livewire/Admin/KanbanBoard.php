@@ -71,13 +71,22 @@ class KanbanBoard extends Component
         ],
     ];
 
+    /**
+     * "Спам" (просьба Романа 2026-09-17) — НЕ стадия воронки продаж,
+     * поэтому сознательно не в $statuses: там нет своей колонки/карточек,
+     * только счётчик-"корзина" сверху доски и Sortable drop-зона на него.
+     * Просматривать содержимое будем изредка напрямую SQL-запросом, без
+     * отдельной вьюхи — если понадобится UI, добавлять отдельно.
+     */
+    const SPAM_STATUS = 'spam';
+
     protected $listeners = ['refreshKanban' => '$refresh'];
 
     public function updateLeadStatus($leadId, $newStatus)
     {
         $lead = WhatsappLead::find($leadId);
 
-        $isMainStatus = array_key_exists($newStatus, $this->statuses);
+        $isMainStatus = array_key_exists($newStatus, $this->statuses) || $newStatus === self::SPAM_STATUS;
 
         // Sub-статус может принадлежать ЛЮБОЙ группе с 'sub' (сейчас —
         // 'thinking' и 'lost'), не только 'thinking' — раньше было жёстко
@@ -93,9 +102,10 @@ class KanbanBoard extends Component
         if ($lead && ($isMainStatus || $subLabel !== null)) {
             $lead->update(['status' => $newStatus]);
 
+            $label = $subLabel ?? ($newStatus === self::SPAM_STATUS ? 'Спам' : $this->statuses[$newStatus]['title']);
             $this->dispatch('notify', [
                 'type' => 'success',
-                'message' => "Статус обновлен на: " . ($subLabel ?? $this->statuses[$newStatus]['title'])
+                'message' => "Статус обновлен на: {$label}"
             ]);
         }
     }
@@ -140,6 +150,9 @@ class KanbanBoard extends Component
             ->withCount(['messages as unread_count' => function ($q) {
                 $q->where('is_incoming', true)->where('is_read', false);
             }])
+            // Спам не часть воронки — не тратим LEADS_LIMIT-окно на них здесь,
+            // они и так никогда не рендерятся (нет колонки в $statuses).
+            ->where('status', '!=', self::SPAM_STATUS)
             // СОРТИРОВКА ПО ОБНОВЛЕНИЮ: кто последний написал, тот и сверху
             ->orderByDesc('updated_at')
             ->limit(self::LEADS_LIMIT)
@@ -153,7 +166,8 @@ class KanbanBoard extends Component
         return view('livewire.admin.kanban-board', [
             'leadsByStatus' => $leads,
             'statuses' => $this->statuses,
-            'totalCount' => \App\Models\WhatsappLead::count()
+            'totalCount' => \App\Models\WhatsappLead::count(),
+            'spamCount' => \App\Models\WhatsappLead::where('status', self::SPAM_STATUS)->count(),
         ]);
     }
 }
