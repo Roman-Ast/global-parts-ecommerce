@@ -37,7 +37,29 @@ class KanbanBoard extends Component
         ],
 
         'payment'   => ['title' => 'Оплата', 'color' => 'bg-green-500'],
-        'deal_closed'   => ['title' => 'Сделка закрыта', 'color' => 'bg-sky-500']
+        'deal_closed'   => ['title' => 'Продано', 'color' => 'bg-sky-500'],
+
+        // "Сделка закрыта" раньше смешивала "продали" и "не купили" в одном
+        // статусе — по просьбе Романа 2026-09-17 разделено на два разных
+        // терминальных исхода: 'deal_closed' теперь строго "продали", а это
+        // группа — "не купили", финал без дальнейшей работы (в отличие от
+        // 'thinking', где ещё можно дожимать). Подпричины намеренно взяты
+        // теми же ключами/формулировками, что и закрытая таксономия
+        // `demand_signals.decline_reason` (миграция
+        // 2026_09_14_000004_add_decline_reason_to_demand_signals_table) —
+        // Роман сам вывел её из реальных чатов, здесь просто тот же словарь,
+        // без параллельной таксономии. 'no_stock_wont_wait' — ключевой сигнал
+        // по складу ("купил бы прямо сейчас, была бы деталь в наличии").
+        'lost'      => [
+            'title' => 'Не купили',
+            'color' => 'bg-rose-600',
+            'sub' => [
+                'no_stock_wont_wait'      => 'Нет в наличии',
+                'in_stock_too_expensive'  => 'Дорого',
+                'part_not_found'          => 'Не нашли деталь',
+                'changed_mind'            => 'Передумал',
+            ],
+        ],
     ];
 
     protected $listeners = ['refreshKanban' => '$refresh'];
@@ -45,17 +67,26 @@ class KanbanBoard extends Component
     public function updateLeadStatus($leadId, $newStatus)
     {
         $lead = WhatsappLead::find($leadId);
-        
-        // Проверяем статус в основном списке ИЛИ во вложенном списке "thinking"
-        $isSubStatus = isset($this->statuses['thinking']['sub']) && array_key_exists($newStatus, $this->statuses['thinking']['sub']);
+
         $isMainStatus = array_key_exists($newStatus, $this->statuses);
 
-        if ($lead && ($isMainStatus || $isSubStatus)) {
+        // Sub-статус может принадлежать ЛЮБОЙ группе с 'sub' (сейчас —
+        // 'thinking' и 'lost'), не только 'thinking' — раньше было жёстко
+        // зашито под одну группу.
+        $subLabel = null;
+        foreach ($this->statuses as $group) {
+            if (isset($group['sub']) && array_key_exists($newStatus, $group['sub'])) {
+                $subLabel = $group['sub'][$newStatus];
+                break;
+            }
+        }
+
+        if ($lead && ($isMainStatus || $subLabel !== null)) {
             $lead->update(['status' => $newStatus]);
-            
+
             $this->dispatch('notify', [
                 'type' => 'success',
-                'message' => "Статус обновлен на: " . ($isSubStatus ? $this->statuses['thinking']['sub'][$newStatus] : $this->statuses[$newStatus]['title'])
+                'message' => "Статус обновлен на: " . ($subLabel ?? $this->statuses[$newStatus]['title'])
             ]);
         }
     }

@@ -157,10 +157,10 @@
                     
                 <div class="p-4 bg-gray-50 border-t">
                     <div class="flex gap-2">
-                        <textarea 
-                            wire:model.defer="replyText" 
-                            wire:keydown.enter.shift="sendMessage"
-                            placeholder="Введите ответ... (Shift+Enter для отправки)" 
+                        <textarea
+                            wire:model.defer="replyText"
+                            x-on:keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $wire.sendMessage(); }"
+                            placeholder="Введите ответ... (Enter — отправить, Shift+Enter — новая строка)"
                             rows="1"
                             oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'
                             class="flex-1 border border-slate-300 rounded-2xl px-5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none overflow-hidden"

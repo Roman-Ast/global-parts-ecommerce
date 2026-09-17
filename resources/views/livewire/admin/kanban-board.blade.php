@@ -16,10 +16,14 @@
     {{-- Воронка --}}
     <div class="flex overflow-x-auto pb-8 gap-4 items-start h-[calc(100vh-180px)] custom-scrollbar px-2">
         @foreach($statuses as $key => $info)
-            @if($key === 'thinking')
-                {{-- ШИРОКАЯ КОЛОНКА ДЛЯ "ДУМАЕТ" --}}
+            @if(isset($info['sub']))
+                {{-- ШИРОКАЯ КОЛОНКА С ПОДСТАТУСАМИ — раньше проверялось строго
+                     $key === 'thinking' (единственная такая группа была одна);
+                     обобщено на isset($info['sub']), чтобы новые группы с
+                     подпричинами (напр. 'lost' — "Не купили") автоматически
+                     получали ту же раскладку без правки блейда. --}}
                 <div class="flex-shrink-0 w-[900px] flex flex-col h-full bg-slate-200/30 rounded-[2.5rem] p-4 border border-slate-300/50" wire:key="group-{{ $key }}">
-                    <div class="flex items-center justify-center mb-4 py-2 bg-slate-800 text-white rounded-2xl shadow-md">
+                    <div class="flex items-center justify-center mb-4 py-2 {{ $info['color'] }} text-white rounded-2xl shadow-md">
                         <span class="text-[11px] font-black uppercase tracking-[0.3em] italic">{{ $info['title'] }}</span>
                     </div>
 
@@ -38,7 +42,7 @@
                                 >
                                     @if(isset($leadsByStatus[$subKey]))
                                         @foreach($leadsByStatus[$subKey] as $lead)
-                                            <div wire:key="card-{{ $lead->id }}-{{ $lead->lastMessage->id ?? 'none' }}" data-id="{{ $lead->id }}" class="kanban-card bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all group">
+                                            <div wire:key="card-{{ $lead->id }}-{{ $lead->lastMessage->id ?? 'none' }}" data-id="{{ $lead->id }}" class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all group">
                                                 <div class="flex justify-between items-start mb-2">
                                                     <div class="flex items-center space-x-2">
                                                         @if($lead->has_new)
@@ -116,30 +120,38 @@
                                     $lastMsg = $lead->lastMessage;
                                     $cardKey = "card-{$lead->id}-" . ($lastMsg ? $lastMsg->id : 'none');
                                 @endphp
-                                <div wire:key="{{ $cardKey }}" data-id="{{ $lead->id }}" class="kanban-card bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all group">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div class="flex items-center space-x-2">
+                                {{-- Вёрстка ряда — по образцу списка чатов в самом WhatsApp
+                                     (просьба Романа 2026-09-17): без аватара, номер+источник
+                                     в одну строку, превью сообщения обрезано до 50 символов,
+                                     клик по всей строке открывает шторку (раньше была
+                                     отдельная кнопка "Открыть чат" на всю ширину — занимала
+                                     место и делала карточки "бледными"/разреженными).
+                                     wire:click на самом ряду не мешает Sortable — драг
+                                     отличается от клика по порогу смещения мыши, тот же
+                                     приём уже используется в других местах на сайте. --}}
+                                <div
+                                    wire:key="{{ $cardKey }}"
+                                    data-id="{{ $lead->id }}"
+                                    wire:click="openChat({{ $lead->id }})"
+                                    @click="$dispatch('open-chat-side-panel')"
+                                    wire:loading.class="opacity-50"
+                                    wire:target="openChat({{ $lead->id }})"
+                                    class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} bg-white px-3 py-2.5 rounded-lg border border-slate-200 cursor-grab active:cursor-grabbing hover:bg-slate-50 hover:border-blue-300 transition-all"
+                                >
+                                    <div class="flex items-center justify-between gap-2 {{ $lastMsg ? 'mb-1' : '' }}">
+                                        <div class="flex items-center gap-1.5 min-w-0">
                                             @if($lead->has_new)
-                                                <span class="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]"></span>
+                                                <span class="flex-shrink-0 h-2 w-2 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]"></span>
                                             @endif
-                                            <span class="text-xs font-bold text-slate-800 tracking-tighter">+{{ $lead->phone }}</span>
+                                            <span class="text-[13px] font-bold text-slate-900 truncate">+{{ $lead->phone }}</span>
                                             @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
                                         </div>
-                                        <span class="text-[8px] text-slate-400 font-bold uppercase">{{ $lead->updated_at->diffForHumans() }}</span>
+                                        <span class="flex-shrink-0 text-[10px] text-slate-400 font-medium">{{ $lead->updated_at->diffForHumans() }}</span>
                                     </div>
 
                                     @if($lastMsg)
-                                        <div class="text-[10px] text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100 mb-3 line-clamp-2 italic leading-relaxed">
-                                            {{ $lastMsg->message_text }}
-                                        </div>
+                                        <p class="text-[12px] text-slate-600 truncate">{{ \Illuminate\Support\Str::limit($lastMsg->message_text, 50) }}</p>
                                     @endif
-
-                                    <button @click="$dispatch('open-chat-side-panel')" wire:click="openChat({{ $lead->id }})" wire:loading.attr="disabled" wire:target="openChat({{ $lead->id }})" class="w-full py-2 flex items-center justify-center space-x-1 border border-slate-200 text-slate-400 hover:bg-slate-900 hover:text-white hover:border-slate-900 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-sm disabled:opacity-60">
-                                        <svg wire:loading.remove wire:target="openChat({{ $lead->id }})" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                                        <svg wire:loading wire:target="openChat({{ $lead->id }})" class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                                        <span wire:loading.remove wire:target="openChat({{ $lead->id }})">Открыть чат</span>
-                                        <span wire:loading wire:target="openChat({{ $lead->id }})">Открываю...</span>
-                                    </button>
                                 </div>
                             @endforeach
                         @endif
@@ -187,6 +199,15 @@
                     chosenClass: 'kanban-card-chosen',
                     dragClass: 'kanban-card-dragging',
                     draggable: '.kanban-card',
+                    // Непрочитанные карточки (просьба Романа 2026-09-17) — нельзя
+                    // перетаскивать, пока не открыли и не прочитали хотя бы раз.
+                    // filter блокирует САМ старт драга (не просто отменяет drop),
+                    // preventOnFilter:true — дефолт, но пишем явно.
+                    filter: '.kanban-card-unread',
+                    preventOnFilter: true,
+                    onFilter: function () {
+                        window.dispatchEvent(new CustomEvent('unread-drag-blocked'));
+                    },
                     onStart: function () {
                         kanbanDragActive = true;
                     },
@@ -220,6 +241,31 @@
 
         document.addEventListener('livewire:navigated', initKanban);
     </script>
+
+    {{-- Модалка-предупреждение при попытке перетащить непрочитанную заявку
+         (просьба Романа 2026-09-17) — сама блокировка драга в initKanban()
+         (Sortable filter: '.kanban-card-unread'), это только уведомление.
+         Закрывается сама через 2.5с или по клику/Esc. --}}
+    <div
+        x-data="{ open: false }"
+        @unread-drag-blocked.window="open = true; clearTimeout(window.__unreadWarnTimeout); window.__unreadWarnTimeout = setTimeout(() => open = false, 2500)"
+        @keydown.escape.window="open = false"
+        x-show="open"
+        x-transition
+        class="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none"
+        style="display: none;"
+    >
+        <div @click="open = false" class="absolute inset-0 bg-slate-900/40 pointer-events-auto"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-200 px-6 py-5 max-w-sm mx-4 pointer-events-auto flex items-start gap-3">
+            <span class="flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+            </span>
+            <div>
+                <p class="text-sm font-bold text-slate-800">Заявка не прочитана</p>
+                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Сначала откройте чат и прочитайте сообщение — потом можно будет переместить карточку.</p>
+            </div>
+        </div>
+    </div>
 
     {{-- Шторка --}}
     <div x-data="{ open: false }" @open-chat-side-panel.window="open = true" @keydown.escape.window="open = false" class="relative z-[100]">
