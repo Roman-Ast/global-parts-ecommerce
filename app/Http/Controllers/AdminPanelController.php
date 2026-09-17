@@ -28,6 +28,20 @@ use App\Models\SupplierCredit;
 class AdminPanelController extends Controller
 {
     use HasCustomerLogic;
+
+    /**
+     * Дата, с которой ERP реально в строю (2026-09-17, дата прогона
+     * миграций на проде) — заказы ДО этой даты оформлялись без учёта
+     * оплат через order_payments, поэтому у них "оплачено=0" не значит
+     * "клиент должен", просто платёж никогда не заносился в систему.
+     * Без этой отсечки getReceivablesData() тянул ВСЮ историю заказов
+     * (Order::all()) в "Дебиторка от клиентов" — живой случай 2026-09-17,
+     * дашборд показал 151 617 137₸ дебиторки вместо реальных цифр.
+     * Конкретные реальные долги с ДО этой даты — заносятся вручную через
+     * форму "Начальные остатки" (opening-balances.store), не через это.
+     */
+    const ERP_GO_LIVE_DATE = '2026-09-17';
+
     /**
      * Display a listing of the resource.
      */
@@ -1007,7 +1021,11 @@ class AdminPanelController extends Controller
             ->groupBy('order_id')
             ->pluck('paid', 'order_id');
 
-        $customerReceivablesRaw = Order::all()->map(function ($order) use ($paidByOrder) {
+        // См. ERP_GO_LIVE_DATE — заказы до этой даты не тянем в дебиторку
+        // вообще, у них никогда не было настоящих записей в order_payments.
+        $customerReceivablesRaw = Order::where('date', '>=', self::ERP_GO_LIVE_DATE)
+            ->get()
+            ->map(function ($order) use ($paidByOrder) {
             $paid = (float) ($paidByOrder[$order->id] ?? 0);
             $due = round((float) $order->sum_with_margine - $paid, 2);
 
