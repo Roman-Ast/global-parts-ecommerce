@@ -212,15 +212,6 @@
                     chosenClass: 'kanban-card-chosen',
                     dragClass: 'kanban-card-dragging',
                     draggable: '.kanban-card',
-                    // Непрочитанные карточки (просьба Романа 2026-09-17) — нельзя
-                    // перетаскивать, пока не открыли и не прочитали хотя бы раз.
-                    // filter блокирует САМ старт драга (не просто отменяет drop),
-                    // preventOnFilter:true — дефолт, но пишем явно.
-                    filter: '.kanban-card-unread',
-                    preventOnFilter: true,
-                    onFilter: function () {
-                        window.dispatchEvent(new CustomEvent('unread-drag-blocked'));
-                    },
                     onStart: function () {
                         kanbanDragActive = true;
                     },
@@ -230,6 +221,20 @@
                         const newStatus = evt.to.getAttribute('data-status');
 
                         if (evt.from !== evt.to) {
+                            // Непрочитанные карточки (просьба Романа 2026-09-17) — нельзя
+                            // перетаскивать, пока не открыли и не прочитали хотя бы раз.
+                            // Раньше это блокировалось через Sortable filter — но filter
+                            // срабатывает на КАЖДОЕ mousedown, включая обычный клик по
+                            // карточке (не только попытку драга), из-за чего сломался
+                            // клик "открыть чат" на непрочитанных (жалоба Романа). Теперь
+                            // драг стартует как обычно (визуально), а откатывается назад
+                            // только по факту РЕАЛЬНОГО дропа в другую колонку — клик
+                            // никак не задействует этот код вообще.
+                            if (evt.item.classList.contains('kanban-card-unread')) {
+                                evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex] || null);
+                                window.dispatchEvent(new CustomEvent('unread-drag-blocked'));
+                                return;
+                            }
                             @this.call('updateLeadStatus', leadId, newStatus);
                         }
                     }
