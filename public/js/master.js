@@ -596,6 +596,42 @@ $('.change_status_submit').on('click', function () {
     });
 });
 
+// ---- изменение цены закупа/розницы конкретной позиции заказа (админка) ----
+// Нужно на случай отказа поставщика (перезаказ по другой цене -> меняется
+// кредиторка) и подорожания для клиента (доплата -> меняется розница).
+// Сумма заказа и Setlement пересчитываются на бэкенде из суммы всех позиций.
+$('.gp-op-price-submit').on('click', function () {
+    let $cell = $(this).closest('.gp-price-cell');
+    let orderProductId = $cell.find('.gp-op-id').val();
+    let newPrice = $cell.find('.gp-op-price').val();
+    let newPriceMargine = $cell.find('.gp-op-price-margine').val();
+
+    if (newPrice === '' || isNaN(parseFloat(newPrice)) || newPriceMargine === '' || isNaN(parseFloat(newPriceMargine))) {
+        alert('Укажи корректные цены закупа и розницы');
+        return;
+    }
+
+    $.ajax({
+        data: {
+            '_token': $('meta[name="csrf-token"]').attr('content'),
+            'order_product_id': orderProductId,
+            'price': newPrice,
+            'price_with_margine': newPriceMargine,
+        },
+        url: "/order-product/update-price",
+        type: "POST",
+        success: function () {
+            showStatusChangeToast('success', 'Цены позиции обновлены');
+        },
+        error: function (jqXHR) {
+            let errMsg = (jqXHR.responseJSON && jqXHR.responseJSON.message)
+                ? jqXHR.responseJSON.message
+                : 'Ошибка при изменении цен позиции';
+            showStatusChangeToast('danger', errMsg);
+        }
+    });
+});
+
 // Bootstrap toast-уведомление о результате смены статуса заказа.
 // type: 'success' | 'danger'
 function showStatusChangeToast(type, message) {
