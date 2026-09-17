@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class LeadRequest extends Model
 {
     protected $fillable = [
-        'whatsapp_lead_id', 'vin', 'car_model', 'raw_request', 'parts_json', 'status', 'deal_sum'
+        'whatsapp_lead_id', 'source', 'vin', 'brand', 'car_model', 'car_year',
+        'raw_request', 'parts_json', 'status', 'deal_sum',
     ];
 
     protected $casts = [

@@ -1,4 +1,4 @@
-<div wire:poll.10s class="{{ $compactMode ? 'flex w-full h-full' : 'fixed inset-0 top-[64px] flex bg-gray-100 z-10' }}">
+<div wire:poll.3s wire:init="syncReadOnWhatsApp" class="{{ $compactMode ? 'flex w-full h-full' : 'fixed inset-0 top-[64px] flex bg-gray-100 z-10' }}">
     
     {{-- ЛЕВАЯ КОЛОНКА: Отображается только в обычном режиме --}}
     @if(!$compactMode)
@@ -20,7 +20,10 @@
                        class="cursor-pointer block p-4 border-b hover:bg-slate-50 transition-colors {{ $activeLeadId == $lead->id ? 'bg-blue-50 border-r-4 border-blue-500' : '' }}">
                         
                         <div class="flex justify-between items-start mb-1">
-                            <span class="font-bold text-slate-700">+{{ $lead->phone }}</span>
+                            <span class="flex items-center gap-1.5">
+                                <span class="font-bold text-slate-700">+{{ $lead->phone }}</span>
+                                @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
+                            </span>
                             <span class="text-[10px] text-gray-400 whitespace-nowrap ml-2">
                                 {{ $lead->last_seen_at ? $lead->last_seen_at->diffForHumans() : '' }}
                             </span>
@@ -49,9 +52,9 @@
         @if($activeLead)
             <div class="flex flex-col h-full">
                 <div class="p-4 border-b flex justify-between items-center bg-white shadow-sm z-20">
-                    <div>
+                    <div class="flex items-center gap-2">
                         <h2 class="font-bold text-lg text-gray-800">+{{ $activeLead->phone }}</h2>
-                        <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Источник: {{ $activeLead->source }}</p>
+                        @include('livewire.admin.partials.source-badge', ['source' => $activeLead->source])
                     </div>
                     @if($activeLead->last_vin)
                         <div class="bg-orange-50 border border-orange-200 rounded-lg px-3 py-1 text-right">
@@ -61,16 +64,25 @@
                     @endif
                 </div>
 
-                <div 
-                    id="chat-window" 
+                <div
+                    id="chat-window"
                     {{-- Добавляем Alpine.js логику --}}
-                    x-data="{ 
-                        scrollToBottom() { 
-                            $el.scrollTo({ top: $el.scrollHeight, behavior: 'smooth' }); 
-                        } 
+                    x-data="{
+                        scrollToBottom(smooth = true) {
+                            $el.scrollTo({ top: $el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+                        }
                     }"
-                    x-init="scrollToBottom()" {{-- Скролл при загрузке (открытии чата) --}}
-                    @scroll-chat-to-bottom.window="scrollToBottom()" {{-- Скролл по сигналу из PHP --}}
+                    x-init="
+                        {{-- При ОТКРЫТИИ чата — мгновенно, без анимации (как в реальном WhatsApp,
+                             чат сразу открывается внизу, не едет туда на глазах). $nextTick — ждём,
+                             пока Alpine домонтирует все сообщения в DOM, иначе scrollHeight ещё не
+                             финальный. Плюс короткий таймаут — картинки/файлы в сообщениях меняют
+                             высоту уже ПОСЛЕ загрузки, из-за этого чат утром 2026-09-14 открывался
+                             не докрученным до конца. --}}
+                        $nextTick(() => scrollToBottom(false));
+                        setTimeout(() => scrollToBottom(false), 300);
+                    "
+                    @scroll-chat-to-bottom.window="scrollToBottom(true)" {{-- Новое сообщение при уже открытом чате — плавно --}}
                     class="flex-1 overflow-y-auto p-6 bg-[#f0f2f5] space-y-4 custom-scrollbar"
                 >
                     @foreach($activeLead->messages as $msg)
@@ -117,11 +129,22 @@
                                     @if(!$msg->is_incoming)
                                         <div class="flex items-center">
                                             @if($msg->status === 'read')
+                                                {{-- прочитано — двойная синяя --}}
                                                 <div class="flex -space-x-1.5">
                                                     <svg class="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
                                                     <svg class="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
                                                 </div>
+                                            @elseif($msg->status === 'delivered')
+                                                {{-- доставлено — двойная серая --}}
+                                                <div class="flex -space-x-1.5">
+                                                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
+                                                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
+                                                </div>
+                                            @elseif($msg->status === 'failed')
+                                                {{-- ошибка отправки --}}
+                                                <svg class="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" d="M12 8v4m0 4h.01M12 3l9 16H3L12 3z" /></svg>
                                             @else
+                                                {{-- отправлено (sent), ещё не доставлено — одна серая --}}
                                                 <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" /></svg>
                                             @endif
                                         </div>

@@ -60,6 +60,7 @@
         </script>
         <noscript><div><img src="https://mc.yandex.ru/watch/110382767" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
         <!-- /Yandex.Metrika counter -->
+        @livewireStyles
     </head>
     <body>
         @yield('content')
@@ -284,6 +285,6 @@
             }, true);
         })();
         </script>
-
+        @livewireScripts
     </body>
 </html>

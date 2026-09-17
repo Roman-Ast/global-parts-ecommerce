@@ -9,6 +9,18 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
 {
+    /**
+     * Личные номера Романа и коллег + рабочая группа "Темщики" — переписка
+     * оттуда НЕ должна попадать в whatsapp_leads/whatsapp_messages вообще
+     * (по прямому указанию Романа 2026-09-14): это не клиенты, а мы сами,
+     * и засоряет сырую таблицу, которую он раз в неделю разбирает вручную.
+     * Числа — без "+"/"@c.us", как приходят от Green API в senderData.
+     */
+    const EXCLUDED_PHONES = ['77078508810', '77073707527', '77476204450'];
+
+    /** Регистронезависимо, по senderData.chatName групповых сообщений (@g.us). */
+    const EXCLUDED_GROUP_NAMES = ['темщики'];
+
     public function handle(Request $request)
     {
         $data = $request->all();
@@ -19,11 +31,26 @@ class WhatsAppWebhookController extends Controller
 
         // Игнорируем системные уведомления (типа quotaExceeded), чтобы не мусорить
         $typeWebhook = $data['typeWebhook'] ?? '';
-        if (!in_array($typeWebhook, ['incomingMessageReceived', 'outgoingMessageReceived', 'outgoingAPIMessageReceived'])) {
+        if (!in_array($typeWebhook, ['incomingMessageReceived', 'outgoingMessageReceived', 'outgoingAPIMessageReceived', 'outgoingMessageStatus'])) {
             return response()->json(['status' => 'ignored_system_webhook']);
         }
 
         Log::info('Webhook received', ['payload' => $data]);
+
+        // Статус исходящего сообщения (sent/delivered/read/failed) — отдельная форма
+        // пейлоада, без messageData/senderData, апдейт статуса, а не создание строки.
+        // Галочки в chatCode == is_read у нас про ВХОДЯЩИЕ (прочитали ли МЫ), это же —
+        // прочитал ли клиент НАШЕ сообщение, для сине-серых галочек в UI.
+        if ($typeWebhook === 'outgoingMessageStatus') {
+            $idMessage = $data['idMessage'] ?? null;
+            $status = $data['status'] ?? null;
+
+            if ($idMessage && $status) {
+                WhatsappMessage::where('message_id', $idMessage)->update(['status' => $status]);
+            }
+
+            return response()->json(['status' => 'success']);
+        }
 
         try {
             $chatIdRaw = $data['chatId'] 
@@ -36,11 +63,33 @@ class WhatsAppWebhookController extends Controller
             $phone = str_replace('@c.us', '', $chatIdRaw);
             $instanceId = (string)($data['instanceData']['idInstance'] ?? 'unknown');
 
+            // Личные/рабочие номера и группа "Темщики" — не клиенты, в БД не пишем
+            // вообще (см. EXCLUDED_PHONES/EXCLUDED_GROUP_NAMES выше). Группа сама
+            // идёт под chatId вида "...@g.us" — реальный автор сообщения внутри
+            // неё лежит отдельно, в senderData.sender.
+            $groupChatName = $data['senderData']['chatName'] ?? null;
+            $groupSenderPhone = isset($data['senderData']['sender'])
+                ? str_replace('@c.us', '', $data['senderData']['sender'])
+                : null;
+
+            $isExcluded = in_array($phone, self::EXCLUDED_PHONES, true)
+                || ($groupSenderPhone && in_array($groupSenderPhone, self::EXCLUDED_PHONES, true))
+                || ($groupChatName && in_array(mb_strtolower(trim($groupChatName)), self::EXCLUDED_GROUP_NAMES, true));
+
+            if ($isExcluded) {
+                return response()->json(['status' => 'excluded_internal_chat']);
+            }
+
+            // instanceId => source ('site'/'2gis'/...) — см. config/services.php
+            // green_api.instance_sources. Незнакомый инстанс (ещё не вписанный
+            // в конфиг) падает в 'unknown', а не молча приписывается 2gis.
+            $source = config("services.green_api.instance_sources.{$instanceId}", 'unknown');
+
             $lead = WhatsappLead::updateOrCreate(
                 ['phone' => $phone],
                 [
                     'last_seen_at' => now(),
-                    'source' => ($instanceId === '7107585549') ? 'site' : '2gis',
+                    'source' => $source,
                     'client_name' => $data['senderData']['senderName'] ?? null
                 ]
             );
@@ -79,6 +128,31 @@ class WhatsAppWebhookController extends Controller
             elseif ($typeMessage === 'videoMessage') {
                 $fileUrl = $messageData['videoMessageData']['downloadUrl'] ?? null;
                 $text = 'Видео файл';
+            }
+            // Ответ (reply) на конкретное сообщение — реальный НОВЫЙ текст лежит в
+            // extendedTextMessageData.text, а quotedMessage.* это данные исходного
+            // (процитированного) сообщения, не то, что написал клиент сейчас.
+            // Найдено живьём 2026-09-15 при разборе сырых данных: без этой ветки
+            // весь текст ответа терялся, сохранялось пустое сообщение — 23 из 386
+            // сообщений на тот момент (~6%) были именно такими "немыми" ответами.
+            elseif ($typeMessage === 'quotedMessage') {
+                $text = $messageData['extendedTextMessageData']['text'] ?? '';
+                $quotedType = $messageData['quotedMessage']['typeMessage'] ?? null;
+                if ($quotedType === 'imageMessage') {
+                    $text = "[Ответ на фото] {$text}";
+                } elseif ($quotedType === 'documentMessage') {
+                    $text = "[Ответ на файл] {$text}";
+                }
+            }
+            // Реакция эмодзи на сообщение — сам эмодзи лежит в extendedTextMessageData.text
+            elseif ($typeMessage === 'reactionMessage') {
+                $emoji = $messageData['extendedTextMessageData']['text'] ?? '';
+                $text = $emoji !== '' ? "[Реакция: {$emoji}]" : '[Реакция]';
+            }
+            // Визитка контакта — вытаскиваем хотя бы отображаемое имя
+            elseif ($typeMessage === 'contactMessage') {
+                $contactName = $messageData['contactMessageData']['displayName'] ?? null;
+                $text = $contactName ? "[Контакт] {$contactName}" : '[Контакт]';
             }
 
             // Если это неизвестный файл, но ссылка есть (на всякий случай)

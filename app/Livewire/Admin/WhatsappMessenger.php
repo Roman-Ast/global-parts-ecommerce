@@ -19,13 +19,65 @@ class WhatsappMessenger extends Component
     public function selectLead($id)
     {
         $this->activeLeadId = $id;
-        
 
         // Как только выбрали лида — помечаем все сообщения от него как прочитанные
         \App\Models\WhatsappMessage::where('whatsapp_lead_id', $id)
             ->where('is_incoming', true) // помечаем только ВХОДЯЩИЕ
             ->where('is_read', false)
             ->update(['is_read' => true]);
+
+        // Синк с Green API — отдельным запросом ПОСЛЕ того, как этот ответ уже
+        // ушёл и чат отрисовался, не блокируя переключение чата. См.
+        // syncReadOnWhatsApp()/mount() за тем же приёмом через wire:init.
+        $this->js('$wire.call("syncReadOnWhatsApp")');
+    }
+
+    /**
+     * Помечает чат прочитанным на стороне самого WhatsApp (Green API readChat) —
+     * без этого вызова галочка "прочитано" у КЛИЕНТА никогда не посинеет: то, что
+     * мы отметили is_read=true у себя в БД, видно только в нашем интерфейсе, а не
+     * в WhatsApp отправителя. Не критично, если сбой — просто следующий раз, когда
+     * чат откроют, синие галочки появятся у клиента с задержкой.
+     */
+    private function markReadOnWhatsApp(int $leadId): void
+    {
+        $lead = \App\Models\WhatsappLead::find($leadId);
+        if (!$lead) {
+            return;
+        }
+
+        [$instanceId, $token] = $this->resolveInstanceCreds($lead);
+
+        try {
+            // Без явного таймаута брался дефолт Laravel (30 сек) — а Green API
+            // временами отвечает по 10-20 сек (видели весь день сегодня). Так
+            // как это только пометка "прочитано" у клиента, не критично, если
+            // не успеет — короткий таймаут вместо блокировки открытия шторки
+            // на полминуты (жалоба Романа 2026-09-14: "шторка очень долго
+            // открывается").
+            \Illuminate\Support\Facades\Http::timeout(3)->post(
+                "https://api.green-api.com/waInstance{$instanceId}/readChat/{$token}",
+                ['chatId' => $lead->phone . '@c.us']
+            );
+        } catch (\Exception $e) {
+            \Log::error("Ошибка readChat WhatsApp: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * У лида два возможных источника — 'site' (основной номер) и '2gis'
+     * (второй номер, подключён 2026-09-14) — у каждого свой инстанс/токен
+     * Green API (config('services.green_api.instances')). Без этого ответ
+     * 2ГИС-клиенту ушёл бы с номера сайта либо вообще не тем инстансом.
+     * Источник не распознан/не задан — считаем 'site' (старое поведение
+     * для лидов, заведённых до второго номера).
+     */
+    private function resolveInstanceCreds(\App\Models\WhatsappLead $lead): array
+    {
+        $source = $lead->source ?? 'site';
+        $creds = config("services.green_api.instances.{$source}") ?? config('services.green_api.instances.site');
+
+        return [$creds['instance_id'], $creds['token']];
     }
 
     public function render()
@@ -52,10 +104,9 @@ class WhatsappMessenger extends Component
         }
 
         $lead = \App\Models\WhatsappLead::find($this->activeLeadId);
-        
-        $instanceId = config('services.green_api.instance_id');
-        $token = config('services.green_api.token');
-        
+
+        [$instanceId, $token] = $this->resolveInstanceCreds($lead);
+
         $url = "https://api.green-api.com/waInstance{$instanceId}/sendMessage/{$token}";
 
         try {
@@ -73,6 +124,9 @@ class WhatsappMessenger extends Component
                     'is_read' => true,
                     'message_id' => $response->json()['idMessage'] ?? uniqid(),
                     'type' => 'chat',
+                    // Статус дальше обновляет вебхук outgoingMessageStatus
+                    // (sent -> delivered -> read), см. WhatsAppWebhookController.
+                    'status' => 'sent',
                 ]);
 
                 // 2. Обновляем время (update обновит и last_seen_at, и updated_at)
@@ -100,10 +154,24 @@ class WhatsappMessenger extends Component
         if ($activeLeadId) {
             $this->dispatch('scroll-chat-to-bottom');
             $this->activeLeadId = $activeLeadId;
-            // Сразу помечаем прочитанным, раз мы открыли этот чат
+            // Сразу помечаем прочитанным у СЕБЯ (быстро, локальная БД). Сам
+            // вызов Green API (markReadOnWhatsApp) — НЕ здесь, см.
+            // syncReadOnWhatsApp() + wire:init в блейде: mount() не должен
+            // ждать внешний HTTP-запрос, иначе именно ИЗ-ЗА него открытие
+            // чата ощутимо тормозит (особенно при плохом интернете — жалоба
+            // Романа 2026-09-14: "второй чат долго грузится"). Чат должен
+            // отрисоваться сразу, синк с WhatsApp — довеском после, незаметно.
             \App\Models\WhatsappMessage::where('whatsapp_lead_id', $activeLeadId)
                 ->where('is_incoming', true)
                 ->update(['is_read' => true]);
+        }
+    }
+
+    /** Вызывается через wire:init ПОСЛЕ того, как чат уже отрисован — см. mount(). */
+    public function syncReadOnWhatsApp(): void
+    {
+        if ($this->activeLeadId) {
+            $this->markReadOnWhatsApp($this->activeLeadId);
         }
     }
 
@@ -115,7 +183,9 @@ class WhatsappMessenger extends Component
                 ->where('is_incoming', true)
                 ->where('is_read', false)
                 ->update(['is_read' => true]);
-                
+
+            $this->markReadOnWhatsApp($this->activeLeadId);
+
             // Обновляем сам канбан, чтобы там точка тоже погасла/не загоралась
             $this->dispatch('refreshKanban')->to('admin.kanban-board');
         }

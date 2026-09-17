@@ -10,6 +10,14 @@ class KanbanBoard extends Component
 {
     public $activeLeadIdForChat = null;
 
+    /** Вкладка внутри колонки "Новые" — 'all' | 'unread'. См. render()/блейд. */
+    public $newLeadsTab = 'all';
+
+    public function setNewLeadsTab(string $tab): void
+    {
+        $this->newLeadsTab = in_array($tab, ['all', 'unread'], true) ? $tab : 'all';
+    }
+
     // Твоя основная воронка (оставляем её здесь)
     public $statuses = [
         'new'       => ['title' => 'Новые', 'color' => 'bg-blue-500'],
@@ -68,18 +76,22 @@ class KanbanBoard extends Component
 
     public function render()
     {
-        $leads = \App\Models\WhatsappLead::with(['messages' => function($q) {
-                $q->latest()->limit(1);
+        // lastMessage (latestOfMany) + withCount вместо with(['messages' =>
+        // limit(1)]) + ->load() на каждом лиде внутри map() — старая версия
+        // была одновременно и некорректной (limit() в eager-load closure
+        // ограничивает общий запрос, не "по одному на лида" — реально
+        // возвращалось одно сообщение на всю пачку), и N+1 (тот ->load()
+        // был обходным путём под это, отдельный запрос на КАЖДОГО лида).
+        // При wire:poll.3s это был лишний удар по БД каждые 3 секунды.
+        $leads = \App\Models\WhatsappLead::with('lastMessage')
+            ->withCount(['messages as unread_count' => function ($q) {
+                $q->where('is_incoming', true)->where('is_read', false);
             }])
             // СОРТИРОВКА ПО ОБНОВЛЕНИЮ: кто последний написал, тот и сверху
-            ->orderByDesc('updated_at') 
+            ->orderByDesc('updated_at')
             ->get()
             ->map(function($lead) {
-                $lead->load(['messages' => fn($q) => $q->latest()->limit(1)]);
-                $lead->has_new = $lead->messages
-                    ->where('is_incoming', true)
-                    ->where('is_read', false)
-                    ->isNotEmpty();
+                $lead->has_new = $lead->unread_count > 0;
                 return $lead;
             })
             ->groupBy('status');
