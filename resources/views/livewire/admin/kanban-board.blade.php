@@ -1,6 +1,13 @@
 
 
 <div class="p-6 bg-slate-100 min-h-screen" wire:poll.3s>
+    {{-- Хлебные крошки (просьба Романа 2026-09-17) --}}
+    <nav class="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+        <a href="/admin" class="hover:text-slate-700 transition-colors">Главная</a>
+        <span class="mx-1.5 text-slate-300">/</span>
+        <span class="text-slate-600">СРМ</span>
+    </nav>
+
     {{-- Заголовок и счетчик --}}
     <div class="flex items-center justify-between mb-8">
         <div>
@@ -22,22 +29,28 @@
                      обобщено на isset($info['sub']), чтобы новые группы с
                      подпричинами (напр. 'lost' — "Не купили") автоматически
                      получали ту же раскладку без правки блейда. --}}
-                <div class="flex-shrink-0 w-[900px] flex flex-col h-full bg-slate-200/30 rounded-[2.5rem] p-4 border border-slate-300/50" wire:key="group-{{ $key }}">
+                <div class="flex-shrink-0 w-[900px] flex flex-col h-full min-h-0 bg-slate-200/30 rounded-[2.5rem] p-4 border border-slate-300/50" wire:key="group-{{ $key }}">
                     <div class="flex items-center justify-center mb-4 py-2 {{ $info['color'] }} text-white rounded-2xl shadow-md">
                         <span class="text-[11px] font-black uppercase tracking-[0.3em] italic">{{ $info['title'] }}</span>
                     </div>
 
-                    <div class="grid grid-cols-4 gap-3 h-full">
+                    <div class="grid grid-cols-4 gap-3 h-full min-h-0">
                         @foreach($info['sub'] as $subKey => $subTitle)
-                            <div class="flex flex-col h-full">
+                            <div class="flex flex-col h-full min-h-0">
                                 <div class="text-[9px] font-black text-slate-500 uppercase text-center mb-2 tracking-tighter">
                                     {{ $subTitle }} ({{ isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->count() : 0 }})
                                 </div>
-                                
-                                <div 
-                                    id="status-{{ $subKey }}" 
+
+                                {{-- min-h-0 по всей цепочке flex/grid-родителей выше — классический
+                                     баг: overflow-y-auto здесь не работал (скроллилась вся страница),
+                                     потому что flex/grid-контейнеры по умолчанию не дают дочернему
+                                     элементу сжаться меньше содержимого (min-height: auto), из-за
+                                     чего оверфлоу "вытекал" наверх вместо локального скролла
+                                     (просьба Романа 2026-09-17). --}}
+                                <div
+                                    id="status-{{ $subKey }}"
                                     data-status="{{ $subKey }}"
-                                    class="kanban-column flex-grow overflow-y-auto space-y-3 p-2 bg-white/40 rounded-2xl border border-dashed border-slate-300/50"
+                                    class="kanban-column flex-grow min-h-0 overflow-y-auto space-y-3 p-2 bg-white/40 rounded-2xl border border-dashed border-slate-300/50"
                                     style="min-height: 150px;"
                                 >
                                     @if(isset($leadsByStatus[$subKey]))
@@ -81,7 +94,7 @@
                      Свой непрозрачный фон обязателен (иначе будет просвечивать то, что
                      "проезжает" под ней при скролле), z-10 — чтобы тень действительно
                      легла ПОВЕРХ соседней колонки, а не под неё. --}}
-                <div class="flex-shrink-0 w-[320px] flex flex-col h-full {{ $loop->first ? 'sticky left-0 z-10 bg-slate-100 shadow-[8px_0_12px_-8px_rgba(0,0,0,0.15)]' : '' }}" wire:key="status-col-{{ $key }}">
+                <div class="flex-shrink-0 w-[320px] flex flex-col h-full min-h-0 {{ $loop->first ? 'sticky left-0 z-10 bg-slate-100 shadow-[8px_0_12px_-8px_rgba(0,0,0,0.15)]' : '' }}" wire:key="status-col-{{ $key }}">
                     <div class="flex items-center justify-between mb-3 px-3 py-2.5 rounded-xl {{ $info['color'] }} border border-black/5 shadow-sm">
                         <div class="flex items-center space-x-2">
                             <h3 class="font-black uppercase text-[10px] tracking-widest">{{ $info['title'] }}</h3>
@@ -108,7 +121,7 @@
                         </div>
                     @endif
 
-                    <div id="status-{{ $key }}" data-status="{{ $key }}" class="kanban-column flex-grow overflow-y-auto space-y-3 p-2 bg-slate-100/50 rounded-2xl border border-slate-200/50 transition-all custom-scrollbar" style="min-height: 200px;">
+                    <div id="status-{{ $key }}" data-status="{{ $key }}" class="kanban-column flex-grow min-h-0 overflow-y-auto space-y-3 p-2 bg-slate-100/50 rounded-2xl border border-slate-200/50 transition-all custom-scrollbar" style="min-height: 200px;">
                         @if(isset($leadsByStatus[$key]))
                             @php
                                 $columnLeads = ($key === 'new' && $newLeadsTab === 'unread')

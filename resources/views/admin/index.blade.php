@@ -21,12 +21,9 @@
         </div>
         <div id="menu">
             <div class="accordion accordion-flush" id="accordionFlushExample">
-                <div class="accordion-item" >
+                <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <a href="/admin/whatsapp">CRM</a>
-                    </h2>
-                    <h2 class="accordion-header">
-                        <a href="/admin/kanban">Kanban</a>
+                        <a href="/admin/kanban" class="accordion-button collapsed fw-semibold">СРМ</a>
                     </h2>
                 </div>
                 <div class="accordion-item" >
