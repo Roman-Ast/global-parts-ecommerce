@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'СРМ')
+
 {{--
     Канбан и мессенджер (livewire/admin/kanban-board, livewire/admin/whatsapp-messenger)
     свёрстаны на Tailwind + Alpine.js — ни того, ни другого в общем layouts/app.blade.php
