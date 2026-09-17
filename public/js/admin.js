@@ -10,7 +10,7 @@ $('.close-flash').on('click', function () {
 });
 $(document).on('click', '.menu-item-container', function () {
     let id = $(this).attr('target');
-   
+
     $('#content').children().each(function () {
         if($(this).attr('id') != id) {
             $(this).css({'display': 'none'});
@@ -45,7 +45,7 @@ $('#order-filter-btn-submit').on('click', function () {
 
             const statuses = {
                 'payment_waiting':'ожидание оплаты', 'processing': 'принято в работу', 'supplier_refusal': 'отказ поставщика',
-                'arrived_at_the_point_of_delivery': "поступило в ПВЗ", 'issued': "выдано", 'returned': 'возвращено'
+                'arrived_at_the_point_of_delivery': "поступило в ПВЗ", 'issued': "выдано"
             };
 
            data.filtered_orders.forEach(elem => {
@@ -144,7 +144,7 @@ $('#order-filter-btn-drop').on('click', function () {
 
             const statuses = {
                 'payment_waiting':'ожидание оплаты', 'processing': 'принято в работу', 'supplier_refusal': 'отказ поставщика',
-                'arrived_at_the_point_of_delivery': "поступило в ПВЗ", 'issued': "выдано", 'returned': 'возвращено'
+                'arrived_at_the_point_of_delivery': "поступило в ПВЗ", 'issued': "выдано"
             };
 
            data.orders.forEach(elem => {
@@ -234,36 +234,6 @@ $('#order-filter-btn-drop').on('click', function () {
 });
 
 $('#add_parts_list_item').on('click', function (params) {
-    const suppliers = {
-        '1' : 'Шатэ-М',
-            '2' : 'Росско',
-            '3' : 'Автотрейд',
-            '4' : 'Тисс',
-            '5' : 'Армтек',
-            '6' : 'Фаэтон',
-            '7' : 'Автопитер',
-            '8' : 'Автозакуп',
-            '9' : 'emex',
-            '10' : 'Рулим',
-            '11' : 'Radle', 
-            '12' : 'Фебест',
-            '13' : 'Корея Танат',
-            '14' : 'Кулан',
-            '15' : 'Форумавто',
-            '16' : 'Китайцы Алматы',
-            '17' : 'Китай Игорь',
-            '18' : 'Вольтаж Астана',
-            '19' : 'КЗ стартер',
-            '20' : 'СС моторс Талгат',
-            '21' : 'Герат Астана',
-            '22' : 'Кайнар Тима',
-            '23' : 'заказ авто',
-            '24' : 'Кореан Автопартс',
-            '25' : 'Алемавто',
-            '26': 'Ердос Автомарт ',
-            '27' : 'Сторонние'
-    };
-
     $('#manually-order-parts-list').append(
         `
         <div class="manually-order-parts-list-item">
@@ -293,9 +263,37 @@ $('#add_parts_list_item').on('click', function (params) {
         `
     );
 
-    $.each(suppliers, function (val, elem) {
-        $('.order_product_item_supplier').append($('<option>', { value: val, text: elem }));
+    const $newSelect = $('.order_product_item_supplier').last();
+    $.each(window.suppliersList, function (i, supplier) {
+        $newSelect.append($('<option>', { value: supplier.id, text: supplier.name }));
     });
+});
+
+// ---- маска телефона под казахстанский формат +7 (7XX) XXX-XX-XX ----
+$(document).on('input', '#manually-order-customer-phone', function () {
+    let digits = $(this).val().replace(/\D/g, '');
+
+    if (digits.startsWith('8')) {
+        digits = '7' + digits.slice(1);
+    }
+    if (digits.length && !digits.startsWith('7')) {
+        digits = '7' + digits;
+    }
+    digits = digits.slice(0, 11);
+
+    let formatted = digits.length ? '+7' : '';
+    if (digits.length > 1) formatted += ' (' + digits.slice(1, 4);
+    if (digits.length >= 4) formatted += ') ' + digits.slice(4, 7);
+    if (digits.length >= 7) formatted += '-' + digits.slice(7, 9);
+    if (digits.length >= 9) formatted += '-' + digits.slice(9, 11);
+
+    $(this).val(formatted);
+});
+
+$(document).on('focus', '#manually-order-customer-phone', function () {
+    if (!$(this).val()) {
+        $(this).val('+7 (');
+    }
 });
 
 $('#manually-order-submit').on('click', function () {
@@ -304,14 +302,14 @@ $('#manually-order-submit').on('click', function () {
         products: [],
         paymentInfo: [],
     };
-    
+
     $('.manually-order-main-info').each(function (key, elem) {
         data.orderInfo.push($(elem).val());
     });
-    
+
     $('.manually-order-parts-list-item-content').each(function (productId, elem) {
         data.products[productId] = [];
-        
+
         let arr = $(elem).children();
         $.each(arr, function (key, elem) {
             data.products[productId].push($(elem).val());
@@ -324,35 +322,101 @@ $('#manually-order-submit').on('click', function () {
             data.paymentInfo.push($(elem).val());
         });
     });
-    
-    let allowToOrder = true;
 
-    $('.manually-order-parts-list-item-content').children().each(function (productId, elem) {
-        if (!$(elem).val()) {
+    let allowToOrder = true;
+    let warning_msg = '';
+
+    // проверка полей заказа (клиент, канал продаж и т.д.)
+    $('.manually-order-main-info').each(function () {
+        const val = $(this).val();
+        const name = $(this).attr('name');
+
+        if (!val || val.toString().trim() === '') {
             allowToOrder = false;
-            warning_msg = 'Не все поля заполнены в информации о товарах!'
+            warning_msg = 'Не все поля заполнены в основной информации о заказе!';
             return;
         }
-        if (!$('#manualy_order_sale_channel').val()) {
-            allowToOrder = false;
-            warning_msg = 'Не заполнен канал продаж!'
-            return;
+
+        if (name === 'customer_phone') {
+            const digitsOnly = val.replace(/\D/g, '');
+            if (digitsOnly.length < 10) {
+                allowToOrder = false;
+                warning_msg = 'Некорректный номер телефона клиента!';
+            }
         }
     });
 
-   /*$('#manualy-order-payment-details-body').children().each(function (productId, elem) {
-        if (!$(elem).val()) { 
-            if ($(elem).attr('name') == 'comments') {
-                return true;    
+    // проверка товарных позиций
+    $('.manually-order-parts-list-item').each(function (rowIndex) {
+        const row = $(this);
+
+        row.find('.manually-order-parts-list-item-content').children().each(function () {
+            const val = $(this).val();
+            if (!val || val.toString().trim() === '') {
+                allowToOrder = false;
+                warning_msg = `Не все поля заполнены в товаре #${rowIndex + 1}!`;
             }
+        });
+
+        const qty = parseFloat(row.find('input[name="qty"]').val());
+        const price = parseFloat(row.find('input[name="price"]').val());
+        const priceWithMargine = parseFloat(row.find('input[name="priceWithMargine"]').val());
+
+        if (isNaN(qty) || qty <= 0) {
             allowToOrder = false;
-            warning_msg = 'Не все поля заполнены в деталях оплаты!'
+            warning_msg = `Товар #${rowIndex + 1}: количество должно быть больше 0!`;
+        }
+        if (isNaN(price) || price <= 0) {
+            allowToOrder = false;
+            warning_msg = `Товар #${rowIndex + 1}: С/С должна быть больше 0!`;
+        }
+        if (isNaN(priceWithMargine) || priceWithMargine <= 0) {
+            allowToOrder = false;
+            warning_msg = `Товар #${rowIndex + 1}: розничная цена должна быть больше 0!`;
+        }
+    });
+
+    if (!$('#manualy_order_sale_channel').val()) {
+        allowToOrder = false;
+        warning_msg = 'Не заполнен канал продаж!';
+    }
+
+    // проверка деталей оплаты
+    $('#manualy-order-payment-details-body').children().each(function () {
+        const name = $(this).attr('name');
+        const val = $(this).val();
+
+        if (name === 'comments') {
+            return true;
+        }
+
+        if (!val || val.toString().trim() === '') {
+            allowToOrder = false;
+            warning_msg = 'Не все поля заполнены в деталях оплаты!';
             return false;
         }
-    });*/
+    });
+
+    // Для Kaspi сумма оплаты в момент оформления заказа ВСЕГДА 0 —
+    // деньги приходят от Kaspi только когда заказ реально выдан клиенту
+    // (см. changeStatus() -> 'issued'), не в момент создания заказа.
+    // Старая проверка "сумма > 0" осталась от старой логики (до
+    // разделения "заказ создан" и "оплата получена") и блокировала
+    // корректно заполненный 0 как будто это пустое поле.
+    const paymentSaleChannel = $('#manualy_order_sale_channel').val();
+    const paymentAmount = parseFloat($('#manualy-order-payment-details-amount').val());
+    const paymentAmountInvalid = isNaN(paymentAmount)
+        || paymentAmount < 0
+        || (paymentAmount === 0 && paymentSaleChannel !== 'kaspi');
+
+    if (paymentAmountInvalid) {
+        allowToOrder = false;
+        warning_msg = 'Сумма оплаты должна быть больше 0!';
+    }
 
     if (!allowToOrder) {
-        $('#alert-admin').addClass('alert-warning');
+        $('#alert-admin').removeAttr('class');
+        $('#alert-admin').addClass('alert alert-warning');
         $('#alert-admin').html(warning_msg);
         $('#alert-admin').slideDown();
         setTimeout(() => {
@@ -360,8 +424,9 @@ $('#manually-order-submit').on('click', function () {
         }, 3000);
         return;
     }
+
     console.log(data);
-    //return;
+
     $.ajax({
         data: {'_token': $('meta[name="csrf-token"]').attr('content'), data: data},
         url: "/manually_make_order",
@@ -374,7 +439,6 @@ $('#manually-order-submit').on('click', function () {
             $('#alert-admin').slideDown();
             setTimeout(() => {
                 $('#alert-admin').slideUp();
-                
             }, 3000);
 
             setTimeout(() => {
@@ -384,7 +448,18 @@ $('#manually-order-submit').on('click', function () {
         error: function (data) {
             console.log(data);
         }
-     });    
+    });
+});
+
+//cкрываем/показываем счета при возврате
+$('#supplier_refund_mode').on('change', function () {
+    if ($(this).val() === 'credit') {
+        $('#account_id_in_wrapper').hide();
+        $('#account_id_in').prop('required', false);
+    } else {
+        $('#account_id_in_wrapper').show();
+        $('#account_id_in').prop('required', true);
+    }
 });
 
 //скрыть/ показать статистику по каналам продаж
@@ -462,9 +537,25 @@ $(document).on('input', '.manually-order-parts-list-item-qty, .manually-order-pa
     });
 
     $('#manualy-order-total-sum-with-margine-num').html(sumWithMargine);
-    $('#manualy-order-payment-details-amount').val(sumWithMargine);
+
+    // Kaspi платит только после того, как клиент получит заказ (см.
+    // логику changeStatus() на статус "выдано") — раньше это поле всегда
+    // автоматически подставляло полную сумму заказа, и для Kaspi это
+    // приводило к тому, что деньги в кассе "приходили" сразу при
+    // оформлении заказа, хотя Kaspi ещё ничего не заплатил. Живой случай
+    // 2026-08-31: заказ #56 показал 58000 прихода в день оформления.
+    const saleChannel = $('#manualy_order_sale_channel').val();
+    $('#manualy-order-payment-details-amount').val(saleChannel === 'kaspi' ? 0 : sumWithMargine);
+
     $('#manualy-order-total-prime-cost-sum-inner').html(primeCostSum);
     $('#manualy-order-total-qty-inner').html(totalQty);
+});
+
+// При смене канала продаж на Kaspi (или с него) сразу пересчитываем сумму
+// оплаты по тому же правилу — иначе поле остаётся с суммой, введённой до
+// переключения канала.
+$(document).on('change', '#manualy_order_sale_channel', function () {
+    $('.manually-order-parts-list-item-qty').first().trigger('input');
 });
 
 //хуки для фильтрации полей в создании ДДС
@@ -478,10 +569,13 @@ $('.cft-direction').on('change', function () {
 
 $('.cft-direction').on('change', function () {
     let direction = $(this).val();
+    const $categorySelect = $('.cashflow-categories');
+    const previouslySelected = $categorySelect.val();
+    let selectedOptionStillValid = false;
 
-    $('.cashflow-categories option').each(function () {
+    $categorySelect.find('option').each(function () {
         let optionDirection = $(this).attr('data-direction');
-        
+
         if (optionDirection && optionDirection !== direction) {
             $(this).prop('disabled', true);
         } else {
@@ -490,7 +584,22 @@ $('.cft-direction').on('change', function () {
         if ($(this).val() == 'initial') {
             $(this).prop('disabled', true);
         }
+        if ($(this).val() == previouslySelected && !$(this).prop('disabled')) {
+            selectedOptionStillValid = true;
+        }
     });
+
+    // Раньше выбранная категория могла остаться "выбранной" визуально,
+    // даже после того как её саму отключили (не подходит новому
+    // направлению) — форма тогда тихо уходила с пустым
+    // cashflow_category_id вместо того, чтобы потребовать выбрать заново
+    // (2026-09-02, реальный случай — расход "еда" сохранился без
+    // категории). Явно сбрасываем на плейсхолдер, чтобы required снова
+    // сработал как надо.
+    if (!selectedOptionStillValid) {
+        $categorySelect.val('initial');
+        $categorySelect.trigger('change');
+    }
 });
 
 $('.cashflow-categories').on('change', function () {
@@ -548,9 +657,34 @@ $('.cashflow-categories').on('change', function () {
                 console.log(data);
             }
         });
+    } else if ($(this).val() == 3) {
+        // Оплата поставщику — подписываем операцию сама, чтобы "Описание"
+        // в "Последние операции" на дашборде не оставалось пустым, если
+        // забыл вписать вручную (живой случай 2026-08-31).
+        $('#orders-by-request').remove();
+        $('.subcategory').val('Оплата поставщику');
+    } else if ($(this).val() == 8) {
+        // Личное изъятие — тот же живой случай, что и с оплатой поставщику.
+        $('#orders-by-request').remove();
+        $('.subcategory').val('Личное изъятие');
     } else {
         $('#orders-by-request').remove();
         $('.subcategory').val('');
+    }
+});
+
+// Оплата поставщику — при выборе поставщика подставляем в сумму весь его
+// текущий долг (data-debt на <option>), дальше руками правится до нужной
+// частичной суммы, если платим не полностью.
+$(document).on('change', '.suppliers', function () {
+    if ($('.cashflow-categories').val() != 3) {
+        return;
+    }
+
+    const debt = $(this).find('option:selected').data('debt');
+
+    if (debt) {
+        $('.cft-amount').val(debt);
     }
 });
 

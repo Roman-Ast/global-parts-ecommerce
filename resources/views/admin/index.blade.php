@@ -12,6 +12,9 @@
 @section('title', 'Панель администратора')
 
 @section('content')
+    <script>
+        window.suppliersList = @json($suppliers);
+    </script>
     <div id="admin-main-container">
         <div id="container-header">
             <a href="/"> Global Parts</a> админ панель вы вошли как: {{ auth()->user()->name }}
@@ -66,6 +69,12 @@
                     <div id="flush-collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
                         <div class="accordion-body menu-item-container" target="make-pay">Создать оплату клиента</div>
                     </div>
+                    <div id="flush-collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+                        <div class="accordion-body menu-item-container" target="opening_balances">Начальные остатки</div>
+                    </div>
+                    <div id="flush-collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+                        <div class="accordion-body menu-item-container" target="finance_reconciliation">Финансовая сверка</div>
+                    </div>
                 </div>
                 <div class="accordion-item">
                     <h2 class="accordion-header">
@@ -99,6 +108,9 @@
                     <div id="flush-collapseFive" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
                         <div class="accordion-body menu-item-container" target="supplier_settlements">Статистика по поставщикам</div>
                     </div>
+                    <div id="flush-collapseFive" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+                        <div class="accordion-body menu-item-container" target="supplier_payments">Расчёты с поставщиками</div>
+                    </div>
                 </div>
                 <div class="accordion-item">
                     <h2 class="accordion-header">
@@ -125,11 +137,11 @@
                                             <form method="GET" action="{{ url('/admin') }}" class="row g-2 mt-3 mt-md-0">
                                                 <div class="col-auto">
                                                     <input type="date" name="date_from" class="form-control"
-                                                        value="{{ request('date_from', now()->startOfMonth()->format('Y-m-d')) }}">
+                                                        value="{{ request('date_from', $financeDashboard['dateFrom']) }}">
                                                 </div>
                                                 <div class="col-auto">
                                                     <input type="date" name="date_to" class="form-control"
-                                                        value="{{ request('date_to', now()->format('Y-m-d')) }}">
+                                                        value="{{ request('date_to', $financeDashboard['dateTo']) }}">
                                                 </div>
                                                 <div class="col-auto">
                                                     <button class="btn btn-dark">Применить</button>
@@ -178,17 +190,85 @@
                                             <div class="col-12 col-md-6 col-xl-3">
                                                 <div class="card border-0 shadow-sm h-100">
                                                     <div class="card-body">
-                                                        <div class="text-muted small mb-1">Чистый поток</div>
-                                                        @php $netFlow = $financeDashboard['financeKpi']['net_flow'] ?? 0; @endphp
-                                                        <div class="fs-3 fw-bold {{ $netFlow >= 0 ? 'text-success' : 'text-danger' }}">
-                                                            {{ number_format($netFlow, 0, '.', ' ') }} ₸
+                                                        <div class="text-muted small mb-1">Ликвидность сегодня</div>
+                                                        @php $freeCashflow = ($financeDashboard['financeKpi']['balance'] ?? 0) - ($totalSupplierDebt ?? 0); @endphp
+                                                        <div class="fs-3 fw-bold {{ $freeCashflow >= 0 ? 'text-success' : 'text-danger' }}">
+                                                            {{ number_format($freeCashflow, 0, '.', ' ') }} ₸
                                                         </div>
-                                                        <div class="small text-muted mt-2">Приход минус расход</div>
+                                                        <div class="small text-muted mt-2">Если закрыть все долги ПРЯМО СЕЙЧАС тем, что уже физически на счетах — без учёта того, что тебе ещё не занесли</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-12 col-md-6 col-xl-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <div class="text-muted small mb-1">Налог (оценка)</div>
+                                                        <div class="fs-3 fw-bold text-warning">
+                                                            {{ number_format($financeDashboard['financeKpi']['estimated_tax'] ?? 0, 0, '.', ' ') }} ₸
+                                                        </div>
+                                                        <div class="small text-muted mt-2">3% от выручки за период ({{ number_format($financeDashboard['financeKpi']['revenue'] ?? 0, 0, '.', ' ') }} ₸)</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-12 col-md-6 col-xl-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <div class="text-muted small mb-1">Заработали за период</div>
+                                                        @php $grossMargin = $financeDashboard['financeKpi']['gross_margin'] ?? 0; @endphp
+                                                        <div class="fs-3 fw-bold {{ $grossMargin >= 0 ? 'text-success' : 'text-danger' }}">
+                                                            {{ number_format($grossMargin, 0, '.', ' ') }} ₸
+                                                        </div>
+                                                        <div class="small text-muted mt-2">Продажи ({{ number_format($financeDashboard['financeKpi']['revenue'] ?? 0, 0, '.', ' ') }}) минус себестоимость ({{ number_format($financeDashboard['financeKpi']['prime_cost'] ?? 0, 0, '.', ' ') }}) — грязная маржа, ДО расходов бизнеса</div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="row g-4">
+
+                                        {{-- Чистая финансовая позиция — ключевой показатель (запрошено
+                                        Романом 2026-09-02: "ради которого всё и затевалось") — вся
+                                        картина разом, если бы прямо сейчас и получил всё, что должны,
+                                        и отдал всё, что сам должен. Отдельно от "Ликвидность сегодня"
+                                        (та — консервативная, без учёта неполученного), намеренно с
+                                        визуальным акцентом, не теряется в общем ряду. --}}
+                                        @php
+                                            $netPosition = ($financeDashboard['financeKpi']['balance'] ?? 0)
+                                                + ($totalCustomerReceivable ?? 0)
+                                                + ($totalSupplierReturnReceivable ?? 0)
+                                                + ($totalSupplierOverpayment ?? 0)
+                                                + ($totalSupplierCredits ?? 0)
+                                                - ($totalSupplierDebt ?? 0);
+                                        @endphp
+                                        <div class="row g-4 mb-4">
+                                            <div class="col-12">
+                                                <div class="card border-2 {{ $netPosition >= 0 ? 'border-success' : 'border-danger' }} shadow h-100">
+                                                    <div class="card-body">
+                                                        <div class="d-flex flex-wrap justify-content-between align-items-center">
+                                                            <div>
+                                                                <span class="badge {{ $netPosition >= 0 ? 'bg-success' : 'bg-danger' }} mb-1">★ Главный показатель</span>
+                                                                <div class="fw-bold">Чистая финансовая позиция</div>
+                                                                <div class="small text-muted mt-1">
+                                                                    Счета + вся дебиторка (Kaspi/клиенты, возвраты и переплаты поставщикам) − вся кредиторка поставщикам —
+                                                                    сколько у тебя реально есть, если бы всё разом закрылось
+                                                                </div>
+                                                            </div>
+                                                            <div class="fs-2 fw-bold {{ $netPosition >= 0 ? 'text-success' : 'text-danger' }}">
+                                                                {{ number_format($netPosition, 0, '.', ' ') }} ₸
+                                                            </div>
+                                                        </div>
+                                                        <div class="small text-muted mt-3 pt-2 border-top">
+                                                            {{ number_format($financeDashboard['financeKpi']['balance'] ?? 0, 0, '.', ' ') }} на счетах
+                                                            + {{ number_format($totalCustomerReceivable ?? 0, 0, '.', ' ') }} дебиторка клиентов
+                                                            + {{ number_format(($totalSupplierReturnReceivable ?? 0) + ($totalSupplierOverpayment ?? 0) + ($totalSupplierCredits ?? 0), 0, '.', ' ') }} дебиторка + зачёты у поставщиков
+                                                            − {{ number_format($totalSupplierDebt ?? 0, 0, '.', ' ') }} кредиторка поставщикам
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-4 mb-4">
                                             {{-- Остатки по счетам --}}
                                             <div class="col-12 col-xl-5">
                                                 <div class="card border-0 shadow-sm h-100">
@@ -250,6 +330,37 @@
                                                 </div>
                                             </div>
 
+                                        {{-- Личные изъятия --}}
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-12">
+                                                <div class="card border-0 shadow-sm">
+                                                    <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                                        <div>
+                                                            <h2 class="h5 mb-1">Личные изъятия</h2>
+                                                            <div class="text-muted small">Кто, когда и сколько забрал — не входит в бизнес-расходы</div>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div class="fs-4 fw-bold">{{ number_format($totalOwnerWithdrawals ?? 0, 0, '.', ' ') }} ₸</div>
+                                                            <div class="small text-muted">{{ $ownerWithdrawalsPercentOfExpense ?? 0 }}% от бизнес-расходов за период</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="card-body p-0">
+                                                        @forelse($financeOwnerWithdrawals ?? [] as $withdrawal)
+                                                            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                                                <div>
+                                                                    <span class="fw-semibold">{{ $withdrawal['user_name'] }}</span>
+                                                                    <span class="text-muted small ms-2">{{ \Carbon\Carbon::parse($withdrawal['txn_at'])->format('d.m.Y H:i') }}</span>
+                                                                </div>
+                                                                <div class="fw-bold">{{ number_format($withdrawal['amount'], 0, '.', ' ') }} ₸</div>
+                                                            </div>
+                                                        @empty
+                                                            <div class="text-muted p-3">За период личных изъятий не было.</div>
+                                                        @endforelse
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {{-- Кредиторка --}}
                                         <div class="row g-3 mb-4">
 
@@ -258,10 +369,76 @@
                                                 <div class="card border-0 shadow-sm h-100">
                                                     <div class="card-body">
                                                         <div class="text-muted small mb-1">Кредиторка всего</div>
-                                                        <div class="fs-3 fw-bold text-dark">
+                                                        <div class="fs-3 fw-bold text-danger">
                                                             {{ number_format($totalSupplierDebt ?? 0, 0, '.', ' ') }} ₸
                                                         </div>
                                                         <div class="small text-muted mt-2">Общая сумма долга поставщикам</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-12 col-md-6">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-header bg-white border-0 pb-0">
+                                                        <div class="text-muted small mb-1">Дебиторка от клиентов</div>
+                                                        <div class="fs-3 fw-bold text-success">
+                                                            {{ number_format($totalCustomerReceivable ?? 0, 0, '.', ' ') }} ₸
+                                                        </div>
+                                                        <div class="small text-muted mt-1">Клиенты должны доплатить</div>
+                                                    </div>
+                                                    <div class="card-body pt-2">
+                                                        @forelse($customerReceivables ?? [] as $row)
+                                                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                                                <span>{{ $row['name'] }}</span>
+                                                                <span class="fw-semibold">{{ number_format($row['amount'], 0, '.', ' ') }} ₸</span>
+                                                            </div>
+                                                        @empty
+                                                            <div class="text-muted small">Нет долгов от клиентов</div>
+                                                        @endforelse
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-12 col-md-6">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-header bg-white border-0 pb-0">
+                                                        <div class="text-muted small mb-1">Дебиторка от поставщиков (возвраты)</div>
+                                                        <div class="fs-3 fw-bold text-success">
+                                                            {{ number_format($totalSupplierReturnReceivable ?? 0, 0, '.', ' ') }} ₸
+                                                        </div>
+                                                        <div class="small text-muted mt-1">Поставщики должны вернуть за возвраты</div>
+                                                    </div>
+                                                    <div class="card-body pt-2">
+                                                        @forelse($supplierReturnReceivables ?? [] as $row)
+                                                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                                                <span>{{ $row['name'] }}</span>
+                                                                <span class="fw-semibold">{{ number_format($row['amount'], 0, '.', ' ') }} ₸</span>
+                                                            </div>
+                                                        @empty
+                                                            <div class="text-muted small">Нет долгов от поставщиков</div>
+                                                        @endforelse
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-12 col-md-6">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-header bg-white border-0 pb-0">
+                                                        <div class="text-muted small mb-1">Сальдо у поставщиков (зачёт)</div>
+                                                        <div class="fs-3 fw-bold text-info">
+                                                            {{ number_format($totalSupplierCredits ?? 0, 0, '.', ' ') }} ₸
+                                                        </div>
+                                                        <div class="small text-muted mt-1">Деньги на балансе у поставщиков — зачтутся в след. закупку</div>
+                                                    </div>
+                                                    <div class="card-body pt-2">
+                                                        @forelse($supplierCredits ?? [] as $row)
+                                                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                                                <span>{{ $row['name'] }}</span>
+                                                                <span class="fw-semibold">{{ number_format($row['amount'], 0, '.', ' ') }} ₸</span>
+                                                            </div>
+                                                        @empty
+                                                            <div class="text-muted small">Нет сальдо у поставщиков</div>
+                                                        @endforelse
                                                     </div>
                                                 </div>
                                             </div>
@@ -320,7 +497,7 @@
                                                             <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
                                                                 <tr>
                                                                     <th>Поставщик</th>
-                                                                    <th class="text-end">Баланс</th>
+                                                                    <th class="text-end">Долг</th>
                                                                     <th class="text-end">Просрочено</th>
                                                                 </tr>
                                                             </thead>
@@ -329,11 +506,11 @@
                                                                     <tr>
                                                                         <td class="fw-semibold">{{ $row->supplier }}</td>
 
-                                                                        <td class="text-end fw-bold {{ $row->balance < 0 ? 'text-success' : 'text-dark' }}">
+                                                                        <td class="text-end fw-bold {{ $row->balance < 0 ? 'text-success' : 'text-danger' }}">
                                                                             @if($row->balance < 0)
                                                                                 +{{ number_format(abs($row->balance), 0, '.', ' ') }} ₸
                                                                             @else
-                                                                                {{ number_format($row->balance, 0, '.', ' ') }} ₸
+                                                                                -{{ number_format($row->balance, 0, '.', ' ') }} ₸
                                                                             @endif
                                                                         </td>
 
@@ -1169,7 +1346,12 @@
                             <span class="gp-brand">{{ $product->brand }}</span>
                             <span class="gp-pname" title="{{ $product->name }}">{{ mb_strimwidth($product->name, 0, 50, '...') }}</span>
                             <span class="gp-num">{{ $product->qty }}</span>
-                            <span class="gp-num">{{ number_format($product->priceWithMargine, 0, ',', ' ') }}</span>
+                            <span class="gp-price-cell">
+                                <input type="hidden" class="gp-op-id" value="{{ $product->id }}">
+                                <label>закуп <input type="number" step="0.01" min="0" class="gp-op-price" value="{{ $product->price }}"></label>
+                                <label>розница <input type="number" step="0.01" min="0" class="gp-op-price-margine" value="{{ $product->priceWithMargine }}"></label>
+                                <button type="button" class="btn btn-sm btn-outline-secondary gp-op-price-submit" title="Сохранить цены позиции">✓</button>
+                            </span>
                             <span class="gp-num">{{ number_format($product->itemSumWithMargine, 0, ',', ' ') }}</span>
                             <span class="gp-stock" title="{{ $product->fromStock }}">{{ $product->admin_supplier_name ?? $product->fromStock }}</span>
                             <span class="gp-stock">{{ $product->deliveryTime }}</span>
@@ -1207,7 +1389,7 @@
                                         <option selected disabled>выбери заказ</option>
                                         @foreach ($orders as $order)
                                             <option value="{{ $order->id }}" 
-                                            data-customer-id="{{ $order->id }}"
+                                            data-customer-id="{{ $order->customer_id }}"
                                             data-customer-data="{{ $order?->customer?->name ?? $order?->customer?->phone ?? 'нет данных' }}"
                                             data-customer-phone="{{ $order->customer_phone }}"
                                             >
@@ -1229,7 +1411,7 @@
 
                                 <div class="col-md-3">
                                     <label class="form-label">Данные клиента</label>
-                                    <input type="text" name="customer_id" id="customer_data" class="form-control" value="{{ old('customer_id') }}">
+                                    <input type="text" id="customer_data" class="form-control" value="{{ old('customer_id') }}" readonly>
                                 </div>
 
                                 <div class="col-md-3">
@@ -1302,7 +1484,7 @@
 
                             <hr class="my-4">
 
-                            <h5 class="mb-3">Данные по поставщику</h5>
+                            <h5 class="mb-3">Данные по поставщику (план)</h5>
 
                             <div class="row g-3">
                                 <div class="col-md-4">
@@ -1313,36 +1495,6 @@
                                 <div class="col-md-4">
                                     <label class="form-label">Ожидаемая сумма от поставщика</label>
                                     <input type="number" step="0.01" min="0" name="supplier_refund_amount" class="form-control supplier-refund-amount-input" id="supplier_refund_amount" value="0">
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">Фактически получено от поставщика</label>
-                                    <input type="number" step="0.01" min="0" name="supplier_refund_received" class="form-control" value="{{ old('supplier_refund_received', 0) }}">
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">Дата поступления от поставщика</label>
-                                    <input type="date" name="supplier_refund_date" class="form-control" value="{{ old('supplier_refund_date') }}">
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">Статус компенсации от поставщика</label>
-                                    <select name="supplier_refund_status" class="form-select">
-                                        <option value="pending" {{ old('supplier_refund_status') == 'pending' ? 'selected' : '' }}>Ожидается</option>
-                                        <option value="received" {{ old('supplier_refund_status') == 'received' ? 'selected' : '' }}>Получено</option>
-                                        <option value="not_expected" {{ old('supplier_refund_status') == 'not_expected' ? 'selected' : '' }}>Не ожидается</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">Возврат на счет</label>
-                                    
-                                     <select name="account_id_in" class="form-control" id="account_id_in">
-                                        <option selected disabled>выбери счет</option>
-                                        @foreach ($accounts as $account)
-                                            <option value="{{ $account['id'] }}">{{ $account['name'] }}</option>
-                                        @endforeach
-                                    </select>
                                 </div>
                             </div>
 
@@ -1503,7 +1655,7 @@
                             <select name="user_id" class="form-control" name="user_id">
                                 <option value="empty" selected></option>
                                 @foreach ($users as $user)
-                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                    <option value="{{ $user->id }}">{{ $user->name }} | {{ $user->phone}}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -1518,6 +1670,249 @@
                     </div>
                     <input type="submit" class="btn btn-success" value="Провести оплату">
                 </form>
+            </div>
+            <div id="opening_balances" class="container admin-content-item">
+                <div class="alert alert-info">
+                    Разовая форма для go-live ERP — заносит исторические остатки (сколько реально денег на счетах,
+                    кому сколько должен, кто должен тебе), которые накопились ДО начала учёта в системе.
+                    Пустые поля просто игнорируются, заполняй только то, что реально есть.
+                </div>
+                <form action="{{ route('opening-balances.store') }}" method="POST">
+                    @csrf
+                    <div class="mb-3" style="max-width:250px">
+                        <label class="form-label">Дата (на какой момент остатки)</label>
+                        <input type="date" name="date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                    </div>
+
+                    <h5 class="mt-4">Реальные остатки на счетах</h5>
+                    <div class="table-responsive mb-4">
+                        <table class="table">
+                            <thead><tr><th>Счёт</th><th>Сколько реально сейчас лежит</th></tr></thead>
+                            <tbody>
+                                @foreach ($accounts as $account)
+                                    <tr>
+                                        <td class="align-middle">{{ $account['name'] }}</td>
+                                        <td><input type="number" min="0" step="1" class="form-control" name="accounts[{{ $account['id'] }}]"></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h5 class="mt-4">Долги поставщикам (кредиторка) и зачёты у поставщиков</h5>
+                    <div class="table-responsive mb-4">
+                        <table class="table">
+                            <thead><tr><th>Поставщик</th><th>Сколько ты должен (кредиторка)</th><th>Сколько зачётом на твоём балансе у него</th></tr></thead>
+                            <tbody>
+                                @foreach ($suppliers as $supplier)
+                                    <tr>
+                                        <td class="align-middle">{{ $supplier['name'] }}</td>
+                                        <td><input type="number" min="0" step="1" class="form-control" name="supplier_debts[{{ $supplier['id'] }}]"></td>
+                                        <td><input type="number" min="0" step="1" class="form-control" name="supplier_credits[{{ $supplier['id'] }}]"></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h5 class="mt-4">Долги клиентов (дебиторка)</h5>
+                    <div class="mb-2 text-muted small">
+                        По одному клиенту на строку, формат: телефон;имя;сумма — например: +77771234567;Асхат;15000
+                    </div>
+                    <div class="mb-4">
+                        <textarea name="customer_receivables_raw" rows="6" class="form-control" placeholder="+77771234567;Асхат;15000"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">Внести начальные остатки</button>
+                </form>
+            </div>
+            <div id="finance_reconciliation" class="container admin-content-item">
+                @php $r = $reconciliation ?? []; @endphp
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="h3 mb-1">Финансовая сверка</h1>
+                        <div class="text-muted">
+                            Прибыль по начислению против фактической кассы за период — куда утекают деньги
+                        </div>
+                    </div>
+                    <form method="GET" action="{{ url('/admin') }}" class="row g-2 mt-3 mt-md-0">
+                        <input type="hidden" name="open_section" value="finance_reconciliation">
+                        <div class="col-auto">
+                            <input type="date" name="recon_date_from" class="form-control"
+                                value="{{ request('recon_date_from', $r['reconDateFrom'] ?? '') }}">
+                        </div>
+                        <div class="col-auto">
+                            <input type="date" name="recon_date_to" class="form-control"
+                                value="{{ request('recon_date_to', $r['reconDateTo'] ?? '') }}">
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-dark">Применить</button>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" formaction="{{ route('finance-reconcile.run') }}" formmethod="POST" class="btn btn-outline-dark" title="Прогнать php artisan finance:reconcile и показать его вывод">
+                                Пересчитать
+                            </button>
+                        </div>
+                        @csrf
+                    </form>
+                </div>
+
+                @if (session('reconcileOutput'))
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h2 class="h6 mb-0">Вывод команды <code>php artisan finance:reconcile</code></h2>
+                        </div>
+                        <div class="card-body">
+                            <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.85rem;">{{ session('reconcileOutput') }}</pre>
+                        </div>
+                    </div>
+                @endif
+
+                <div class="row g-4">
+                    <div class="col-12 col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0 pb-0">
+                                <h2 class="h5 mb-1">Прибыль по начислению</h2>
+                                <div class="text-muted small">Как должно быть по марже минус расходы</div>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm mb-0">
+                                    <tbody>
+                                        <tr><td>Выручка</td><td class="text-end">{{ number_format($r['reconciliation']['revenue'] ?? 0, 0, '.', ' ') }} ₸</td></tr>
+                                        <tr><td>Себестоимость</td><td class="text-end">{{ number_format($r['reconciliation']['cogs'] ?? 0, 0, '.', ' ') }} ₸</td></tr>
+                                        <tr class="fw-semibold"><td>Валовая маржа</td><td class="text-end">{{ number_format($r['reconciliation']['gross_margin'] ?? 0, 0, '.', ' ') }} ₸</td></tr>
+                                        <tr><td>Расходы (опекс)</td><td class="text-end text-danger">− {{ number_format($r['reconciliation']['opex'] ?? 0, 0, '.', ' ') }} ₸</td></tr>
+                                        <tr><td>Потери на возвратах</td><td class="text-end text-danger">− {{ number_format($r['reconciliation']['returns_loss'] ?? 0, 0, '.', ' ') }} ₸</td></tr>
+                                        <tr class="border-top fw-bold fs-5">
+                                            <td>Чистая прибыль</td>
+                                            <td class="text-end {{ ($r['reconciliation']['net_accrual_profit'] ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                                {{ number_format($r['reconciliation']['net_accrual_profit'] ?? 0, 0, '.', ' ') }} ₸
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0 pb-0">
+                                <h2 class="h5 mb-1">Факт по кассе</h2>
+                                <div class="text-muted small">Реальное движение денег по всем счетам</div>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm mb-0">
+                                    <tbody>
+                                        <tr><td>Остаток на начало периода</td><td class="text-end">{{ number_format($r['reconciliation']['cash_balance_before'] ?? 0, 0, '.', ' ') }} ₸</td></tr>
+                                        <tr><td>Остаток на конец периода</td><td class="text-end">{{ number_format($r['reconciliation']['cash_balance_after'] ?? 0, 0, '.', ' ') }} ₸</td></tr>
+                                        <tr class="border-top fw-bold fs-5">
+                                            <td>Фактическое изменение кассы</td>
+                                            <td class="text-end {{ ($r['reconciliation']['actual_cash_delta'] ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                                {{ number_format($r['reconciliation']['actual_cash_delta'] ?? 0, 0, '.', ' ') }} ₸
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 pb-0">
+                                <h2 class="h5 mb-1">Мост: почему прибыль на бумаге ≠ деньги по факту</h2>
+                                <div class="text-muted small">Каждая строка — куда делась разница между начислением и кассой</div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <tbody>
+                                            <tr><td>Чистая прибыль (начисление)</td><td class="text-end">{{ number_format($r['reconciliation']['net_accrual_profit'] ?? 0, 0, '.', ' ') }} ₸</td></tr>
+                                            <tr>
+                                                <td>± Изменение кредиторки поставщикам <span class="text-muted small">(начислили больше долга, чем оплатили — деньги остались у тебя)</span></td>
+                                                <td class="text-end {{ ($r['reconciliation']['payable_delta'] ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                                    {{ ($r['reconciliation']['payable_delta'] ?? 0) >= 0 ? '+' : '' }}{{ number_format($r['reconciliation']['payable_delta'] ?? 0, 0, '.', ' ') }} ₸
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>− Изменение дебиторки <span class="text-muted small">(заработали по начислению, но ещё не получили деньгами — Kaspi/клиенты)</span></td>
+                                                <td class="text-end {{ -($r['reconciliation']['receivable_delta'] ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                                    {{ number_format(-($r['reconciliation']['receivable_delta'] ?? 0), 0, '.', ' ') }} ₸
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>− Личные изъятия <span class="text-muted small">(реально забрали кассу, но это не бизнес-расход)</span></td>
+                                                <td class="text-end text-danger">− {{ number_format($r['reconciliation']['owner_withdrawals'] ?? 0, 0, '.', ' ') }} ₸</td>
+                                            </tr>
+                                            <tr>
+                                                <td>+ Внесение начальных остатков</td>
+                                                <td class="text-end">+ {{ number_format($r['reconciliation']['opening_balance_injections'] ?? 0, 0, '.', ' ') }} ₸</td>
+                                            </tr>
+                                            <tr class="border-top fw-semibold">
+                                                <td>= Ожидаемое изменение кассы</td>
+                                                <td class="text-end">{{ number_format($r['reconciliation']['expected_cash_delta'] ?? 0, 0, '.', ' ') }} ₸</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                @php $unexplained = $r['reconciliation']['unexplained'] ?? 0; @endphp
+                                <div class="alert {{ abs($unexplained) < 1000 ? 'alert-success' : 'alert-warning' }} mt-3 mb-0 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Расхождение</strong>
+                                        <div class="small">
+                                            @if (abs($unexplained) < 1000)
+                                                Норма — модель объясняет фактическое движение кассы почти полностью.
+                                            @else
+                                                Не объяснено мостом (переводы между своими счетами, прочие доходы, либо ошибка в данных) — стоит разобрать вручную по "Последним операциям" за этот период.
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="fs-4 fw-bold">{{ number_format($unexplained, 0, '.', ' ') }} ₸</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0 pb-0">
+                                <h2 class="h5 mb-1">Остатки по счетам</h2>
+                            </div>
+                            <div class="card-body">
+                                @forelse ($financeDashboard['financeAccountsSummary'] ?? [] as $account)
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <div class="fw-semibold">{{ $account['name'] }}</div>
+                                        <div class="fw-bold {{ ($account['balance'] ?? 0) >= 0 ? 'text-dark' : 'text-danger' }}">
+                                            {{ number_format($account['balance'] ?? 0, 0, '.', ' ') }} ₸
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-muted">Нет данных по счетам</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0 pb-0">
+                                <h2 class="h5 mb-1">Расходы по категориям за период</h2>
+                            </div>
+                            <div class="card-body">
+                                @forelse ($financeDashboard['financeExpenseBreakdown'] ?? [] as $item)
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <div>{{ $item['name'] }}</div>
+                                        <div class="fw-semibold">{{ number_format($item['amount'] ?? 0, 0, '.', ' ') }} ₸</div>
+                                    </div>
+                                @empty
+                                    <div class="text-muted">Нет расходов за период</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div id="all-payments" class="container admin-content-item">
                 <div id="payment-item-header">
@@ -1700,6 +2095,7 @@
                 </script>
             </div>
             <div id="supplier_payments" class="container admin-content-item">
+                <h5 class="mb-3">Оплата поставщику</h5>
                 <form id="pay-container" action="{{ route('supplier.payment') }}" method="POST">
                     @csrf
                     <div class="pay-item-container">
@@ -1723,15 +2119,91 @@
                             Поставщик
                         </div>
                         <div class="pay-item-container-input">
-                            <select name="supplier" class="form-control">
-                                <option disabled selected>Выбери поставщика</option>
+                            <select name="supplier_id" class="form-control" required>
+                                <option disabled selected value="">Выбери поставщика</option>
                                 @foreach ($suppliers as $supplier)
                                     <option value="{{ $supplier['id'] }}">{{ $supplier['name'] }}</option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
+                    <div class="pay-item-container">
+                        <div class="pay-item-container-name">
+                            Счёт списания
+                        </div>
+                        <div class="pay-item-container-input">
+                            <select name="account_id" class="form-control" required>
+                                <option disabled selected value="">Выбери счёт</option>
+                                @foreach ($accounts as $account)
+                                    <option value="{{ $account['id'] }}">{{ $account['name'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
                     <input type="submit" class="btn btn-success" value="Провести оплату">
+                </form>
+
+                <hr class="my-4">
+
+                <h5 class="mb-3">Получено от поставщика</h5>
+                <div class="text-muted small mb-3">
+                    Деньги, которые поставщик вернул НЕ по оформленному возврату клиента
+                    (для возвратов деньги фиксируются прямо в самом возврате) — например
+                    старый долг с ДО внедрения ERP или разовая корректировка.
+                </div>
+                <form id="receive-refund-container" action="{{ route('supplier.receive-refund') }}" method="POST">
+                    @csrf
+                    <div class="pay-item-container">
+                        <div class="pay-item-container-name">
+                            Дата
+                        </div>
+                        <div class="pay-item-container-input">
+                            <input type="date" name="date" class="form-control">
+                        </div>
+                    </div>
+                    <div class="pay-item-container">
+                        <div class="pay-item-container-name">
+                            Сумма
+                        </div>
+                        <div class="pay-item-container-input">
+                            <input type="number" name="sum" class="form-control" min="0">
+                        </div>
+                    </div>
+                    <div class="pay-item-container">
+                        <div class="pay-item-container-name">
+                            Поставщик
+                        </div>
+                        <div class="pay-item-container-input">
+                            <select name="supplier_id" class="form-control" required>
+                                <option disabled selected value="">Выбери поставщика</option>
+                                @foreach ($suppliers as $supplier)
+                                    <option value="{{ $supplier['id'] }}">{{ $supplier['name'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pay-item-container">
+                        <div class="pay-item-container-name">
+                            Счёт зачисления
+                        </div>
+                        <div class="pay-item-container-input">
+                            <select name="account_id" class="form-control" required>
+                                <option disabled selected value="">Выбери счёт</option>
+                                @foreach ($accounts as $account)
+                                    <option value="{{ $account['id'] }}">{{ $account['name'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pay-item-container">
+                        <div class="pay-item-container-name">
+                            Комментарий
+                        </div>
+                        <div class="pay-item-container-input">
+                            <input type="text" name="comment" class="form-control" placeholder="необязательно">
+                        </div>
+                    </div>
+                    <input type="submit" class="btn btn-success" value="Зафиксировать поступление">
                 </form>
             </div>
             <div id="manually-order" class="container admin-content-item">
@@ -1752,7 +2224,8 @@
                         </div>
                         <label for="basic-url" class="form-label">Телефон клиента</label>
                         <div class="input-group mb-2 manually-order-main">
-                            <input type="telephone" class="form-control manually-order-main-info" name="customer_phone" required>
+                            <input type="tel" class="form-control manually-order-main-info" name="customer_phone"
+                                   id="manually-order-customer-phone" placeholder="+7 (___) ___-__-__" required>
                         </div>
                         <label for="basic-url" class="form-label">Канал продаж</label>
                         <div class="input-group mb-2 manually-order-main">
@@ -1787,7 +2260,7 @@
                         </button>
                     </li>
 
-                    <!--<li class="nav-item" role="presentation">
+                    <li class="nav-item" role="presentation">
                         <button
                         class="nav-link"
                         id="tab2-tab"
@@ -1800,7 +2273,7 @@
                         >
                         Детали оплаты
                         </button>
-                    </li>-->
+                    </li>
                     </ul>
 
                     <!-- TAB CONTENT -->
@@ -1837,7 +2310,7 @@
                                         <select name="from_stock" class="order_product_item_supplier">
                                             <option disabled selected>Выбери поставщика</option>
                                             @foreach ($suppliers as $supplier)
-                                                <option value="{{ $supplier['name'] }}">{{ $supplier['name'] }}</option>
+                                                <option value="{{ $supplier['id'] }}">{{ $supplier['name'] }}</option>
                                             @endforeach
                                         </select>
                                         <input type="date" class="form-control" name="deliveryTime" value="{{ date('Y-m-d') }}" required>
@@ -2161,7 +2634,7 @@
                             <tr class="">
                                 <td class="cashflow-transactions-item-entity">{{ Carbon::parse($cft['txn_at'])->translatedFormat('j F Y') }}</td>
                                 <td class="cashflow-transactions-item-entity">{{ $cft->direction == 'out' ? 'Расход' : 'Приход' }}</td>
-                                <td class="cashflow-transactions-item-entity">{{ $cft->cashflowCategory->rus_name }}</td>
+                                <td class="cashflow-transactions-item-entity">{{ $cft->cashflowCategory->rus_name ?? '—' }}</td>
                                 <td class="cashflow-transactions-item-entity">{{ $cft->subcategory }}</td>
                                 <td class="cashflow-transactions-item-entity">{{ $cft->account->name }}</td>
                                 <td class="cashflow-transactions-item-entity">{{ $cft->counterparty ?? '' }}</td>
@@ -2232,7 +2705,11 @@
                         <select class="suppliers form-select" name="supplier_id">
                             <option disabled selected>Выбери поставщика</option>
                             @foreach ($suppliers as $supplier)
-                                <option value="{{ $supplier['id'] }}">{{ $supplier['name'] }}</option>
+                                @php
+                                    $supplierDebtRow = collect($supplierBalances ?? [])->firstWhere('supplier_id', $supplier['id']);
+                                    $supplierDebt = $supplierDebtRow && $supplierDebtRow->balance > 0 ? $supplierDebtRow->balance : 0;
+                                @endphp
+                                <option value="{{ $supplier['id'] }}" data-debt="{{ $supplierDebt }}">{{ $supplier['name'] }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -2246,6 +2723,50 @@
                         <input type="hidden" name="user_id" value="{{ auth()->id() }}"> 
                     </div>
                     <button type="submit" class="btn btn-primary">Записать</button>
+                </form>
+
+                <hr class="my-4">
+
+                <h5 class="mb-3">Перевод между своими счетами</h5>
+                <div class="text-muted small mb-3">
+                    Одна отправка = сразу две проводки (расход с одного счёта + приход на другой) —
+                    общий остаток по всем счетам не сдвигается, только то, где именно лежат деньги.
+                    Пригодится: перепутал счёт при внесении и надо выровнять, или заплатить поставщику
+                    можешь только с одного счёта, а деньги реально на другом.
+                </div>
+                <form action="{{ route('transfer-between-accounts') }}" method="post">
+                    @csrf
+                    <div class="mb-3">
+                        <label class="form-label">Дата</label>
+                        <input type="date" value="{{ date('Y-m-d') }}" name="txn_at" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Откуда</label>
+                        <select class="form-select" name="from_account_id" required>
+                            <option disabled selected value="">Выбери счёт-источник</option>
+                            @foreach ($accounts as $account)
+                                <option value="{{ $account['id'] }}">{{ $account['name'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Куда</label>
+                        <select class="form-select" name="to_account_id" required>
+                            <option disabled selected value="">Выбери счёт-получатель</option>
+                            @foreach ($accounts as $account)
+                                <option value="{{ $account['id'] }}">{{ $account['name'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Сумма</label>
+                        <input class="form-control" type="number" min="0" step="1" name="amount" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Комментарий</label>
+                        <input type="text" class="form-control" name="comment" placeholder="необязательно">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Перевести</button>
                 </form>
             </div>
         </div>

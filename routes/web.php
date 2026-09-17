@@ -197,7 +197,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cart/add-api', [GlobalProductController::class, 'addToCartApi']);
 
     Route::post('/make-cashflow-transaction', [AdminPanelController::class, 'makeCashflowTransaction'])->name('make-cashflow-transaction');
+    Route::post('/transfer-between-accounts', [AdminPanelController::class, 'transferBetweenAccounts'])->name('transfer-between-accounts');
     Route::post('/supplier/payment', [AdminPanelController::class, 'supplierPayment'])->name('supplier.payment');
+    Route::post('/supplier/receive-refund', [AdminPanelController::class, 'receiveSupplierRefund'])->name('supplier.receive-refund');
+    Route::post('/opening-balances', [AdminPanelController::class, 'saveOpeningBalances'])->name('opening-balances.store');
+    Route::post('/finance-reconcile-run', [AdminPanelController::class, 'runFinanceReconcile'])->name('finance-reconcile.run');
     Route::post('/orders/filter', [AdminPanelController::class, 'filter']);
     Route::post('/orders/filter/drop', [AdminPanelController::class, 'filterDrop']);
     Route::post('/manually_make_order', [AdminPanelController::class, 'manuallyMakeOrder']);
@@ -206,6 +210,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('additional-payment', [AdminPanelController::class, 'additionalPayment']);
     Route::post('choose_products_from_order', [AdminPanelController::class, 'chooseProductsFromOrder']);
     Route::post('makeCustomerReturn', [AdminPanelController::class, 'makeCustomerReturn']);
+    Route::post('/order-product/update-price', [AdminPanelController::class, 'updateOrderProductPrice'])->name('order-product.update-price');
 
     Route::get('/supplierRefundComplete/{customerReturn}', [CustomerReturnController::class, 'edit'])->name('supplierRefundComplete');
     Route::put('/customer-returns/{customerReturn}', [CustomerReturnController::class, 'update'])->name('customer_returns.update');

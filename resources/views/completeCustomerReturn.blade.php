@@ -166,15 +166,29 @@
                     </div>
 
                     <div class="col-md-4">
+                        <label for="supplier_refund_mode" class="form-label">Способ компенсации</label>
+                        @php
+                            // Предзаполняем по дефолту поставщика (Автотрейд и
+                            // т.п. обычно держат зачётом) — выбор всё равно
+                            // можно переключить руками под конкретный возврат.
+                            $refundMode = old('supplier_refund_mode', $customerReturn->supplier?->default_refund_mode ?? 'account');
+                        @endphp
+                        <select name="supplier_refund_mode" id="supplier_refund_mode" class="form-select">
+                            <option value="account" {{ $refundMode === 'account' ? 'selected' : '' }}>Вернулись на счёт</option>
+                            <option value="credit" {{ $refundMode === 'credit' ? 'selected' : '' }}>Остались на балансе (зачёт в след. закупку)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4" id="supplier_account_id_wrapper">
                         <label for="supplier_account_id" class="form-label">Счет поступления</label>
                         <select name="account_id_in" id="supplier_account_id" class="form-select">
                             <option value="">Выберите счет</option>
                             @foreach($accounts as $account)
                                 <option
-                                    value="{{ $account->id }}"
-                                    {{ old('supplier_account_id', $customerReturn->supplierCashflowTransaction?->account?->id) == $account->id ? 'selected' : '' }}
+                                    value="{{ $account['id'] }}"
+                                    {{ old('account_id_in', $customerReturn->supplierCashflowTransaction?->account?->id) == $account['id'] ? 'selected' : '' }}
                                 >
-                                    {{ $account->name }}
+                                    {{ $account['name'] }}
                                 </option>
                             @endforeach
                         </select>
@@ -183,18 +197,18 @@
                     <div class="col-md-4">
                         <label for="supplier_refund_status" class="form-label">Статус компенсации</label>
                         <select name="supplier_refund_status" id="supplier_refund_status" class="form-select">
-                            <option value="pending">в ожидании</option>
-                            <option value="received">получена</option>
-                            <option value="not_expected">не ожидается</option>
+                            <option value="pending" {{ old('supplier_refund_status', $customerReturn->supplier_refund_status) == 'pending' ? 'selected' : '' }}>в ожидании</option>
+                            <option value="received" {{ old('supplier_refund_status', $customerReturn->supplier_refund_status) == 'received' ? 'selected' : '' }}>получена</option>
+                            <option value="not_expected" {{ old('supplier_refund_status', $customerReturn->supplier_refund_status) == 'not_expected' ? 'selected' : '' }}>не ожидается</option>
                         </select>
                     </div>
 
                     <div class="col-md-4">
-                    <label class="form-label text-muted">Причина</label>
-                    <div class="form-control bg-light">
-                        {{ $customerReturn->reason ?? '—' }}
+                        <label class="form-label text-muted">Причина</label>
+                        <div class="form-control bg-light">
+                            {{ $customerReturn->reason ?? '—' }}
+                        </div>
                     </div>
-                </div>
 
                 </div>
 
@@ -233,9 +247,9 @@
                     <div class="col-md-4">
                                     <label class="form-label">Общий статус возврата</label>
                                     <select name="status" class="form-select">
-                                        <option value="pending">В работе</option>
-                                        <option value="completed">Завершен</option>
-                                        <option value="cancelled">Отменен</option>
+                                        <option value="pending" {{ old('status', $customerReturn->status) == 'pending' ? 'selected' : '' }}>В работе</option>
+                                        <option value="completed" {{ old('status', $customerReturn->status) == 'completed' ? 'selected' : '' }}>Завершен</option>
+                                        <option value="cancelled" {{ old('status', $customerReturn->status) == 'cancelled' ? 'selected' : '' }}>Отменен</option>
                                     </select>
                                 </div>
 
@@ -252,4 +266,25 @@
     </form>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modeSelect = document.getElementById('supplier_refund_mode');
+    const accountWrapper = document.getElementById('supplier_account_id_wrapper');
+    const accountSelect = document.getElementById('supplier_account_id');
+
+    function toggleAccountField() {
+        if (modeSelect.value === 'credit') {
+            accountWrapper.style.display = 'none';
+            accountSelect.removeAttribute('required');
+        } else {
+            accountWrapper.style.display = '';
+            accountSelect.setAttribute('required', 'required');
+        }
+    }
+
+    modeSelect.addEventListener('change', toggleAccountField);
+    toggleAccountField();
+});
+</script>
 @endsection

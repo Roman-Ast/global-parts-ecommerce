@@ -20,8 +20,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\OfficePrice;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Carbon;
 use App\Traits\HasCustomerLogic;
+use App\Models\SupplierCredit;
 
 class AdminPanelController extends Controller
 {
@@ -73,7 +75,7 @@ class AdminPanelController extends Controller
         //$settlements = Setlement::all();
         $users = User::all();
         $payments = Payment::all();
-        $sumOrders = $user->orders->sum('sum');
+        $sumOrders = $user->orders->sum('sum_with_margine');
         $qtyOrders = $user->orders->count();
         $customers = Order::all()->where('customer_phone', !null)->pluck('customer_phone')->toArray();
         $supplerSettlements = SupplierSettlement::orderBy('created_at', 'desc')->get();
@@ -256,14 +258,18 @@ class AdminPanelController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->user_role,
-                'sumOrders' => $user->orders->sum('sum'),
+                'sumOrders' => $user->orders->sum('sum_with_margine'),
                 'qtyOrders' => $user->orders->count(),
             ];
         }
         
+        // "возвращено" здесь больше нет — раньше это был ручной пункт в
+        // выпадающем списке статуса заказа, теперь единственная точка входа
+        // для возврата — форма оформления возврата (makeCustomerReturn()),
+        // статус позиции проставляется оттуда автоматически.
         $statuses = [
             'payment_waiting' => 'ожидание оплаты', 'processing' => 'принято в работу', 'supplier_refusal' => 'отказ поставщика',
-            'arrived_at_the_point_of_delivery' => "поступило в ПВЗ", 'issued' => "выдано", 'returned' => 'возвращено'
+            'arrived_at_the_point_of_delivery' => "поступило в ПВЗ", 'issued' => "выдано"
         ];
 
         $suppliers = Suppliers::all()->toArray();
@@ -417,6 +423,9 @@ class AdminPanelController extends Controller
 
         $financeDashboard = $this->getFinanceDashboardData($request);
         $supplierSettlementsDebts = $this->getSuppliersSettlements($request);
+        $receivables = $this->getReceivablesData($request);
+        $supplierCredits = $this->getSupplierCreditsData();
+        $reconciliation = $this->getReconciliationData($request);
         
         //dd($supplierSettlementsDebts);
 
@@ -470,20 +479,97 @@ class AdminPanelController extends Controller
             'supplierStatisticsByMonth'  => $supplierStatisticsByMonth,
             'start'                      => $start,
             'end'                        => $end,
-        ],
+        ], 
         $financeDashboard,
-        $supplierSettlementsDebts
+        $supplierSettlementsDebts,
+        $receivables,
+        $supplierCredits,
+        $reconciliation
         ));
+    }
+
+    private function getSupplierCreditsData(): array
+    {
+        $supplierCredits = SupplierCredit::selectRaw('supplier_id, SUM(amount) as balance')
+            ->groupBy('supplier_id')
+            ->having('balance', '>', 0)
+            ->get()
+            ->map(function ($row) {
+                $supplier = Suppliers::find($row->supplier_id);
+                return [
+                    'name' => $supplier?->name ?? 'Неизвестный поставщик',
+                    'amount' => round((float) $row->balance, 2),
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $totalSupplierCredits = round($supplierCredits->sum('amount'), 2);
+
+        return [
+            'supplierCredits' => $supplierCredits,
+            'totalSupplierCredits' => $totalSupplierCredits,
+        ];
+    }
+
+    /**
+     * Автоматически гасит только что начисленный долг зачётом у
+     * поставщика, если он есть — вызывается сразу после создания
+     * реализации в manuallyMakeOrder(). Гасит МИНИМУМ из (доступный
+     * зачёт, сумма этой позиции) — если зачёт больше суммы позиции,
+     * остаток зачёта остаётся на будущее; если меньше — гасится только
+     * частично, остаток долга остаётся висеть как обычно.
+     */
+    private function applyAvailableSupplierCredit(int $supplierId, ?string $supplierName, float $itemCost, string $date): void
+    {
+        $availableCredit = (float) SupplierCredit::where('supplier_id', $supplierId)->sum('amount');
+
+        if ($availableCredit <= 0) {
+            return;
+        }
+
+        $applyAmount = min($availableCredit, $itemCost);
+
+        SupplierSettlement::create([
+            'supplier' => $supplierName,
+            'supplier_id' => $supplierId,
+            'sum' => $applyAmount,
+            'date' => $date,
+            'operation' => 'realization',
+        ]);
+
+        SupplierCredit::create([
+            'supplier_id' => $supplierId,
+            'amount' => -$applyAmount,
+            'source_table' => 'supplier_settlement',
+            'source_id' => null,
+            'comment' => 'Зачёт автоматически применён к новой закупке',
+            'date' => $date,
+        ]);
     }
 
     private function getFinanceDashboardData(Request $request): array
     {
+        // Учётный период — с 8 числа по 7-е следующего месяца (тот же
+        // период, что и везде в остальном админ-панели, см. index()/
+        // getDataByMonths()), а не календарный месяц — иначе дашборд
+        // считал бы "приход/расход за месяц" не в те даты, что Роман
+        // реально закрывает как отчётный период.
+        $today = Carbon::now();
+        if ($today->day >= 8) {
+            $defaultFrom = Carbon::create($today->year, $today->month, 8)->startOfDay();
+            $defaultTo = $defaultFrom->copy()->addMonth()->subDay()->endOfDay();
+        } else {
+            $defaultTo = Carbon::create($today->year, $today->month, 7)->endOfDay();
+            $defaultFrom = $defaultTo->copy()->subMonth()->addDay()->startOfDay();
+        }
+
         $dateFrom = Carbon::parse(
-            $request->get('date_from', now()->startOfMonth()->format('Y-m-d'))
+            $request->get('date_from', $defaultFrom->format('Y-m-d'))
         )->startOfDay();
 
         $dateTo = Carbon::parse(
-            $request->get('date_to', now()->format('Y-m-d'))
+            $request->get('date_to', $defaultTo->format('Y-m-d'))
         )->endOfDay();
 
         /*
@@ -496,8 +582,12 @@ class AdminPanelController extends Controller
             ->where('direction', 'in')
             ->sum('amount');
 
+        // cashflow_category_id=8 "Личное изъятие" исключается намеренно —
+        // это не бизнес-расход, а личное изъятие владельца из кассы, оно не
+        // должно занижать картину прибыльности бизнеса на дашборде.
         $expense = CashflowTransactions::whereBetween('txn_at', [$dateFrom, $dateTo])
             ->where('direction', 'out')
+            ->where('cashflow_category_id', '!=', 8)
             ->sum('amount');
 
         $balance = CashflowTransactions::selectRaw("
@@ -522,6 +612,20 @@ class AdminPanelController extends Controller
         $supplierDebtRaw = SupplierSettlement::sum('sum');
         $supplierDebt = $supplierDebtRaw < 0 ? abs($supplierDebtRaw) : 0;
 
+        // Налог 3% от выручки (по продажам за период, не от факта поступления
+        // денег) — оценка, не проведённая транзакция ДДС, Роман сам заносит
+        // фактическую оплату налога отдельной операцией через категорию
+        // "Налоги" в make-cashflow-transaction, когда платит.
+        $periodRevenue = Order::whereBetween('date', [$dateFrom, $dateTo])->sum('sum_with_margine');
+        $estimatedTax = round($periodRevenue * 0.03, 2);
+
+        // Заработали за период (запрошено Романом 2026-09-03) — грязная
+        // маржа продаж (выручка минус себестоимость), ДО вычета расходов
+        // бизнеса (аренда/зарплата/реклама и т.д.) — та же пара полей
+        // Order.sum_with_margine/Order.sum, что и в estimated_tax выше.
+        $periodPrimeCost = Order::whereBetween('date', [$dateFrom, $dateTo])->sum('sum');
+        $periodGrossMargin = round($periodRevenue - $periodPrimeCost, 2);
+
         $financeKpi = [
             'balance' => round($balance, 2),
             'income' => round($income, 2),
@@ -530,6 +634,10 @@ class AdminPanelController extends Controller
             'customer_returns' => round($customerReturnsAmount, 2),
             'supplier_refunds' => round($supplierRefundsAmount, 2),
             'supplier_debt' => round($supplierDebt, 2),
+            'revenue' => round($periodRevenue, 2),
+            'estimated_tax' => $estimatedTax,
+            'prime_cost' => round($periodPrimeCost, 2),
+            'gross_margin' => $periodGrossMargin,
         ];
 
         /*
@@ -593,22 +701,68 @@ class AdminPanelController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Личные изъятия (cashflow_category_id=8) — отдельно от бизнес-расходов,
+        | намеренно не входят в KPI "Расход" (см. выше), но кто/когда/сколько
+        | взял и какую долю это составляет от реальных бизнес-расходов —
+        | отдельная видимость, которую попросил Роман 2026-08-31.
+        |--------------------------------------------------------------------------
+        */
+
+        $ownerWithdrawalsRaw = CashflowTransactions::with('user')
+            ->whereBetween('txn_at', [$dateFrom, $dateTo])
+            ->where('cashflow_category_id', 8)
+            ->orderByDesc('txn_at')
+            ->get();
+
+        $financeOwnerWithdrawals = $ownerWithdrawalsRaw->map(function ($txn) {
+            return [
+                'txn_at' => $txn->txn_at,
+                'user_name' => $txn->user?->name ?? '—',
+                'amount' => round((float) $txn->amount, 2),
+            ];
+        })->toArray();
+
+        $totalOwnerWithdrawals = round((float) $ownerWithdrawalsRaw->sum('amount'), 2);
+
+        // Тот же знаменатель, что и у процентов в "Расходы по категориям" —
+        // сравнимо между виджетами.
+        $ownerWithdrawalsPercentOfExpense = $expense > 0
+            ? round(($totalOwnerWithdrawals / $expense) * 100, 1)
+            : 0;
+
+        /*
+        |--------------------------------------------------------------------------
         | Возвраты
         |--------------------------------------------------------------------------
         */
 
+        // Открыт/закрыт — состояние возврата на текущий момент (как
+        // Кредиторка/Дебиторка), не режется периодом: возврат, открытый в
+        // прошлом месяце и всё ещё не закрытый, должен быть виден как
+        // открытый независимо от выбранного на дашборде периода.
+        $openCount = CustomerReturn::where('status', 'pending')->count();
+
+        $closedCount = CustomerReturn::where('status', 'completed')->count();
+
+        // А вот суммы выплат/получений — поток денег ЗА ПЕРИОД, здесь
+        // фильтр по return_date уместен и остаётся.
         $returnsQuery = CustomerReturn::whereBetween('return_date', [
             $dateFrom->toDateString(),
             $dateTo->toDateString()
         ]);
 
-        $openCount = (clone $returnsQuery)->where('status', 'pending')->count();
-
-        $closedCount = (clone $returnsQuery)->where('status', 'completed')->count();
-
         $customerPaid = (clone $returnsQuery)->sum('customer_refund_paid');
 
-        $supplierReceived = (clone $returnsQuery)->sum('supplier_refund_received');
+        // "received" — реальные деньги на счёт, "credited" — остались на
+        // балансе у поставщика зачётом в следующую закупку (напр.
+        // Автотрейд). Оба варианта — компенсация, которую поставщик
+        // реально предоставил, просто в разной форме; раньше здесь
+        // считались только "received", и зачёты не попадали ни в "получено
+        // от поставщиков", ни в расчёт "Потери на возвратах" — искажало
+        // обе цифры.
+        $supplierReceived = (clone $returnsQuery)
+            ->whereIn('supplier_refund_status', ['received', 'credited'])
+            ->sum('supplier_refund_received');
 
         $financeReturnsStats = [
             'open_count' => $openCount,
@@ -624,10 +778,14 @@ class AdminPanelController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        // Лента последних операций — все движения за СЕГОДНЯ (не топ-10
+        // по времени в целом — при активном тестировании счёт быстро
+        // уходит за пределы 10 строк, и старые сегодняшние операции
+        // становится не видно, хотя они всё ещё "сегодняшние", см.
+        // просьбу Романа 2026-09-02).
         $latestTransactionsRows = CashflowTransactions::with('account')
-            ->whereBetween('txn_at', [$dateFrom, $dateTo])
+            ->whereDate('txn_at', now()->toDateString())
             ->orderBy('txn_at', 'desc')
-            ->limit(10)
             ->get();
 
         $financeLatestTransactions = $latestTransactionsRows->map(function ($txn) {
@@ -647,8 +805,244 @@ class AdminPanelController extends Controller
             'financeKpi' => $financeKpi,
             'financeAccountsSummary' => $financeAccountsSummary,
             'financeExpenseBreakdown' => $financeExpenseBreakdown,
+            'financeOwnerWithdrawals' => $financeOwnerWithdrawals,
+            'totalOwnerWithdrawals' => $totalOwnerWithdrawals,
+            'ownerWithdrawalsPercentOfExpense' => $ownerWithdrawalsPercentOfExpense,
             'financeReturnsStats' => $financeReturnsStats,
             'financeLatestTransactions' => $financeLatestTransactions,
+        ];
+    }
+
+    /**
+     * Финансовая сверка: мост между "прибылью по начислению" (P&L — что
+     * должно было получиться по марже минус расходы) и фактическим
+     * изменением остатка денег за тот же период. Цель — не абстрактная
+     * "сходимость дебета с кредитом", а конкретный диагностический
+     * инструмент: почему на бумаге прибыль есть, а по факту кассовые
+     * разрывы и нечего откладывать (запрос Романа 2026-09-01).
+     *
+     * Все компоненты моста считаются как ДЕЛЬТА ЗА ПЕРИОД (не
+     * реконструкция баланса "на дату X" — так надёжнее и проще
+     * проверить), поэтому расхождение в самом конце — это честный
+     * остаток, не объяснённый моделью (переводы между своими счетами,
+     * прочие доходы, ошибки в данных и т.д.), а не подгонка под ноль.
+     */
+    public function getReconciliationData(Request $request): array
+    {
+        $today = Carbon::now();
+        if ($today->day >= 8) {
+            $defaultFrom = Carbon::create($today->year, $today->month, 8)->startOfDay();
+            $defaultTo = $defaultFrom->copy()->addMonth()->subDay()->endOfDay();
+        } else {
+            $defaultTo = Carbon::create($today->year, $today->month, 7)->endOfDay();
+            $defaultFrom = $defaultTo->copy()->subMonth()->addDay()->startOfDay();
+        }
+
+        $dateFrom = Carbon::parse($request->get('recon_date_from', $defaultFrom->format('Y-m-d')))->startOfDay();
+        $dateTo = Carbon::parse($request->get('recon_date_to', $defaultTo->format('Y-m-d')))->endOfDay();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Блок 1: прибыль по начислению за период
+        |--------------------------------------------------------------------------
+        */
+
+        $revenue = (float) Order::whereBetween('date', [$dateFrom, $dateTo])->sum('sum_with_margine');
+        $cogs = (float) Order::whereBetween('date', [$dateFrom, $dateTo])->sum('sum');
+        $grossMargin = $revenue - $cogs;
+
+        // Только реальные операционные расходы (категория 2 "expense") —
+        // НЕ оплата поставщикам (это уже в себестоимости выше) и НЕ
+        // личные изъятия (отдельная строка моста, см. ниже).
+        $opex = (float) CashflowTransactions::whereBetween('txn_at', [$dateFrom, $dateTo])
+            ->where('direction', 'out')
+            ->where('cashflow_category_id', 2)
+            ->sum('amount');
+
+        $returnsCustomerPaid = (float) CustomerReturn::whereBetween('return_date', [
+            $dateFrom->toDateString(), $dateTo->toDateString(),
+        ])->sum('customer_refund_paid');
+
+        $returnsSupplierReceived = (float) CustomerReturn::whereBetween('return_date', [
+            $dateFrom->toDateString(), $dateTo->toDateString(),
+        ])->whereIn('supplier_refund_status', ['received', 'credited'])->sum('supplier_refund_received');
+
+        $returnsLoss = $returnsCustomerPaid - $returnsSupplierReceived;
+
+        $netAccrualProfit = $grossMargin - $opex - $returnsLoss;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Блок 2: факт по кассе за период (истина в последней инстанции)
+        |--------------------------------------------------------------------------
+        */
+
+        $actualCashDelta = (float) CashflowTransactions::whereBetween('txn_at', [$dateFrom, $dateTo])
+            ->selectRaw("COALESCE(SUM(CASE WHEN direction = 'in' THEN amount ELSE -amount END), 0) as delta")
+            ->value('delta');
+
+        $cashBalanceBefore = (float) CashflowTransactions::where('txn_at', '<', $dateFrom)
+            ->selectRaw("COALESCE(SUM(CASE WHEN direction = 'in' THEN amount ELSE -amount END), 0) as balance")
+            ->value('balance');
+
+        $cashBalanceAfter = $cashBalanceBefore + $actualCashDelta;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Блок 3: мост (объясняем разницу между начислением и кассой)
+        |--------------------------------------------------------------------------
+        */
+
+        // Кредиторка поставщикам выросла (начислили больше, чем оплатили)
+        // → кэш сохранён, плюс к мосту. Погасили долг сверх начисленного
+        // за период → кэш ушёл, минус к мосту. supplier_settlement.sum
+        // отрицательный = мы должны, поэтому дельта payable = -Δ(sum).
+        $payableDelta = -1 * (float) SupplierSettlement::whereBetween('created_at', [$dateFrom, $dateTo])->sum('sum');
+
+        // Дебиторка (клиенты + Kaspi) выросла (заработали по начислению
+        // больше, чем реально получили деньгами) → кэш недополучен, минус
+        // к мосту.
+        $cashCollectedFromCustomers = (float) OrderPayment::whereBetween('order_payments.created_at', [$dateFrom, $dateTo])
+            ->selectRaw("COALESCE(SUM(CASE WHEN type = 'refund' THEN -amount ELSE amount END), 0) as collected")
+            ->value('collected');
+        $receivableDelta = $revenue - $cashCollectedFromCustomers;
+
+        $ownerWithdrawals = (float) CashflowTransactions::whereBetween('txn_at', [$dateFrom, $dateTo])
+            ->where('direction', 'out')
+            ->where('cashflow_category_id', 8)
+            ->sum('amount');
+
+        $openingBalanceInjections = (float) CashflowTransactions::whereBetween('txn_at', [$dateFrom, $dateTo])
+            ->where('direction', 'in')
+            ->where('cashflow_category_id', 9)
+            ->sum('amount');
+
+        $expectedCashDelta = $netAccrualProfit + $payableDelta - $receivableDelta - $ownerWithdrawals + $openingBalanceInjections;
+
+        // То, что мост не объяснил — переводы между своими счетами
+        // (категория 6), прочие доходы, любые нестыковки в данных. Если
+        // эта цифра стабильно большая — модель моста нужно уточнять, если
+        // около нуля — прибыль и касса реально сходятся, просто в разные
+        // моменты времени (задержки выплат/платежей).
+        $unexplained = $actualCashDelta - $expectedCashDelta;
+
+        return [
+            'reconDateFrom' => $dateFrom->format('Y-m-d'),
+            'reconDateTo' => $dateTo->format('Y-m-d'),
+            'reconciliation' => [
+                'revenue' => round($revenue, 2),
+                'cogs' => round($cogs, 2),
+                'gross_margin' => round($grossMargin, 2),
+                'opex' => round($opex, 2),
+                'returns_loss' => round($returnsLoss, 2),
+                'net_accrual_profit' => round($netAccrualProfit, 2),
+
+                'cash_balance_before' => round($cashBalanceBefore, 2),
+                'cash_balance_after' => round($cashBalanceAfter, 2),
+                'actual_cash_delta' => round($actualCashDelta, 2),
+
+                'payable_delta' => round($payableDelta, 2),
+                'receivable_delta' => round($receivableDelta, 2),
+                'owner_withdrawals' => round($ownerWithdrawals, 2),
+                'opening_balance_injections' => round($openingBalanceInjections, 2),
+                'expected_cash_delta' => round($expectedCashDelta, 2),
+
+                'unexplained' => round($unexplained, 2),
+            ],
+        ];
+    }
+
+    /**
+     * Кнопка "Пересчитать" на странице "Финансовая сверка" — реально
+     * прогоняет `php artisan finance:reconcile` (ту же логику, что и сама
+     * страница, просто через консольную команду, как Роман попросил) и
+     * возвращает на страницу с её текстовым выводом во флеш-сообщении.
+     * Сама страница и без этой кнопки всегда показывает свежий расчёт при
+     * каждой загрузке — кнопка нужна, чтобы явно увидеть именно
+     * консольный вывод команды, один в один как в терминале.
+     */
+    public function runFinanceReconcile(Request $request)
+    {
+        $params = [];
+        if ($request->filled('recon_date_from')) {
+            $params['--date_from'] = $request->get('recon_date_from');
+        }
+        if ($request->filled('recon_date_to')) {
+            $params['--date_to'] = $request->get('recon_date_to');
+        }
+
+        Artisan::call('finance:reconcile', $params);
+        $output = Artisan::output();
+
+        return redirect()->route('admin_panel', [
+            'recon_date_from' => $request->get('recon_date_from'),
+            'recon_date_to' => $request->get('recon_date_to'),
+            'open_section' => 'finance_reconciliation',
+        ])->with('reconcileOutput', $output);
+    }
+
+    private function getReceivablesData(Request $request): array
+    {
+        // Дебиторка от поставщиков за возвраты (сгруппировано по поставщику)
+        $supplierReturnReceivablesRaw = CustomerReturn::where('supplier_refund_status', 'pending')
+            ->whereRaw('supplier_refund_amount > supplier_refund_received')
+            ->get();
+
+        $supplierReturnReceivables = $supplierReturnReceivablesRaw
+            ->groupBy('supplier_name')
+            ->map(function ($group, $supplierName) {
+                return [
+                    'name' => $supplierName ?: 'Неизвестный поставщик',
+                    'amount' => round($group->sum(fn ($ret) => (float) $ret->supplier_refund_amount - (float) $ret->supplier_refund_received), 2),
+                    'count' => $group->count(),
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $totalSupplierReturnReceivable = round($supplierReturnReceivables->sum('amount'), 2);
+
+        // Дебиторка от клиентов (недоплата по заказу), сгруппировано по телефону
+        $paidByOrder = OrderPayment::selectRaw("order_id, SUM(CASE WHEN type = 'payment' THEN amount WHEN type = 'refund' THEN -amount ELSE 0 END) as paid")
+            ->groupBy('order_id')
+            ->pluck('paid', 'order_id');
+
+        $customerReceivablesRaw = Order::all()->map(function ($order) use ($paidByOrder) {
+            $paid = (float) ($paidByOrder[$order->id] ?? 0);
+            $due = round((float) $order->sum_with_margine - $paid, 2);
+
+            return [
+                'order_id' => $order->id,
+                // Для Kaspi недоплата — это не долг конкретного клиента, а
+                // задержка выплаты от самого Kaspi (маркетплейс платит уже
+                // после того, как клиент получит заказ). Группируем отдельно
+                // общей строкой "Kaspi", а не по телефону — иначе выглядит
+                // так, будто это клиент должен доплатить, хотя на самом деле
+                // просто ещё не пришла выплата.
+                'group' => $order->sale_channel === 'kaspi' ? 'Kaspi' : ($order->customer_phone ?: 'Без телефона'),
+                'due' => $due,
+            ];
+        })->filter(fn ($row) => $row['due'] > 0);
+
+        $customerReceivables = $customerReceivablesRaw
+            ->groupBy('group')
+            ->map(function ($group, $label) {
+                return [
+                    'name' => $label,
+                    'amount' => round($group->sum('due'), 2),
+                    'count' => $group->count(),
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $totalCustomerReceivable = round($customerReceivables->sum('amount'), 2);
+
+        return [
+            'supplierReturnReceivables' => $supplierReturnReceivables,
+            'totalSupplierReturnReceivable' => $totalSupplierReturnReceivable,
+            'customerReceivables' => $customerReceivables,
+            'totalCustomerReceivable' => $totalCustomerReceivable,
         ];
     }
 
@@ -759,27 +1153,13 @@ class AdminPanelController extends Controller
 
     public function makeCustomerReturn(Request $request)
     {
-        //dd($request);
-        //если поставщик сразу вернул деньги или возврат записывается постфактум, когда все процессы завершены
-        if ($request->account_id_in) {
-            $cashflowTransactionIn = CashflowTransactions::create([
-                'txn_at' => $request->return_date, // дата фактической оплаты
-                'direction' => 'in',
-                'cashflow_category_id' => 4, // например: "Оплата от клиента"
-                'expense_category_id' => null,
-                'supplier_id' => $request->supplier_id,
-                'user_id' => $request->user_id,
-                'account_id' => $request->account_id_in,
-                'amount' => $request->supplier_refund_received,
-                'subcategory' => 'возврат от поставщика',
-                'counterparty' => $request->supplier_name ?? null,
-                'related_table' => 'customer_returns',
-                'related_id' => null,
-                'comment' => $request->comment == '' ? 'Возврат от поставщика по заказу №' . $request->order_id : $request->comment,
-            ]);
-        } 
-
-        //запись в cashflow_transactions расхода по возврату клиенту
+        // Обёрнуто в транзакцию 2026-08-31: живой случай — CashflowTransactions
+        // (возврат клиенту) успевал создаться, а CustomerReturn::create()
+        // падал следом на внешнем ключе (customer_id от заказа без клиента),
+        // и осиротевшая запись "возврат клиенту" оставалась в кассе, задваивая
+        // "Возвраты клиентам" на дашборде — хотя реального второго возврата
+        // не было. Теперь любой сбой на любом шаге откатывает всё разом.
+        DB::transaction(function () use ($request) {
         $cashflowTransactionOut = CashflowTransactions::create([
             'txn_at' => $request->return_date,
             'direction' => 'out',
@@ -793,10 +1173,14 @@ class AdminPanelController extends Controller
             'counterparty' => $request->customer_phone ?? null,
             'related_table' => 'customer_returns',
             'related_id' => null,
-            'comment' => $request->comment == '' ? 'Возврат клиенту по заказу номер ' . $request->order_id : $request->comment,
+            'comment' => $request->comment ?: 'Возврат клиенту по заказу номер ' . $request->order_id,
         ]);
 
-        $customer_id = $request->customer_id = 'нет данных' ? null : $request->customer_id;
+        // Пусто/"нет данных" — оба варианта означают "клиент не привязан",
+        // раньше проверялось только точное совпадение со строкой "нет
+        // данных", а пустая строка (заказ без customer_id) улетала в БД
+        // как есть и падала на внешнем ключе.
+        $customer_id = in_array($request->customer_id, ['нет данных', null, ''], true) ? null : $request->customer_id;
 
         $customer_returns = CustomerReturn::create([
             'customer_id' => $customer_id,
@@ -812,29 +1196,140 @@ class AdminPanelController extends Controller
             'supplier_purchase_price' => $request->supplier_purchase_price,
             'supplier_refund_amount' => $request->supplier_refund_amount,
             'customer_refund_paid' => $request->customer_refund_paid,
-            'supplier_refund_received' => $request->supplier_refund_received,
+            'supplier_refund_received' => 0,
             'return_date' => $request->return_date,
             'customer_refund_date' => $request->customer_refund_date,
-            'supplier_refund_date' => $request->supplier_refund_date,
-            'closed_at' => $request->closed_at,
             'reason' => $request->reason,
             'comment' => $request->comment,
             'status' => $request->status,
-            'supplier_refund_status' => $request->supplier_refund_status,
+            'supplier_refund_status' => 'pending',
             'customer_cashflow_transaction_id' => $cashflowTransactionOut->id,
-            'supplier_cashflow_transaction_id' => $request->supplier_cashflow_transaction_id,
         ]);
 
         $cashflowTransactionOut->update(['related_id' => $customer_returns->id]);
-        
-        if (isset($cashflowTransactionIn)) {
-            $cashflowTransactionIn->update(['related_id' => $customer_returns->id]);
+
+        // Унификация 2026-08-31: раньше "возвращено" выставлялось вручную
+        // через выпадающий список статуса в Заказах (changeStatus()) и
+        // просто обнуляло позицию целиком, без учёта частичного возврата и
+        // без всякой связи с реальным движением денег. Теперь единственная
+        // точка входа — этот дашборд-воркфлоу, а статус/суммы позиции и
+        // заказа выставляются автоматически, пропорционально фактически
+        // возвращённому количеству (qty может быть меньше исходного).
+        $orderProduct = OrderProduct::find($request->order_product_id);
+
+        if ($orderProduct) {
+            $returnedQty = (int) $request->qty;
+            $originalQty = (int) $orderProduct->qty;
+
+            if ($returnedQty > 0 && $originalQty > 0) {
+                $unitPrice = (float) $orderProduct->price;
+                $unitPriceWithMargine = (float) $orderProduct->priceWithMargine;
+
+                $orderProduct->item_sum = max(0, $orderProduct->item_sum - $unitPrice * $returnedQty);
+                $orderProduct->itemSumWithMargine = max(0, $orderProduct->itemSumWithMargine - $unitPriceWithMargine * $returnedQty);
+                $orderProduct->qty = max(0, $originalQty - $returnedQty);
+
+                if ($orderProduct->qty === 0) {
+                    $orderProduct->status = 'returned';
+                }
+
+                $orderProduct->save();
+
+                // Кредиторка уменьшается только если у поставщика была
+                // отсрочка платежа — при оплате по факту получения или
+                // предоплатой долга к этому моменту уже нет, трогать нечего.
+                if ($orderProduct->payment_policy_snapshot === 'deferred_after_receipt') {
+                    $supplierSettlement = SupplierSettlement::where('product_id', $orderProduct->id)
+                        ->where('operation', 'realization')
+                        ->first();
+
+                    if ($supplierSettlement) {
+                        $supplierSettlement->sum += $unitPrice * $returnedQty;
+                        $supplierSettlement->save();
+                    }
+                }
+
+                $orderId = $orderProduct->order_id;
+                $newOrderSum = OrderProduct::where('order_id', $orderId)->sum('item_sum');
+                $newOrderSumWithMargine = OrderProduct::where('order_id', $orderId)->sum('itemSumWithMargine');
+
+                $order = Order::find($orderId);
+                if ($order) {
+                    $order->sum = $newOrderSum;
+                    $order->sum_with_margine = $newOrderSumWithMargine;
+                    $order->save();
+                }
+
+                $orderSettlement = Setlement::where('order_id', $orderId)->first();
+                if ($orderSettlement) {
+                    $orderSettlement->sum = $newOrderSum;
+                    $orderSettlement->sumWithMargine = $newOrderSumWithMargine;
+                    $orderSettlement->save();
+                }
+            }
+        }
+        });
+
+        return back()->with(['message' => 'Возврат клиенту успешно сохранён!']);
+    }
+
+    /**
+     * Правка цены закупа/розницы конкретной позиции заказа (запрошено
+     * Романом 2026-09-03) — нужна на два реальных сценария: (1) поставщик
+     * отказал, перезаказали у другого/по другой цене -> должна поменяться
+     * кредиторка именно по этой позиции; (2) сказали клиенту, что товар
+     * подорожал, он доплачивает -> должна поменяться розница и, как
+     * следствие, дебиторка/сумма заказа. Скидки клиенту тоже проводятся
+     * этим полем (правкой розницы), отдельного поля на сумму заказа
+     * больше нет — сумма заказа считается ИЗ позиций, а не наоборот.
+     */
+    public function updateOrderProductPrice(Request $request)
+    {
+        $request->validate([
+            'order_product_id' => 'required|integer|exists:order_product,id',
+            'price' => 'required|numeric|min:0',
+            'price_with_margine' => 'required|numeric|min:0',
+        ]);
+
+        $orderProduct = OrderProduct::findOrFail($request->order_product_id);
+        $qty = (int) $orderProduct->qty;
+
+        $orderProduct->price = round((float) $request->price, 2);
+        $orderProduct->priceWithMargine = round((float) $request->price_with_margine, 2);
+        $orderProduct->item_sum = round($orderProduct->price * $qty, 2);
+        $orderProduct->itemSumWithMargine = round($orderProduct->priceWithMargine * $qty, 2);
+        $orderProduct->save();
+
+        // Кредиторка поставщику — та же строка realization, что и в
+        // makeCustomerReturn(), просто пересчитанная под новую цену закупа,
+        // а не уменьшенная на возврат.
+        $supplierSettlement = SupplierSettlement::where('product_id', $orderProduct->id)
+            ->where('operation', 'realization')
+            ->first();
+        if ($supplierSettlement) {
+            $supplierSettlement->sum = -$orderProduct->item_sum;
+            $supplierSettlement->save();
         }
 
-        return back()->with([
-                'message' => 'возврат успешно сохранен!',
-            ]
-        );
+        $orderId = $orderProduct->order_id;
+        $newOrderSum = OrderProduct::where('order_id', $orderId)->sum('item_sum');
+        $newOrderSumWithMargine = OrderProduct::where('order_id', $orderId)->sum('itemSumWithMargine');
+
+        $order = Order::find($orderId);
+        if ($order) {
+            $order->sum = $newOrderSum;
+            $order->sum_with_margine = $newOrderSumWithMargine;
+            $order->save();
+        }
+
+        $orderSettlement = Setlement::where('order_id', $orderId)->first();
+        if ($orderSettlement) {
+            $orderSettlement->sum = $newOrderSum;
+            $orderSettlement->sumWithMargine = $newOrderSumWithMargine;
+            $orderSettlement->save();
+        }
+
+        return back()->with(['message' => 'Цены позиции №' . $orderProduct->id . ' обновлены']);
     }
 
     public function pay(Request $request)
@@ -862,20 +1357,220 @@ class AdminPanelController extends Controller
             ->with('class', 'alert-success');
     }
 
+    /**
+     * Разовая форма для go-live ERP (2026-08-31) — заносит исторические
+     * остатки, накопившиеся ДО начала учёта в системе: реальные деньги на
+     * счетах, кредиторка/зачёты по поставщикам, дебиторка по клиентам.
+     * Пустые/нулевые поля просто пропускаются.
+     */
+    public function saveOpeningBalances(Request $request)
+    {
+        $date = $request->date ?: now()->format('Y-m-d');
+        $created = 0;
+
+        DB::transaction(function () use ($request, $date, &$created) {
+            // Счета — реальные деньги, которые уже лежат на счету.
+            foreach (($request->accounts ?? []) as $accountId => $amount) {
+                $amount = (float) $amount;
+                if ($amount <= 0) {
+                    continue;
+                }
+
+                CashflowTransactions::create([
+                    'txn_at' => $date,
+                    'direction' => 'in',
+                    'cashflow_category_id' => 9, // входящий остаток
+                    'expense_category_id' => null,
+                    'supplier_id' => null,
+                    'user_id' => auth()->id(),
+                    'account_id' => $accountId,
+                    'amount' => $amount,
+                    'subcategory' => 'Входящий остаток',
+                    'counterparty' => null,
+                    'related_table' => null,
+                    'related_id' => null,
+                    'comment' => 'Историческое сальдо на ' . $date,
+                ]);
+                $created++;
+            }
+
+            // Поставщики — кредиторка (реальный долг без привязки к заказу)
+            // и зачёты (деньги, которые уже держит поставщик на балансе).
+            foreach (($request->supplier_debts ?? []) as $supplierId => $amount) {
+                $amount = (float) $amount;
+                if ($amount <= 0) {
+                    continue;
+                }
+
+                $supplier = Suppliers::find($supplierId);
+
+                SupplierSettlement::create([
+                    'order_id' => null,
+                    'product_id' => null,
+                    'supplier' => $supplier?->name,
+                    'supplier_id' => $supplierId,
+                    'sum' => -$amount,
+                    'date' => $date,
+                    'operation' => 'realization',
+                    'payment_due_date' => null,
+                ]);
+                $created++;
+            }
+
+            foreach (($request->supplier_credits ?? []) as $supplierId => $amount) {
+                $amount = (float) $amount;
+                if ($amount <= 0) {
+                    continue;
+                }
+
+                SupplierCredit::create([
+                    'supplier_id' => $supplierId,
+                    'amount' => $amount,
+                    'source_table' => null,
+                    'source_id' => null,
+                    'comment' => 'Историческое сальдо на ' . $date,
+                    'date' => $date,
+                ]);
+                $created++;
+            }
+
+            // Клиенты — дебиторка. Заводим как "псевдозаказ" без оплаты,
+            // потому что дебиторка от клиентов считается именно от заказов
+            // (sum_with_margine минус оплаченное) — другого входа в эту
+            // цифру в системе нет. sale_channel специально не входит в
+            // список отслеживаемых каналов ($channelKeys в index()), чтобы
+            // не искажать статистику по каналам продаж задним числом.
+            $rawLines = array_filter(array_map('trim', explode("\n", (string) $request->customer_receivables_raw)));
+
+            foreach ($rawLines as $line) {
+                $parts = array_map('trim', explode(';', $line));
+                if (count($parts) < 3) {
+                    continue;
+                }
+
+                [$phone, $name, $amount] = $parts;
+                $amount = (float) $amount;
+
+                if ($amount <= 0 || $phone === '') {
+                    continue;
+                }
+
+                $customer = $this->getOrCreateCustomer($phone, $name ?: null);
+
+                Order::create([
+                    'user_id' => auth()->id(),
+                    'customer_id' => $customer?->id,
+                    'date' => $date,
+                    'time' => date('H:i:s'),
+                    'sum' => $amount,
+                    'sum_with_margine' => $amount,
+                    'status' => 'заказано',
+                    'customer_phone' => $customer?->phone ?? $phone,
+                    'sale_channel' => 'opening_balance',
+                ]);
+                $created++;
+            }
+        });
+
+        return back()->with([
+            'message' => "Начальные остатки внесены: {$created} записей.",
+        ]);
+    }
+
     public function supplierPayment(Request $request)
     {
-        $supplier_settlement = SupplierSettlement::create([
-            'supplier' => $request->supplier,
+        // ВАЖНО: раньше писалась только запись в supplier_settlement, но
+        // остаток долга по поставщику (getSuppliersSettlements()) считается
+        // ИСКЛЮЧИТЕЛЬНО из CashflowTransactions (direction=out,
+        // cashflow_category_id=3) — без неё кредиторка на дашборде не
+        // уменьшалась ни на тенге, кнопка была фактически нерабочей.
+        // Заодно поле формы называлось "supplier", но реально отправляло
+        // ID из <select>, а не имя — тот же баг, что чинили во fromStock.
+        $supplier = Suppliers::findOrFail($request->supplier_id);
+
+        $cashflowTransaction = CashflowTransactions::create([
+            'txn_at' => $request->date,
+            'direction' => 'out',
+            'cashflow_category_id' => 3, // оплата поставщику
+            'expense_category_id' => null,
+            'supplier_id' => $supplier->id,
+            'user_id' => auth()->id(),
+            'account_id' => $request->account_id,
+            'amount' => $request->sum,
+            'subcategory' => 'Оплата поставщику',
+            'counterparty' => $supplier->name,
+            'related_table' => 'suppliers',
+            'related_id' => $supplier->id,
+            'comment' => $request->comment ?: 'Оплата поставщику ' . $supplier->name,
+        ]);
+
+        SupplierSettlement::create([
+            'supplier' => $supplier->name,
+            'supplier_id' => $supplier->id,
             'sum' => $request->sum,
-            'date' => date('d.m.y'),
-            'operation' => 'payment'
+            'date' => $request->date,
+            'operation' => 'payment',
         ]);
 
         return back()
             ->with('message', 'Оплата успешно проведена!')
             ->with('class', 'alert-success');
     }
-    
+
+    /**
+     * Зеркало supplierPayment() — деньги, которые поставщик возвращает
+     * НАМ, не привязанные к оформленному возврату клиента (для этого уже
+     * есть отдельный путь через CustomerReturnController::update() —
+     * там при supplier_refund_status=received с mode=account тоже
+     * создаётся приходная CashflowTransactions). Нужен для случаев без
+     * самого возврата в системе — легаси-долги поставщиков с ДО
+     * внедрения ERP, будущие корректировки цены/недопоставки и т.п.
+     * (запрошено Романом 2026-09-02).
+     *
+     * ВАЖНО: остаток по поставщику (getSuppliersSettlements()) считает
+     * accrued ИСКЛЮЧИТЕЛЬНО из supplier_settlement где operation=
+     * 'realization' — сумма в CashflowTransactions.category=4 сама по
+     * себе на баланс НЕ влияет (paid там считается только по исходящим
+     * category=3). Поэтому, в отличие от supplierPayment() (где
+     * operation='payment' — по факту не участвует в этом расчёте вообще,
+     * баланс двигает только сама CashflowTransactions), здесь
+     * ОБЯЗАТЕЛЬНО нужна именно 'realization' с отрицательной суммой —
+     * иначе часть "Переплата поставщикам" не уменьшится ни на тенге.
+     */
+    public function receiveSupplierRefund(Request $request)
+    {
+        $supplier = Suppliers::findOrFail($request->supplier_id);
+
+        CashflowTransactions::create([
+            'txn_at' => $request->date,
+            'direction' => 'in',
+            'cashflow_category_id' => 4, // возврат от поставщика
+            'expense_category_id' => null,
+            'supplier_id' => $supplier->id,
+            'user_id' => auth()->id(),
+            'account_id' => $request->account_id,
+            'amount' => $request->sum,
+            'subcategory' => 'Получено от поставщика (не по возврату клиента)',
+            'counterparty' => $supplier->name,
+            'related_table' => 'suppliers',
+            'related_id' => $supplier->id,
+            'comment' => $request->comment ?: 'Получено от поставщика ' . $supplier->name,
+        ]);
+
+        SupplierSettlement::create([
+            'supplier' => $supplier->name,
+            'supplier_id' => $supplier->id,
+            'sum' => -$request->sum,
+            'date' => $request->date,
+            'operation' => 'realization',
+        ]);
+
+        return back()
+            ->with('message', 'Поступление от поставщика зафиксировано!')
+            ->with('class', 'alert-success');
+    }
+
+
     public function filter(Request $request)
     {
         $dateFrom = $request->data['date_from'];
@@ -956,31 +1651,95 @@ class AdminPanelController extends Controller
         $data = $request['data'];
         $product = OrderProduct::find($data['product_id']);
         
-        if($data['new_status'] == 'returned') {
+        // "returned" здесь больше не обрабатывается отдельной веткой —
+        // раньше просто обнуляла позицию целиком без учёта частичного
+        // возврата и без связи с реальными деньгами. Единственная точка
+        // входа для возврата теперь makeCustomerReturn() — она сама
+        // проставляет статус/суммы пропорционально фактически
+        // возвращённому количеству. Если это значение всё же придёт сюда
+        // (не должно — убрано из выпадающего списка), падаем в обычную
+        // ветку ниже: просто меняем статус, ничего не обнуляем.
+        if ($data['new_status'] == 'arrived_at_the_point_of_delivery') {
             $product->status = $data['new_status'];
-            $product->item_sum = 0;
-            $product->itemSumWithMargine = 0;
             $product->save();
 
-            $order_id = $product->order_id;
-            $new_order_sum = OrderProduct::where('order_id', $order_id)->sum('item_sum');
-            $newItemSumWithMargine = OrderProduct::where('order_id', $order_id)->sum('itemSumWithMargine');
-            $order = Order::find($order_id); 
-            $order->sum = $new_order_sum;
-            $order->sum_with_margine = $newItemSumWithMargine;
-            $order->save();
+            // Кредиторка по on_receipt/deferred_after_receipt наступает
+            // именно сейчас, а не по оценке срока доставки при оформлении
+            // заказа (см. manuallyMakeOrder()) — поставщика никогда не
+            // угадать заранее. prepaid сюда не попадает, для него дата
+            // оплаты уже зафиксирована в момент оформления заказа.
+            $paymentDueDate = match ($product->payment_policy_snapshot) {
+                'on_receipt' => now()->toDateString(),
+                'deferred_after_receipt' => now()->addDays((int) $product->payment_delay_days_snapshot)->toDateString(),
+                default => null,
+            };
 
-            $settlement = Setlement::where('order_id', $order_id)->first();
-            $settlement->sum = $new_order_sum;
-            $settlement->sumWithMargine = $newItemSumWithMargine;
-            $settlement->save();
+            if ($paymentDueDate !== null) {
+                SupplierSettlement::where('product_id', $product->id)
+                    ->update(['payment_due_date' => $paymentDueDate]);
+            }
+        } elseif ($data['new_status'] == 'issued') {
+            $product->status = $data['new_status'];
+            $product->save();
 
-            SupplierSettlement::where('product_id', $product->id)->delete();
+            // Kaspi платит только после того, как клиент реально получит
+            // заказ — раньше заказ заводился в системе только в этот
+            // момент, но так кредиторка перед поставщиком не отражалась
+            // сразу (см. обсуждение 2026-08-31). Теперь заказ заводится
+            // сразу, а фактическое поступление денег от Kaspi привязано
+            // именно к этому статусу — "выдано" на КАЖДОЙ позиции заказа
+            // (Kaspi платит за весь заказ разом, не по позициям).
+            $order = Order::find($product->order_id);
+
+            if ($order && $order->sale_channel === 'kaspi') {
+                $allResolved = !OrderProduct::where('order_id', $order->id)
+                    ->whereNotIn('status', ['issued', 'returned'])
+                    ->exists();
+
+                if ($allResolved) {
+                    $alreadyPaid = (float) OrderPayment::where('order_id', $order->id)
+                        ->selectRaw("SUM(CASE WHEN type = 'payment' THEN amount WHEN type = 'refund' THEN -amount ELSE 0 END) as paid")
+                        ->value('paid');
+
+                    $stillOwed = round((float) $order->sum_with_margine - $alreadyPaid, 2);
+
+                    if ($stillOwed > 0) {
+                        $kaspiPayAccount = Accounts::where('name', 'Рома Kaspi Pay')->first();
+
+                        if ($kaspiPayAccount) {
+                            $orderPayment = OrderPayment::create([
+                                'order_id' => $order->id,
+                                'account_id' => $kaspiPayAccount->id,
+                                'paid_at' => now()->format('Y-m-d'),
+                                'amount' => $stillOwed,
+                                'type' => 'payment',
+                                'comment' => 'Автоматическое поступление от Kaspi по факту выдачи заказа',
+                            ]);
+
+                            CashflowTransactions::create([
+                                'txn_at' => $orderPayment->paid_at,
+                                'direction' => 'in',
+                                'cashflow_category_id' => 1, // оплата по заказу
+                                'expense_category_id' => null,
+                                'supplier_id' => null,
+                                'user_id' => auth()->id(),
+                                'account_id' => $kaspiPayAccount->id,
+                                'amount' => $stillOwed,
+                                'subcategory' => 'Оплата по заказу (Kaspi, авто)',
+                                'counterparty' => $order->customer_phone,
+                                'related_table' => 'orders',
+                                'related_id' => $order->id,
+                                'comment' => 'Автоматическое поступление от Kaspi по заказу №' . $order->id,
+                            ]);
+                        }
+                    }
+                }
+            }
         } else {
             $product->status = $data['new_status'];
             $product->save();
         }
-        
+
 
         return [
             'message' => 'Статус успешно изменен!',
@@ -1027,9 +1786,87 @@ class AdminPanelController extends Controller
             'comment' => $request->comment ?? null,
         ]);
 
+        // Роман 2026-09-03: доплаты по заказу заводятся ТОЛЬКО через эту
+        // общую форму ДДС (не через форму самого заказа — там пришлось бы
+        // заново вбивать товарные данные, которые уже есть в заказе). Но
+        // дебиторка клиентов (getFinanceDashboardData) считается по
+        // отдельной таблице order_payments, не по cashflow_transactions —
+        // без этой синхронизации доплата корректно ложится в кассу, но
+        // клиент продолжает висеть в дебиторке как должник. Заводим и
+        // здесь, автоматически, при каждой такой записи.
+        if ($relatedTable === 'orders') {
+            OrderPayment::create([
+                'order_id' => $relatedId,
+                'account_id' => $request->account_id,
+                'paid_at' => $request->txn_at,
+                'amount' => $request->amount,
+                'type' => $request->direction === 'out' ? 'refund' : 'payment',
+                'comment' => $request->comment ?? null,
+            ]);
+        }
+
         return back()->with([
             'message' => 'Запись успешно создана!'
         ]);
+    }
+
+    /**
+     * Перевод между СВОИМИ счетами (запрошено Романом 2026-09-02) —
+     * например перепутал счёт при внесении и хочет выровнять баланс, или
+     * реально нужно перекинуть деньги (клиент заплатил на Kaspi Pay, а
+     * поставщику может заплатить только с Kaspi Gold). В отличие от
+     * обычной формы ДДС — здесь ОДНА отправка создаёт СРАЗУ две
+     * проводки (расход с одного счёта + приход на другой), одной суммой,
+     * так что общий остаток по всем счетам не сдвигается, меняется
+     * только то, где именно лежат деньги. Категория 6 "transfer" уже
+     * существовала в cashflow_categories, просто раньше не было формы,
+     * которая создавала бы обе стороны атомарно.
+     */
+    public function transferBetweenAccounts(Request $request)
+    {
+        $request->validate([
+            'from_account_id' => 'required|exists:accounts,id',
+            'to_account_id' => 'required|different:from_account_id|exists:accounts,id',
+            'amount' => 'required|numeric|min:0.01',
+        ]);
+
+        $fromAccount = Accounts::findOrFail($request->from_account_id);
+        $toAccount = Accounts::findOrFail($request->to_account_id);
+        $date = $request->txn_at ?: now();
+
+        DB::transaction(function () use ($request, $fromAccount, $toAccount, $date) {
+            CashflowTransactions::create([
+                'txn_at' => $date,
+                'direction' => 'out',
+                'cashflow_category_id' => 6,
+                'expense_category_id' => null,
+                'supplier_id' => null,
+                'user_id' => auth()->id(),
+                'account_id' => $fromAccount->id,
+                'amount' => $request->amount,
+                'subcategory' => 'Перевод между счетами',
+                'counterparty' => $toAccount->name,
+                'comment' => $request->comment ?: "Перевод на «{$toAccount->name}»",
+            ]);
+
+            CashflowTransactions::create([
+                'txn_at' => $date,
+                'direction' => 'in',
+                'cashflow_category_id' => 6,
+                'expense_category_id' => null,
+                'supplier_id' => null,
+                'user_id' => auth()->id(),
+                'account_id' => $toAccount->id,
+                'amount' => $request->amount,
+                'subcategory' => 'Перевод между счетами',
+                'counterparty' => $fromAccount->name,
+                'comment' => $request->comment ?: "Перевод с «{$fromAccount->name}»",
+            ]);
+        });
+
+        return back()
+            ->with('message', "Переведено {$request->amount} ₸: {$fromAccount->name} → {$toAccount->name}")
+            ->with('class', 'alert-success');
     }
 
     public function manuallyMakeOrder(Request $request)
@@ -1070,11 +1907,11 @@ class AdminPanelController extends Controller
             ]
         );
 
-        /*if (!$newCustomer->name && $customerName) {
+        if (!$newCustomer->name && $customerName) {
             $newCustomer->update([
                 'name' => $customerName
             ]);
-        }*/
+        }
 
         $order = Order::create([
             'user_id' => $request->data['orderInfo'][0],
@@ -1088,7 +1925,7 @@ class AdminPanelController extends Controller
             'sale_channel' => $request->data['orderInfo'][4]
         ]);
 
-        /*$orderPayment = OrderPayment::create([
+        $orderPayment = OrderPayment::create([
             'order_id' => $order->id,
             'account_id' => $request->data['paymentInfo'][0],
             'paid_at' => $request->data['paymentInfo'][1],
@@ -1114,24 +1951,37 @@ class AdminPanelController extends Controller
             'related_table' => 'orders',
             'related_id' => $order->id,
             'comment' => ($orderPayment->type === 'refund' ? 'Возврат по заказу №' : 'Оплата по заказу №') . $order->id,
-        ]);*/
+        ]);
+
+        // Снимок сценария репрайсинга (kaspi:reprice) на момент продажи —
+        // только для канала kaspi, только этот запрос на весь заказ разом
+        // (не по одной строке за раз). Раньше это нигде не сохранялось,
+        // и через месяц узнать, в каком сценарии (etalon_competitive /
+        // beat_tomorrow_competitor / min_margin_dumping / etc.) была
+        // продана конкретная позиция, можно было только реконструкцией
+        // задним числом — ненадёжно, конкуренты и цены меняются каждый
+        // день. См. миграцию add_price_strategy_to_order_product_table.
+        $saleChannel = $request->data['orderInfo'][4];
+        $priceStrategyByArticle = [];
+        if ($saleChannel === 'kaspi') {
+            $articles = array_column($request->data['products'], 0);
+            $priceStrategyByArticle = DB::table('kaspi_feed_items')
+                ->whereIn('our_article', $articles)
+                ->where('is_active', 1)
+                ->orderByDesc('updated_at')
+                ->get(['our_article', 'price_strategy'])
+                ->unique('our_article')
+                ->pluck('price_strategy', 'our_article')
+                ->all();
+        }
 
         foreach ($request->data['products'] as $product) {
-            // product[6] из формы — это supplier_id (число) из выпадающего списка,
-            // а не имя. Раньше писалось как есть в fromStock/supplier — отсюда
-            // "2"/"8"/"3" и т.д. вместо названия поставщика в статистике.
-            // Резолвим в имя, с фолбэком на исходное значение на случай,
-            // если когда-нибудь придёт уже текстом.
-            $fromStockName = Suppliers::find((int)$product[6])?->name ?? $product[6];
-
-            /*$supplierId = (int)$product[6];
-            $supplierCode = Suppliers::find($supplierId)?->code;
-
-            $supplier = Suppliers::find($supplierId);*/
+            $supplierId = (int)$product[6];
+            $supplier = Suppliers::find($supplierId);
 
             $orderProduct = OrderProduct::create([
                 'order_id' => $order->id,
-                //'supplier_id' => $supplierId ?: null,
+                'supplier_id' => $supplierId ?: null,
                 'article' => $product[0],
                 'brand' => $product[1],
                 'name' => $product[2],
@@ -1141,36 +1991,81 @@ class AdminPanelController extends Controller
                 'item_sum' => (float)$product[4] * (int)$product[3],
                 'itemSumWithMargine' => (float)$product[5] * (int)$product[3],
                 'searched_number' => '',
-                'fromStock' => $fromStockName,
+                'fromStock' => $supplier?->name ?? 'Неизвестно', // теперь всегда имя
                 'deliveryTime' => $product[7],
-                //'payment_policy_snapshot' => $supplier?->payment_policy,
-                //'payment_delay_days_snapshot' => $supplier?->payment_delay_days ?? 0,
+                'price_strategy' => $priceStrategyByArticle[$product[0]] ?? null,
+                'payment_policy_snapshot' => $supplier?->payment_policy,
+                'payment_delay_days_snapshot' => $supplier?->payment_delay_days ?? 0,
                 'status' => 'payment_waiting'
             ]);
-            $paymentDueDate = null;
-            $orderDate = $request->data['orderInfo'][1];
-            $deliveryDate = $product[7] ?? null;
-
-            if ($orderProduct->payment_policy_snapshot === 'prepaid') {
-                $paymentDueDate = $orderDate;
-            } elseif ($orderProduct->payment_policy_snapshot === 'on_receipt') {
-                $paymentDueDate = $deliveryDate;
-            } elseif ($orderProduct->payment_policy_snapshot === 'deferred_after_receipt') {
-                $paymentDueDate = $deliveryDate
-                    ? date('Y-m-d', strtotime($deliveryDate . ' + ' . (int)$orderProduct->payment_delay_days_snapshot . ' days'))
-                    : null;
-            }
+            // Дата оплаты для on_receipt/deferred_after_receipt больше НЕ
+            // считается от заявленного при оформлении срока доставки
+            // (deliveryTime) — поставщик может привезти раньше или позже
+            // обещанного, угадать нельзя. Кредиторка по этим двум политикам
+            // теперь наступает только когда сам подтвердишь поступление в
+            // ПВЗ — см. changeStatus(), кейс 'arrived_at_the_point_of_delivery'.
+            // Только prepaid известен сразу — платим в день оформления
+            // заказа, доставка тут ни при чём.
+            $paymentDueDate = $orderProduct->payment_policy_snapshot === 'prepaid'
+                ? $request->data['orderInfo'][1]
+                : null;
 
             SupplierSettlement::create([
                 'order_id' => $order->id,
                 'product_id' => $orderProduct->id,
-                'supplier' => $fromStockName,
-                //'supplier_id' => $supplierId ?: null,
+                'supplier' => $supplier?->name,
+                'supplier_id' => $supplierId ?: null,
                 'sum' => -((float)$product[4] * (int)$product[3]),
                 'date' => $request->data['orderInfo'][1],
                 'operation' => 'realization',
-                //'payment_due_date' => $paymentDueDate,
+                'payment_due_date' => $paymentDueDate,
             ]);
+
+            // Если у поставщика уже есть зачёт (сальдо) — автоматически
+            // гасим им только что начисленный долг, вместо того чтобы
+            // зачёт молча висел неиспользованным, а кредиторка
+            // показывала валовую сумму без учёта того, что часть уже
+            // фактически предоплачена. По прямой просьбе Романа
+            // 2026-09-02 — они не будут гонять деньги обратно, зачёт
+            // применяется к следующей же закупке.
+            if ($supplierId) {
+                $this->applyAvailableSupplierCredit(
+                    $supplierId,
+                    $supplier?->name,
+                    (float)$product[4] * (int)$product[3],
+                    $request->data['orderInfo'][1]
+                );
+            }
+
+            // prepaid-поставщики (Автотрейд и т.п.) требуют оплату сразу,
+            // без вариантов — раньше это всё равно повисало в кредиторке
+            // до отдельного ручного "Провести оплату", хотя по факту долга
+            // тут никогда и не бывает. Автоматически проводим оплату сразу
+            // при оформлении заказа, чтобы не плодить лишний ручной шаг.
+            // Счёт списания — фиксированный, по прямой просьбе Романа
+            // 2026-08-31 (всегда "Рома Kaspi Gold", независимо от того, с
+            // какого счёта платил клиент).
+            if ($orderProduct->payment_policy_snapshot === 'prepaid') {
+                $prepaidAccount = Accounts::where('name', 'Рома Kaspi Gold')->first();
+
+                if ($prepaidAccount) {
+                    CashflowTransactions::create([
+                        'txn_at' => $request->data['orderInfo'][1],
+                        'direction' => 'out',
+                        'cashflow_category_id' => 3, // оплата поставщику
+                        'expense_category_id' => null,
+                        'supplier_id' => $supplierId ?: null,
+                        'user_id' => auth()->id(),
+                        'account_id' => $prepaidAccount->id,
+                        'amount' => (float) $product[4] * (int) $product[3],
+                        'subcategory' => 'Оплата поставщику (авто, предоплата)',
+                        'counterparty' => $supplier?->name,
+                        'related_table' => 'suppliers',
+                        'related_id' => $supplierId ?: null,
+                        'comment' => 'Автооплата предоплатному поставщику по заказу №' . $order->id,
+                    ]);
+                }
+            }
         }
 
         $settlement = Setlement::create([

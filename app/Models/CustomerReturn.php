@@ -35,4 +35,9 @@ class CustomerReturn extends Model
     {
         return $this->belongsTo(CashflowTransactions::class, 'supplier_cashflow_transaction_id');
     }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Suppliers::class, 'supplier_id');
+    }
 }
