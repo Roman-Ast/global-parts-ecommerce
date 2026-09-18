@@ -545,13 +545,23 @@ class AdminPanelController extends Controller
      * зачёт, сумма этой позиции) — если зачёт больше суммы позиции,
      * остаток зачёта остаётся на будущее; если меньше — гасится только
      * частично, остаток долга остаётся висеть как обычно.
+     *
+     * Возвращает фактически применённую сумму зачёта — вызывающий код
+     * (позиции с prepaid-поставщиком, см. ниже в цикле по товарам) обязан
+     * вычесть её из автосписания со счёта, иначе долг гасится ДВАЖДЫ за
+     * один и тот же заказ: один раз здесь зачётом (через компенсирующую
+     * supplier_settlement), второй раз — полной суммой в cashflow_transactions
+     * при автооплате. Живой пример расхождения из-за этого бага — Роман
+     * 2026-09-18, Автотрейд: "Долг" (accrued-paid) и "Сальдо"
+     * (supplier_credit) разошлись на 2900₸, потому что зачёт списывался,
+     * а автооплата всё равно уходила полной суммой поверх него.
      */
-    private function applyAvailableSupplierCredit(int $supplierId, ?string $supplierName, float $itemCost, string $date): void
+    private function applyAvailableSupplierCredit(int $supplierId, ?string $supplierName, float $itemCost, string $date): float
     {
         $availableCredit = (float) SupplierCredit::where('supplier_id', $supplierId)->sum('amount');
 
         if ($availableCredit <= 0) {
-            return;
+            return 0.0;
         }
 
         $applyAmount = min($availableCredit, $itemCost);
@@ -572,6 +582,8 @@ class AdminPanelController extends Controller
             'comment' => 'Зачёт автоматически применён к новой закупке',
             'date' => $date,
         ]);
+
+        return $applyAmount;
     }
 
     private function getFinanceDashboardData(Request $request): array
@@ -2068,11 +2080,13 @@ class AdminPanelController extends Controller
             // фактически предоплачена. По прямой просьбе Романа
             // 2026-09-02 — они не будут гонять деньги обратно, зачёт
             // применяется к следующей же закупке.
+            $itemTotal = (float) $product[4] * (int) $product[3];
+            $creditApplied = 0.0;
             if ($supplierId) {
-                $this->applyAvailableSupplierCredit(
+                $creditApplied = $this->applyAvailableSupplierCredit(
                     $supplierId,
                     $supplier?->name,
-                    (float)$product[4] * (int)$product[3],
+                    $itemTotal,
                     $request->data['orderInfo'][1]
                 );
             }
@@ -2085,25 +2099,37 @@ class AdminPanelController extends Controller
             // Счёт списания — фиксированный, по прямой просьбе Романа
             // 2026-08-31 (всегда "Рома Kaspi Gold", независимо от того, с
             // какого счёта платил клиент).
+            //
+            // ФИКС 2026-09-18 (Роман поймал расхождение "Долг" vs "Сальдо"
+            // у Автотрейда на 2900₸): если часть/вся сумма позиции уже
+            // погашена зачётом выше, автооплата списывает со счёта только
+            // ОСТАТОК, а не всю сумму заново — иначе долг гасится дважды за
+            // один заказ (зачётом здесь и полной суммой в cashflow ниже),
+            // и "Сальдо"/"Долг" расходятся на каждой такой закупке.
             if ($orderProduct->payment_policy_snapshot === 'prepaid') {
-                $prepaidAccount = Accounts::where('name', 'Рома Kaspi Gold')->first();
+                $amountToPayFromAccount = round($itemTotal - $creditApplied, 2);
 
-                if ($prepaidAccount) {
-                    CashflowTransactions::create([
-                        'txn_at' => $request->data['orderInfo'][1],
-                        'direction' => 'out',
-                        'cashflow_category_id' => 3, // оплата поставщику
-                        'expense_category_id' => null,
-                        'supplier_id' => $supplierId ?: null,
-                        'user_id' => auth()->id(),
-                        'account_id' => $prepaidAccount->id,
-                        'amount' => (float) $product[4] * (int) $product[3],
-                        'subcategory' => 'Оплата поставщику (авто, предоплата)',
-                        'counterparty' => $supplier?->name,
-                        'related_table' => 'suppliers',
-                        'related_id' => $supplierId ?: null,
-                        'comment' => 'Автооплата предоплатному поставщику по заказу №' . $order->id,
-                    ]);
+                if ($amountToPayFromAccount > 0) {
+                    $prepaidAccount = Accounts::where('name', 'Рома Kaspi Gold')->first();
+
+                    if ($prepaidAccount) {
+                        CashflowTransactions::create([
+                            'txn_at' => $request->data['orderInfo'][1],
+                            'direction' => 'out',
+                            'cashflow_category_id' => 3, // оплата поставщику
+                            'expense_category_id' => null,
+                            'supplier_id' => $supplierId ?: null,
+                            'user_id' => auth()->id(),
+                            'account_id' => $prepaidAccount->id,
+                            'amount' => $amountToPayFromAccount,
+                            'subcategory' => 'Оплата поставщику (авто, предоплата)',
+                            'counterparty' => $supplier?->name,
+                            'related_table' => 'suppliers',
+                            'related_id' => $supplierId ?: null,
+                            'comment' => 'Автооплата предоплатному поставщику по заказу №' . $order->id
+                                . ($creditApplied > 0 ? " (зачётом погашено {$creditApplied})" : ''),
+                        ]);
+                    }
                 }
             }
         }
