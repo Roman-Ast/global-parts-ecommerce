@@ -556,6 +556,29 @@ $(document).on('input', '.manually-order-parts-list-item-qty, .manually-order-pa
 // переключения канала.
 $(document).on('change', '#manualy_order_sale_channel', function () {
     $('.manually-order-parts-list-item-qty').first().trigger('input');
+
+    // Каспи всегда платит через один и тот же счёт — просьба Романа
+    // 2026-09-18, чтобы не выбирать его руками каждый раз. Ищем по
+    // ТЕКСТУ опции (не по id — id счёта может отличаться между
+    // окружениями), не жёстко "точное совпадение", чтобы не сломаться
+    // от лишнего пробела/регистра в названии счёта. Поле остаётся
+    // обычным select — можно поменять руками, если понадобится другой счёт.
+    if ($(this).val() === 'kaspi') {
+        // Два счёта содержат "Kaspi Pay" в названии ("Рома Kaspi Pay" —
+        // именно на него Kaspi Marketplace платит после выдачи заказа,
+        // см. AdminPanelController; и "Kaspi Pay безнал" — другой счёт,
+        // не относится к маркетплейсу) — исключаем "безнал" явно, а не
+        // полагаемся на то, что нужный счёт просто окажется в списке раньше.
+        const $accountSelect = $('#manualy_order_account');
+        const $kaspiPayOption = $accountSelect.find('option').filter(function () {
+            const text = $(this).text();
+            return /kaspi\s*pay/i.test(text) && !/безнал/i.test(text);
+        }).first();
+
+        if ($kaspiPayOption.length) {
+            $accountSelect.val($kaspiPayOption.val());
+        }
+    }
 });
 
 //хуки для фильтрации полей в создании ДДС

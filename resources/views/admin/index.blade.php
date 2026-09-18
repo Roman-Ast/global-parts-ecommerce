@@ -2342,7 +2342,7 @@
                                 <label class="form-label">Комментарии</label>
                             </div>
                             <div id="manualy-order-payment-details-body">
-                                <select name="account" id="" class="form-select">
+                                <select name="account" id="manualy_order_account" class="form-select">
                                     <option disabled selected>Выбери счет</option>
                                     @foreach ($accounts as $account)
                                         <option value="{{ $account['id'] }}">{{ $account['name'] }}</option>
