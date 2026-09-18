@@ -164,9 +164,11 @@ class WhatsappMessenger extends Component
                 // 2. Обновляем время (update обновит и last_seen_at, и updated_at)
                 $lead->update(['last_seen_at' => now()]);
                 
-                // Если хочешь быть уверен на 100%, можно добавить touch(), 
+                // Если хочешь быть уверен на 100%, можно добавить touch(),
                 // но технически update выше это уже сделал.
-                $lead->touch(); 
+                $lead->touch();
+
+                \App\Models\CrmActivityLog::log('send_message', $lead->id);
 
                 $this->dispatch('scroll-chat-to-bottom');
                 $this->replyText = '';

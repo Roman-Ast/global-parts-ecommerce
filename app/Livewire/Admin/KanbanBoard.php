@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use App\Models\WhatsappLead;
 use App\Models\WhatsappMessage;
+use App\Models\CrmActivityLog;
 
 class KanbanBoard extends Component
 {
@@ -12,6 +13,18 @@ class KanbanBoard extends Component
 
     /** Вкладка внутри колонки "Новые" — 'all' | 'unread'. См. render()/блейд. */
     public $newLeadsTab = 'all';
+
+    /**
+     * Лог активности (просьба Романа 2026-09-18, см. докблок CrmActivityLog) —
+     * mount() выполняется ОДИН раз за загрузку страницы (в отличие от render(),
+     * который дёргается каждые 3с через wire:poll), поэтому именно здесь, а не
+     * в render(), фиксируем "открыл доску" — иначе лог был бы забит записями
+     * каждые 3 секунды впустую.
+     */
+    public function mount(): void
+    {
+        CrmActivityLog::log('view_board');
+    }
 
     public function setNewLeadsTab(string $tab): void
     {
@@ -100,7 +113,9 @@ class KanbanBoard extends Component
         }
 
         if ($lead && ($isMainStatus || $subLabel !== null)) {
+            $oldStatus = $lead->status;
             $lead->update(['status' => $newStatus]);
+            CrmActivityLog::log('update_status', $lead->id, ['from' => $oldStatus, 'to' => $newStatus]);
 
             $label = $subLabel ?? ($newStatus === self::SPAM_STATUS ? 'Спам' : $this->statuses[$newStatus]['title']);
             $this->dispatch('notify', [
@@ -113,11 +128,13 @@ class KanbanBoard extends Component
     public function openChat($id)
     {
         $this->activeLeadIdForChat = $id;
-        
+
         // Помечаем прочитанным
         WhatsappMessage::where('whatsapp_lead_id', $id)
             ->where('is_incoming', true)
             ->update(['is_read' => true]);
+
+        CrmActivityLog::log('open_chat', $id);
 
         $this->dispatch('open-chat-side-panel');
     }
