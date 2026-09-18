@@ -84,7 +84,7 @@
                                 >
                                     @if(isset($leadsByStatus[$subKey]))
                                         @foreach($leadsByStatus[$subKey] as $lead)
-                                            <div wire:key="card-{{ $lead->id }}-{{ $lead->lastMessage->id ?? 'none' }}" data-id="{{ $lead->id }}" class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all group">
+                                            <div wire:key="card-{{ $lead->id }}-{{ $lead->lastMessage->id ?? 'none' }}" data-id="{{ $lead->id }}" class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} {{ $lead->has_new ? 'kanban-card-pulse' : '' }} bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all group">
                                                 <div class="flex justify-between items-start mb-2">
                                                     <div class="flex items-center space-x-2">
                                                         @if($lead->has_new)
@@ -194,7 +194,7 @@
                                     @click="$dispatch('open-chat-side-panel')"
                                     wire:loading.class="opacity-50"
                                     wire:target="openChat({{ $lead->id }})"
-                                    class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} bg-white px-3 py-2.5 rounded-lg border border-slate-200 cursor-grab active:cursor-grabbing hover:bg-slate-50 hover:border-blue-300 transition-all"
+                                    class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} {{ $lead->has_new && $key !== 'new' ? 'kanban-card-pulse' : '' }} bg-white px-3 py-2.5 rounded-lg border border-slate-200 cursor-grab active:cursor-grabbing hover:bg-slate-50 hover:border-blue-300 transition-all"
                                 >
                                     <div class="flex items-center justify-between gap-2 {{ $lastMsg ? 'mb-1' : '' }}">
                                         <div class="flex items-center gap-1.5 min-w-0">
@@ -232,6 +232,18 @@
             100% { transform: scale(1); opacity: 1; }
         }
         .kanban-unread-badge { animation: badge-pop .45s cubic-bezier(.34,1.56,.64,1); }
+
+        /* Пульсирующая рамка на непрочитанной карточке (просьба Романа
+           2026-09-18) — НАМЕРЕННО только за пределами колонки "Новые"
+           (условие $key !== 'new' в блейде, не здесь): в "Новые" и так всё
+           непрочитанное по умолчанию, пульс там был бы шумом на весь экран;
+           а вот клиент, который уже уехал в другую колонку и написал
+           снова — сигнал, что его реально пропустишь, если не выделить. */
+        @keyframes card-pulse-border {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244,63,94,.55); }
+            50%      { box-shadow: 0 0 0 5px rgba(244,63,94,0); }
+        }
+        .kanban-card-pulse { animation: card-pulse-border 1.8s ease-in-out infinite; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
