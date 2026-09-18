@@ -21,7 +21,7 @@
     width: 100%;
     grid-column: span 2;
     position: relative;
-    background-color: #eee;
+    background-color: #f0f0f0;
 }
 .menu-item-container{
     display: flex;
