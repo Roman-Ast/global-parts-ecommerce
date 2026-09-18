@@ -3,13 +3,24 @@
 namespace App\Livewire\Admin;
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use App\Models\WhatsappLead;
 
 class WhatsappMessenger extends Component
 {
+    use WithFileUploads;
+
     public $activeLeadId;
     public $replyText = '';
     public $compactMode = false;
+
+    /**
+     * Вставка картинки из буфера обмена прямо в чат (Ctrl+V, просьба Романа
+     * 2026-09-18) — временный Livewire-аплоад, не постоянное свойство формы.
+     * JS-обработчик paste на textarea (см. блейд) вызывает $wire.upload(...)
+     * на это имя, затем sendPastedImage() ниже.
+     */
+    public $pastedImage = null;
 
     /** Тот же лимит и тот же принцип, что и в KanbanBoard::LEADS_LIMIT. */
     const LEADS_LIMIT = 200;
@@ -178,6 +189,68 @@ class WhatsappMessenger extends Component
         } catch (\Exception $e) {
             \Log::error("Ошибка отправки WhatsApp: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Отправка картинки, вставленной из буфера обмена (Ctrl+V) — см. paste-
+     * обработчик на textarea в блейде, который зовёт $wire.upload('pastedImage', ...)
+     * и по завершении вызывает этот метод. Файл сохраняется на public-диск
+     * (постоянно, не temp) ради стабильного URL: и для показа в НАШЕМ чате
+     * (file_url у обычных imageMessage и так уже ссылка), и потому что Green
+     * API `sendFileByUrl` сам СКАЧИВАЕТ файл по этому URL — значит адрес
+     * должен быть реально доступен из интернета, а не только локально
+     * (поэтому у себя на локалке отправка реально в WhatsApp не дойдёт —
+     * протестировать можно только на проде, см. CLAUDE.md).
+     */
+    public function sendPastedImage()
+    {
+        if (!$this->activeLeadId || !$this->pastedImage) {
+            return;
+        }
+
+        $lead = WhatsappLead::find($this->activeLeadId);
+        [$instanceId, $token] = $this->resolveInstanceCreds($lead);
+
+        try {
+            $path = $this->pastedImage->store('whatsapp-outgoing', 'public');
+            $publicUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+
+            $response = \Illuminate\Support\Facades\Http::post(
+                "https://api.green-api.com/waInstance{$instanceId}/sendFileByUrl/{$token}",
+                [
+                    'chatId' => $lead->phone . '@c.us',
+                    'urlFile' => $publicUrl,
+                    'fileName' => basename($path),
+                ]
+            );
+
+            if ($response->successful()) {
+                $lead->messages()->create([
+                    'instance_id' => $instanceId,
+                    'message_text' => 'Изображение',
+                    'file_url' => $publicUrl,
+                    'is_incoming' => false,
+                    'is_read' => true,
+                    'message_id' => $response->json()['idMessage'] ?? uniqid(),
+                    'type' => 'imageMessage',
+                    'status' => 'sent',
+                ]);
+
+                $lead->update(['last_seen_at' => now()]);
+                $lead->touch();
+
+                \App\Models\CrmActivityLog::log('send_message', $lead->id);
+
+                $this->dispatch('scroll-chat-to-bottom');
+                $this->dispatch('refreshKanban')->to('admin.kanban-board');
+            } else {
+                \Log::error('Ошибка отправки картинки WhatsApp: ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            \Log::error('Ошибка отправки картинки WhatsApp: ' . $e->getMessage());
+        }
+
+        $this->pastedImage = null;
     }
 
     // Добавь этот метод mount

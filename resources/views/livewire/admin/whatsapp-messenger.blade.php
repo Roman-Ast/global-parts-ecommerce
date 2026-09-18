@@ -164,7 +164,7 @@
                     @endforeach
                 </div>
                     
-                <div class="p-4 bg-gray-50 border-t">
+                <div class="p-4 bg-gray-50 border-t" x-data="{ uploadingImage: false }">
                     <div class="flex gap-2">
                         {{-- wire:ignore — без него wire:poll.3s на корневом div (строка 1)
                              каждые 3 секунды перерисовывал этот textarea и стирал
@@ -186,16 +186,43 @@
                             wire:model.defer="replyText"
                             x-on:keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $wire.sendMessage(); }"
                             x-on:scroll-chat-to-bottom.window="$el.value = ''; $el.style.height = ''; $el.dispatchEvent(new Event('input'))"
-                            placeholder="Введите ответ... (Enter — отправить, Shift+Enter — новая строка)"
+                            {{-- Вставка картинки из буфера обмена (Ctrl+V, просьба Романа
+                                 2026-09-18) — clipboardData.items доступен только в самом
+                                 событии paste, поэтому логика целиком инлайновая, не через
+                                 отдельный метод. $wire.upload — штатный Livewire JS API для
+                                 File/Blob (WithFileUploads на бэкенде), не нужно вручную
+                                 base64-кодировать. Текст вставляется как обычно (условие
+                                 срабатывает только когда в буфере реально картинка). --}}
+                            x-on:paste="
+                                const items = $event.clipboardData?.items || [];
+                                for (const item of items) {
+                                    if (item.type && item.type.startsWith('image/')) {
+                                        $event.preventDefault();
+                                        const file = item.getAsFile();
+                                        if (!file) continue;
+                                        uploadingImage = true;
+                                        $wire.upload('pastedImage', file,
+                                            () => { $wire.call('sendPastedImage').then(() => { uploadingImage = false; }); },
+                                            () => { uploadingImage = false; }
+                                        );
+                                        break;
+                                    }
+                                }
+                            "
+                            placeholder="Введите ответ... (Enter — отправить, Shift+Enter — новая строка, Ctrl+V — вставить картинку)"
                             rows="1"
                             oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'
                             class="flex-1 border border-slate-300 rounded-2xl px-5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none overflow-y-auto max-h-[240px] custom-scrollbar"
                         ></textarea>
-                        
-                        <button wire:click="sendMessage" 
+
+                        <button wire:click="sendMessage"
                                 class="bg-blue-600 text-white px-8 py-2.5 rounded-full hover:bg-blue-700 transition shadow-md active:scale-95 font-bold uppercase text-xs tracking-widest">
                             ОТПРАВИТЬ
                         </button>
+                    </div>
+                    <div x-show="uploadingImage" class="text-xs text-slate-400 px-1 mt-1.5 flex items-center gap-1.5">
+                        <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        Отправляю изображение...
                     </div>
                 </div>
             </div>
