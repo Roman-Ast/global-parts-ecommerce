@@ -57,9 +57,17 @@
 
                     <div class="grid grid-cols-4 gap-3 h-full min-h-0">
                         @foreach($info['sub'] as $subKey => $subTitle)
+                            @php
+                                $subUnreadCount = isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->where('has_new', true)->count() : 0;
+                            @endphp
                             <div class="flex flex-col h-full min-h-0">
-                                <div class="text-[9px] font-black text-slate-500 uppercase text-center mb-2 tracking-tighter">
-                                    {{ $subTitle }} ({{ isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->count() : 0 }})
+                                <div class="flex items-center justify-center gap-1 text-[9px] font-black text-slate-500 uppercase text-center mb-2 tracking-tighter">
+                                    <span>{{ $subTitle }} ({{ isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->count() : 0 }})</span>
+                                    @if($subUnreadCount > 0)
+                                        <span wire:key="unread-badge-{{ $subKey }}-{{ $subUnreadCount }}" class="kanban-unread-badge flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-rose-500 text-white text-[8px] font-black leading-none shadow-[0_0_6px_rgba(244,63,94,0.7)]">
+                                            {{ $subUnreadCount }}
+                                        </span>
+                                    @endif
                                 </div>
 
                                 {{-- min-h-0 по всей цепочке flex/grid-родителей выше — классический
@@ -116,9 +124,25 @@
                      "проезжает" под ней при скролле), z-10 — чтобы тень действительно
                      легла ПОВЕРХ соседней колонки, а не под неё. --}}
                 <div class="flex-shrink-0 w-[320px] flex flex-col h-full min-h-0 {{ $loop->first ? 'sticky left-0 z-10 bg-slate-100 shadow-[8px_0_12px_-8px_rgba(0,0,0,0.15)]' : '' }}" wire:key="status-col-{{ $key }}">
+                    @php
+                        $columnUnreadCount = isset($leadsByStatus[$key]) ? $leadsByStatus[$key]->where('has_new', true)->count() : 0;
+                    @endphp
                     <div class="flex items-center justify-between mb-3 px-3 py-2.5 rounded-xl {{ $info['color'] }} border border-black/5 shadow-sm">
                         <div class="flex items-center space-x-2">
                             <h3 class="font-black uppercase text-[10px] tracking-widest">{{ $info['title'] }}</h3>
+                            {{-- Бейдж непрочитанных на КАЖДОЙ колонке (просьба Романа
+                                 2026-09-18) — раньше искать, кто написал после того, как
+                                 карточку уже перетащили из "Новые", приходилось вручную по
+                                 колонкам. wire:key завязан на само число — при изменении
+                                 счётчика Livewire пересоздаёт узел заново (не просто меняет
+                                 текст), а свежевставленный узел сам переигрывает CSS-анимацию
+                                 badge-pop — вспышка при получении нового сообщения, без
+                                 отдельного JS для отслеживания "изменилось/не изменилось". --}}
+                            @if($columnUnreadCount > 0)
+                                <span wire:key="unread-badge-{{ $key }}-{{ $columnUnreadCount }}" class="kanban-unread-badge flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black leading-none shadow-[0_0_6px_rgba(244,63,94,0.7)]">
+                                    {{ $columnUnreadCount }}
+                                </span>
+                            @endif
                         </div>
                         <div class="bg-white/40 px-2 py-0.5 rounded text-[10px] font-bold">
                             {{ isset($leadsByStatus[$key]) ? $leadsByStatus[$key]->count() : 0 }}
@@ -199,6 +223,15 @@
     <style>
         .kanban-card-chosen { box-shadow: 0 10px 25px -5px rgba(0,0,0,.15), 0 8px 10px -6px rgba(0,0,0,.1); }
         .kanban-card-dragging { opacity: .92; transform: rotate(1.5deg); }
+        /* Вспышка на бейдже непрочитанных при появлении/изменении — сам узел
+           каждый раз пересоздаётся (wire:key завязан на число), а свежий DOM-узел
+           всегда переигрывает CSS-анимацию заново, без отдельного JS. */
+        @keyframes badge-pop {
+            0%   { transform: scale(0.4); opacity: 0; }
+            60%  { transform: scale(1.25); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .kanban-unread-badge { animation: badge-pop .45s cubic-bezier(.34,1.56,.64,1); }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
@@ -240,6 +273,17 @@
                     // (список карточек), но у курсора на правом/левом краю экрана
                     // сработает горизонтальный скролл внешнего ряда колонок, не
                     // вертикальный скролл внутри одной колонки.
+                    //
+                    // forceFallback (добавлено 2026-09-18, живая жалоба Романа —
+                    // "сработало один раз и перестало") — без него Sortable по
+                    // умолчанию использует НАТИВНЫЙ HTML5 drag&drop, у которого
+                    // автоскролл в связке с несколькими Sortable-инстансами на
+                    // странице ведёт себя нестабильно (известная особенность
+                    // библиотеки, не только у нас). forceFallback переключает на
+                    // собственную JS-реализация драга (мышь/тач-события вместо
+                    // нативного DnD) — автоскролл там свой, не завязан на браузер,
+                    // отрабатывает одинаково при каждом перетаскивании подряд.
+                    forceFallback: true,
                     scroll: true,
                     scrollSensitivity: 80,
                     scrollSpeed: 15,
