@@ -22,6 +22,13 @@ class CrmActivityLog extends Model
         'meta' => 'array',
     ];
 
+    /**
+     * Вспомогательный лог — сбой здесь (напр. миграция ещё не докатилась на
+     * прод, как случилось 2026-09-18: таблицы не было, и это валило
+     * ЦЕЛИКОМ открытие доски/чата/перемещение карточек) не должен ронять
+     * основной функционал СРМ. Ловим и молча пишем в обычный Laravel-лог —
+     * потеря одной записи активности несравнимо дешевле недоступной доски.
+     */
     public static function log(string $action, ?int $leadId = null, ?array $meta = null): void
     {
         $userId = auth()->id();
@@ -29,11 +36,15 @@ class CrmActivityLog extends Model
             return;
         }
 
-        static::create([
-            'user_id' => $userId,
-            'action' => $action,
-            'whatsapp_lead_id' => $leadId,
-            'meta' => $meta,
-        ]);
+        try {
+            static::create([
+                'user_id' => $userId,
+                'action' => $action,
+                'whatsapp_lead_id' => $leadId,
+                'meta' => $meta,
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('CrmActivityLog::log failed', ['action' => $action, 'error' => $e->getMessage()]);
+        }
     }
 }
