@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Schema;
  *          MIN(created_at) AS started_at, MAX(created_at) AS ended_at,
  *          COUNT(*) AS total_actions,
  *          SUM(action = 'update_status') AS cards_moved,
- *          COUNT(DISTINCT CASE WHEN action = 'update_status' THEN whatsapp_lead_id END) AS unique_leads_touched
+ *          COUNT(DISTINCT CASE WHEN action = 'update_status' THEN whatsapp_lead_id END) AS unique_leads_touched,
+ *          SUM(action = 'send_message') AS messages_sent
  *   FROM crm_activity_log
  *   GROUP BY user_id, DATE(created_at)
  *   ORDER BY day DESC, user_id;
