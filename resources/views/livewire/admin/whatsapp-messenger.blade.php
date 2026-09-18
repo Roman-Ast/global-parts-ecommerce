@@ -81,6 +81,15 @@
                              не докрученным до конца. --}}
                         $nextTick(() => scrollToBottom(false));
                         setTimeout(() => scrollToBottom(false), 300);
+
+                        {{-- Фокус на поле ввода при открытии чата (просьба Романа
+                             2026-09-18) — тот же $nextTick, что и у скролла: этот x-init
+                             перевыполняется заново при каждой смене активного лида
+                             (весь #chat-window пересоздаётся, т.к. компонент
+                             WhatsappMessenger висит на wire:key='side-chat-{id}'), так
+                             что фокус переставляется на новое поле при переключении
+                             между чатами, не только при первом открытии шторки. --}}
+                        $nextTick(() => document.getElementById('whatsapp-reply-input')?.focus());
                     "
                     @scroll-chat-to-bottom.window="scrollToBottom(true)" {{-- Новое сообщение при уже открытом чате — плавно --}}
                     class="flex-1 overflow-y-auto p-6 bg-[#f0f2f5] space-y-4 custom-scrollbar"
@@ -172,6 +181,7 @@
                              'input' после очистки — чтобы wire:model.defer тоже увидел
                              пустое значение, а не только визуально пустое поле. --}}
                         <textarea
+                            id="whatsapp-reply-input"
                             wire:ignore
                             wire:model.defer="replyText"
                             x-on:keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $wire.sendMessage(); }"
