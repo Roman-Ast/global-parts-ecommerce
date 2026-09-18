@@ -60,7 +60,16 @@
                             @php
                                 $subUnreadCount = isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->where('has_new', true)->count() : 0;
                             @endphp
-                            <div class="flex flex-col h-full min-h-0">
+                            {{-- wire:key отсутствовал на этой обёртке (в отличие от всех
+                                 остальных @foreach-элементов в файле) — найдено при разборе
+                                 жалобы Романа 2026-09-18 "в Работе с возражениями рамка не
+                                 пульсирует, а в обычных колонках пульсирует". Без стабильного
+                                 ключа Livewire на каждый wire:poll.3s не может надёжно
+                                 сопоставить узел сам с собой и может пересоздавать его —
+                                 CSS-анимация при этом перезапускается с нуля каждые ~3
+                                 секунды, не успевая визуально проиграться (тот же класс
+                                 бага, что раньше ломал сам драг, см. initKanban() выше). --}}
+                            <div wire:key="sub-col-{{ $subKey }}" class="flex flex-col h-full min-h-0">
                                 <div class="flex items-center justify-center gap-1 text-[9px] font-black text-slate-500 uppercase text-center mb-2 tracking-tighter">
                                     <span>{{ $subTitle }} ({{ isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->count() : 0 }})</span>
                                     @if($subUnreadCount > 0)
