@@ -2237,6 +2237,19 @@
                                 <option value="repeat_request">Повторное обращение</option>
                             </select>
                         </div>
+                        {{-- Клиент пришёл через Kaspi (звонок/переписка), но оформился
+                             напрямую, минуя сам магазин Kaspi — комиссию в этом случае
+                             реально не платим, канал привлечения при этом остаётся "Kaspi"
+                             (просьба Романа 2026-09-18). Показывается только при выборе
+                             канала "Каспи" — see admin.js. --}}
+                        <div class="input-group mb-2 manually-order-main" id="manualy_order_kaspi_bypassed_wrapper" style="display:none;">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" name="kaspi_bypassed" id="manualy_order_kaspi_bypassed" value="1">
+                                <label class="form-check-label" for="manualy_order_kaspi_bypassed">
+                                    Оформлено напрямую, минуя магазин Kaspi (без комиссии)
+                                </label>
+                            </div>
+                        </div>
                         <label for="basic-url" class="form-label" id="manually-order-list-open">Товар</label>
                     </div>
 

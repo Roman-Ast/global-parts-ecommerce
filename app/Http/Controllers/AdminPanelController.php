@@ -52,7 +52,9 @@ class AdminPanelController extends Controller
         $primeCostSumFromBegin = Order::sum('sum');
         $countOfSalesFromBegin = Order::count();
         $totalItemsSoldFromBegin = OrderProduct::count();
-        $kaspiComissionFromBegin = Order::where('sale_channel', 'kaspi')->sum('sum_with_margine') * 12 / 100;
+        // kaspi_bypassed — заказы, оформленные мимо магазина Kaspi, реальной
+        // комиссии не несут, хоть канал и "kaspi" (просьба Романа 2026-09-18).
+        $kaspiComissionFromBegin = Order::where('sale_channel', 'kaspi')->where('kaspi_bypassed', false)->sum('sum_with_margine') * 12 / 100;
         $marginClearFromBegin = round($salesSumFromBegin - $primeCostSumFromBegin - $kaspiComissionFromBegin);
 
         //выгружаем данные продаж по каналам за весь период
@@ -181,8 +183,10 @@ class AdminPanelController extends Controller
         $totalPrimeCostSum = Order::whereBetween('date', [$start, $end])->sum('sum');
         $totalCountOfSales = Order::whereBetween('date', [$start, $end])->count();
 
+        // kaspi_bypassed — см. пояснение у $kaspiComissionFromBegin выше.
         $kaspiComission = Order::whereBetween('date', [$start, $end])
             ->where('sale_channel', 'kaspi')
+            ->where('kaspi_bypassed', false)
             ->sum('sum_with_margine') * 12.5 / 100;
 
         // Закреплённый пункт "Весь период" — берём из уже посчитанной статистики с начала работы
@@ -1709,7 +1713,12 @@ class AdminPanelController extends Controller
             // (Kaspi платит за весь заказ разом, не по позициям).
             $order = Order::find($product->order_id);
 
-            if ($order && $order->sale_channel === 'kaspi') {
+            // kaspi_bypassed — заказ пришёл через Kaspi, но оформлен мимо их
+            // магазина: оплата уже получена обычным путём при создании
+            // заказа (см. manuallyMakeOrder()), ждать автовыплату от Kaspi
+            // после выдачи не нужно, это не тот случай (просьба Романа
+            // 2026-09-18).
+            if ($order && $order->sale_channel === 'kaspi' && !$order->kaspi_bypassed) {
                 $allResolved = !OrderProduct::where('order_id', $order->id)
                     ->whereNotIn('status', ['issued', 'returned'])
                     ->exists();
@@ -1940,7 +1949,12 @@ class AdminPanelController extends Controller
             'sum_with_margine' => $orderSumWithMargine,
             'status' => 'заказано',
             'customer_phone' => $customer?->phone ?? $phoneRaw,
-            'sale_channel' => $request->data['orderInfo'][4]
+            'sale_channel' => $request->data['orderInfo'][4],
+            // Клиент пришёл через Kaspi, но оформился мимо магазина Kaspi —
+            // комиссию не платим, но канал привлечения остаётся "kaspi"
+            // (просьба Романа 2026-09-18, см. миграцию add_kaspi_bypassed).
+            // Не в orderInfo (позиционный массив) — отдельным полем в payload.
+            'kaspi_bypassed' => (bool) ($request->data['kaspiBypassed'] ?? false),
         ]);
 
         $orderPayment = OrderPayment::create([

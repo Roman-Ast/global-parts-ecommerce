@@ -22,6 +22,7 @@ class Order extends Model
         'status',
         'customer_phone',
         'sale_channel',
+        'kaspi_bypassed',
         'delivery_type',
         'city',
         'address',
@@ -31,6 +32,7 @@ class Order extends Model
 
     protected $casts = [
         'date' => 'date',
+        'kaspi_bypassed' => 'boolean',
     ];
 
     public function products(): HasMany

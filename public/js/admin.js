@@ -301,6 +301,10 @@ $('#manually-order-submit').on('click', function () {
         orderInfo: [],
         products: [],
         paymentInfo: [],
+        // Не в orderInfo намеренно — тот массив строго позиционный
+        // (orderInfo[4] = sale_channel и т.д. по всему контроллеру),
+        // добавление туда нового поля сдвинуло бы все существующие индексы.
+        kaspiBypassed: $('#manualy_order_kaspi_bypassed').is(':checked') ? 1 : 0,
     };
 
     $('.manually-order-main-info').each(function (key, elem) {
@@ -405,9 +409,12 @@ $('#manually-order-submit').on('click', function () {
     // корректно заполненный 0 как будто это пустое поле.
     const paymentSaleChannel = $('#manualy_order_sale_channel').val();
     const paymentAmount = parseFloat($('#manualy-order-payment-details-amount').val());
+    // 0 допустим только для НАСТОЯЩЕГО Kaspi (ждём оплату после выдачи) —
+    // заказ "мимо магазина Kaspi" платится сразу, как любой другой канал.
+    const isRealKaspiDeferred = paymentSaleChannel === 'kaspi' && !data.kaspiBypassed;
     const paymentAmountInvalid = isNaN(paymentAmount)
         || paymentAmount < 0
-        || (paymentAmount === 0 && paymentSaleChannel !== 'kaspi');
+        || (paymentAmount === 0 && !isRealKaspiDeferred);
 
     if (paymentAmountInvalid) {
         allowToOrder = false;
@@ -544,8 +551,12 @@ $(document).on('input', '.manually-order-parts-list-item-qty, .manually-order-pa
     // приводило к тому, что деньги в кассе "приходили" сразу при
     // оформлении заказа, хотя Kaspi ещё ничего не заплатил. Живой случай
     // 2026-08-31: заказ #56 показал 58000 прихода в день оформления.
+    // Если клиент пришёл через Kaspi, но оформился МИМО магазина
+    // (checkbox "kaspi_bypassed") — оплата реально уже получена сразу,
+    // как у любого другого канала, ждать нечего (просьба Романа 2026-09-18).
     const saleChannel = $('#manualy_order_sale_channel').val();
-    $('#manualy-order-payment-details-amount').val(saleChannel === 'kaspi' ? 0 : sumWithMargine);
+    const kaspiBypassed = $('#manualy_order_kaspi_bypassed').is(':checked');
+    $('#manualy-order-payment-details-amount').val((saleChannel === 'kaspi' && !kaspiBypassed) ? 0 : sumWithMargine);
 
     $('#manualy-order-total-prime-cost-sum-inner').html(primeCostSum);
     $('#manualy-order-total-qty-inner').html(totalQty);
@@ -555,6 +566,16 @@ $(document).on('input', '.manually-order-parts-list-item-qty, .manually-order-pa
 // оплаты по тому же правилу — иначе поле остаётся с суммой, введённой до
 // переключения канала.
 $(document).on('change', '#manualy_order_sale_channel', function () {
+    const isKaspi = $(this).val() === 'kaspi';
+
+    // Чекбокс "оформлено мимо магазина Kaspi" имеет смысл только для
+    // самого канала Kaspi — для остальных каналов скрываем и сбрасываем,
+    // чтобы случайно не протащить его состояние с прошлого выбора.
+    $('#manualy_order_kaspi_bypassed_wrapper').toggle(isKaspi);
+    if (!isKaspi) {
+        $('#manualy_order_kaspi_bypassed').prop('checked', false);
+    }
+
     $('.manually-order-parts-list-item-qty').first().trigger('input');
 
     // Каспи всегда платит через один и тот же счёт — просьба Романа
@@ -563,7 +584,10 @@ $(document).on('change', '#manualy_order_sale_channel', function () {
     // окружениями), не жёстко "точное совпадение", чтобы не сломаться
     // от лишнего пробела/регистра в названии счёта. Поле остаётся
     // обычным select — можно поменять руками, если понадобится другой счёт.
-    if ($(this).val() === 'kaspi') {
+    // Не подставляем этот счёт, если заказ оформлен МИМО Kaspi (см. выше) —
+    // деньги в этом случае пришли не через маркетплейс, счёт Kaspi Pay тут
+    // ни при чём.
+    if (isKaspi && !$('#manualy_order_kaspi_bypassed').is(':checked')) {
         // Два счёта содержат "Kaspi Pay" в названии ("Рома Kaspi Pay" —
         // именно на него Kaspi Marketplace платит после выдачи заказа,
         // см. AdminPanelController; и "Kaspi Pay безнал" — другой счёт,
@@ -579,6 +603,13 @@ $(document).on('change', '#manualy_order_sale_channel', function () {
             $accountSelect.val($kaspiPayOption.val());
         }
     }
+});
+
+// Тот же пересчёт суммы оплаты нужен и при переключении самого чекбокса
+// (не только канала) — иначе поле "Сумма" не обновится, если поменять
+// галочку уже ПОСЛЕ того, как канал Kaspi выбран.
+$(document).on('change', '#manualy_order_kaspi_bypassed', function () {
+    $('.manually-order-parts-list-item-qty').first().trigger('input');
 });
 
 //хуки для фильтрации полей в создании ДДС
