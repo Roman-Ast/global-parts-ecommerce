@@ -157,13 +157,29 @@
                     
                 <div class="p-4 bg-gray-50 border-t">
                     <div class="flex gap-2">
+                        {{-- wire:ignore — без него wire:poll.3s на корневом div (строка 1)
+                             каждые 3 секунды перерисовывал этот textarea и стирал
+                             инлайновую высоту, которую ставит oninput ниже: визуально
+                             это выглядело как "расширяется при вставке, потом сжимается
+                             обратно" (жалоба Романа 2026-09-17) — рост был настоящим,
+                             просто следующий poll-тик его тут же откатывал. wire:model.defer
+                             продолжает работать как обычно (слушатели вешаются один раз
+                             при монтировании, wire:ignore лишь отключает повторный морф
+                             этого узла) — очистка поля после отправки теперь не через
+                             морф (он больше не трогает этот элемент), а явно ниже по
+                             событию scroll-chat-to-bottom, которое sendMessage() и так
+                             диспатчит сразу после успешной отправки. Синтетический
+                             'input' после очистки — чтобы wire:model.defer тоже увидел
+                             пустое значение, а не только визуально пустое поле. --}}
                         <textarea
+                            wire:ignore
                             wire:model.defer="replyText"
                             x-on:keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $wire.sendMessage(); }"
+                            x-on:scroll-chat-to-bottom.window="$el.value = ''; $el.style.height = ''; $el.dispatchEvent(new Event('input'))"
                             placeholder="Введите ответ... (Enter — отправить, Shift+Enter — новая строка)"
                             rows="1"
                             oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'
-                            class="flex-1 border border-slate-300 rounded-2xl px-5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none overflow-hidden"
+                            class="flex-1 border border-slate-300 rounded-2xl px-5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none overflow-y-auto max-h-[240px] custom-scrollbar"
                         ></textarea>
                         
                         <button wire:click="sendMessage" 
