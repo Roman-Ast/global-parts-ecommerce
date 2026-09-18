@@ -88,7 +88,10 @@
                                                 <div class="flex justify-between items-start mb-2">
                                                     <div class="flex items-center space-x-2">
                                                         @if($lead->has_new)
-                                                            <span class="flex h-2 w-2 rounded-full bg-green-500"></span>
+                                                            <span class="relative flex h-3 w-3 flex-shrink-0">
+                                                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                                            </span>
                                                         @endif
                                                         <span class="text-xs font-bold text-slate-800 tracking-tighter">+{{ $lead->phone }}</span>
                                                     </div>
@@ -199,7 +202,10 @@
                                     <div class="flex items-center justify-between gap-2 {{ $lastMsg ? 'mb-1' : '' }}">
                                         <div class="flex items-center gap-1.5 min-w-0">
                                             @if($lead->has_new)
-                                                <span class="flex-shrink-0 h-2 w-2 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]"></span>
+                                                <span class="relative flex h-3 w-3 flex-shrink-0">
+                                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]"></span>
+                                                </span>
                                             @endif
                                             <span class="text-[13px] font-bold text-slate-900 truncate">+{{ $lead->phone }}</span>
                                             @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
