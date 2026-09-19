@@ -450,7 +450,6 @@ class AdminPanelController extends Controller
         $financeDashboard = $this->getFinanceDashboardData($request);
         $supplierSettlementsDebts = $this->getSuppliersSettlements($request);
         $receivables = $this->getReceivablesData($request);
-        $supplierCredits = $this->getSupplierCreditsData();
         $reconciliation = $this->getReconciliationData($request);
         
         //dd($supplierSettlementsDebts);
@@ -509,49 +508,8 @@ class AdminPanelController extends Controller
         $financeDashboard,
         $supplierSettlementsDebts,
         $receivables,
-        $supplierCredits,
         $reconciliation
         ));
-    }
-
-    /**
-     * Раздельный источник от totalSupplierOverpayment (см.
-     * getSuppliersSettlements()) — тот живой (accrued-paid из
-     * supplier_settlement/cashflow_transactions), а этот читает
-     * supplier_credits, куда попадают зачёты, НЕ связанные с обычным
-     * циклом заказ→оплата: возвраты от поставщика в зачёт
-     * (CustomerReturnController, source_table='customer_returns') и
-     * разовые исторические остатки (saveOpeningBalances()). Раньше это
-     * пересекалось с prepaid-автоплатежом (Автотрейд и т.п. — оба
-     * источника показывали одно и то же число, т.к. старая автоматика
-     * писала в оба места синхронно) — тот механизм убран целиком
-     * 2026-09-19, но эта таблица и её обычные источники остались нужны:
-     * без неё пропадает единственное место, где видно зачёты по возвратам
-     * (живой случай — Армтек, 19820, найдено при попытке убрать эту
-     * карточку как "дубль" 2026-09-19).
-     */
-    private function getSupplierCreditsData(): array
-    {
-        $supplierCredits = SupplierCredit::selectRaw('supplier_id, SUM(amount) as balance')
-            ->groupBy('supplier_id')
-            ->having('balance', '>', 0)
-            ->get()
-            ->map(function ($row) {
-                $supplier = Suppliers::find($row->supplier_id);
-                return [
-                    'name' => $supplier?->name ?? 'Неизвестный поставщик',
-                    'amount' => round((float) $row->balance, 2),
-                ];
-            })
-            ->sortByDesc('amount')
-            ->values();
-
-        $totalSupplierCredits = round($supplierCredits->sum('amount'), 2);
-
-        return [
-            'supplierCredits' => $supplierCredits,
-            'totalSupplierCredits' => $totalSupplierCredits,
-        ];
     }
 
     private function getFinanceDashboardData(Request $request): array
@@ -1132,28 +1090,56 @@ class AdminPanelController extends Controller
         // Поставщиков с долгом
         $suppliersWithDebtCount = $supplierDebts->count();
 
-        // Переплата поставщикам
-        $totalSupplierOverpayment = $supplierBalances
-            ->filter(fn ($row) => $row->balance < 0)
-            ->sum(fn ($row) => abs($row->balance));
+        // Переплата поставщикам — разбивка (просьба Романа 2026-09-19) —
+        // объединяет ДВА источника в одну карточку "Переплата поставщикам"
+        // (раньше пробовали разделить на неё и отдельную "Сальдо у
+        // поставщиков", но Роман справедливо заметил, что раз оплаты
+        // поставщикам теперь вносятся вручную без автоматики, разница
+        // между источниками для него не имеет смысла — один и тот же
+        // факт "поставщик должен нам"):
+        //   1. $supplierBalances (accrued-paid, живой расчёт из
+        //      supplier_settlement/cashflow_transactions — обычный цикл
+        //      заказ→оплата).
+        //   2. supplier_credits (зачёты, НЕ связанные с этим циклом —
+        //      возвраты от поставщика в зачёт, CustomerReturnController,
+        //      и разовые исторические остатки, saveOpeningBalances()).
+        // Раньше supplier_credits у Автотрейда/Тисса/Кулана писалась
+        // СИНХРОННО с автоплатежом (applyAvailableSupplierCredit(),
+        // удалён 2026-09-19) — простое сложение задвоило бы их. Эти три
+        // поставщика зачищены отдельной миграцией
+        // (2026_09_19_000005_zero_legacy_supplier_credits_for_automated_suppliers)
+        // ПЕРЕД тем, как это объединение стало безопасным — у остальных
+        // (Армтек и т.п.) такого зеркалирования никогда не было.
+        $overpaymentBySupplier = [];
 
-        // Разбивка переплаты по поставщикам (просьба Романа 2026-09-19) —
-        // раньше эта же роль ("сколько у нас аванса лежит у поставщика")
-        // играл отдельный виджет "Сальдо у поставщиков (зачёт)"
-        // (getSupplierCreditsData(), таблица supplier_credits) — но после
-        // того как автосписание/автопополнение этого зачёта убрали целиком
-        // (см. manuallyMakeOrder()/supplierPayment()), та таблица перестала
-        // куда-либо писаться на обычном пути и начала врать статичным
-        // числом. $supplierBalances уже и так живьём считает balance =
-        // accrued-paid из supplier_settlement/cashflow_transactions на
-        // каждый рендер — тот же источник, что и "Долг"/"Переплата" выше,
-        // так что отдельная ручная бухгалтерия ему не нужна, обновляется
-        // сама с каждым новым заказом/платежом.
-        $supplierOverpayments = $supplierBalances
-            ->filter(fn ($row) => $row->balance < 0)
-            ->map(fn ($row) => ['name' => $row->supplier, 'amount' => round(abs($row->balance), 2)])
+        foreach ($supplierBalances->filter(fn ($row) => $row->balance < 0) as $row) {
+            $overpaymentBySupplier[$row->supplier_id] = [
+                'name' => $row->supplier,
+                'amount' => round(abs($row->balance), 2),
+            ];
+        }
+
+        $creditRows = DB::table('supplier_credits')
+            ->selectRaw('supplier_id, SUM(amount) as balance')
+            ->groupBy('supplier_id')
+            ->having('balance', '>', 0)
+            ->get();
+
+        foreach ($creditRows as $row) {
+            $already = $overpaymentBySupplier[$row->supplier_id]['amount'] ?? 0;
+            $overpaymentBySupplier[$row->supplier_id] = [
+                'name' => $overpaymentBySupplier[$row->supplier_id]['name']
+                    ?? (Suppliers::find($row->supplier_id)?->name ?? 'Неизвестный поставщик'),
+                'amount' => round($already + (float) $row->balance, 2),
+            ];
+        }
+
+        $supplierOverpayments = collect($overpaymentBySupplier)
+            ->values()
             ->sortByDesc('amount')
             ->values();
+
+        $totalSupplierOverpayment = round($supplierOverpayments->sum('amount'), 2);
 
         // Просроченная кредиторка
         $overdueSupplierDebt = $supplierBalances->sum('overdue_balance');

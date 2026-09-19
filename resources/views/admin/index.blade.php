@@ -229,27 +229,17 @@
                                         и отдал всё, что сам должен. Отдельно от "Ликвидность сегодня"
                                         (та — консервативная, без учёта неполученного), намеренно с
                                         визуальным акцентом, не теряется в общем ряду. --}}
-                                        {{-- totalSupplierOverpayment (живой accrued-vs-paid) и
-                                             totalSupplierCredits (supplier_credits — зачёты по возвратам
-                                             от поставщика + разовые исторические остатки) — ДВА разных
-                                             источника, оба складываются здесь. Пробовали убрать
-                                             totalSupplierCredits 2026-09-19 как "дубль" — оказалось не
-                                             дубль: Армтек (19820) существует ТОЛЬКО в supplier_credits
-                                             (зачёт по возврату, CustomerReturnController), в
-                                             accrued-paid его вообще нет. Реальный риск задвоения
-                                             остался только для нескольких СТАРЫХ поставщиков
-                                             (Автотрейд/Тисс/Кулан), у которых зачёт когда-то писала
-                                             убранная 2026-09-19 автоматика синхронно в оба места — для
-                                             них supplier_credits может пересекаться с
-                                             totalSupplierOverpayment, пока Роман не обнулит их старые
-                                             строки в supplier_credits вручную. Для всех остальных
-                                             поставщиков (возвраты, опенинг-баланс) пересечения нет. --}}
+                                        {{-- totalSupplierOverpayment теперь ЕДИНЫЙ источник (просьба
+                                             Романа 2026-09-19) — объединяет живой accrued-vs-paid и
+                                             supplier_credits внутри getSuppliersSettlements() самой
+                                             (см. её докблок в контроллере), задвоение для
+                                             Автотрейда/Тисса/Кулана устранено отдельной миграцией
+                                             (обнулила их старые supplier_credits) ДО объединения. --}}
                                         @php
                                             $netPosition = ($financeDashboard['financeKpi']['balance'] ?? 0)
                                                 + ($totalCustomerReceivable ?? 0)
                                                 + ($totalSupplierReturnReceivable ?? 0)
                                                 + ($totalSupplierOverpayment ?? 0)
-                                                + ($totalSupplierCredits ?? 0)
                                                 - ($totalSupplierDebt ?? 0);
                                         @endphp
                                         <div class="row g-4 mb-4">
@@ -272,7 +262,7 @@
                                                         <div class="small text-muted mt-3 pt-2 border-top">
                                                             {{ number_format($financeDashboard['financeKpi']['balance'] ?? 0, 0, '.', ' ') }} на счетах
                                                             + {{ number_format($totalCustomerReceivable ?? 0, 0, '.', ' ') }} дебиторка клиентов
-                                                            + {{ number_format(($totalSupplierReturnReceivable ?? 0) + ($totalSupplierOverpayment ?? 0) + ($totalSupplierCredits ?? 0), 0, '.', ' ') }} дебиторка + переплаты + зачёты у поставщиков
+                                                            + {{ number_format(($totalSupplierReturnReceivable ?? 0) + ($totalSupplierOverpayment ?? 0), 0, '.', ' ') }} дебиторка + переплаты у поставщиков
                                                             − {{ number_format($totalSupplierDebt ?? 0, 0, '.', ' ') }} кредиторка поставщикам
                                                         </div>
                                                     </div>
@@ -433,15 +423,23 @@
                                                 </div>
                                             </div>
 
-                                            {{-- Переплата поставщикам — живой расчёт accrued-paid из
-                                                 getSuppliersSettlements() (тот же источник, что и
-                                                 "Долг"), обновляется сам с каждым заказом/платежом.
-                                                 Добавлено 2026-09-19 вместо "Сальдо у поставщиков" — но
-                                                 саму эту карточку убрали в тот же день ошибочно, посчитав
-                                                 дублем: у Армтека 19820 живёт ТОЛЬКО в supplier_credits
-                                                 (зачёт по возврату от поставщика), в этом живом расчёте
-                                                 его вообще нет — карточку "Сальдо" вернули следующей же
-                                                 ниже, не вместо, а рядом. --}}
+                                            {{-- Переплата поставщикам — объединённая карточка (просьба
+                                                 Романа 2026-09-19). Раньше это были ДВЕ отдельные
+                                                 карточки: живой accrued-paid ("Переплата") и отдельная
+                                                 supplier_credits ("Сальдо у поставщиков зачёт") — Роман
+                                                 справедливо заметил, что раз оплаты поставщикам теперь
+                                                 вносятся вручную без автоматики, разница между
+                                                 источниками для него не имеет смысла, один и тот же факт
+                                                 "поставщик должен нам". Объединены внутри
+                                                 getSuppliersSettlements() (см. её докблок в контроллере) —
+                                                 задвоение для Автотрейда/Тисса/Кулана (у них
+                                                 supplier_credits когда-то писала прежняя автоматика
+                                                 синхронно с accrued-paid) устранено ДО объединения
+                                                 отдельной миграцией
+                                                 (2026_09_19_000005_zero_legacy_supplier_credits_for_automated_suppliers),
+                                                 обнулившей их старые supplier_credits. Армтек (19820,
+                                                 зачёт по возврату — CustomerReturnController) и подобные
+                                                 — не трогали, у них зеркалирования никогда не было. --}}
                                             <div class="col-12 col-md-6">
                                                 <div class="card border-0 shadow-sm h-100">
                                                     <div class="card-header bg-white border-0 pb-0">
@@ -449,7 +447,7 @@
                                                         <div class="fs-3 fw-bold text-success">
                                                             {{ number_format($totalSupplierOverpayment ?? 0, 0, '.', ' ') }} ₸
                                                         </div>
-                                                        <div class="small text-muted mt-1">Авансы и переплаты — зачтутся в след. закупку</div>
+                                                        <div class="small text-muted mt-1">Авансы, переплаты и зачёты — учтутся в след. закупку</div>
                                                     </div>
                                                     <div class="card-body pt-2">
                                                         @forelse($supplierOverpayments ?? [] as $row)
@@ -459,39 +457,6 @@
                                                             </div>
                                                         @empty
                                                             <div class="text-muted small">Нет переплат поставщикам</div>
-                                                        @endforelse
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {{-- Сальдо у поставщиков (зачёт) — из supplier_credits
-                                                 напрямую: зачёты по возвратам от поставщика
-                                                 (CustomerReturnController, mode=credit) и разовые
-                                                 исторические остатки (saveOpeningBalances()). После
-                                                 удаления автоплатежа предоплатным поставщикам
-                                                 (2026-09-19) эта таблица больше не пересекается с
-                                                 карточкой "Переплата" выше на обычном пути — кроме
-                                                 нескольких СТАРЫХ строк (Автотрейд/Тисс/Кулан), которые
-                                                 писала прежняя автоматика синхронно в оба места; для них
-                                                 возможно задвоение с "Переплата", пока Роман не обнулит
-                                                 их вручную. --}}
-                                            <div class="col-12 col-md-6">
-                                                <div class="card border-0 shadow-sm h-100">
-                                                    <div class="card-header bg-white border-0 pb-0">
-                                                        <div class="text-muted small mb-1">Сальдо у поставщиков (зачёт)</div>
-                                                        <div class="fs-3 fw-bold text-info">
-                                                            {{ number_format($totalSupplierCredits ?? 0, 0, '.', ' ') }} ₸
-                                                        </div>
-                                                        <div class="small text-muted mt-1">Зачёты по возвратам и историческим остаткам</div>
-                                                    </div>
-                                                    <div class="card-body pt-2">
-                                                        @forelse($supplierCredits ?? [] as $row)
-                                                            <div class="d-flex justify-content-between py-1 border-bottom">
-                                                                <span>{{ $row['name'] }}</span>
-                                                                <span class="fw-semibold">{{ number_format($row['amount'], 0, '.', ' ') }} ₸</span>
-                                                            </div>
-                                                        @empty
-                                                            <div class="text-muted small">Нет сальдо у поставщиков</div>
                                                         @endforelse
                                                     </div>
                                                 </div>
