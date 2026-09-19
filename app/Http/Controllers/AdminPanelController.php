@@ -450,7 +450,6 @@ class AdminPanelController extends Controller
         $financeDashboard = $this->getFinanceDashboardData($request);
         $supplierSettlementsDebts = $this->getSuppliersSettlements($request);
         $receivables = $this->getReceivablesData($request);
-        $supplierCredits = $this->getSupplierCreditsData();
         $reconciliation = $this->getReconciliationData($request);
         
         //dd($supplierSettlementsDebts);
@@ -509,33 +508,8 @@ class AdminPanelController extends Controller
         $financeDashboard,
         $supplierSettlementsDebts,
         $receivables,
-        $supplierCredits,
         $reconciliation
         ));
-    }
-
-    private function getSupplierCreditsData(): array
-    {
-        $supplierCredits = SupplierCredit::selectRaw('supplier_id, SUM(amount) as balance')
-            ->groupBy('supplier_id')
-            ->having('balance', '>', 0)
-            ->get()
-            ->map(function ($row) {
-                $supplier = Suppliers::find($row->supplier_id);
-                return [
-                    'name' => $supplier?->name ?? 'Неизвестный поставщик',
-                    'amount' => round((float) $row->balance, 2),
-                ];
-            })
-            ->sortByDesc('amount')
-            ->values();
-
-        $totalSupplierCredits = round($supplierCredits->sum('amount'), 2);
-
-        return [
-            'supplierCredits' => $supplierCredits,
-            'totalSupplierCredits' => $totalSupplierCredits,
-        ];
     }
 
     private function getFinanceDashboardData(Request $request): array
@@ -1121,6 +1095,24 @@ class AdminPanelController extends Controller
             ->filter(fn ($row) => $row->balance < 0)
             ->sum(fn ($row) => abs($row->balance));
 
+        // Разбивка переплаты по поставщикам (просьба Романа 2026-09-19) —
+        // раньше эта же роль ("сколько у нас аванса лежит у поставщика")
+        // играл отдельный виджет "Сальдо у поставщиков (зачёт)"
+        // (getSupplierCreditsData(), таблица supplier_credits) — но после
+        // того как автосписание/автопополнение этого зачёта убрали целиком
+        // (см. manuallyMakeOrder()/supplierPayment()), та таблица перестала
+        // куда-либо писаться на обычном пути и начала врать статичным
+        // числом. $supplierBalances уже и так живьём считает balance =
+        // accrued-paid из supplier_settlement/cashflow_transactions на
+        // каждый рендер — тот же источник, что и "Долг"/"Переплата" выше,
+        // так что отдельная ручная бухгалтерия ему не нужна, обновляется
+        // сама с каждым новым заказом/платежом.
+        $supplierOverpayments = $supplierBalances
+            ->filter(fn ($row) => $row->balance < 0)
+            ->map(fn ($row) => ['name' => $row->supplier, 'amount' => round(abs($row->balance), 2)])
+            ->sortByDesc('amount')
+            ->values();
+
         // Просроченная кредиторка
         $overdueSupplierDebt = $supplierBalances->sum('overdue_balance');
 
@@ -1130,9 +1122,10 @@ class AdminPanelController extends Controller
             'totalSupplierDebt' => $totalSupplierDebt,
             'suppliersWithDebtCount' => $suppliersWithDebtCount,
             'totalSupplierOverpayment' => $totalSupplierOverpayment,
+            'supplierOverpayments' => $supplierOverpayments,
             'overdueSupplierDebt' => $overdueSupplierDebt,
             'supplierBalancesTable' => $supplierBalancesTable,
-            
+
         ];
     }
 
