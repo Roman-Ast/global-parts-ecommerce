@@ -51,8 +51,8 @@
                      подпричинами (напр. 'lost' — "Не купили") автоматически
                      получали ту же раскладку без правки блейда. --}}
                 <div class="flex-shrink-0 w-[900px] flex flex-col h-full min-h-0 bg-slate-200/30 rounded-[2.5rem] p-4 border border-slate-300/50" wire:key="group-{{ $key }}">
-                    <div class="flex items-center justify-center mb-4 py-2 {{ $info['color'] }} text-white rounded-2xl shadow-md">
-                        <span class="text-[11px] font-black uppercase tracking-[0.3em] italic">{{ $info['title'] }}</span>
+                    <div class="flex items-center justify-center mb-4 py-2.5 {{ $info['color'] }} text-white rounded-2xl shadow-md">
+                        <span class="text-sm font-black uppercase tracking-[0.15em]">{{ $info['title'] }}</span>
                     </div>
 
                     <div class="grid grid-cols-4 gap-3 h-full min-h-0">
