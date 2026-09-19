@@ -538,54 +538,6 @@ class AdminPanelController extends Controller
         ];
     }
 
-    /**
-     * Автоматически гасит только что начисленный долг зачётом у
-     * поставщика, если он есть — вызывается сразу после создания
-     * реализации в manuallyMakeOrder(). Гасит МИНИМУМ из (доступный
-     * зачёт, сумма этой позиции) — если зачёт больше суммы позиции,
-     * остаток зачёта остаётся на будущее; если меньше — гасится только
-     * частично, остаток долга остаётся висеть как обычно.
-     *
-     * Возвращает фактически применённую сумму зачёта — вызывающий код
-     * (позиции с prepaid-поставщиком, см. ниже в цикле по товарам) обязан
-     * вычесть её из автосписания со счёта, иначе долг гасится ДВАЖДЫ за
-     * один и тот же заказ: один раз здесь зачётом (через компенсирующую
-     * supplier_settlement), второй раз — полной суммой в cashflow_transactions
-     * при автооплате. Живой пример расхождения из-за этого бага — Роман
-     * 2026-09-18, Автотрейд: "Долг" (accrued-paid) и "Сальдо"
-     * (supplier_credit) разошлись на 2900₸, потому что зачёт списывался,
-     * а автооплата всё равно уходила полной суммой поверх него.
-     */
-    private function applyAvailableSupplierCredit(int $supplierId, ?string $supplierName, float $itemCost, string $date): float
-    {
-        $availableCredit = (float) SupplierCredit::where('supplier_id', $supplierId)->sum('amount');
-
-        if ($availableCredit <= 0) {
-            return 0.0;
-        }
-
-        $applyAmount = min($availableCredit, $itemCost);
-
-        SupplierSettlement::create([
-            'supplier' => $supplierName,
-            'supplier_id' => $supplierId,
-            'sum' => $applyAmount,
-            'date' => $date,
-            'operation' => 'realization',
-        ]);
-
-        SupplierCredit::create([
-            'supplier_id' => $supplierId,
-            'amount' => -$applyAmount,
-            'source_table' => 'supplier_settlement',
-            'source_id' => null,
-            'comment' => 'Зачёт автоматически применён к новой закупке',
-            'date' => $date,
-        ]);
-
-        return $applyAmount;
-    }
-
     private function getFinanceDashboardData(Request $request): array
     {
         // Учётный период — с 8 числа по 7-е следующего месяца (тот же
@@ -1554,28 +1506,6 @@ class AdminPanelController extends Controller
             'operation' => 'payment',
         ]);
 
-        // Предоплатный поставщик (payment_policy='prepaid', напр. Автотрейд) —
-        // деньги, которые мы им платим ЗДЕСЬ, физически ложатся на их баланс
-        // как аванс под будущие заказы (та же логика, что и у разовой формы
-        // "Начальные остатки" — см. saveOpeningBalances()/supplier_credits
-        // ниже). До этой правки обычная доплата НИКАК не пополняла
-        // supplier_credits — только applyAvailableSupplierCredit() при
-        // оформлении заказа его СПИСЫВАЛ, пополнить можно было только через
-        // форму опенинг-баланса, для этого не предназначенную. Найдено
-        // живьём 2026-09-19: Роман доплатил Автотрейду 19350, зачёт у них
-        // при этом остался 0 — деньги ушли в кэшфлоу, но некуда было
-        // записаться как аванс на будущее.
-        if ($supplier->payment_policy === 'prepaid') {
-            SupplierCredit::create([
-                'supplier_id' => $supplier->id,
-                'amount' => $request->sum,
-                'source_table' => 'cashflow_transactions',
-                'source_id' => $cashflowTransaction->id,
-                'comment' => $request->comment ?: 'Пополнение зачёта оплатой поставщику',
-                'date' => $request->date,
-            ]);
-        }
-
         return back()
             ->with('message', 'Оплата успешно проведена!')
             ->with('class', 'alert-success');
@@ -2109,65 +2039,19 @@ class AdminPanelController extends Controller
                 'payment_due_date' => $paymentDueDate,
             ]);
 
-            // Если у поставщика уже есть зачёт (сальдо) — автоматически
-            // гасим им только что начисленный долг, вместо того чтобы
-            // зачёт молча висел неиспользованным, а кредиторка
-            // показывала валовую сумму без учёта того, что часть уже
-            // фактически предоплачена. По прямой просьбе Романа
-            // 2026-09-02 — они не будут гонять деньги обратно, зачёт
-            // применяется к следующей же закупке.
-            $itemTotal = (float) $product[4] * (int) $product[3];
-            $creditApplied = 0.0;
-            if ($supplierId) {
-                $creditApplied = $this->applyAvailableSupplierCredit(
-                    $supplierId,
-                    $supplier?->name,
-                    $itemTotal,
-                    $request->data['orderInfo'][1]
-                );
-            }
-
-            // prepaid-поставщики (Автотрейд и т.п.) требуют оплату сразу,
-            // без вариантов — раньше это всё равно повисало в кредиторке
-            // до отдельного ручного "Провести оплату", хотя по факту долга
-            // тут никогда и не бывает. Автоматически проводим оплату сразу
-            // при оформлении заказа, чтобы не плодить лишний ручной шаг.
-            // Счёт списания — фиксированный, по прямой просьбе Романа
-            // 2026-08-31 (всегда "Рома Kaspi Gold", независимо от того, с
-            // какого счёта платил клиент).
-            //
-            // ФИКС 2026-09-18 (Роман поймал расхождение "Долг" vs "Сальдо"
-            // у Автотрейда на 2900₸): если часть/вся сумма позиции уже
-            // погашена зачётом выше, автооплата списывает со счёта только
-            // ОСТАТОК, а не всю сумму заново — иначе долг гасится дважды за
-            // один заказ (зачётом здесь и полной суммой в cashflow ниже),
-            // и "Сальдо"/"Долг" расходятся на каждой такой закупке.
-            if ($orderProduct->payment_policy_snapshot === 'prepaid') {
-                $amountToPayFromAccount = round($itemTotal - $creditApplied, 2);
-
-                if ($amountToPayFromAccount > 0) {
-                    $prepaidAccount = Accounts::where('name', 'Рома Kaspi Gold')->first();
-
-                    if ($prepaidAccount) {
-                        CashflowTransactions::create([
-                            'txn_at' => $request->data['orderInfo'][1],
-                            'direction' => 'out',
-                            'cashflow_category_id' => 3, // оплата поставщику
-                            'expense_category_id' => null,
-                            'supplier_id' => $supplierId ?: null,
-                            'user_id' => auth()->id(),
-                            'account_id' => $prepaidAccount->id,
-                            'amount' => $amountToPayFromAccount,
-                            'subcategory' => 'Оплата поставщику (авто, предоплата)',
-                            'counterparty' => $supplier?->name,
-                            'related_table' => 'suppliers',
-                            'related_id' => $supplierId ?: null,
-                            'comment' => 'Автооплата предоплатному поставщику по заказу №' . $order->id
-                                . ($creditApplied > 0 ? " (зачётом погашено {$creditApplied})" : ''),
-                        ]);
-                    }
-                }
-            }
+            // Автоматическая оплата предоплатным поставщикам (и автосписание
+            // зачёта) убраны целиком по прямой просьбе Романа 2026-09-19 —
+            // взаимодействие зачёта и автоплатежа регулярно расходилось
+            // ("Долг" vs "Сальдо", двойные списания — см. историю правок
+            // выше в git blame) и давало путаницу, которую тяжело было
+            // диагностировать постфактум. Теперь ЛЮБОЙ поставщик (включая
+            // бывших "prepaid" вроде Автотрейда) просто копит долг в
+            // supplier_settlement как обычно (см. выше), а оплату Роман
+            // заводит вручную через supplierPayment() ("Оплата поставщику"),
+            // когда сам решит — без автоматики, без различий по типу
+            // поставщика. Существующие остатки в supplier_credits (Тисс,
+            // Кулан и т.п.) этим не удаляются, но и не расходуются
+            // автоматически — Роман учитывает их сам при следующей оплате.
         }
 
         $settlement = Setlement::create([
