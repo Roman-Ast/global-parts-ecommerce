@@ -19,10 +19,18 @@ use Illuminate\Support\Facades\DB;
  * Живьём проверено 2026-09-03 (см. CLAUDE.md, раздел "Ozon"): категория
  * "Амортизатор подвески" (type_id=970744063) — карточка с реальным фото
  * с Kaspi CDN прошла модерацию с первого раза, статус "Готов к продаже".
- * Единственная засада — валюта аккаунта ЗАФИКСИРОВАНА на RUB (Роман
- * когда-то выбрал её в кабинете, сменить впоследствии нельзя), поэтому
- * цена уходит в рублях с конвертацией по курсу-константе (см.
- * OzonCommissionRates::EXCHANGE_RATE_KZT_TO_RUB — заглушка, не живой курс).
+ *
+ * ВАЖНО (найдено и исправлено 2026-09-19): после переезда на договор
+ * ОМК (см. CLAUDE.md) аккаунт нативно в KZT, а не в RUB — эта команда
+ * до сих пор слала 'currency_code' => 'RUB' (не обновили при миграции
+ * OzonPriceCalculator/OzonCommissionRates на OMK), из-за чего КАЖДАЯ
+ * попытка создать карточку падала с 'currency_code_differs_from_contract'
+ * — маскировалось под похожий на вид суточный лимит
+ * ('periodic_limit_exceeded'), пока не проверили конкретный task_id
+ * напрямую через importStatus() и не увидели настоящую причину. Сама
+ * цена ($priceKzt ниже) уже была в тенге — OzonPriceCalculator саму
+ * конвертацию убрал ещё при переезде на OMK, отставал только ярлык
+ * валюты в payload.
  *
  * Начинаем с ТОЙ ЖЕ категории, что доказанно работает у Halyk
  * ("Амортизаторы", --category=) — та же логика, что и там: сначала
@@ -151,17 +159,17 @@ class OzonCreateCardCommand extends Command
         }
 
         // 4. Цена — от СЕБЕСТОИМОСТИ (не розницы сайта), прогрессивная
-        // наценка + реальная комиссия Ozon FBS (47%+25RUB, подтверждено
-        // живьём 2026-09-12) — см. App\Services\OzonPriceCalculator.
-        $priceRub = \App\Services\OzonPriceCalculator::calculate((float) $card->offer['purchase_price']);
+        // наценка + реальная комиссия Ozon FBS по договору ОМК (12%,
+        // нативно в KZT — см. App\Services\OzonPriceCalculator).
+        $priceKzt = \App\Services\OzonPriceCalculator::calculate((float) $card->offer['purchase_price']);
 
         $payload = [
             'offer_id' => $this->resolveOfferId($card),
             'name' => mb_substr($card->name, 0, 500),
             'description_category_id' => $categoryId,
             'type_id' => $typeId,
-            'currency_code' => 'RUB',
-            'price' => (string) $priceRub,
+            'currency_code' => 'KZT',
+            'price' => (string) $priceKzt,
             'vat' => '0',
             'images' => $images,
             'weight' => self::DEFAULT_WEIGHT_G,
@@ -370,22 +378,43 @@ class OzonCreateCardCommand extends Command
         return ['dictionary_value_id' => (int) $results[0]['id']];
     }
 
+    /** Кэш справочника hs_code_hints на весь прогон команды — таблица маленькая (~60 строк), не гонять запрос на каждую карточку. */
+    private ?\Illuminate\Support\Collection $hsCodeHintsCache = null;
+
     /**
-     * ТН ВЭД — ищем по названию типа товара, предпочитаем короткую запись
-     * вида "<код> - Прочие ..." (обобщённый код сразу после дефиса).
-     * Проверено вживую: поиск ПОЛНОЙ фразы ("Амортизатор подвески") даёт
-     * 0 результатов, а ПЕРВОЕ СЛОВО ("амортизатор") — 9 результатов
-     * стабильно на 3 повторных запросах — берём только первое слово типа.
-     * Простой str_contains('прочие') оказался НЕДОСТАТОЧЕН: первый же
-     * результат поиска — код для ЖЕЛЕЗНОДОРОЖНЫХ локомотивов, в длинном
-     * юридическом описании которого слово "прочие" тоже где-то
-     * встречается ("тележки... и их части: прочие, включая..."), поэтому
-     * ищем именно "прочие" СРАЗУ ПОСЛЕ кода-дефиса, а среди таких
-     * совпадений берём самое короткое (менее заужено доп. условиями типа
-     * "малолитражных автомобилей").
+     * ТН ВЭД — сначала пробуем по справочнику `hs_code_hints` (ключевое слово
+     * в названии типа → правильный числовой префикс товарной позиции, см.
+     * миграцию 2026_09_14_000001 и разбор с Романом 2026-09-14): бытовое
+     * название детали почти никогда не совпадает с официальной таможенной
+     * формулировкой, а поиск по ЦИФРОВОМУ префиксу позиции (напр. "8708")
+     * стабильно находит релевантные подсубпозиции — проверено живьём на
+     * 7 разных главах (8708/8409/8421/8511/4010/8507/8483).
+     *
+     * Если подсказки нет — старый способ (первое слово типа), который
+     * реально работает для меньшинства типов вроде "амортизатор" (см.
+     * прежний докблок метода): поиск ПОЛНОЙ фразы даёт 0 результатов, а
+     * ПЕРВОЕ СЛОВО — стабильно даёт совпадения.
      */
     private function resolveHsCode(OzonClient $client, int $categoryId, int $typeId, int $attributeId, string $typeName): ?array
     {
+        $hintPrefix = $this->findHsCodeHintPrefix($typeName);
+
+        if ($hintPrefix !== null) {
+            // limit=50: поиск Ozon по этому полю — НЕ префиксный, а по вхождению
+            // подстроки ГДЕ УГОДНО в 10-значном коде (проверено живьём 2026-09-14:
+            // запрос "4010" вернул код "8703604010" — легковые автомобили, потому
+            // что "4010" — это его последние 4 цифры, а не начало). Поэтому берём
+            // выборку побольше и ЖЁСТКО фильтруем по реальному началу кода в
+            // pickMostGenericHsMatch — иначе легко улететь в совсем чужую главу.
+            $results = $client->searchAttributeValue($categoryId, $typeId, $attributeId, $hintPrefix, 50);
+            $picked = $this->pickMostGenericHsMatch($results, $hintPrefix);
+            if ($picked !== null) {
+                return $picked;
+            }
+            // Подсказка есть, но среди результатов ни один реально не начинается
+            // с нужного префикса — не молчим, пробуем старый способ ниже.
+        }
+
         $firstWord = trim(explode(' ', trim($typeName))[0] ?? $typeName);
         $results = $client->searchAttributeValue($categoryId, $typeId, $attributeId, $firstWord);
         if (empty($results)) {
@@ -400,6 +429,62 @@ class OzonCreateCardCommand extends Command
         }
 
         return ['dictionary_value_id' => (int) $results[0]['id']];
+    }
+
+    /** Самое длинное (значит — самое специфичное) совпавшее ключевое слово побеждает. */
+    private function findHsCodeHintPrefix(string $typeName): ?string
+    {
+        if ($this->hsCodeHintsCache === null) {
+            $this->hsCodeHintsCache = \Illuminate\Support\Facades\DB::table('hs_code_hints')->get();
+        }
+
+        $typeLower = mb_strtolower($typeName);
+        $best = null;
+        $bestLen = 0;
+
+        foreach ($this->hsCodeHintsCache as $hint) {
+            $keywordLower = mb_strtolower($hint->keyword);
+            if (str_contains($typeLower, $keywordLower) && mb_strlen($keywordLower) > $bestLen) {
+                $best = $hint->tnved_prefix;
+                $bestLen = mb_strlen($keywordLower);
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * Для поиска по широкому числовому префиксу (напр. "8708" — вся товарная
+     * позиция) результатов много и старый регэксп "код-дефис-прочие" не
+     * подходит: у generic-записей внутри такой позиции "прочие" стоит не
+     * сразу после кода, а в конце длинного описания (напр. "...штампованные
+     * из стали, прочие"). Берём запись с максимальным числом слова "прочие"
+     * в описании (чем больше — тем более общая формулировка), при равенстве —
+     * самую короткую (менее зауженную доп. условиями).
+     */
+    private function pickMostGenericHsMatch(array $results, string $prefix): ?array
+    {
+        // Жёсткий фильтр: код должен реально НАЧИНАТЬСЯ с префикса, а не просто
+        // содержать его цифры где-то внутри (см. докблок resolveHsCode).
+        $matching = array_values(array_filter(
+            $results,
+            fn ($r) => str_starts_with(trim($r['value'] ?? ''), $prefix)
+        ));
+
+        if (empty($matching)) {
+            return null;
+        }
+
+        usort($matching, function ($a, $b) {
+            $scoreA = substr_count(mb_strtolower($a['value'] ?? ''), 'прочие');
+            $scoreB = substr_count(mb_strtolower($b['value'] ?? ''), 'прочие');
+            if ($scoreA !== $scoreB) {
+                return $scoreB <=> $scoreA;
+            }
+            return mb_strlen($a['value'] ?? '') <=> mb_strlen($b['value'] ?? '');
+        });
+
+        return ['dictionary_value_id' => (int) $matching[0]['id']];
     }
 
     /**
