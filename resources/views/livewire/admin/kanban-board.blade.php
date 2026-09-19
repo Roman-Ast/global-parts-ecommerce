@@ -100,8 +100,13 @@
                                                             <span class="inline-flex rounded-full h-3 w-3 bg-green-500 flex-shrink-0"></span>
                                                         @endif
                                                         <span class="text-xs font-bold text-slate-800 tracking-tighter">+{{ $lead->phone }}</span>
+                                                        @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
                                                     </div>
-                                                    @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
+                                                    {{-- Срок последнего сообщения (просьба Романа 2026-09-19) — та же
+                                                         диффа, что уже была только на карточках обычных колонок; здесь
+                                                         (широкая секция "Работа с возражениями"/"Не купили") её не было
+                                                         вообще. --}}
+                                                    <span class="flex-shrink-0 text-[9px] text-slate-400 font-medium whitespace-nowrap">{{ $lead->updated_at->diffForHumans() }}</span>
                                                 </div>
                                                 @if($lead->lastMessage)
                                                     <div class="text-[10px] text-slate-500 bg-slate-50 p-2 rounded-lg mb-3 line-clamp-2 italic">
