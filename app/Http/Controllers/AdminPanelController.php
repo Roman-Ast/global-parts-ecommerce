@@ -1554,6 +1554,28 @@ class AdminPanelController extends Controller
             'operation' => 'payment',
         ]);
 
+        // Предоплатный поставщик (payment_policy='prepaid', напр. Автотрейд) —
+        // деньги, которые мы им платим ЗДЕСЬ, физически ложатся на их баланс
+        // как аванс под будущие заказы (та же логика, что и у разовой формы
+        // "Начальные остатки" — см. saveOpeningBalances()/supplier_credits
+        // ниже). До этой правки обычная доплата НИКАК не пополняла
+        // supplier_credits — только applyAvailableSupplierCredit() при
+        // оформлении заказа его СПИСЫВАЛ, пополнить можно было только через
+        // форму опенинг-баланса, для этого не предназначенную. Найдено
+        // живьём 2026-09-19: Роман доплатил Автотрейду 19350, зачёт у них
+        // при этом остался 0 — деньги ушли в кэшфлоу, но некуда было
+        // записаться как аванс на будущее.
+        if ($supplier->payment_policy === 'prepaid') {
+            SupplierCredit::create([
+                'supplier_id' => $supplier->id,
+                'amount' => $request->sum,
+                'source_table' => 'cashflow_transactions',
+                'source_id' => $cashflowTransaction->id,
+                'comment' => $request->comment ?: 'Пополнение зачёта оплатой поставщику',
+                'date' => $request->date,
+            ]);
+        }
+
         return back()
             ->with('message', 'Оплата успешно проведена!')
             ->with('class', 'alert-success');
