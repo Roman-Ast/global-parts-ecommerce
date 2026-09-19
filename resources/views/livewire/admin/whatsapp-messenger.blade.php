@@ -103,7 +103,29 @@
                     @scroll-chat-to-bottom.window="scrollToBottom(true)" {{-- Новое сообщение при уже открытом чате — плавно --}}
                     class="flex-1 overflow-y-auto p-6 bg-[#f0f2f5] space-y-4 custom-scrollbar"
                 >
+                    {{-- Разделитель дат по центру, как в самом WhatsApp (просьба
+                         Романа 2026-09-19) — ненавязчивая маленькая "таблетка",
+                         показывается только когда дата СМЕНИЛАСЬ относительно
+                         предыдущего сообщения в этой же прокрутке (не на каждое
+                         сообщение). Сообщения уже идут в хронологическом порядке
+                         (от старых к новым, см. render() в WhatsappMessenger). --}}
+                    @php($lastMsgDate = null)
                     @foreach($activeLead->messages as $msg)
+                        @php($msgDate = $msg->created_at->toDateString())
+                        @if($msgDate !== $lastMsgDate)
+                            <div class="flex justify-center my-3">
+                                <span class="text-[10px] font-medium text-slate-400 bg-white/70 px-3 py-1 rounded-full">
+                                    @if($msg->created_at->isToday())
+                                        Сегодня
+                                    @elseif($msg->created_at->isYesterday())
+                                        Вчера
+                                    @else
+                                        {{ $msg->created_at->translatedFormat($msg->created_at->isCurrentYear() ? 'd MMMM' : 'd MMMM Y') }}
+                                    @endif
+                                </span>
+                            </div>
+                        @endif
+                        @php($lastMsgDate = $msgDate)
                         <div class="flex {{ $msg->is_incoming ? 'justify-start' : 'justify-end' }} mb-3">
                             <div class="max-w-[85%] rounded-lg p-3 shadow-sm relative {{ $msg->is_incoming ? 'bg-white text-gray-800 rounded-tl-none' : 'bg-[#dcf8c6] text-gray-800 rounded-tr-none' }}">
                                 

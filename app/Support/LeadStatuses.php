@@ -67,18 +67,8 @@ class LeadStatuses
             return null;
         }
 
-        $statuses = self::all();
-        $isMainStatus = array_key_exists($newStatus, $statuses) || $newStatus === self::SPAM_STATUS;
-
-        $subLabel = null;
-        foreach ($statuses as $group) {
-            if (isset($group['sub']) && array_key_exists($newStatus, $group['sub'])) {
-                $subLabel = $group['sub'][$newStatus];
-                break;
-            }
-        }
-
-        if (!$isMainStatus && $subLabel === null) {
+        $label = self::labelFor($newStatus);
+        if ($label === null) {
             return null;
         }
 
@@ -86,6 +76,37 @@ class LeadStatuses
         $lead->update(['status' => $newStatus]);
         CrmActivityLog::log('update_status', $lead->id, ['from' => $oldStatus, 'to' => $newStatus]);
 
-        return $subLabel ?? ($newStatus === self::SPAM_STATUS ? 'Спам' : $statuses[$newStatus]['title']);
+        return $label;
+    }
+
+    /**
+     * Человекочитаемый ярлык статуса — и для тоста после update(), и для
+     * подписи на самой кнопке дропдауна (просьба Романа 2026-09-19: кнопка
+     * должна показывать ТЕКУЩИЙ статус лида, не статичную надпись "Сменить
+     * статус"). Возвращает null для незнакомого/пустого ключа.
+     */
+    public static function labelFor(?string $status): ?string
+    {
+        if ($status === null || $status === '') {
+            return null;
+        }
+
+        if ($status === self::SPAM_STATUS) {
+            return 'Спам';
+        }
+
+        $statuses = self::all();
+
+        if (array_key_exists($status, $statuses)) {
+            return $statuses[$status]['title'];
+        }
+
+        foreach ($statuses as $group) {
+            if (isset($group['sub']) && array_key_exists($status, $group['sub'])) {
+                return $group['sub'][$status];
+            }
+        }
+
+        return null;
     }
 }

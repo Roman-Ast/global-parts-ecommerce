@@ -35,6 +35,14 @@
     Кнопки пунктов — явный border-0 bg-transparent: нативная браузерная
     рамка <button> без сброса выглядела как решётка ячеек вокруг каждого
     пункта (жалоба Романа "некрасивый список, сделай без рамок").
+
+    Подпись на самой кнопке — ТЕКУЩИЙ статус лида (LeadStatuses::labelFor),
+    не статичное "Сменить статус" (просьба Романа 2026-09-19: "чтоб при
+    открытии отображался статус текущий и когда меняешь чтоб в селекте
+    тоже отображался статус изменённый"). После wire:click на любом пункте
+    Livewire перерисовывает партиал с уже обновлённым $lead->status —
+    отдельного JS-состояния под это не нужно, подпись просто следует за
+    серверными данными.
 --}}
 @php($disabled = $disabled ?? false)
 <div x-data="{ open: false }" @click.stop @click.away="open = false" class="relative {{ $wrapperClass ?? 'mt-1.5' }}">
@@ -44,7 +52,7 @@
         @if($disabled) disabled title="Сначала откройте и прочитайте сообщение" @endif
         class="w-full flex items-center justify-between gap-1 text-[9px] font-bold uppercase tracking-wide text-slate-500 bg-white border-0 outline-none ring-1 ring-slate-200 rounded-md px-1.5 py-1 hover:ring-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
-        <span>Сменить статус</span>
+        <span class="truncate">{{ \App\Support\LeadStatuses::labelFor($lead->status) ?? 'Сменить статус' }}</span>
         <svg class="w-2.5 h-2.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" /></svg>
     </button>
 
