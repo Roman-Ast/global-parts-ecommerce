@@ -287,10 +287,19 @@ class HalykMarketClient
     /**
      * Загрузка фото товара (до создания карточки) — обычный multipart-
      * аплоад файлов, НЕ ссылок. requirements по их доке (белый фон,
-     * квадрат 500-2000px, минимум 3 шт) на практике НЕ проверяются самим
-     * upload-эндпоинтом (проверено вживую 2026-08-22 — приняли 403×500,
-     * не квадрат, HTTP 200) — похоже, это soft-guidance для модерации, а
-     * не hard-валидация при загрузке.
+     * квадрат 500-2000px, минимум 3 шт) на практике не всегда проверяются
+     * строго — вживую 2026-08-22 приняли 403×500 (не квадрат) HTTP 200, но
+     * 2026-09-19 обнаружилось, что для реально МАЛЕНЬКИХ картинок (260×380,
+     * ниже минимума по обеим сторонам) эндпоинт честно отдаёт
+     * `HTTP 409 image_size_not_in_range` — соответственно проверка на
+     * размер у них есть, просто с каким-то порогом, не строгим "500-2000
+     * квадрат" из доки. Раньше этот метод тихо глотал ЛЮБУЮ причину отказа
+     * (возвращал []), из-за чего `photo_upload_failed` в
+     * `halyk_created_cards` (4452 карточки на 2026-09-19) нельзя было
+     * отличить от других сбоев без ручного воспроизведения через tinker —
+     * теперь бросает исключение с реальным статусом/телом, тем же приёмом,
+     * что уже применён в остальных методах клиента (см. коммит про 504 на
+     * searchSku/searchCategory от 2026-09-01).
      * POST /gw/merchant/public/file/image/upload/multiple
      *
      * @param array<int, array{name: string, contents: string}> $files
@@ -307,7 +316,9 @@ class HalykMarketClient
         $response = $request->post($this->baseUrl() . '/gw/merchant/public/file/image/upload/multiple');
 
         if (!$response->successful()) {
-            return [];
+            throw new \RuntimeException(
+                "Halyk file/image/upload/multiple недоступен: HTTP {$response->status()} — " . mb_substr($response->body(), 0, 200)
+            );
         }
 
         return $response->json() ?? [];

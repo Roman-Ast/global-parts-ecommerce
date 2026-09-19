@@ -262,13 +262,22 @@ class HalykCreateCardCommand extends Command
         // 5. Фото — скачиваем реальные файлы (Halyk принимает только
         // multipart-загрузку, не ссылки) и грузим им. Требования по их
         // доке (белый фон, квадрат 500-2000px, минимум 3 шт) на практике
-        // НЕ проверяются самим upload-эндпоинтом (проверено вживую
-        // 2026-08-22 — приняли 403×500, не квадрат, HTTP 200) — грузим
-        // что реально есть, дальше смотрим по итогам модерации.
-        $media = $this->uploadPhotos($client, $card);
+        // не всегда проверяются строго (403×500 прошло 2026-08-22), но
+        // реально маленькие картинки Halyk честно заворачивает —
+        // `uploadPhotos()` теперь бросает исключение с настоящей причиной
+        // вместо тихого [] (см. докблок в HalykMarketClient), ловим её
+        // здесь, чтобы `skip_reason` был диагностируемым, а не одним
+        // общим `photo_upload_failed`.
+        try {
+            $media = $this->uploadPhotos($client, $card);
+        } catch (\Throwable $e) {
+            $this->line("  ⨯ загрузка фото упала: {$e->getMessage()}");
+            $this->recordResult($card, status: 'skipped', skipReason: 'photo_upload_failed:' . $this->extractHalykErrorReason($e), categoryId: $categoryId, brandId: $brandId);
+            return;
+        }
         if (empty($media)) {
             $this->line('  ⨯ не удалось загрузить ни одного фото — пропуск');
-            $this->recordResult($card, status: 'skipped', skipReason: 'photo_upload_failed', categoryId: $categoryId, brandId: $brandId);
+            $this->recordResult($card, status: 'skipped', skipReason: 'photo_upload_failed:no_downloadable_images', categoryId: $categoryId, brandId: $brandId);
             return;
         }
 
@@ -713,6 +722,23 @@ class HalykCreateCardCommand extends Command
         $uploaded = $client->uploadPhotos($files);
 
         return array_map(fn ($u) => ['id' => $u['id'], 'link' => $u['assetUrl']], $uploaded);
+    }
+
+    /**
+     * Вытягивает короткую машинную причину (напр. "image_size_not_in_range")
+     * из сообщения исключения `HalykMarketClient::uploadPhotos()` — там
+     * внутри тело ответа Halyk с полем "message". Нужно, чтобы
+     * `skip_reason` в `halyk_created_cards` различал реальные причины
+     * отказа, а не сваливал всё в один непрозрачный `photo_upload_failed`
+     * (см. докблок `uploadPhotos()` в `HalykMarketClient` за историей).
+     */
+    private function extractHalykErrorReason(\Throwable $e): string
+    {
+        if (preg_match('/"message"\s*:\s*"([^"]+)"/', $e->getMessage(), $m)) {
+            return $m[1];
+        }
+
+        return 'exception';
     }
 
     /**
