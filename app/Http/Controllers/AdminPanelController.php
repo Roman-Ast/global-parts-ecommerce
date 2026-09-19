@@ -1977,33 +1977,47 @@ class AdminPanelController extends Controller
             'kaspi_bypassed' => (bool) ($request->data['kaspiBypassed'] ?? false),
         ]);
 
-        $orderPayment = OrderPayment::create([
-            'order_id' => $order->id,
-            'account_id' => $request->data['paymentInfo'][0],
-            'paid_at' => $request->data['paymentInfo'][1],
-            'amount' => $request->data['paymentInfo'][2],
-            'type' => $request->data['paymentInfo'][3],
-            'comment' => $request->data['paymentInfo'][4],
-        ]);
+        // Kaspi-заказы с отложенной оплатой (не kaspi_bypassed) приходят сюда
+        // с paymentInfo[2]=0 — JS-форма намеренно обнуляет сумму оплаты для
+        // такого канала (см. admin.js: saleChannel==='kaspi' && !kaspiBypassed
+        // => amount=0), потому что реальной оплаты ещё не было, деньги придут
+        // от Kaspi позже, отдельным автоплатежом при выдаче заказа (см.
+        // changeStatus()). Раньше это всё равно создавало настоящую строку в
+        // order_payments/cashflow_transactions с amount=0.00 — "Оплата по
+        // заказу" на 0₸, которой физически не было (жалоба Романа 2026-09-19
+        // на заказ №2052). Ни платежа, ни возврата на 0 не бывает по смыслу —
+        // пропускаем обе записи целиком, если реальных денег не было.
+        $cashflowAmountRaw = (float) $request->data['paymentInfo'][2];
 
-        $cashflowDirection = $orderPayment->type === 'refund' ? 'out' : 'in';
-        $cashflowAmount = (float)$orderPayment->amount;
+        if ($cashflowAmountRaw > 0) {
+            $orderPayment = OrderPayment::create([
+                'order_id' => $order->id,
+                'account_id' => $request->data['paymentInfo'][0],
+                'paid_at' => $request->data['paymentInfo'][1],
+                'amount' => $request->data['paymentInfo'][2],
+                'type' => $request->data['paymentInfo'][3],
+                'comment' => $request->data['paymentInfo'][4],
+            ]);
 
-        $cashflowTransaction = CashflowTransactions::create([
-            'txn_at' => $orderPayment->paid_at,
-            'direction' => $cashflowDirection,
-            'cashflow_category_id' => 1,
-            'expense_category_id' => null,
-            'supplier_id' => null,
-            'user_id' => auth()->id(),
-            'account_id' => $orderPayment->account_id,
-            'amount' => $cashflowAmount,
-            'subcategory' => $orderPayment->type === 'refund' ? 'Возврат по заказу' : 'Оплата по заказу',
-            'counterparty' => $phone,
-            'related_table' => 'orders',
-            'related_id' => $order->id,
-            'comment' => ($orderPayment->type === 'refund' ? 'Возврат по заказу №' : 'Оплата по заказу №') . $order->id,
-        ]);
+            $cashflowDirection = $orderPayment->type === 'refund' ? 'out' : 'in';
+            $cashflowAmount = (float)$orderPayment->amount;
+
+            $cashflowTransaction = CashflowTransactions::create([
+                'txn_at' => $orderPayment->paid_at,
+                'direction' => $cashflowDirection,
+                'cashflow_category_id' => 1,
+                'expense_category_id' => null,
+                'supplier_id' => null,
+                'user_id' => auth()->id(),
+                'account_id' => $orderPayment->account_id,
+                'amount' => $cashflowAmount,
+                'subcategory' => $orderPayment->type === 'refund' ? 'Возврат по заказу' : 'Оплата по заказу',
+                'counterparty' => $phone,
+                'related_table' => 'orders',
+                'related_id' => $order->id,
+                'comment' => ($orderPayment->type === 'refund' ? 'Возврат по заказу №' : 'Оплата по заказу №') . $order->id,
+            ]);
+        }
 
         // Снимок сценария репрайсинга (kaspi:reprice) на момент продажи —
         // только для канала kaspi, только этот запрос на весь заказ разом
