@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\WhatsappLead;
 use App\Models\WhatsappMessage;
+use App\Support\LeadStatuses;
 use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
@@ -78,6 +79,20 @@ class WhatsAppWebhookController extends Controller
 
             if ($isExcluded) {
                 return response()->json(['status' => 'excluded_internal_chat']);
+            }
+
+            // "Рабочие" (просьба Романа 2026-09-19) — в отличие от
+            // EXCLUDED_PHONES выше (исключены ДО появления лида, зашито в
+            // коде), это лид, УЖЕ существующий в whatsapp_leads, который
+            // Роман постфактум вручную перенёс в этот статус, поняв, что
+            // это свой/коллега/поставщик, а не клиент. Дальнейшие
+            // сообщения по этому номеру больше не сохраняем совсем (ни
+            // входящие, ни исходящие) — тем же ранним return'ом, что и у
+            // исключённых номеров, ничего в whatsapp_leads/whatsapp_messages
+            // не трогаем. Уже сохранённая до переноса история не удаляется.
+            $existingLead = WhatsappLead::where('phone', $phone)->first();
+            if ($existingLead && $existingLead->status === LeadStatuses::STAFF_STATUS) {
+                return response()->json(['status' => 'muted_staff_contact']);
             }
 
             // instanceId => source ('site'/'2gis'/...) — см. config/services.php
