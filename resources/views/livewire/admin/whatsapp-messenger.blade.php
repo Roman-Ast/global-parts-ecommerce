@@ -56,12 +56,21 @@
                         <h2 class="font-bold text-lg text-gray-800">+{{ $activeLead->phone }}</h2>
                         @include('livewire.admin.partials.source-badge', ['source' => $activeLead->source])
                     </div>
-                    @if($activeLead->last_vin)
-                        <div class="bg-orange-50 border border-orange-200 rounded-lg px-3 py-1 text-right">
-                            <span class="text-[9px] text-orange-400 block uppercase font-bold tracking-tighter">VIN-код</span>
-                            <span class="font-mono text-orange-700 font-bold">{{ $activeLead->last_vin }}</span>
-                        </div>
-                    @endif
+                    <div class="flex items-center gap-3">
+                        @if($activeLead->last_vin)
+                            <div class="bg-orange-50 border border-orange-200 rounded-lg px-3 py-1 text-right">
+                                <span class="text-[9px] text-orange-400 block uppercase font-bold tracking-tighter">VIN-код</span>
+                                <span class="font-mono text-orange-700 font-bold">{{ $activeLead->last_vin }}</span>
+                            </div>
+                        @endif
+                        {{-- Смена статуса прямо из чата, не закрывая переписку (просьба
+                             Романа 2026-09-19) — тот же партиал, что и на карточках
+                             канбана, см. его докблок. wrapperClass переопределяет
+                             дефолтный mt-1.5 (там он нужен под карточкой, здесь —
+                             самостоятельный элемент в шапке чата, без верхнего отступа
+                             и с фиксированной шириной). --}}
+                        @include('livewire.admin.partials.status-select', ['lead' => $activeLead, 'statuses' => $statuses, 'wrapperClass' => 'w-40'])
+                    </div>
                 </div>
 
                 <div

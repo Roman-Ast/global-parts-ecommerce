@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\WhatsappLead;
 use App\Models\WhatsappMessage;
 use App\Models\CrmActivityLog;
+use App\Support\LeadStatuses;
 
 class KanbanBoard extends Component
 {
@@ -24,6 +25,7 @@ class KanbanBoard extends Component
     public function mount(): void
     {
         CrmActivityLog::log('view_board');
+        $this->statuses = LeadStatuses::all();
     }
 
     public function setNewLeadsTab(string $tab): void
@@ -31,58 +33,11 @@ class KanbanBoard extends Component
         $this->newLeadsTab = in_array($tab, ['all', 'unread'], true) ? $tab : 'all';
     }
 
-    // Твоя основная воронка (оставляем её здесь)
-    public $statuses = [
-        'new'       => ['title' => 'Новые', 'color' => 'bg-blue-500'],
-        'selection' => ['title' => 'Подбор', 'color' => 'bg-yellow-500'],
-        'offer'     => ['title' => 'КП Отправлено', 'color' => 'bg-indigo-500'],
-        
-        // Групповой статус
-        'thinking'  => [
-            'title' => 'Работа с возражениями', 
-            'color' => 'bg-slate-700',
-            'sub' => [
-                'silent'    => 'Молчит',
-                'expensive' => 'Дорого',
-                'wait'      => 'Сроки',
-                'pending'   => 'Думает'
-            ]
-        ],
-
-        'payment'   => ['title' => 'Оплата', 'color' => 'bg-green-500'],
-
-        // Между "Оплата" и "Продано" — просьба Романа 2026-09-17: раньше
-        // клиент, уже заплативший и ждущий доставку ("где мой заказ?"),
-        // либо путался с новыми лидами, либо приходилось раньше времени
-        // считать сделку закрытой. Отдельная стадия — сюда попадают именно
-        // такие сообщения, "Продано" остаётся только для реально полученных
-        // заказов.
-        'bought_waiting' => ['title' => 'Купил и ждёт', 'color' => 'bg-teal-500'],
-
-        'deal_closed'   => ['title' => 'Продано (выдано)', 'color' => 'bg-sky-500'],
-
-        // "Сделка закрыта" раньше смешивала "продали" и "не купили" в одном
-        // статусе — по просьбе Романа 2026-09-17 разделено на два разных
-        // терминальных исхода: 'deal_closed' теперь строго "продали", а это
-        // группа — "не купили", финал без дальнейшей работы (в отличие от
-        // 'thinking', где ещё можно дожимать). Подпричины намеренно взяты
-        // теми же ключами/формулировками, что и закрытая таксономия
-        // `demand_signals.decline_reason` (миграция
-        // 2026_09_14_000004_add_decline_reason_to_demand_signals_table) —
-        // Роман сам вывел её из реальных чатов, здесь просто тот же словарь,
-        // без параллельной таксономии. 'no_stock_wont_wait' — ключевой сигнал
-        // по складу ("купил бы прямо сейчас, была бы деталь в наличии").
-        'lost'      => [
-            'title' => 'Не купили',
-            'color' => 'bg-rose-600',
-            'sub' => [
-                'no_stock_wont_wait'      => 'Нет в наличии',
-                'in_stock_too_expensive'  => 'Дорого',
-                'part_not_found'          => 'Не нашли деталь',
-                'changed_mind'            => 'Передумал',
-            ],
-        ],
-    ];
+    // Сама воронка теперь единым источником в LeadStatuses (просьба
+    // Романа 2026-09-19 — смена статуса появилась ещё и в окне чата
+    // (WhatsappMessenger), дублировать список статусов в двух местах
+    // означало бы держать их синхронными вручную). Заполняется в mount().
+    public $statuses = [];
 
     /**
      * "Спам" (просьба Романа 2026-09-17) — НЕ стадия воронки продаж,
@@ -91,33 +46,15 @@ class KanbanBoard extends Component
      * Просматривать содержимое будем изредка напрямую SQL-запросом, без
      * отдельной вьюхи — если понадобится UI, добавлять отдельно.
      */
-    const SPAM_STATUS = 'spam';
+    const SPAM_STATUS = LeadStatuses::SPAM_STATUS;
 
     protected $listeners = ['refreshKanban' => '$refresh'];
 
     public function updateLeadStatus($leadId, $newStatus)
     {
-        $lead = WhatsappLead::find($leadId);
+        $label = LeadStatuses::update((int) $leadId, (string) $newStatus);
 
-        $isMainStatus = array_key_exists($newStatus, $this->statuses) || $newStatus === self::SPAM_STATUS;
-
-        // Sub-статус может принадлежать ЛЮБОЙ группе с 'sub' (сейчас —
-        // 'thinking' и 'lost'), не только 'thinking' — раньше было жёстко
-        // зашито под одну группу.
-        $subLabel = null;
-        foreach ($this->statuses as $group) {
-            if (isset($group['sub']) && array_key_exists($newStatus, $group['sub'])) {
-                $subLabel = $group['sub'][$newStatus];
-                break;
-            }
-        }
-
-        if ($lead && ($isMainStatus || $subLabel !== null)) {
-            $oldStatus = $lead->status;
-            $lead->update(['status' => $newStatus]);
-            CrmActivityLog::log('update_status', $lead->id, ['from' => $oldStatus, 'to' => $newStatus]);
-
-            $label = $subLabel ?? ($newStatus === self::SPAM_STATUS ? 'Спам' : $this->statuses[$newStatus]['title']);
+        if ($label !== null) {
             $this->dispatch('notify', [
                 'type' => 'success',
                 'message' => "Статус обновлен на: {$label}"

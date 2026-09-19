@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\WhatsappLead;
+use App\Support\LeadStatuses;
 
 class WhatsappMessenger extends Component
 {
@@ -41,6 +42,21 @@ class WhatsappMessenger extends Component
         'echo:messages,MessageReceived' => 'handleIncomingMessage', // Если используешь Laravel Echo
         'refreshChat' => '$refresh' // Обычный рефреш
     ];
+
+    /**
+     * Смена статуса лида прямо из открытого чата (просьба Романа
+     * 2026-09-19) — тот же ленивый выпадающий список, что и на карточках
+     * канбана (partials/status-select.blade.php), и тот же общий
+     * LeadStatuses::update(), что и в KanbanBoard::updateLeadStatus() —
+     * не дублируем ни список статусов, ни логику применения. refreshKanban
+     * дальше — чтобы карточка сразу уехала в новую колонку на доске за
+     * шторкой, не дожидаясь её собственного wire:poll.3s.
+     */
+    public function updateLeadStatus($leadId, $newStatus)
+    {
+        LeadStatuses::update((int) $leadId, (string) $newStatus);
+        $this->dispatch('refreshKanban')->to('admin.kanban-board');
+    }
 
     public function selectLead($id)
     {
@@ -136,6 +152,7 @@ class WhatsappMessenger extends Component
         return view('livewire.admin.whatsapp-messenger', [
             'leads' => $leads,
             'activeLead' => $activeLead,
+            'statuses' => LeadStatuses::all(),
         ]);
     }
 
