@@ -135,11 +135,14 @@ class AggregateSupplierOffersCommand extends Command
         // как ключ схлопывал бы их и терял информацию о конкретном бренде.
         $existingMap = [];
         DB::table('kaspi_initial_products')
-            ->select('sku', 'brand', 'supplier_name')
+            ->select('sku', 'brand', 'supplier_name', 'protected_from_cleanup')
             ->orderBy('sku')
             ->chunkById(5000, function ($rows) use (&$existingMap) {
                 foreach ($rows as $row) {
-                    $existingMap[$this->compositeKey($row->sku, $row->brand)] = $row->supplier_name;
+                    $existingMap[$this->compositeKey($row->sku, $row->brand)] = [
+                        'supplier_name' => $row->supplier_name,
+                        'protected'     => (bool) $row->protected_from_cleanup,
+                    ];
                 }
             }, 'sku');
 
@@ -152,10 +155,15 @@ class AggregateSupplierOffersCommand extends Command
 
         foreach ($bestOffers as $offer) {
             $key = $this->compositeKey($offer->sku, mb_strtolower($offer->brand));
-            $existingSupplier = $existingMap[$key] ?? null;
+            $existingSupplier = $existingMap[$key]['supplier_name'] ?? null;
+            $existingProtected = $existingMap[$key]['protected'] ?? false;
 
-            // avtozakup — защищённые заказные позиции, не трогаем вообще
-            if ($existingSupplier === self::PROTECTED_SUPPLIER) {
+            // avtozakup — защищённые заказные позиции, не трогаем вообще.
+            // protected_from_cleanup — точечная ручная защита (напр.
+            // возвраты от клиента, которые уже нельзя вернуть поставщику,
+            // см. миграцию 2026_09_19_000002) — та же логика "не трогаем",
+            // но не завязана на конкретного поставщика.
+            if ($existingSupplier === self::PROTECTED_SUPPLIER || $existingProtected) {
                 $activeKeys[] = $key;
                 $skippedProtected++;
                 continue;
@@ -250,6 +258,7 @@ class AggregateSupplierOffersCommand extends Command
         // в прайсах поставщиков.
         DB::table('kaspi_initial_products')
             ->where('supplier_name', '!=', self::PROTECTED_SUPPLIER)
+            ->where('protected_from_cleanup', false)
             ->select('id', 'sku', 'brand')
             ->orderBy('id')
             ->chunkById(2000, function ($products) use ($activeKeysMap, $staleIds) {
