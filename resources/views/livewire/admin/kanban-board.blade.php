@@ -115,6 +115,7 @@
                                                     <span wire:loading.remove wire:target="openChat({{ $lead->id }})">Открыть чат</span>
                                                     <svg wire:loading wire:target="openChat({{ $lead->id }})" class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                                                 </button>
+                                                @include('livewire.admin.partials.status-select', ['lead' => $lead, 'statuses' => $statuses])
                                             </div>
                                         @endforeach
                                     @endif
@@ -225,6 +226,8 @@
                                     @if($lastMsg)
                                         <p class="text-[12px] text-slate-600 truncate">{{ \Illuminate\Support\Str::limit($lastMsg->message_text, 50) }}</p>
                                     @endif
+
+                                    @include('livewire.admin.partials.status-select', ['lead' => $lead, 'statuses' => $statuses])
                                 </div>
                             @endforeach
                         @endif
