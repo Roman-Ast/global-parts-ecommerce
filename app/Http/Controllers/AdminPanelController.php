@@ -450,6 +450,7 @@ class AdminPanelController extends Controller
         $financeDashboard = $this->getFinanceDashboardData($request);
         $supplierSettlementsDebts = $this->getSuppliersSettlements($request);
         $receivables = $this->getReceivablesData($request);
+        $supplierCredits = $this->getSupplierCreditsData();
         $reconciliation = $this->getReconciliationData($request);
         
         //dd($supplierSettlementsDebts);
@@ -508,8 +509,49 @@ class AdminPanelController extends Controller
         $financeDashboard,
         $supplierSettlementsDebts,
         $receivables,
+        $supplierCredits,
         $reconciliation
         ));
+    }
+
+    /**
+     * Раздельный источник от totalSupplierOverpayment (см.
+     * getSuppliersSettlements()) — тот живой (accrued-paid из
+     * supplier_settlement/cashflow_transactions), а этот читает
+     * supplier_credits, куда попадают зачёты, НЕ связанные с обычным
+     * циклом заказ→оплата: возвраты от поставщика в зачёт
+     * (CustomerReturnController, source_table='customer_returns') и
+     * разовые исторические остатки (saveOpeningBalances()). Раньше это
+     * пересекалось с prepaid-автоплатежом (Автотрейд и т.п. — оба
+     * источника показывали одно и то же число, т.к. старая автоматика
+     * писала в оба места синхронно) — тот механизм убран целиком
+     * 2026-09-19, но эта таблица и её обычные источники остались нужны:
+     * без неё пропадает единственное место, где видно зачёты по возвратам
+     * (живой случай — Армтек, 19820, найдено при попытке убрать эту
+     * карточку как "дубль" 2026-09-19).
+     */
+    private function getSupplierCreditsData(): array
+    {
+        $supplierCredits = SupplierCredit::selectRaw('supplier_id, SUM(amount) as balance')
+            ->groupBy('supplier_id')
+            ->having('balance', '>', 0)
+            ->get()
+            ->map(function ($row) {
+                $supplier = Suppliers::find($row->supplier_id);
+                return [
+                    'name' => $supplier?->name ?? 'Неизвестный поставщик',
+                    'amount' => round((float) $row->balance, 2),
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $totalSupplierCredits = round($supplierCredits->sum('amount'), 2);
+
+        return [
+            'supplierCredits' => $supplierCredits,
+            'totalSupplierCredits' => $totalSupplierCredits,
+        ];
     }
 
     private function getFinanceDashboardData(Request $request): array
