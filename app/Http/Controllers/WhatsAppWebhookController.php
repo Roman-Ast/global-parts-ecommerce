@@ -10,18 +10,6 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
 {
-    /**
-     * Личные номера Романа и коллег + рабочая группа "Темщики" — переписка
-     * оттуда НЕ должна попадать в whatsapp_leads/whatsapp_messages вообще
-     * (по прямому указанию Романа 2026-09-14): это не клиенты, а мы сами,
-     * и засоряет сырую таблицу, которую он раз в неделю разбирает вручную.
-     * Числа — без "+"/"@c.us", как приходят от Green API в senderData.
-     */
-    const EXCLUDED_PHONES = ['77078508810', '77073707527', '77476204450'];
-
-    /** Регистронезависимо, по senderData.chatName групповых сообщений (@g.us). */
-    const EXCLUDED_GROUP_NAMES = ['темщики'];
-
     public function handle(Request $request)
     {
         $data = $request->all();
@@ -64,32 +52,18 @@ class WhatsAppWebhookController extends Controller
             $phone = str_replace('@c.us', '', $chatIdRaw);
             $instanceId = (string)($data['instanceData']['idInstance'] ?? 'unknown');
 
-            // Личные/рабочие номера и группа "Темщики" — не клиенты, в БД не пишем
-            // вообще (см. EXCLUDED_PHONES/EXCLUDED_GROUP_NAMES выше). Группа сама
-            // идёт под chatId вида "...@g.us" — реальный автор сообщения внутри
-            // неё лежит отдельно, в senderData.sender.
-            $groupChatName = $data['senderData']['chatName'] ?? null;
-            $groupSenderPhone = isset($data['senderData']['sender'])
-                ? str_replace('@c.us', '', $data['senderData']['sender'])
-                : null;
-
-            $isExcluded = in_array($phone, self::EXCLUDED_PHONES, true)
-                || ($groupSenderPhone && in_array($groupSenderPhone, self::EXCLUDED_PHONES, true))
-                || ($groupChatName && in_array(mb_strtolower(trim($groupChatName)), self::EXCLUDED_GROUP_NAMES, true));
-
-            if ($isExcluded) {
-                return response()->json(['status' => 'excluded_internal_chat']);
-            }
-
-            // "Рабочие" (просьба Романа 2026-09-19) — в отличие от
-            // EXCLUDED_PHONES выше (исключены ДО появления лида, зашито в
-            // коде), это лид, УЖЕ существующий в whatsapp_leads, который
-            // Роман постфактум вручную перенёс в этот статус, поняв, что
-            // это свой/коллега/поставщик, а не клиент. Дальнейшие
-            // сообщения по этому номеру больше не сохраняем совсем (ни
-            // входящие, ни исходящие) — тем же ранним return'ом, что и у
-            // исключённых номеров, ничего в whatsapp_leads/whatsapp_messages
-            // не трогаем. Уже сохранённая до переноса история не удаляется.
+            // "Рабочие" (просьба Романа 2026-09-19) — раньше личные номера
+            // Романа/коллег и группа "Темщики" были захардкожены отдельной
+            // константой (EXCLUDED_PHONES/EXCLUDED_GROUP_NAMES) и блокировались
+            // ДО появления лида — их переписка вообще не попадала в CRM, и
+            // разобрать её (кто это вообще) можно было только по коду. По
+            // прямому решению Романа 2026-09-19 этот хардкод убран: теперь
+            // такие контакты заводятся лидами как обычно и видны в "Новые",
+            // а дальше Роман сам переносит их в статус "Рабочие" через UI —
+            // с этого момента (и только с этого момента) новые сообщения по
+            // номеру перестают сохраняться, тем же ранним return'ом, что
+            // раньше был у исключённых номеров. Уже сохранённая до переноса
+            // история не удаляется.
             $existingLead = WhatsappLead::where('phone', $phone)->first();
             if ($existingLead && $existingLead->status === LeadStatuses::STAFF_STATUS) {
                 return response()->json(['status' => 'muted_staff_contact']);
