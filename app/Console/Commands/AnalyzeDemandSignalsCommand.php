@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\DemandSignal;
 use App\Models\LeadRequest;
 use App\Services\ClaudeExtractionService;
+use App\Support\LeadStatuses;
 use Illuminate\Console\Command;
 
 /**
@@ -29,7 +30,14 @@ class AnalyzeDemandSignalsCommand extends Command
     {
         $limit = (int) $this->option('limit');
 
-        $query = LeadRequest::query()->whereNotNull('parts_json')->where('parts_json', '!=', '[]');
+        // "Рабочие" (просьба Романа 2026-09-21) — свои/коллеги никогда не
+        // должны попадать в анализ спроса. WhatsappMessageObserver уже не
+        // создаёт им lead_requests вовсе, это доп. страховка на случай,
+        // если такая запись всё же появится другим путём.
+        $query = LeadRequest::query()
+            ->whereNotNull('parts_json')
+            ->where('parts_json', '!=', '[]')
+            ->whereHas('lead', fn ($q) => $q->where('status', '!=', LeadStatuses::STAFF_STATUS));
 
         if (!$this->option('all')) {
             $query->where('status', 'pending');

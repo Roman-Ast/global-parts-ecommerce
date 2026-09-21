@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\WhatsappLead;
 use App\Services\ClaudeExtractionService;
+use App\Support\LeadStatuses;
 use Illuminate\Console\Command;
 
 /**
@@ -31,7 +32,11 @@ class WhatsappTestAnalysisCommand extends Command
         } else {
             // По умолчанию — самые содержательные диалоги (больше всего сообщений),
             // там выше шанс увидеть реальный вопрос-ответ-исход, а не одно "здравствуйте".
-            $leads = WhatsappLead::withCount('messages')
+            // "Рабочие" (просьба Романа 2026-09-21) — свои/коллеги, не клиенты,
+            // никогда не должны попадать в анализ спроса автоматическим подбором
+            // (явный --lead=<id> всё ещё может указать на них намеренно).
+            $leads = WhatsappLead::where('status', '!=', LeadStatuses::STAFF_STATUS)
+                ->withCount('messages')
                 ->orderByDesc('messages_count')
                 ->limit((int) $this->option('limit'))
                 ->get();

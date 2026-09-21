@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\WhatsappLead;
 use App\Models\WhatsappMessage;
-use App\Support\LeadStatuses;
 use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
@@ -51,23 +50,6 @@ class WhatsAppWebhookController extends Controller
 
             $phone = str_replace('@c.us', '', $chatIdRaw);
             $instanceId = (string)($data['instanceData']['idInstance'] ?? 'unknown');
-
-            // "Рабочие" (просьба Романа 2026-09-19) — раньше личные номера
-            // Романа/коллег и группа "Темщики" были захардкожены отдельной
-            // константой (EXCLUDED_PHONES/EXCLUDED_GROUP_NAMES) и блокировались
-            // ДО появления лида — их переписка вообще не попадала в CRM, и
-            // разобрать её (кто это вообще) можно было только по коду. По
-            // прямому решению Романа 2026-09-19 этот хардкод убран: теперь
-            // такие контакты заводятся лидами как обычно и видны в "Новые",
-            // а дальше Роман сам переносит их в статус "Рабочие" через UI —
-            // с этого момента (и только с этого момента) новые сообщения по
-            // номеру перестают сохраняться, тем же ранним return'ом, что
-            // раньше был у исключённых номеров. Уже сохранённая до переноса
-            // история не удаляется.
-            $existingLead = WhatsappLead::where('phone', $phone)->first();
-            if ($existingLead && $existingLead->status === LeadStatuses::STAFF_STATUS) {
-                return response()->json(['status' => 'muted_staff_contact']);
-            }
 
             // instanceId => source ('site'/'2gis'/...) — см. config/services.php
             // green_api.instance_sources. Незнакомый инстанс (ещё не вписанный
