@@ -153,6 +153,7 @@ class WhatsappMessenger extends Component
             'leads' => $leads,
             'activeLead' => $activeLead,
             'statuses' => LeadStatuses::all(),
+            'quickReplies' => self::QUICK_REPLIES,
         ]);
     }
 
@@ -163,7 +164,70 @@ class WhatsappMessenger extends Component
             return;
         }
 
+        if ($this->sendTextMessage($this->replyText)) {
+            $this->replyText = '';
+        }
+    }
+
+    /**
+     * Быстрые ответы (просьба Романа 2026-09-21) — фиксированный набор
+     * шаблонных сообщений (запрос техпаспорта/VIN, срок самовывоза, адрес
+     * с 2GIS-ссылкой), которые он печатает вручную по многу раз на дню.
+     * Ключ — просто индекс в QUICK_REPLIES, значение — короткая подпись
+     * для чекбокса в блейде.
+     */
+    const QUICK_REPLIES = [
+        [
+            'label' => 'Тех. паспорт / VIN',
+            'text'  => 'Здравствуйте, фото техпаспорта или винкод авто отправьте',
+        ],
+        [
+            'label' => 'Забрать через 2 часа',
+            'text'  => 'Если сейчас заказ оформим, забрать можно будет через 2 часа Целинный 5/1, ТД "Акку"',
+        ],
+        [
+            'label' => 'Адрес',
+            'text'  => "Наш адрес 🏘️\nг. Астана, мкрн Целинный 5/1, ТД Акку, главный вход, 2 этаж.\nhttps://go.2gis.com/N23Xb",
+        ],
+    ];
+
+    /** Отмеченные чекбоксы в блоке быстрых ответов — индексы QUICK_REPLIES. */
+    public $selectedQuickReplies = [];
+
+    /**
+     * Отправляет каждое отмеченное быстрое сообщение ОТДЕЛЬНОЙ строкой в
+     * чат (не склеивая в одно) — так оно и в WhatsApp у получателя выглядит
+     * как обычная последовательность реплик, а не один длинный блок текста.
+     */
+    public function sendQuickReplies()
+    {
+        if (!$this->activeLeadId || empty($this->selectedQuickReplies)) {
+            return;
+        }
+
+        foreach ($this->selectedQuickReplies as $index) {
+            if (!isset(self::QUICK_REPLIES[$index])) {
+                continue;
+            }
+            $this->sendTextMessage(self::QUICK_REPLIES[$index]['text']);
+        }
+
+        $this->selectedQuickReplies = [];
+    }
+
+    /**
+     * Общая часть sendMessage()/sendQuickReplies() — раньше вся эта логика
+     * жила только внутри sendMessage() и читала $this->replyText напрямую,
+     * пришлось вынести в отдельный метод с параметром, чтобы не дублировать
+     * Green API вызов + сохранение + активность/канбан-рефреш для быстрых
+     * ответов. Возвращает true, если сообщение реально ушло.
+     */
+    private function sendTextMessage(string $text): bool
+    {
         $lead = \App\Models\WhatsappLead::find($this->activeLeadId);
+        if (!$lead) {
+            return false;
+        }
 
         [$instanceId, $token] = $this->resolveInstanceCreds($lead);
 
@@ -172,14 +236,14 @@ class WhatsappMessenger extends Component
         try {
             $response = \Illuminate\Support\Facades\Http::post($url, [
                 'chatId' => $lead->phone . '@c.us',
-                'message' => $this->replyText,
+                'message' => $text,
             ]);
 
             if ($response->successful()) {
                 // 1. Сохраняем сообщение
                 $lead->messages()->create([
                     'instance_id' => $instanceId,
-                    'message_text' => $this->replyText,
+                    'message_text' => $text,
                     'is_incoming' => false,
                     'is_read' => true,
                     'message_id' => $response->json()['idMessage'] ?? uniqid(),
@@ -191,7 +255,7 @@ class WhatsappMessenger extends Component
 
                 // 2. Обновляем время (update обновит и last_seen_at, и updated_at)
                 $lead->update(['last_seen_at' => now()]);
-                
+
                 // Если хочешь быть уверен на 100%, можно добавить touch(),
                 // но технически update выше это уже сделал.
                 $lead->touch();
@@ -199,13 +263,40 @@ class WhatsappMessenger extends Component
                 \App\Models\CrmActivityLog::log('send_message', $lead->id);
 
                 $this->dispatch('scroll-chat-to-bottom');
-                $this->replyText = '';
-                
+
                 $this->dispatch('refreshKanban')->to('admin.kanban-board');
+
+                return true;
             }
         } catch (\Exception $e) {
             \Log::error("Ошибка отправки WhatsApp: " . $e->getMessage());
         }
+
+        return false;
+    }
+
+    /**
+     * Превращает голые URL в тексте сообщения в кликабельные ссылки
+     * (просьба Романа 2026-09-21, для быстрого ответа "Адрес" с 2GIS-
+     * ссылкой) — экранируем ВЕСЬ текст сначала (защита от XSS из
+     * содержимого сообщения), потом заменяем уже экранированные URL на
+     * <a>. WhatsApp у получателя и так сам линкует URL в сырых
+     * сообщениях — это только для отображения в НАШЕЙ панели, там текст
+     * рендерился как чистый escaped-текст без единой ссылки.
+     */
+    public function linkify(?string $text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+
+        $escaped = e($text);
+
+        return preg_replace(
+            '/(https?:\/\/[^\s<]+)/',
+            '<a href="$1" target="_blank" rel="noopener noreferrer" class="underline text-blue-600 hover:text-blue-800 break-all">$1</a>',
+            $escaped
+        );
     }
 
     /**

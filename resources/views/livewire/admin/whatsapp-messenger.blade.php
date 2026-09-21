@@ -160,7 +160,7 @@
                                     </div>
                                 @endif
 
-                                <p class="text-[15px] leading-relaxed whitespace-pre-wrap">{{ $msg->message_text }}</p>
+                                <p class="text-[15px] leading-relaxed whitespace-pre-wrap">{!! $this->linkify($msg->message_text) !!}</p>
                                 
                                 <div class="flex items-center justify-end gap-1 mt-1 opacity-60">
                                     <span class="text-[9px] uppercase tracking-tighter">
@@ -195,6 +195,36 @@
                     @endforeach
                 </div>
                     
+                {{-- Быстрые ответы (просьба Романа 2026-09-21) — фиксированный
+                     набор шаблонных сообщений, которые иначе печатались бы
+                     вручную по многу раз на дню. Чекбоксы + ОТДЕЛЬНАЯ кнопка
+                     "Отправить выбранные" (не смешана с обычной отправкой из
+                     поля ввода ниже) — каждое отмеченное сообщение уходит
+                     отдельной репликой, см. WhatsappMessenger::sendQuickReplies(). --}}
+                <div class="px-4 pt-3 pb-1 bg-gray-50 border-t">
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                        @foreach($quickReplies as $i => $reply)
+                            <label class="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    wire:model="selectedQuickReplies"
+                                    value="{{ $i }}"
+                                    class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                >
+                                {{ $reply['label'] }}
+                            </label>
+                        @endforeach
+                        <button
+                            wire:click="sendQuickReplies"
+                            wire:loading.attr="disabled"
+                            wire:target="sendQuickReplies"
+                            class="ml-auto text-[11px] font-black uppercase tracking-wider text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Отправить выбранные
+                        </button>
+                    </div>
+                </div>
+
                 <div class="p-4 bg-gray-50 border-t" x-data="{ uploadingImage: false }">
                     <div class="flex gap-2">
                         {{-- wire:ignore — без него wire:poll.5s на корневом div (строка 1)
