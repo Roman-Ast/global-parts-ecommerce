@@ -13,6 +13,13 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
         .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+
+        /* См. admin/kanban.blade.php — плавающая кнопка WhatsApp с витрины
+           бессмысленна на странице самой WhatsApp-CRM. */
+        .whatsapp-fixed-btn,
+        .whatsapp-fixed-btn-only-to-open-block {
+            display: none !important;
+        }
     </style>
 @endpush
 

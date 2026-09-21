@@ -23,6 +23,16 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
         .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+
+        /* Плавающая кнопка "Написать в WhatsApp" (просьба Романа 2026-09-21) —
+           это виджет для витрины (layouts/app.blade.php, #social-media-container),
+           общий для всего сайта. На странице самой WhatsApp-CRM она бессмысленна
+           (и перекрывает интерфейс справа снизу) — прячем только здесь, не трогая
+           сам layout, чтобы на остальном сайте кнопка осталась как была. */
+        .whatsapp-fixed-btn,
+        .whatsapp-fixed-btn-only-to-open-block {
+            display: none !important;
+        }
     </style>
 @endpush
 
