@@ -1,7 +1,14 @@
 @extends('layouts.app')
 
 @push('scripts')
-    <script src="{{ URL::asset('js/admin.js') }}"></script>
+    {{-- Версия по mtime файла (просьба разобраться с 2026-09-21 — Роман
+         жаловался, что Ozon по-прежнему требовал "сумма > 0" уже ПОСЛЕ
+         фикса логики в admin.js, т.к. у скрипта не было кэш-бастинга и
+         браузер отдавал старую закэшированную версию; та же категория
+         бага уже ловили на STEP_ORDER для Spartex, см. CLAUDE.md). Теперь
+         любое изменение файла меняет ?v= и браузер гарантированно тянет
+         свежую версию, без ручного Ctrl+Shift+R. --}}
+    <script src="{{ URL::asset('js/admin.js') }}?v={{ filemtime(public_path('js/admin.js')) }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 @endpush
 
