@@ -747,6 +747,8 @@
                             'site':           ['🌐 Сайт',        'primary'],
                             'satu':           ['🛍️ Satu',        'danger'],
                             'repeat_request': ['🔁 Повторные',   'dark'],
+                            'ozon':           ['🔵 Ozon',        'primary'],
+                            'halyk_market':   ['🟢 Halyk Market', 'success'],
                         };
 
                         function fmt(num) {
@@ -947,6 +949,8 @@
                                         'site'           => ['🌐 Сайт',            'primary'],
                                         'satu'           => ['🛍️ Satu',            'danger'],
                                         'repeat_request' => ['🔁 Повторные',       'dark'],
+                                        'ozon'           => ['🔵 Ozon',            'primary'],
+                                        'halyk_market'   => ['🟢 Halyk Market',    'success'],
                                     ];
                                     $label = $channelLabels[$channel][0] ?? $channel;
                                     $badge = $channelLabels[$channel][1] ?? 'secondary';
@@ -2242,20 +2246,24 @@
                                 <option value="site">Сайт</option>
                                 <option value="friends">Свои</option>
                                 <option value="kaspi">Каспи</option>
+                                <option value="ozon">Ozon</option>
+                                <option value="halyk_market">Halyk Market</option>
                                 <option value="satu">Satu</option>
                                 <option value="repeat_request">Повторное обращение</option>
                             </select>
                         </div>
-                        {{-- Клиент пришёл через Kaspi (звонок/переписка), но оформился
-                             напрямую, минуя сам магазин Kaspi — комиссию в этом случае
-                             реально не платим, канал привлечения при этом остаётся "Kaspi"
-                             (просьба Романа 2026-09-18). Показывается только при выборе
-                             канала "Каспи" — see admin.js. --}}
+                        {{-- Клиент пришёл через маркетплейс (звонок/переписка), но оформился
+                             напрямую, минуя сам маркетплейс (Kaspi/Ozon/Halyk Market) — комиссию
+                             в этом случае реально не платим, канал привлечения при этом остаётся
+                             прежним (просьба Романа 2026-09-18, расширено на Ozon/Halyk Market
+                             2026-09-21). Показывается только при выборе одного из этих трёх
+                             каналов — see admin.js (DEFERRED_MARKETPLACE_ACCOUNTS). Поле в БД/имя
+                             чекбокса осталось историческим "kaspi_bypassed" — не только про Kaspi. --}}
                         <div class="input-group mb-2 manually-order-main" id="manualy_order_kaspi_bypassed_wrapper" style="display:none;">
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" name="kaspi_bypassed" id="manualy_order_kaspi_bypassed" value="1">
                                 <label class="form-check-label" for="manualy_order_kaspi_bypassed">
-                                    Оформлено напрямую, минуя магазин Kaspi (без комиссии)
+                                    Оформлено напрямую, минуя маркетплейс (без комиссии)
                                 </label>
                             </div>
                         </div>

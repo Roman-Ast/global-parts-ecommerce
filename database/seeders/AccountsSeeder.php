@@ -31,6 +31,11 @@ class AccountsSeeder extends Seeder
             'Наличные',
             'Рома Халык',
             'Kaspi Pay безнал',
+            // Halyk Pay — добавлен 2026-09-21 под авто-выплаты Halyk Market
+            // (канал продаж "halyk_market", см. AdminPanelController::
+            // AUTO_PAYOUT_MARKETPLACES). НЕ "Рома Халык" выше — тот личный
+            // счёт Романа в Halyk Bank, смешивать с маркетплейсом нельзя.
+            'Halyk Pay',
         ];
 
         foreach ($accounts as $name) {

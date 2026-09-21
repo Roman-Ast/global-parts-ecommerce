@@ -5,6 +5,20 @@ $.ajaxSetup({
     }
 });
 
+// Каналы продаж с отложенной оплатой через маркетплейс (просьба Романа
+// 2026-09-21, "как на Kaspi") — оплата в момент оформления заказа
+// намеренно зануляется (см. "Ручное создание заказа"), деньги приходят
+// позже, автоматически, при выдаче заказа (см. AdminPanelController::
+// changeStatus() -> AUTO_PAYOUT_MARKETPLACES). Каждому каналу — свой счёт
+// для авто-выбора в форме, найденный по ТЕКСТУ опции (не id — id счёта
+// может отличаться между окружениями). Для Ozon это тот же счёт, что и
+// у Kaspi Pay — Роман указал его при регистрации на Ozon.
+const DEFERRED_MARKETPLACE_ACCOUNTS = {
+    kaspi: { include: /kaspi\s*pay/i, exclude: /безнал/i },
+    ozon: { include: /kaspi\s*pay/i, exclude: /безнал/i },
+    halyk_market: { include: /halyk\s*pay/i, exclude: null },
+};
+
 $('.close-flash').on('click', function () {
     $(this).parent().slideUp();
 });
@@ -401,17 +415,19 @@ $('#manually-order-submit').on('click', function () {
         }
     });
 
-    // Для Kaspi сумма оплаты в момент оформления заказа ВСЕГДА 0 —
-    // деньги приходят от Kaspi только когда заказ реально выдан клиенту
-    // (см. changeStatus() -> 'issued'), не в момент создания заказа.
-    // Старая проверка "сумма > 0" осталась от старой логики (до
-    // разделения "заказ создан" и "оплата получена") и блокировала
-    // корректно заполненный 0 как будто это пустое поле.
+    // Для маркетплейсов с отложенной оплатой (Kaspi/Ozon/Halyk Market)
+    // сумма оплаты в момент оформления заказа ВСЕГДА 0 — деньги приходят
+    // только когда заказ реально выдан клиенту (см. changeStatus() ->
+    // 'issued'), не в момент создания заказа. Старая проверка "сумма > 0"
+    // осталась от старой логики (до разделения "заказ создан" и "оплата
+    // получена") и блокировала корректно заполненный 0 как будто это
+    // пустое поле.
     const paymentSaleChannel = $('#manualy_order_sale_channel').val();
     const paymentAmount = parseFloat($('#manualy-order-payment-details-amount').val());
-    // 0 допустим только для НАСТОЯЩЕГО Kaspi (ждём оплату после выдачи) —
-    // заказ "мимо магазина Kaspi" платится сразу, как любой другой канал.
-    const isRealKaspiDeferred = paymentSaleChannel === 'kaspi' && !data.kaspiBypassed;
+    // 0 допустим только для НАСТОЯЩЕГО заказа маркетплейса (ждём оплату
+    // после выдачи) — заказ "мимо маркетплейса" платится сразу, как любой
+    // другой канал (см. DEFERRED_MARKETPLACE_ACCOUNTS ниже).
+    const isRealKaspiDeferred = (paymentSaleChannel in DEFERRED_MARKETPLACE_ACCOUNTS) && !data.kaspiBypassed;
     const paymentAmountInvalid = isNaN(paymentAmount)
         || paymentAmount < 0
         || (paymentAmount === 0 && !isRealKaspiDeferred);
@@ -545,62 +561,61 @@ $(document).on('input', '.manually-order-parts-list-item-qty, .manually-order-pa
 
     $('#manualy-order-total-sum-with-margine-num').html(sumWithMargine);
 
-    // Kaspi платит только после того, как клиент получит заказ (см.
-    // логику changeStatus() на статус "выдано") — раньше это поле всегда
+    // Маркетплейсы с отложенной оплатой (Kaspi/Ozon/Halyk Market) платят
+    // только после того, как клиент получит заказ (см. логику
+    // changeStatus() на статус "выдано") — раньше это поле всегда
     // автоматически подставляло полную сумму заказа, и для Kaspi это
     // приводило к тому, что деньги в кассе "приходили" сразу при
     // оформлении заказа, хотя Kaspi ещё ничего не заплатил. Живой случай
     // 2026-08-31: заказ #56 показал 58000 прихода в день оформления.
-    // Если клиент пришёл через Kaspi, но оформился МИМО магазина
+    // Если клиент пришёл через маркетплейс, но оформился МИМО него
     // (checkbox "kaspi_bypassed") — оплата реально уже получена сразу,
     // как у любого другого канала, ждать нечего (просьба Романа 2026-09-18).
     const saleChannel = $('#manualy_order_sale_channel').val();
     const kaspiBypassed = $('#manualy_order_kaspi_bypassed').is(':checked');
-    $('#manualy-order-payment-details-amount').val((saleChannel === 'kaspi' && !kaspiBypassed) ? 0 : sumWithMargine);
+    const isDeferredMarketplace = (saleChannel in DEFERRED_MARKETPLACE_ACCOUNTS) && !kaspiBypassed;
+    $('#manualy-order-payment-details-amount').val(isDeferredMarketplace ? 0 : sumWithMargine);
 
     $('#manualy-order-total-prime-cost-sum-inner').html(primeCostSum);
     $('#manualy-order-total-qty-inner').html(totalQty);
 });
 
-// При смене канала продаж на Kaspi (или с него) сразу пересчитываем сумму
-// оплаты по тому же правилу — иначе поле остаётся с суммой, введённой до
-// переключения канала.
+// При смене канала продаж на маркетплейс с отложенной оплатой (или с
+// него) сразу пересчитываем сумму оплаты по тому же правилу — иначе поле
+// остаётся с суммой, введённой до переключения канала.
 $(document).on('change', '#manualy_order_sale_channel', function () {
-    const isKaspi = $(this).val() === 'kaspi';
+    const channel = $(this).val();
+    const accountMatcher = DEFERRED_MARKETPLACE_ACCOUNTS[channel];
+    const isDeferredChannel = !!accountMatcher;
 
-    // Чекбокс "оформлено мимо магазина Kaspi" имеет смысл только для
-    // самого канала Kaspi — для остальных каналов скрываем и сбрасываем,
+    // Чекбокс "оформлено мимо маркетплейса" имеет смысл только для каналов
+    // из DEFERRED_MARKETPLACE_ACCOUNTS — для остальных скрываем и сбрасываем,
     // чтобы случайно не протащить его состояние с прошлого выбора.
-    $('#manualy_order_kaspi_bypassed_wrapper').toggle(isKaspi);
-    if (!isKaspi) {
+    $('#manualy_order_kaspi_bypassed_wrapper').toggle(isDeferredChannel);
+    if (!isDeferredChannel) {
         $('#manualy_order_kaspi_bypassed').prop('checked', false);
     }
 
     $('.manually-order-parts-list-item-qty').first().trigger('input');
 
-    // Каспи всегда платит через один и тот же счёт — просьба Романа
-    // 2026-09-18, чтобы не выбирать его руками каждый раз. Ищем по
-    // ТЕКСТУ опции (не по id — id счёта может отличаться между
-    // окружениями), не жёстко "точное совпадение", чтобы не сломаться
-    // от лишнего пробела/регистра в названии счёта. Поле остаётся
-    // обычным select — можно поменять руками, если понадобится другой счёт.
-    // Не подставляем этот счёт, если заказ оформлен МИМО Kaspi (см. выше) —
-    // деньги в этом случае пришли не через маркетплейс, счёт Kaspi Pay тут
-    // ни при чём.
-    if (isKaspi && !$('#manualy_order_kaspi_bypassed').is(':checked')) {
-        // Два счёта содержат "Kaspi Pay" в названии ("Рома Kaspi Pay" —
-        // именно на него Kaspi Marketplace платит после выдачи заказа,
-        // см. AdminPanelController; и "Kaspi Pay безнал" — другой счёт,
-        // не относится к маркетплейсу) — исключаем "безнал" явно, а не
-        // полагаемся на то, что нужный счёт просто окажется в списке раньше.
+    // Такой канал всегда платит через один и тот же счёт — просьба Романа
+    // 2026-09-18 (Kaspi), расширено на Ozon/Halyk Market 2026-09-21, чтобы
+    // не выбирать его руками каждый раз. Ищем по ТЕКСТУ опции (не по id —
+    // id счёта может отличаться между окружениями), не жёстко "точное
+    // совпадение", чтобы не сломаться от лишнего пробела/регистра в
+    // названии счёта. Поле остаётся обычным select — можно поменять руками,
+    // если понадобится другой счёт. Не подставляем счёт, если заказ
+    // оформлен МИМО маркетплейса (см. выше) — деньги в этом случае пришли
+    // не через него.
+    if (isDeferredChannel && !$('#manualy_order_kaspi_bypassed').is(':checked')) {
         const $accountSelect = $('#manualy_order_account');
-        const $kaspiPayOption = $accountSelect.find('option').filter(function () {
+        const $matchedOption = $accountSelect.find('option').filter(function () {
             const text = $(this).text();
-            return /kaspi\s*pay/i.test(text) && !/безнал/i.test(text);
+            return accountMatcher.include.test(text) && !(accountMatcher.exclude && accountMatcher.exclude.test(text));
         }).first();
 
-        if ($kaspiPayOption.length) {
-            $accountSelect.val($kaspiPayOption.val());
+        if ($matchedOption.length) {
+            $accountSelect.val($matchedOption.val());
         }
     }
 });

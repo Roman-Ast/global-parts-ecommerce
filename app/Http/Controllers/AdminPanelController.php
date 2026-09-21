@@ -43,6 +43,26 @@ class AdminPanelController extends Controller
     const ERP_GO_LIVE_DATE = '2026-09-17';
 
     /**
+     * Каналы продаж с отложенной оплатой через маркетплейс (просьба
+     * Романа 2026-09-21 — добавить Ozon и Halyk Market "по аналогии с
+     * Kaspi"): деньги не приходят в момент оформления заказа, а
+     * зачисляются автоматически на указанный счёт при переводе ВСЕХ
+     * позиций заказа в статус "выдано" (см. changeStatus()). Для Ozon —
+     * тот же счёт, что и у Kaspi Pay: Роман указал его при регистрации
+     * на Ozon. Для Halyk Market — отдельный счёт "Halyk Pay" (НЕ "Рома
+     * Халык" — тот уже занят личным счётом Романа в Halyk Bank, смешивать
+     * с маркетплейсом нельзя). Флаг `kaspi_bypassed` на заказе (название
+     * осталось историческим от Kaspi) теперь общий для всех трёх — значит
+     * "заказ привязан к каналу маркетплейса, но фактически оформлен мимо
+     * него, оплата уже получена как обычно".
+     */
+    const AUTO_PAYOUT_MARKETPLACES = [
+        'kaspi' => ['account' => 'Рома Kaspi Pay', 'label' => 'Kaspi'],
+        'ozon' => ['account' => 'Рома Kaspi Pay', 'label' => 'Ozon'],
+        'halyk_market' => ['account' => 'Halyk Pay', 'label' => 'Halyk Market'],
+    ];
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
@@ -65,6 +85,8 @@ class AdminPanelController extends Controller
             'friends' => [],
             'site' => [],
             'repeat_request' => [],
+            'ozon' => [],
+            'halyk_market' => [],
         ];
 
         foreach ($sales_statistics_from_begin as $sale_channel => $data) {
@@ -112,6 +134,8 @@ class AdminPanelController extends Controller
             'friends' => [],
             'site' => [],
             'repeat_request' => [],
+            'ozon' => [],
+            'halyk_market' => [],
         ];
 
         foreach ($sales_statistics as $sale_channel => $data) {
@@ -140,7 +164,7 @@ class AdminPanelController extends Controller
             ->groupBy('sale_channel', 'accounting_month')
             ->get();
 
-        $channelKeys = ['kaspi', '2gis', 'olx', 'friends', 'site', 'satu', 'repeat_request'];
+        $channelKeys = ['kaspi', '2gis', 'olx', 'friends', 'site', 'satu', 'repeat_request', 'ozon', 'halyk_market'];
 
         $salesStatisticsByMonth = [];
 
@@ -1706,12 +1730,15 @@ class AdminPanelController extends Controller
             // (Kaspi платит за весь заказ разом, не по позициям).
             $order = Order::find($product->order_id);
 
-            // kaspi_bypassed — заказ пришёл через Kaspi, но оформлен мимо их
-            // магазина: оплата уже получена обычным путём при создании
-            // заказа (см. manuallyMakeOrder()), ждать автовыплату от Kaspi
+            // kaspi_bypassed — заказ привязан к каналу маркетплейса, но
+            // оформлен мимо него: оплата уже получена обычным путём при
+            // создании заказа (см. manuallyMakeOrder()), ждать автовыплату
             // после выдачи не нужно, это не тот случай (просьба Романа
-            // 2026-09-18).
-            if ($order && $order->sale_channel === 'kaspi' && !$order->kaspi_bypassed) {
+            // 2026-09-18, расширено на Ozon/Halyk Market 2026-09-21 — см.
+            // AUTO_PAYOUT_MARKETPLACES).
+            $marketplace = self::AUTO_PAYOUT_MARKETPLACES[$order->sale_channel ?? ''] ?? null;
+
+            if ($order && $marketplace !== null && !$order->kaspi_bypassed) {
                 $allResolved = !OrderProduct::where('order_id', $order->id)
                     ->whereNotIn('status', ['issued', 'returned'])
                     ->exists();
@@ -1724,16 +1751,16 @@ class AdminPanelController extends Controller
                     $stillOwed = round((float) $order->sum_with_margine - $alreadyPaid, 2);
 
                     if ($stillOwed > 0) {
-                        $kaspiPayAccount = Accounts::where('name', 'Рома Kaspi Pay')->first();
+                        $payoutAccount = Accounts::where('name', $marketplace['account'])->first();
 
-                        if ($kaspiPayAccount) {
+                        if ($payoutAccount) {
                             $orderPayment = OrderPayment::create([
                                 'order_id' => $order->id,
-                                'account_id' => $kaspiPayAccount->id,
+                                'account_id' => $payoutAccount->id,
                                 'paid_at' => now()->format('Y-m-d'),
                                 'amount' => $stillOwed,
                                 'type' => 'payment',
-                                'comment' => 'Автоматическое поступление от Kaspi по факту выдачи заказа',
+                                'comment' => 'Автоматическое поступление от ' . $marketplace['label'] . ' по факту выдачи заказа',
                             ]);
 
                             CashflowTransactions::create([
@@ -1743,13 +1770,13 @@ class AdminPanelController extends Controller
                                 'expense_category_id' => null,
                                 'supplier_id' => null,
                                 'user_id' => auth()->id(),
-                                'account_id' => $kaspiPayAccount->id,
+                                'account_id' => $payoutAccount->id,
                                 'amount' => $stillOwed,
-                                'subcategory' => 'Оплата по заказу (Kaspi, авто)',
+                                'subcategory' => 'Оплата по заказу (' . $marketplace['label'] . ', авто)',
                                 'counterparty' => $order->customer_phone,
                                 'related_table' => 'orders',
                                 'related_id' => $order->id,
-                                'comment' => 'Автоматическое поступление от Kaspi по заказу №' . $order->id,
+                                'comment' => 'Автоматическое поступление от ' . $marketplace['label'] . ' по заказу №' . $order->id,
                             ]);
                         }
                     }
@@ -1953,19 +1980,21 @@ class AdminPanelController extends Controller
             'status' => 'заказано',
             'customer_phone' => $customer?->phone ?? $phoneRaw,
             'sale_channel' => $request->data['orderInfo'][4],
-            // Клиент пришёл через Kaspi, но оформился мимо магазина Kaspi —
-            // комиссию не платим, но канал привлечения остаётся "kaspi"
-            // (просьба Романа 2026-09-18, см. миграцию add_kaspi_bypassed).
-            // Не в orderInfo (позиционный массив) — отдельным полем в payload.
+            // Клиент пришёл через маркетплейс (Kaspi/Ozon/Halyk Market), но
+            // оформился мимо него — комиссию не платим, но канал привлечения
+            // остаётся как есть (просьба Романа 2026-09-18, см. миграцию
+            // add_kaspi_bypassed; расширено на Ozon/Halyk Market 2026-09-21,
+            // см. AUTO_PAYOUT_MARKETPLACES). Не в orderInfo (позиционный
+            // массив) — отдельным полем в payload.
             'kaspi_bypassed' => (bool) ($request->data['kaspiBypassed'] ?? false),
         ]);
 
-        // Kaspi-заказы с отложенной оплатой (не kaspi_bypassed) приходят сюда
-        // с paymentInfo[2]=0 — JS-форма намеренно обнуляет сумму оплаты для
-        // такого канала (см. admin.js: saleChannel==='kaspi' && !kaspiBypassed
-        // => amount=0), потому что реальной оплаты ещё не было, деньги придут
-        // от Kaspi позже, отдельным автоплатежом при выдаче заказа (см.
-        // changeStatus()). Раньше это всё равно создавало настоящую строку в
+        // Заказы маркетплейсов с отложенной оплатой (Kaspi/Ozon/Halyk Market,
+        // не kaspi_bypassed) приходят сюда с paymentInfo[2]=0 — JS-форма
+        // намеренно обнуляет сумму оплаты для таких каналов (см. admin.js:
+        // DEFERRED_MARKETPLACE_ACCOUNTS), потому что реальной оплаты ещё не
+        // было, деньги придут от маркетплейса позже, отдельным автоплатежом
+        // при выдаче заказа (см. changeStatus()). Раньше это всё равно создавало настоящую строку в
         // order_payments/cashflow_transactions с amount=0.00 — "Оплата по
         // заказу" на 0₸, которой физически не было (жалоба Романа 2026-09-19
         // на заказ №2052). Ни платежа, ни возврата на 0 не бывает по смыслу —
