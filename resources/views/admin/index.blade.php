@@ -1056,17 +1056,17 @@
                                     <td>{{ number_format($data['countOfSales'] ? round($data['totalSalesSum'] / $data['countOfSales']) : 0, 0, '', ' ') }}</td>
                                     <td>{{ $salesSumFromBegin ? round(($data['totalSalesSum'] * 100) /  $salesSumFromBegin, 2) : 0 }}</td>
                                     <td>
-                                        @if($sale_channel == 'kaspi')
+                                        @if(in_array($sale_channel, ['kaspi', 'ozon']))
                                         {{ number_format(($data['totalSalesSum'] * 12) /  100, 0, '', ' ') }}
                                         @endif
                                     </td>
                                     <td>
-                                        @if($sale_channel == 'kaspi')
+                                        @if(in_array($sale_channel, ['kaspi', 'ozon']))
                                         {{ number_format(round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - ($data['totalSalesSum'] * 12) /  100), 0, '', ' ') }}
                                         @endif
                                     </td>
                                     <td>
-                                        @if($sale_channel == 'kaspi')
+                                        @if(in_array($sale_channel, ['kaspi', 'ozon']))
                                             @if($data['totalSalesSum'] > 0)
                                                 {{ number_format(100 - round(100 - ((round($data['totalSalesSum'] - $data['totalSalesPrimeCostSum'] - (($data['totalSalesSum'] * 3) /  100) - ($data['totalSalesSum'] * 12) /  100)* 100) / $data['totalSalesSum']), 2), 0, '', ' ') }}%
                                             @else

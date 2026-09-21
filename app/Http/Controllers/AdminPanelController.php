@@ -72,9 +72,17 @@ class AdminPanelController extends Controller
         $primeCostSumFromBegin = Order::sum('sum');
         $countOfSalesFromBegin = Order::count();
         $totalItemsSoldFromBegin = OrderProduct::count();
-        // kaspi_bypassed — заказы, оформленные мимо магазина Kaspi, реальной
-        // комиссии не несут, хоть канал и "kaspi" (просьба Романа 2026-09-18).
-        $kaspiComissionFromBegin = Order::where('sale_channel', 'kaspi')->where('kaspi_bypassed', false)->sum('sum_with_margine') * 12 / 100;
+        // kaspi_bypassed — заказы, оформленные мимо маркетплейса, реальной
+        // комиссии не несут, хоть канал привлечения и сохранён (просьба
+        // Романа 2026-09-18). Ozon добавлен 2026-09-21 (просьба Романа
+        // "сделать комиссию тоже 12%", подтверждённая живая ставка FBS —
+        // см. OzonCommissionRates) — переменная теперь суммарная комиссия
+        // Kaspi+Ozon, имя оставлено как есть, чтобы не трогать передачу
+        // в blade (см. 'kaspiComissionFromBegin' в view()->with() ниже).
+        // Halyk Market не включён — их реальная комиссия нигде не
+        // задокументирована.
+        $kaspiComissionFromBegin = Order::where('sale_channel', 'kaspi')->where('kaspi_bypassed', false)->sum('sum_with_margine') * 12 / 100
+            + Order::where('sale_channel', 'ozon')->where('kaspi_bypassed', false)->sum('sum_with_margine') * 12 / 100;
         $marginClearFromBegin = round($salesSumFromBegin - $primeCostSumFromBegin - $kaspiComissionFromBegin);
 
         //выгружаем данные продаж по каналам за весь период
@@ -208,10 +216,17 @@ class AdminPanelController extends Controller
         $totalCountOfSales = Order::whereBetween('date', [$start, $end])->count();
 
         // kaspi_bypassed — см. пояснение у $kaspiComissionFromBegin выше.
+        // Ozon — 12% (Kaspi здесь исторически 12.5%, а не 12% как выше;
+        // расхождение уже было до этой правки, не унифицировал заодно —
+        // не просили).
         $kaspiComission = Order::whereBetween('date', [$start, $end])
             ->where('sale_channel', 'kaspi')
             ->where('kaspi_bypassed', false)
-            ->sum('sum_with_margine') * 12.5 / 100;
+            ->sum('sum_with_margine') * 12.5 / 100
+            + Order::whereBetween('date', [$start, $end])
+                ->where('sale_channel', 'ozon')
+                ->where('kaspi_bypassed', false)
+                ->sum('sum_with_margine') * 12 / 100;
 
         // Закреплённый пункт "Весь период" — берём из уже посчитанной статистики с начала работы
         $salesStatisticsByMonth['all'] = [];
