@@ -1018,15 +1018,24 @@ class AdminPanelController extends Controller
             $paid = (float) ($paidByOrder[$order->id] ?? 0);
             $due = round((float) $order->sum_with_margine - $paid, 2);
 
+            // Для маркетплейсов с отложенной оплатой (Kaspi/Ozon/Halyk
+            // Market, см. AUTO_PAYOUT_MARKETPLACES) недоплата — это не долг
+            // конкретного клиента, а задержка выплаты от самого маркетплейса
+            // (платит уже после того, как клиент получит заказ). Группируем
+            // отдельно общей строкой с названием маркетплейса, а не по
+            // телефону — иначе выглядит так, будто это клиент должен
+            // доплатить, хотя на самом деле просто ещё не пришла выплата.
+            // Просьба Романа 2026-09-21 — раньше проверялся только 'kaspi',
+            // Ozon/Halyk Market молча попадали в группировку по телефону.
+            // kaspi_bypassed — заказ оформлен мимо маркетплейса, оплата уже
+            // получена как обычно (см. changeStatus()), остаточный долг тут
+            // — уже реальный долг конкретного клиента, не маркетплейса.
+            $marketplace = self::AUTO_PAYOUT_MARKETPLACES[$order->sale_channel ?? ''] ?? null;
+            $isMarketplaceDelay = $marketplace !== null && !$order->kaspi_bypassed;
+
             return [
                 'order_id' => $order->id,
-                // Для Kaspi недоплата — это не долг конкретного клиента, а
-                // задержка выплаты от самого Kaspi (маркетплейс платит уже
-                // после того, как клиент получит заказ). Группируем отдельно
-                // общей строкой "Kaspi", а не по телефону — иначе выглядит
-                // так, будто это клиент должен доплатить, хотя на самом деле
-                // просто ещё не пришла выплата.
-                'group' => $order->sale_channel === 'kaspi' ? 'Kaspi' : ($order->customer_phone ?: 'Без телефона'),
+                'group' => $isMarketplaceDelay ? $marketplace['label'] : ($order->customer_phone ?: 'Без телефона'),
                 'due' => $due,
             ];
         })->filter(fn ($row) => $row['due'] > 0);
