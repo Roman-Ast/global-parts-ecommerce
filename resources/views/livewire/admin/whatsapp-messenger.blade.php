@@ -218,7 +218,7 @@
                             wire:click="sendQuickReplies"
                             wire:loading.attr="disabled"
                             wire:target="sendQuickReplies"
-                            class="ml-auto text-[11px] font-black uppercase tracking-wider text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="ml-auto bg-slate-500 text-white px-4 py-1.5 rounded-full hover:bg-slate-600 transition shadow-sm active:scale-95 font-bold uppercase text-[10px] tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Отправить выбранные
                         </button>
