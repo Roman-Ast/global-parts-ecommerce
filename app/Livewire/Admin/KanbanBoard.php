@@ -141,6 +141,11 @@ class KanbanBoard extends Component
             ->get()
             ->map(function($lead) {
                 $lead->has_new = $lead->unread_count > 0;
+                // "Пора напомнить" (просьба Романа 2026-09-21) — считаем
+                // здесь же, а не отдельным запросом: lastMessage уже
+                // подгружена выше ради превью, needsReminder() её просто
+                // переиспользует.
+                $lead->needs_reminder = LeadStatuses::needsReminder($lead);
                 return $lead;
             });
 
@@ -150,10 +155,23 @@ class KanbanBoard extends Component
         }
         $this->lastTotalUnread = $currentTotalUnread;
 
+        // "Пора напомнить" — виртуальная колонка (просьба Романа
+        // 2026-09-21): НЕ отдельный статус в БД, просто карточки из
+        // $leads (уже отфильтрованных/загруженных выше), у которых
+        // needs_reminder=true, собранные в один список поперёк реальных
+        // статусов (КП отправлено + все подпричины "Работы с
+        // возражениями"). Перетащить карточку МОЖНО отсюда (это меняет
+        // настоящий status лида как обычно через updateLeadStatus) — но
+        // НЕЛЬЗЯ затащить сюда руками, см. data-no-drop в блейде/JS.
+        // Те же объекты моделей, что и в $leadsByStatus — не дублируем
+        // данные, только ссылки на них в другом списке.
+        $remindersDue = $leads->filter(fn ($lead) => $lead->needs_reminder)->values();
+
         $leads = $leads->groupBy('status');
 
         return view('livewire.admin.kanban-board', [
             'leadsByStatus' => $leads,
+            'remindersDue' => $remindersDue,
             'statuses' => $this->statuses,
             'totalCount' => \App\Models\WhatsappLead::count(),
             'spamCount' => \App\Models\WhatsappLead::where('status', self::SPAM_STATUS)->count(),

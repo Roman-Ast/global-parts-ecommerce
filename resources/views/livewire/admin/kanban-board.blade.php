@@ -59,6 +59,7 @@
                         @foreach($info['sub'] as $subKey => $subTitle)
                             @php
                                 $subUnreadCount = isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->where('has_new', true)->count() : 0;
+                                $subReminderCount = isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->where('needs_reminder', true)->count() : 0;
                             @endphp
                             {{-- wire:key отсутствовал на этой обёртке (в отличие от всех
                                  остальных @foreach-элементов в файле) — найдено при разборе
@@ -77,6 +78,15 @@
                                             {{ $subUnreadCount }}
                                         </span>
                                     @endif
+                                    {{-- Счётчик "пора напомнить" (просьба Романа 2026-09-21) — считается
+                                         автоматически через needs_reminder, для колонок вне
+                                         REMINDER_ELIGIBLE_STATUSES всегда 0 и просто не отрисуется. --}}
+                                    @if($subReminderCount > 0)
+                                        <span wire:key="reminder-badge-{{ $subKey }}-{{ $subReminderCount }}" class="kanban-unread-badge flex items-center gap-0.5 justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-amber-500 text-white text-[8px] font-black leading-none shadow-[0_0_6px_rgba(245,158,11,0.7)]">
+                                            <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            {{ $subReminderCount }}
+                                        </span>
+                                    @endif
                                 </div>
 
                                 {{-- min-h-0 по всей цепочке flex/grid-родителей выше — классический
@@ -93,11 +103,14 @@
                                 >
                                     @if(isset($leadsByStatus[$subKey]))
                                         @foreach($leadsByStatus[$subKey] as $lead)
-                                            <div wire:key="card-{{ $lead->id }}-{{ $lead->lastMessage->id ?? 'none' }}" data-id="{{ $lead->id }}" class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} {{ $lead->has_new ? 'kanban-card-pulse' : '' }} bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all group">
+                                            <div wire:key="card-{{ $lead->id }}-{{ $lead->lastMessage->id ?? 'none' }}" data-id="{{ $lead->id }}" class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} {{ $lead->has_new ? 'kanban-card-pulse' : '' }} {{ $lead->needs_reminder ? 'kanban-card-reminder' : '' }} bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all group">
                                                 <div class="flex justify-between items-start mb-2">
                                                     <div class="flex items-center space-x-2">
                                                         @if($lead->has_new)
                                                             <span class="inline-flex rounded-full h-3 w-3 bg-green-500 flex-shrink-0"></span>
+                                                        @endif
+                                                        @if($lead->needs_reminder)
+                                                            <svg class="w-3 h-3 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Пора напомнить"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                                         @endif
                                                         <span class="text-xs font-bold text-slate-800 tracking-tighter">+{{ $lead->phone }}</span>
                                                         @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
@@ -141,6 +154,7 @@
                 <div class="flex-shrink-0 w-[320px] flex flex-col h-full min-h-0 {{ $loop->first ? 'sticky left-0 z-10 bg-slate-100 shadow-[8px_0_12px_-8px_rgba(0,0,0,0.15)]' : '' }}" wire:key="status-col-{{ $key }}">
                     @php
                         $columnUnreadCount = isset($leadsByStatus[$key]) ? $leadsByStatus[$key]->where('has_new', true)->count() : 0;
+                        $columnReminderCount = isset($leadsByStatus[$key]) ? $leadsByStatus[$key]->where('needs_reminder', true)->count() : 0;
                     @endphp
                     <div class="flex items-center justify-between mb-3 px-3 py-2.5 rounded-xl {{ $info['color'] }} border border-black/5 shadow-sm">
                         <div class="flex items-center space-x-2">
@@ -156,6 +170,12 @@
                             @if($columnUnreadCount > 0)
                                 <span wire:key="unread-badge-{{ $key }}-{{ $columnUnreadCount }}" class="kanban-unread-badge flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black leading-none shadow-[0_0_6px_rgba(244,63,94,0.7)]">
                                     {{ $columnUnreadCount }}
+                                </span>
+                            @endif
+                            @if($columnReminderCount > 0)
+                                <span wire:key="reminder-badge-{{ $key }}-{{ $columnReminderCount }}" class="kanban-unread-badge flex items-center gap-0.5 justify-center min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-white text-[9px] font-black leading-none shadow-[0_0_6px_rgba(245,158,11,0.7)]">
+                                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    {{ $columnReminderCount }}
                                 </span>
                             @endif
                         </div>
@@ -209,12 +229,15 @@
                                     @click="$dispatch('open-chat-side-panel')"
                                     wire:loading.class="opacity-50"
                                     wire:target="openChat({{ $lead->id }})"
-                                    class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} {{ $lead->has_new && $key !== 'new' ? 'kanban-card-pulse' : '' }} bg-white px-3 py-2.5 rounded-lg border border-slate-200 cursor-grab active:cursor-grabbing hover:bg-slate-50 hover:border-blue-300 transition-all"
+                                    class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} {{ $lead->has_new && $key !== 'new' ? 'kanban-card-pulse' : '' }} {{ $lead->needs_reminder ? 'kanban-card-reminder' : '' }} bg-white px-3 py-2.5 rounded-lg border border-slate-200 cursor-grab active:cursor-grabbing hover:bg-slate-50 hover:border-blue-300 transition-all"
                                 >
                                     <div class="flex items-center justify-between gap-2 {{ $lastMsg ? 'mb-1' : '' }}">
                                         <div class="flex items-center gap-1.5 min-w-0">
                                             @if($lead->has_new)
                                                 <span class="inline-flex rounded-full h-3 w-3 bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)] flex-shrink-0"></span>
+                                            @endif
+                                            @if($lead->needs_reminder)
+                                                <svg class="w-3 h-3 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Пора напомнить"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             @endif
                                             <span class="text-[13px] font-bold text-slate-900 truncate">+{{ $lead->phone }}</span>
                                             @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
@@ -230,6 +253,71 @@
                                 </div>
                             @endforeach
                         @endif
+                    </div>
+                </div>
+            @endif
+
+            @if($key === 'new')
+                {{-- "Пора напомнить" (просьба Романа 2026-09-21) — ВИРТУАЛЬНАЯ
+                     колонка, сразу после "Новые". НЕ реальный статус в БД —
+                     просто карточки из $remindersDue (уже отобранные и
+                     сгруппированные в KanbanBoard::render() по
+                     needs_reminder=true поперёк "КП отправлено" + всех
+                     подпричин "Работы с возражениями"). Та же самая модель
+                     лида, что и в его родной колонке — просто отрисована
+                     ещё раз здесь. Перетащить МОЖНО отсюда в реальный
+                     статус (data-no-drop НЕ блокирует "pull", только
+                     "put" — см. initKanban() выше) — тащить СЮДА руками
+                     нельзя, карточка появляется тут только автоматически. --}}
+                <div class="flex-shrink-0 w-[320px] flex flex-col h-full min-h-0" wire:key="status-col-reminders">
+                    <div class="flex items-center justify-between mb-3 px-3 py-2.5 rounded-xl bg-amber-500 border border-black/5 shadow-sm">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <h3 class="font-black uppercase text-[10px] tracking-widest text-white">Пора напомнить</h3>
+                        </div>
+                        <div class="bg-white/40 px-2 py-0.5 rounded text-[10px] font-bold text-white">
+                            {{ $remindersDue->count() }}
+                        </div>
+                    </div>
+
+                    <div
+                        id="status-reminders"
+                        data-status="__reminders_readonly__"
+                        data-no-drop="true"
+                        class="kanban-column flex-grow min-h-0 overflow-y-auto space-y-3 p-2 bg-amber-50/50 rounded-2xl border border-dashed border-amber-300/50 transition-all custom-scrollbar"
+                        style="min-height: 200px;"
+                    >
+                        @forelse($remindersDue as $lead)
+                            @php
+                                $lastMsg = $lead->lastMessage;
+                            @endphp
+                            <div
+                                wire:key="reminder-card-{{ $lead->id }}-{{ $lastMsg->id ?? 'none' }}"
+                                data-id="{{ $lead->id }}"
+                                wire:click="openChat({{ $lead->id }})"
+                                @click="$dispatch('open-chat-side-panel')"
+                                wire:loading.class="opacity-50"
+                                wire:target="openChat({{ $lead->id }})"
+                                class="kanban-card kanban-card-reminder bg-white px-3 py-2.5 rounded-lg border border-slate-200 cursor-grab active:cursor-grabbing hover:bg-slate-50 hover:border-amber-300 transition-all"
+                            >
+                                <div class="flex items-center justify-between gap-2 {{ $lastMsg ? 'mb-1' : '' }}">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <svg class="w-3 h-3 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        <span class="text-[13px] font-bold text-slate-900 truncate">+{{ $lead->phone }}</span>
+                                        @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
+                                    </div>
+                                    <span class="flex-shrink-0 text-[10px] text-slate-400 font-medium">{{ $lead->updated_at->diffForHumans() }}</span>
+                                </div>
+
+                                @if($lastMsg)
+                                    <p class="text-[12px] text-slate-600 truncate">{{ \Illuminate\Support\Str::limit($lastMsg->message_text, 50) }}</p>
+                                @endif
+
+                                @include('livewire.admin.partials.status-select', ['lead' => $lead, 'statuses' => $statuses])
+                            </div>
+                        @empty
+                            <div class="text-[10px] text-amber-600/70 text-center py-6 italic">Пока некому напоминать</div>
+                        @endforelse
                     </div>
                 </div>
             @endif
@@ -269,6 +357,18 @@
             50%      { outline: 2px solid rgba(244,63,94,0); outline-offset: 4px; }
         }
         .kanban-card-pulse { animation: card-pulse-border 1.8s ease-in-out infinite; }
+
+        /* Подсветка "пора напомнить" (просьба Романа 2026-09-21, "типа варнинг
+           у бутстрапа с часиками") — отдельный CSS-класс со своими цветами, а
+           НЕ conditional Tailwind border-*/bg-* классы поверх уже стоящих на
+           карточке border-slate-200/bg-white — тот же класс проблемы, что уже
+           ловили с .kanban-card-pulse выше (Tailwind через CDN не гарантирует
+           порядок правил, конфликт statically-указанных утилит с
+           динамическими непредсказуем). !important снимает вопрос полностью. */
+        .kanban-card-reminder {
+            background-color: #fffbeb !important;
+            border-color: #f59e0b !important;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
@@ -297,7 +397,13 @@
                 }
 
                 new Sortable(el, {
-                    group: 'leads_pipeline',
+                    // "Пора напомнить" (data-no-drop, просьба Романа 2026-09-21) —
+                    // карточку можно ВЫТАЩИТЬ отсюда (это реально меняет статус
+                    // лида как обычно), но НЕЛЬЗЯ затащить руками — она появляется
+                    // здесь только автоматически по правилу needs_reminder.
+                    group: el.dataset.noDrop === 'true'
+                        ? { name: 'leads_pipeline', pull: true, put: false }
+                        : 'leads_pipeline',
                     animation: 200,
                     ghostClass: 'bg-blue-50',
                     chosenClass: 'kanban-card-chosen',
