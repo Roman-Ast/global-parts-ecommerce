@@ -15,6 +15,9 @@ class WhatsappMessenger extends Component
     public $replyText = '';
     public $compactMode = false;
 
+    /** Отслеживание для автоскролла — см. render(). */
+    public $lastRenderedMessageId = null;
+
     /**
      * Вставка картинки из буфера обмена прямо в чат (Ctrl+V, просьба Романа
      * 2026-09-18) — временный Livewire-аплоад, не постоянное свойство формы.
@@ -145,7 +148,30 @@ class WhatsappMessenger extends Component
                     ->values();
 
                 $activeLead->setRelation('messages', $recentMessages);
+
+                // Автоскролл к низу чата (просьба Романа 2026-09-21) — раньше
+                // scroll-chat-to-bottom дёргался ТОЛЬКО когда Роман сам
+                // отправлял сообщение (sendTextMessage). Новые ВХОДЯЩИЕ от
+                // клиента прилетают через webhook в БД напрямую, эта
+                // Livewire-компонента узнаёт о них только на следующем тике
+                // wire:poll.5s — список сообщений дорисовывался внизу, но без
+                // скролла, поэтому если Роман не был прокручен ровно в
+                // конец (а после того как написал ответ и остался читать —
+                // обычно не был), новое сообщение клиента оставалось за
+                // пределами видимой области. Сравниваем id самого свежего
+                // сообщения с тем, что видели на прошлом тике — при любом
+                // изменении (новое сообщение, смена активного чата) шлём
+                // скролл; повторный скролл на уже отправленное самим Романом
+                // сообщение (там scroll-chat-to-bottom и так уже дёрнут явно)
+                // просто безвредно сработает ещё раз.
+                $newestMessageId = $recentMessages->max('id');
+                if ($newestMessageId !== null && $newestMessageId !== $this->lastRenderedMessageId) {
+                    $this->dispatch('scroll-chat-to-bottom');
+                }
+                $this->lastRenderedMessageId = $newestMessageId;
             }
+        } else {
+            $this->lastRenderedMessageId = null;
         }
 
         // 3. ВОЗВРАЩАЕМ ВЬЮХУ МЕССЕНДЖЕРА, а не канбана!
