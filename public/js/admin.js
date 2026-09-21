@@ -666,10 +666,12 @@ $('.cashflow-categories').on('change', function () {
     }
     
     if ($(this).val() == 3 || $(this).val() == 4 ) {
-        $('.suppliers').attr('disabled', false);
-        
+        // Роман 2026-09-21: завёл "Оплата поставщику" без выбора поставщика,
+        // форма сохранила запись — поле было только disabled/enabled, но
+        // никогда не required, браузер не блокировал отправку без выбора.
+        $('.suppliers').attr('disabled', false).attr('required', true);
     } else {
-        $('.suppliers').attr('disabled', true);
+        $('.suppliers').attr('disabled', true).removeAttr('required');
     }
 
     if ($(this).val() == 1) {

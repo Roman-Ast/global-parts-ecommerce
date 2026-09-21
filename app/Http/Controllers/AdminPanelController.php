@@ -1777,7 +1777,17 @@ class AdminPanelController extends Controller
     public function makeCashflowTransaction(Request $request)
     {
         //dd($request);
-        
+
+        // Роман 2026-09-21: завёл "Оплата поставщику" (категория 3) без
+        // выбора поставщика — форма сохранила запись с supplier_id=NULL,
+        // JS только включал/выключал поле, но не делал его обязательным,
+        // а на сервере валидации не было вовсе (в отличие от соседнего
+        // transferBetweenAccounts() в этом же контроллере). Категория 4 —
+        // "Возврат от поставщика", тот же принцип.
+        $request->validate([
+            'supplier_id' => 'required_if:cashflow_categories_id,3,4|nullable|exists:suppliers,id',
+        ]);
+
         $relatedTable = null;
         $relatedId = null;
 
