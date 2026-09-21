@@ -355,8 +355,57 @@
             });
         }
 
+        // Звук уведомления (просьба Романа 2026-09-21, "как в WhatsApp, когда
+        // приходят любые сообщения с любой карточки") — сам факт "пришло
+        // новое" определяется на сервере (KanbanBoard::render(), сравнение
+        // суммы непрочитанных с предыдущим тиком wire:poll.3s), сюда
+        // прилетает только команда "сыграй звук". Синтезируем короткий
+        // двухтональный "дзинь" через Web Audio API — без отдельного
+        // аудиофайла: не нужно ничего хостить/грузить, и звучит достаточно
+        // похоже на нотификацию мессенджера.
+        let notificationAudioCtx = null;
+
+        function playNotificationSound() {
+            try {
+                if (!notificationAudioCtx) {
+                    notificationAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // Автоплей-политика браузера иногда держит контекст
+                // "suspended" до первого пользовательского жеста — Роман
+                // уже взаимодействует со страницей к моменту первого
+                // уведомления, но на всякий случай пробуем разбудить.
+                if (notificationAudioCtx.state === 'suspended') {
+                    notificationAudioCtx.resume();
+                }
+
+                const playTone = (freq, startAt, duration) => {
+                    const osc = notificationAudioCtx.createOscillator();
+                    const gain = notificationAudioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0, startAt);
+                    gain.gain.linearRampToValueAtTime(0.2, startAt + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
+                    osc.connect(gain);
+                    gain.connect(notificationAudioCtx.destination);
+                    osc.start(startAt);
+                    osc.stop(startAt + duration);
+                };
+
+                const now = notificationAudioCtx.currentTime;
+                playTone(880, now, 0.12);
+                playTone(1174.66, now + 0.1, 0.18);
+            } catch (e) {
+                // Тихо игнорируем — звук не критичен для работы доски.
+            }
+        }
+
         document.addEventListener('livewire:initialized', () => {
             initKanban();
+
+            Livewire.on('play-notification-sound', () => {
+                playNotificationSound();
+            });
 
             // Тот же guard на случай, если Livewire всё-таки подменит саму
             // колонку целиком (не только карточки внутри) — во время

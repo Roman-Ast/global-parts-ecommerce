@@ -26,12 +26,40 @@ class KanbanBoard extends Component
     {
         CrmActivityLog::log('view_board');
         $this->statuses = LeadStatuses::all();
+
+        // Стартовое значение для звука уведомлений (см. render()) — если
+        // на момент открытия доски уже были непрочитанные, звук на НИХ
+        // играть не нужно (это не "только что пришло"), только на то, что
+        // придёт ПОСЛЕ открытия. Тот же фильтр по статусу, что и в
+        // render(), чтобы база и последующие сравнения считались одинаково.
+        $this->lastTotalUnread = $this->currentTotalUnread();
+    }
+
+    private function currentTotalUnread(): int
+    {
+        return (int) WhatsappLead::where('status', '!=', self::SPAM_STATUS)
+            ->withCount(['messages as unread_count' => function ($q) {
+                $q->where('is_incoming', true)->where('is_read', false);
+            }])
+            ->get()
+            ->sum('unread_count');
     }
 
     public function setNewLeadsTab(string $tab): void
     {
         $this->newLeadsTab = in_array($tab, ['all', 'unread'], true) ? $tab : 'all';
     }
+
+    /**
+     * Звук уведомления (просьба Романа 2026-09-21, "как в WhatsApp, когда
+     * приходят любые сообщения с любой карточки") — сравниваем суммарное
+     * число непрочитанных на каждом render() (он же и есть wire:poll.3s)
+     * с предыдущим значением; если выросло — играем звук. Растёт именно
+     * СУММА, не привязка к конкретному лиду, поэтому не важно, с какой
+     * карточки пришло. Намеренно НЕ пересчитываем звук на уменьшение
+     * (прочитали чат) — там playSound не дёргаем вообще.
+     */
+    public $lastTotalUnread = 0;
 
     // Сама воронка теперь единым источником в LeadStatuses (просьба
     // Романа 2026-09-19 — смена статуса появилась ещё и в окне чата
@@ -114,8 +142,15 @@ class KanbanBoard extends Component
             ->map(function($lead) {
                 $lead->has_new = $lead->unread_count > 0;
                 return $lead;
-            })
-            ->groupBy('status');
+            });
+
+        $currentTotalUnread = $leads->sum('unread_count');
+        if ($currentTotalUnread > $this->lastTotalUnread) {
+            $this->dispatch('play-notification-sound');
+        }
+        $this->lastTotalUnread = $currentTotalUnread;
+
+        $leads = $leads->groupBy('status');
 
         return view('livewire.admin.kanban-board', [
             'leadsByStatus' => $leads,
