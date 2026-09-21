@@ -1,4 +1,4 @@
-<div wire:poll.3s wire:init="syncReadOnWhatsApp" class="{{ $compactMode ? 'flex w-full h-full' : 'fixed inset-0 top-[64px] flex bg-gray-100 z-10' }}">
+<div wire:poll.5s wire:init="syncReadOnWhatsApp" class="{{ $compactMode ? 'flex w-full h-full' : 'fixed inset-0 top-[64px] flex bg-gray-100 z-10' }}">
     
     {{-- ЛЕВАЯ КОЛОНКА: Отображается только в обычном режиме --}}
     @if(!$compactMode)
@@ -197,8 +197,8 @@
                     
                 <div class="p-4 bg-gray-50 border-t" x-data="{ uploadingImage: false }">
                     <div class="flex gap-2">
-                        {{-- wire:ignore — без него wire:poll.3s на корневом div (строка 1)
-                             каждые 3 секунды перерисовывал этот textarea и стирал
+                        {{-- wire:ignore — без него wire:poll.5s на корневом div (строка 1)
+                             каждые 5 секунд перерисовывал этот textarea и стирал
                              инлайновую высоту, которую ставит oninput ниже: визуально
                              это выглядело как "расширяется при вставке, потом сжимается
                              обратно" (жалоба Романа 2026-09-17) — рост был настоящим,
