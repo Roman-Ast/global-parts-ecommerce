@@ -171,9 +171,22 @@ class HalykCreateCardCommand extends Command
         // игнорируем историю halyk_created_cards намеренно (иначе
         // --dry-run уже "сжигал" бы слот и следующий реальный прогон на
         // тот же артикул ничего бы не находил).
+        //
+        // Раньше исключение строилось как whereNotIn('article', $already)
+        // с ПОЛНЫМ PHP-массивом (pluck()->all(), без dedup) — при
+        // 70к+ строк в halyk_created_cards (2026-09-21, массовый
+        // прогон "по всем категориям") это превысило лимит MySQL на
+        // плейсхолдеры в одном prepared statement (1390 "too many
+        // placeholders", ~65535), и ЛЮБОЙ вызов pickCandidates()
+        // (включая вотчдог по категориям — категория не уменьшает этот
+        // список, он общий) падал с самого начала. Подзапрос вместо
+        // готового массива — MySQL сам делает анти-джойн по индексу
+        // `article`, без раздувания запроса пропорционально размеру
+        // таблицы.
         if (!$onlyArticle) {
-            $already = DB::table('halyk_created_cards')->pluck('article')->all();
-            $query->whereNotIn('article', $already);
+            $query->whereNotIn('article', function ($sub) {
+                $sub->select('article')->from('halyk_created_cards');
+            });
         }
 
         if ($onlyArticle) {
