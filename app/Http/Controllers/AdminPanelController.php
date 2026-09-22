@@ -1223,21 +1223,33 @@ class AdminPanelController extends Controller
         // "Возвраты клиентам" на дашборде — хотя реального второго возврата
         // не было. Теперь любой сбой на любом шаге откатывает всё разом.
         DB::transaction(function () use ($request) {
-        $cashflowTransactionOut = CashflowTransactions::create([
-            'txn_at' => $request->return_date,
-            'direction' => 'out',
-            'cashflow_category_id' => 7,
-            'expense_category_id' => null,
-            'supplier_id' => $request->supplier_id,
-            'user_id' => $request->user_id,
-            'account_id' => $request->account_id_out,
-            'amount' => $request->customer_refund_paid,
-            'subcategory' => 'возврат клиенту',
-            'counterparty' => $request->customer_phone ?? null,
-            'related_table' => 'customer_returns',
-            'related_id' => null,
-            'comment' => $request->comment ?: 'Возврат клиенту по заказу номер ' . $request->order_id,
-        ]);
+        // Роман 2026-09-22: возврат по Kaspi-заказу, который клиент так и
+        // не получил — денег с него никогда не собирали (Kaspi платит
+        // только после выдачи), поэтому "Фактически выплачено клиенту"=0.
+        // Раньше это всё равно создавало настоящую строку в кассе
+        // ("Возврат клиенту" на 0₸) — тот же баг, что уже чинили для
+        // "Оплата по заказу" на 0₸ в manuallyMakeOrder() (заказ №2052,
+        // 2026-09-19): ни платежа, ни возврата на 0 не бывает по смыслу.
+        $customerRefundPaid = (float) $request->customer_refund_paid;
+        $cashflowTransactionOut = null;
+
+        if ($customerRefundPaid > 0) {
+            $cashflowTransactionOut = CashflowTransactions::create([
+                'txn_at' => $request->return_date,
+                'direction' => 'out',
+                'cashflow_category_id' => 7,
+                'expense_category_id' => null,
+                'supplier_id' => $request->supplier_id,
+                'user_id' => $request->user_id,
+                'account_id' => $request->account_id_out,
+                'amount' => $customerRefundPaid,
+                'subcategory' => 'возврат клиенту',
+                'counterparty' => $request->customer_phone ?? null,
+                'related_table' => 'customer_returns',
+                'related_id' => null,
+                'comment' => $request->comment ?: 'Возврат клиенту по заказу номер ' . $request->order_id,
+            ]);
+        }
 
         // Пусто/"нет данных" — оба варианта означают "клиент не привязан",
         // раньше проверялось только точное совпадение со строкой "нет
@@ -1266,10 +1278,10 @@ class AdminPanelController extends Controller
             'comment' => $request->comment,
             'status' => $request->status,
             'supplier_refund_status' => 'pending',
-            'customer_cashflow_transaction_id' => $cashflowTransactionOut->id,
+            'customer_cashflow_transaction_id' => $cashflowTransactionOut?->id,
         ]);
 
-        $cashflowTransactionOut->update(['related_id' => $customer_returns->id]);
+        $cashflowTransactionOut?->update(['related_id' => $customer_returns->id]);
 
         // Унификация 2026-08-31: раньше "возвращено" выставлялось вручную
         // через выпадающий список статуса в Заказах (changeStatus()) и
