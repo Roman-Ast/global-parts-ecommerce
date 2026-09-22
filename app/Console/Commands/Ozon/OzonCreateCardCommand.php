@@ -103,8 +103,19 @@ class OzonCreateCardCommand extends Command
         }
 
         if (!$onlyArticle) {
-            $already = DB::table('ozon_created_cards')->pluck('article')->all();
-            $query->whereNotIn('article', $already);
+            // Подзапрос вместо готового PHP-массива (2026-09-22) — та же
+            // авария, что уже поймали и починили у halyk:create-card:
+            // pluck()->all() без dedup подставлял КАЖДУЮ строку
+            // ozon_created_cards буквальным плейсхолдером в один
+            // prepared statement; при размере таблицы, достаточном чтобы
+            // превысить лимит MySQL (~65535), запрос падает с "1390
+            // Prepared statement contains too many placeholders" ДЛЯ
+            // ЛЮБОГО вызова без --article. На 31980 строках (текущий
+            // размер) порог ещё не пройден, но будет пройден по мере
+            // роста — правим превентивно, не дожидаясь повтора аварии.
+            $query->whereNotIn('article', function ($sub) {
+                $sub->select('article')->from('ozon_created_cards');
+            });
         } else {
             $query->where('article', $onlyArticle);
         }
