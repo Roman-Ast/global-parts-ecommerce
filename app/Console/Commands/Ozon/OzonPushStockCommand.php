@@ -9,26 +9,19 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Передаёт актуальный остаток на Ozon (`/v2/products/stocks`) для уже
- * созданных карточек (`ozon_created_cards`, status=imported) — тот самый
- * недостающий шаг, без которого карточка навсегда виснет в "Готов к
- * продаже" и никогда не переходит в "В продаже" (см. CLAUDE.md,
- * "Настоящая причина... оба FBS-склада отключены", 2026-09-12).
- *
- * Не запускать, пока склад Ozon (`OZON_WAREHOUSE_ID` в .env) в статусе
- * "disabled" — вызов будет падать с WAREHOUSE_WRONG_STATUS на каждой
- * позиции без исключения, это подтверждено живьём. Активировать способ
- * доставки/первую милю можно только в личном кабинете Ozon.
- *
- * Остаток берём ЗАНОВО через SupplierOfferPricer, а не тот, что был
- * записан в момент создания карточки — с момента создания (часть карточек
- * с 2026-09-03) остатки у поставщиков могли уйти в ноль или измениться.
+ * Бэкфилл остатков для карточек, у которых status=imported в
+ * ozon_created_cards, но остаток так и не передавался — это все карточки,
+ * созданные ДО 2026-09-15 (когда склад Ozon "Global_Parts_PP1" ещё был
+ * недоступен, WAREHOUSE_WRONG_STATUS, см. CLAUDE.md) плюс до того, как
+ * ozon:check-card-status стал пушить остаток автоматически при переходе
+ * в imported (2026-09-14). С этого момента новые карточки остаток уже
+ * получают сами — эта команда закрывает только исторический бэклог.
  */
 class OzonPushStockCommand extends Command
 {
-    protected $signature = 'ozon:push-stock {--limit=200}';
+    protected $signature = 'ozon:push-stock {--limit=1000}';
 
-    protected $description = 'Передаёт актуальные остатки на Ozon для уже созданных карточек (status=imported)';
+    protected $description = 'Бэкфилл остатков на Ozon для уже созданных карточек (ozon_created_cards, status=imported)';
 
     public function handle(OzonClient $client): int
     {
@@ -36,31 +29,29 @@ class OzonPushStockCommand extends Command
         $warehouseId = (int) env('OZON_WAREHOUSE_ID');
 
         if (!$warehouseId) {
-            $this->error('OZON_WAREHOUSE_ID не задан в .env — нечего передавать.');
+            $this->error('OZON_WAREHOUSE_ID не задан в .env');
             return 1;
         }
 
         $rows = DB::table('ozon_created_cards')
             ->where('status', 'imported')
-            ->orderBy('id')
             ->limit($limit)
-            ->get(['id', 'article', 'brand']);
+            ->get();
 
         if ($rows->isEmpty()) {
-            $this->info('Нечего передавать — нет карточек в статусе imported.');
+            $this->info('Нечего пушить — нет карточек в статусе imported.');
             return 0;
         }
 
-        $this->info("Передаём остаток для {$rows->count()} карточек на склад {$warehouseId}...");
-
-        $cards = PartsCatalog::query()
-            ->whereIn('article', $rows->pluck('article'))
-            ->get();
+        $articles = $rows->pluck('article')->all();
+        $cards = PartsCatalog::query()->whereIn('article', $articles)->get();
         $cards = (new SupplierOfferPricer())->attach($cards);
         $byArticleBrand = $cards->keyBy(fn ($c) => $c->article . '|' . $c->brand);
 
-        $updated = 0;
-        $noOffer = 0;
+        $this->info("Пушим остаток для {$rows->count()} карточек...");
+
+        $ok = 0;
+        $noStock = 0;
         $failed = 0;
 
         foreach ($rows as $row) {
@@ -68,8 +59,7 @@ class OzonPushStockCommand extends Command
             $stock = $card->offer['stock'] ?? 0;
 
             if ($stock <= 0) {
-                $this->line("  {$row->brand}-{$row->article}: нет остатка у поставщика сейчас — пропуск");
-                $noOffer++;
+                $noStock++;
                 continue;
             }
 
@@ -77,23 +67,20 @@ class OzonPushStockCommand extends Command
 
             try {
                 $result = $client->updateStock($offerId, $stock, $warehouseId);
+                if ($result['updated']) {
+                    $ok++;
+                    $this->line("  ✓ {$offerId}: остаток {$stock}");
+                } else {
+                    $failed++;
+                    $this->line("  ⨯ {$offerId}: " . ($result['errors'][0]['code'] ?? 'unknown'));
+                }
             } catch (\Throwable $e) {
+                $failed++;
                 $this->error("  ⨯ {$offerId}: {$e->getMessage()}");
-                $failed++;
-                continue;
-            }
-
-            if ($result['updated']) {
-                $this->line("  {$offerId}: остаток {$stock} передан");
-                $updated++;
-            } else {
-                $errCode = $result['errors'][0]['code'] ?? 'unknown';
-                $this->error("  ⨯ {$offerId}: не обновилось ({$errCode})");
-                $failed++;
             }
         }
 
-        $this->info("Готово: обновлено={$updated}, без остатка сейчас={$noOffer}, ошибок={$failed}");
+        $this->info("Готово: ок={$ok}, нет остатка у поставщика={$noStock}, ошибка={$failed}");
 
         return 0;
     }

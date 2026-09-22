@@ -190,4 +190,42 @@ class OzonClient
             'errors' => $result['errors'] ?? [],
         ];
     }
+
+    /**
+     * Обновление цен пачкой — /v1/product/import/prices, до 1000 позиций
+     * за раз по документации Ozon. Написано 2026-09-16 для пересчёта цен
+     * на 1900 карточек, перенесённых с договора ООО «Интернет Решения»
+     * (47% комиссия) на договор ОМК (12% FBS) — у всех перенесённых
+     * карточек цена осталась старой, посчитанной по старой, гораздо более
+     * высокой комиссии (см. CLAUDE.md, "Ozon — план экспансии").
+     * `currency_code: 'KZT'` — на договоре ОМК цены нативно в тенге, без
+     * конвертации (см. OzonPriceCalculator).
+     *
+     * @param array<int, array{offer_id: string, price: int}> $items
+     * @return array{updated: int, errors: array}
+     */
+    public function updatePrices(array $items): array
+    {
+        $payload = array_map(fn ($i) => [
+            'offer_id'      => $i['offer_id'],
+            'price'         => (string) $i['price'],
+            'currency_code' => 'KZT',
+        ], $items);
+
+        $response = Http::timeout(30)->withHeaders($this->headers())
+            ->post(self::BASE_URL . '/v1/product/import/prices', ['prices' => $payload]);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('Ozon product/import/prices недоступен: HTTP ' . $response->status() . ' — ' . $response->body());
+        }
+
+        $results = $response->json('result') ?? [];
+        $updated = count(array_filter($results, fn ($r) => (bool) ($r['updated'] ?? false)));
+        $errors = array_values(array_filter(array_map(
+            fn ($r) => !($r['updated'] ?? false) ? ['offer_id' => $r['offer_id'] ?? null, 'errors' => $r['errors'] ?? []] : null,
+            $results
+        )));
+
+        return ['updated' => $updated, 'errors' => $errors];
+    }
 }

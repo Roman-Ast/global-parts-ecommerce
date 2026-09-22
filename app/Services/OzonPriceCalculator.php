@@ -7,23 +7,68 @@ use App\Console\Commands\Ozon\OzonCommissionRates;
 /**
  * По образцу KaspiPriceCalculator — та же прогрессивная наценка на
  * себестоимость (закуп в KZT), но вместо тарифов Kaspi Доставки —
- * реальная комиссия Ozon FBS, подтверждённая живым запросом
- * /v3/product/info/list::commissions[] 2026-09-12 на 5 разных карточках
- * (амортизаторы, ступицы, тормозные детали) — везде percent=47,
- * delivery_amount=25 RUB одинаково. Роман сомневался в 47% как в
- * "нереальной" цифре ещё 2026-09-03 (см. докблок OzonCommissionRates) —
- * этим прогоном цифра подтверждена не как случайная заглушка на одной
- * карточке, а как стабильная ставка по категории.
+ * реальная комиссия Ozon FBS.
  *
- * Курс KZT→RUB (OzonCommissionRates::EXCHANGE_RATE_KZT_TO_RUB) остаётся
- * заглушкой — не привязан к живому курсу ЦБ/биржи, при отклонении курса
- * маржа будет плавать; не критично для первого запуска, но стоит сверять
- * периодически.
+ * ПЕРЕПИСАНО 2026-09-16 под договор ОМК (ТОО «Озон Маркетплейс
+ * Казахстан») — до этого дня работали по старому/российскому договору
+ * (ООО «Интернет Решения», 47% комиссия, цены в RUB). После переноса
+ * карточек в новый кабинет живой запрос (/v3/product/info/list::
+ * commissions[], реальная перенесённая карточка) показал: комиссия
+ * **12% FBS**, валюта **нативно KZT** — конвертация по курсу KZT→RUB
+ * (раньше EXCHANGE_RATE_KZT_TO_RUB) больше не нужна вообще, убрана.
+ *
+ * Логистика — раньше плоские 25 RUB (эта цифра относилась именно к
+ * старому договору, не переносится на новый). По новому договору
+ * логистика FBS — тарифная сетка в тенге по ЦЕНЕ+ОБЪЁМУ товара (страница
+ * "FBS: расходы на доставку до покупателя" из базы знаний Ozon,
+ * скриншот/текст от Романа 2026-09-16, действует с 2025-09-05) — см.
+ * fbsLogisticsFeeKzt() ниже. Объём берём из тех же дефолтов, что уже
+ * используются при создании карточки (OzonCreateCardCommand::
+ * DEFAULT_WIDTH_MM/HEIGHT_MM/DEPTH_MM = 150×150×150мм = 3.375л) — у нас
+ * по-прежнему 0% покрытия реальных габаритов в parts_catalog (та же
+ * ситуация, что и на Halyk), другого источника объёма нет.
  */
 class OzonPriceCalculator
 {
-    /** RUB, за единицу отправления FBS — подтверждено живьём 2026-09-12, стабильно на всех проверенных категориях. */
-    const FBS_DELIVERY_RUB = 25;
+    /**
+     * Объём "среднего мелкого автозапчастья" по умолчанию, литры —
+     * 150×150×150мм (см. OzonCreateCardCommand::DEFAULT_*_MM), тот же
+     * дефолт, что уже используется при создании карточки, чтобы цена и
+     * реально заявленные габариты не расходились.
+     */
+    const DEFAULT_VOLUME_LITERS = 3.375;
+
+    /**
+     * Тарифная сетка FBS-логистики Ozon в тенге, по цене товара (с учётом
+     * скидок) и объёму — действует с 2025-09-05 (официальная база знаний
+     * Ozon, страница "FBS: расходы на доставку до покупателя", прислано
+     * Романом 2026-09-16). Три ценовых диапазона, внутри — по объёму.
+     */
+    private static function fbsLogisticsFeeKzt(float $priceKzt, float $volumeLiters): int
+    {
+        if ($priceKzt <= 5000) {
+            return match (true) {
+                $volumeLiters <= 0.4 => 212,
+                $volumeLiters <= 1 => 246,
+                $volumeLiters <= 2 => 299,
+                $volumeLiters <= 5 => 418,
+                $volumeLiters <= 10 => 730,
+                default => 1335,
+            };
+        }
+
+        if ($priceKzt <= 15000) {
+            return 699;
+        }
+
+        return match (true) {
+            $volumeLiters <= 1 => 750,
+            $volumeLiters <= 5 => 800,
+            $volumeLiters <= 50 => 1000,
+            $volumeLiters <= 150 => 1700,
+            default => 3050,
+        };
+    }
 
     /**
      * Наценка от себестоимости — 1:1 копия шкалы KaspiPriceCalculator
@@ -73,16 +118,21 @@ class OzonPriceCalculator
         $marginPercent = self::getMarginPercent($costKzt);
         $desiredProfitKzt = $costKzt * $marginPercent;
 
-        $rate = OzonCommissionRates::EXCHANGE_RATE_KZT_TO_RUB;
-        $costRub = $costKzt * $rate;
-        $profitRub = $desiredProfitKzt * $rate;
-
         $commissionFraction = OzonCommissionRates::DEFAULT_COMMISSION_PERCENT / 100;
         $feesDivisor = 1 - $commissionFraction;
 
-        $moneyNeededBeforeFees = $costRub + $profitRub + self::FBS_DELIVERY_RUB;
-        $priceRub = $moneyNeededBeforeFees / $feesDivisor;
+        // Логистика зависит от итоговой цены (тарифная сетка по диапазону
+        // цены) — а итоговая цена зависит от логистики. Даём один
+        // предварительный проход без логистики, чтобы определить ценовой
+        // диапазон, затем считаем итоговую цену уже с найденной сеткой.
+        // Диапазоны широкие (5000/15000₸), сама логистика — не больше
+        // нескольких процентов от цены на типовой запчасти, ошибка на
+        // границе диапазона пренебрежимо мала.
+        $roughPriceKzt = ($costKzt + $desiredProfitKzt) / $feesDivisor;
+        $logisticsFeeKzt = self::fbsLogisticsFeeKzt($roughPriceKzt, self::DEFAULT_VOLUME_LITERS);
 
-        return (int) ceil($priceRub);
+        $priceKzt = ($costKzt + $desiredProfitKzt + $logisticsFeeKzt) / $feesDivisor;
+
+        return (int) ceil($priceKzt);
     }
 }

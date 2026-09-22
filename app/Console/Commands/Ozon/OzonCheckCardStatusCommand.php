@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands\Ozon;
 
+use App\Models\PartsCatalog;
 use App\Services\OzonClient;
+use App\Services\SupplierOfferPricer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -12,6 +14,12 @@ use Illuminate\Support\Facades\DB;
  * halyk:check-card-status. Проверено вживую 2026-09-03: обработка
  * асинхронная, статус "imported" устаканивается не мгновенно (у первой
  * тестовой карточки — примерно за 10 секунд после отправки).
+ *
+ * С 2026-09-14 — прямо здесь же, как только карточка устаканилась в
+ * "imported", сразу передаём остаток (`OzonClient::updateStock()`), а не
+ * ждём отдельного ручного `ozon:push-stock` — без остатка карточка виснет
+ * в "Готов к продаже" и никогда не становится "Продаётся" (см. разбор
+ * склада Ozon в CLAUDE.md, найдено и починено в этот же день).
  */
 class OzonCheckCardStatusCommand extends Command
 {
@@ -22,6 +30,7 @@ class OzonCheckCardStatusCommand extends Command
     public function handle(OzonClient $client): int
     {
         $limit = (int) $this->option('limit');
+        $warehouseId = (int) env('OZON_WAREHOUSE_ID');
 
         $rows = DB::table('ozon_created_cards')
             ->where('status', 'submitted')
@@ -35,6 +44,8 @@ class OzonCheckCardStatusCommand extends Command
         }
 
         $this->info("Проверяем {$rows->count()} карточек...");
+
+        $justImported = [];
 
         foreach ($rows as $row) {
             try {
@@ -62,8 +73,51 @@ class OzonCheckCardStatusCommand extends Command
             ]);
 
             $this->line("  {$row->article}: {$newStatus}" . ($productId ? " (product_id={$productId})" : ''));
+
+            if ($newStatus === 'imported') {
+                $justImported[] = $row;
+            }
+        }
+
+        if (!empty($justImported) && $warehouseId) {
+            $this->pushStockForJustImported($client, $justImported, $warehouseId);
+        } elseif (!empty($justImported)) {
+            $this->warn('OZON_WAREHOUSE_ID не задан — остаток для новых карточек не передан, прогони ozon:push-stock отдельно.');
         }
 
         return 0;
+    }
+
+    /** Сразу передаёт остаток для карточек, которые только что устаканились в imported — без отдельного ручного шага. */
+    private function pushStockForJustImported(OzonClient $client, array $rows, int $warehouseId): void
+    {
+        $articles = array_column($rows, 'article');
+
+        $cards = PartsCatalog::query()->whereIn('article', $articles)->get();
+        $cards = (new SupplierOfferPricer())->attach($cards);
+        $byArticleBrand = $cards->keyBy(fn ($c) => $c->article . '|' . $c->brand);
+
+        $this->info('Передаём остаток для только что импортированных карточек...');
+
+        foreach ($rows as $row) {
+            $card = $byArticleBrand->get($row->article . '|' . $row->brand);
+            $stock = $card->offer['stock'] ?? 0;
+
+            if ($stock <= 0) {
+                $this->line("  {$row->brand}-{$row->article}: нет остатка у поставщика сейчас — пропуск");
+                continue;
+            }
+
+            $offerId = mb_substr("{$row->brand}-{$row->article}", 0, 50);
+
+            try {
+                $result = $client->updateStock($offerId, $stock, $warehouseId);
+                $this->line($result['updated']
+                    ? "  {$offerId}: остаток {$stock} передан"
+                    : "  ⨯ {$offerId}: не обновилось (" . ($result['errors'][0]['code'] ?? 'unknown') . ')');
+            } catch (\Throwable $e) {
+                $this->error("  ⨯ {$offerId}: {$e->getMessage()}");
+            }
+        }
     }
 }
