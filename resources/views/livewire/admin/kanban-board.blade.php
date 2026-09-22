@@ -15,6 +15,59 @@
             <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Управление воронкой продаж</p>
         </div>
         <div class="flex items-center gap-3">
+            {{-- Поиск по переписке прямо с доски (просьба Романа 2026-09-22
+                 — "остаёмся на канбане строго", отдельная страница
+                 /admin/whatsapp вообще не используется). Найденный чат
+                 открывается ТОЙ ЖЕ шторкой, что и обычный клик по карточке
+                 (openChat() — он же сбрасывает searchQuery после открытия).
+                 @click.away закрывает дропдаун И чистит поле — иначе
+                 забытый текст в закрытом дропдауне впустую пересчитывался
+                 бы на каждом wire:poll.5s.visible. --}}
+            <div x-data="{ searchOpen: false }" @click.away="searchOpen = false; $wire.set('searchQuery', '')" @keydown.escape.window="searchOpen = false; $wire.set('searchQuery', '')" class="relative">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center gap-2 px-4 py-2 w-72">
+                    <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" /></svg>
+                    <input
+                        type="text"
+                        wire:model.live.debounce.400ms="searchQuery"
+                        @focus="searchOpen = true"
+                        placeholder="Поиск по переписке или номеру"
+                        class="flex-1 min-w-0 text-sm border-0 outline-none bg-transparent placeholder:text-slate-400"
+                    >
+                    @if($searchQuery)
+                        <button type="button" wire:click="$set('searchQuery', '')" class="text-slate-400 hover:text-slate-600 flex-shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    @endif
+                </div>
+
+                <div x-show="searchOpen" x-transition class="absolute z-50 mt-2 w-96 max-h-[70vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200" style="display: none;">
+                    @if(trim($searchQuery) === '')
+                        <div class="p-6 text-center text-slate-400 text-xs">Начните вводить текст сообщения или номер</div>
+                    @elseif($searchResults->isEmpty())
+                        <div class="p-6 text-center text-slate-400 text-xs">Ничего не найдено по «{{ $searchQuery }}»</div>
+                    @else
+                        @foreach($searchResults as $lead)
+                            <div
+                                wire:click="openChat({{ $lead->id }})"
+                                @click="searchOpen = false"
+                                class="cursor-pointer p-3 border-b border-slate-100 hover:bg-slate-50 transition-colors last:border-0"
+                            >
+                                <div class="flex items-center justify-between gap-2 mb-1">
+                                    <span class="flex items-center gap-1.5 min-w-0">
+                                        <span class="text-xs font-bold text-slate-800 truncate">+{{ $lead->phone }}</span>
+                                        @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
+                                    </span>
+                                    <span class="text-[9px] text-slate-400 flex-shrink-0 uppercase font-bold tracking-wide">{{ \App\Support\LeadStatuses::labelFor($lead->status) }}</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 line-clamp-2">
+                                    {!! \App\Support\WhatsappMessageSearch::highlight($lead->search_snippet, $searchQuery) ?: 'Нет сообщений' !!}
+                                </p>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
+            </div>
+
             <div class="bg-white px-5 py-2 rounded-2xl shadow-sm border border-slate-200">
                 <span class="text-[10px] text-slate-400 font-black uppercase block">Всего лидов</span>
                 <span class="text-2xl font-black text-slate-900 leading-none">{{ $totalCount }}</span>

@@ -32,17 +32,12 @@ class WhatsappMessenger extends Component
     /**
      * Поиск по переписке "как в WhatsApp" (просьба Романа 2026-09-22) —
      * пока поле не пустое, список слева ЗАМЕНЯЕТСЯ результатами поиска
-     * (searchLeads() ниже) вместо обычного списка последних чатов. Клик
-     * по найденному — тот же selectLead(), что и всегда, отдельного
-     * действия не нужно. wire:model.live.debounce в блейде — не долбим
-     * БД на каждое нажатие клавиши.
+     * (App\Support\WhatsappMessageSearch) вместо обычного списка последних
+     * чатов. Клик по найденному — тот же selectLead(), что и всегда,
+     * отдельного действия не нужно. wire:model.live.debounce в блейде —
+     * не долбим БД на каждое нажатие клавиши.
      */
     public $searchQuery = '';
-
-    /** Максимум чатов в выдаче поиска — WhatsApp тоже не показывает всё
-     *  разом, а показывать сотни совпадений на генерик-запрос ("да"/"ок")
-     *  было бы бесполезно. */
-    const SEARCH_RESULTS_LIMIT = 50;
 
     /**
      * Сколько последних сообщений подгружать для ОТКРЫТОГО чата. render()
@@ -191,76 +186,17 @@ class WhatsappMessenger extends Component
     }
 
     /**
-     * Поиск по тексту переписки + по номеру телефона (тот же принцип, что
-     * и в реальном WhatsApp — поиск охватывает и контакты, и сами
-     * сообщения). Возвращает лидов с найденным совпадением; у каждого
-     * проставлен search_snippet — КОНКРЕТНОЕ совпавшее сообщение (не
-     * последнее), чтобы в списке было видно, ГДЕ нашлось, а не просто
-     * что лид попал в выдачу.
-     *
-     * LIKE '%...%' без полнотекстового индекса — на объёмах в пределах
-     * нескольких тысяч сообщений (см. масштаб LEADS_LIMIT/CLAUDE.md)
-     * достаточно быстро; если whatsapp_messages вырастет на порядки,
-     * стоит будет вернуться к FULLTEXT-индексу, не раньше.
-     */
-    private function searchLeads(string $query)
-    {
-        $like = '%' . $this->escapeLike($query) . '%';
-
-        $matchingLeadIds = \App\Models\WhatsappMessage::where('message_text', 'like', $like)
-            ->distinct()
-            ->pluck('whatsapp_lead_id');
-
-        $leads = \App\Models\WhatsappLead::query()
-            ->where(function ($q) use ($like, $matchingLeadIds) {
-                $q->whereIn('id', $matchingLeadIds)
-                  ->orWhere('phone', 'like', $like);
-            })
-            ->orderBy('last_seen_at', 'desc')
-            ->limit(self::SEARCH_RESULTS_LIMIT)
-            ->get();
-
-        foreach ($leads as $lead) {
-            $matched = \App\Models\WhatsappMessage::where('whatsapp_lead_id', $lead->id)
-                ->where('message_text', 'like', $like)
-                ->latest()
-                ->first();
-            $lead->setAttribute('search_snippet', $matched?->message_text);
-        }
-
-        return $leads;
-    }
-
-    /** Экранирует спецсимволы LIKE (%, _, \), чтобы поиск не путался,
-     *  если Роман вобьёт их буквально (напр. "скидка 10%"). */
-    private function escapeLike(string $value): string
-    {
-        return addcslashes($value, '%_\\');
-    }
-
-    /**
-     * Подсветка совпадения в превью, как в самом WhatsApp — экранируем
-     * ВЕСЬ текст сначала (та же защита от XSS, что и в linkify()), потом
-     * оборачиваем совпавший фрагмент в <mark>.
+     * Поиск теперь общим классом App\Support\WhatsappMessageSearch
+     * (2026-09-22) — Роман работает строго с канбан-доски и этой
+     * страницей (/admin/whatsapp) не пользуется вообще, поиск понадобился
+     * ЕЩЁ и там же, логику вынесли, чтобы не дублировать между двумя
+     * Livewire-компонентами. highlightMatch() ниже остался тонкой
+     * обёрткой — блейд зовёт методы компонента через $this, чиcтому
+     * static-классу так вызывать неудобно.
      */
     public function highlightMatch(?string $text, ?string $query): string
     {
-        if ($text === null || $text === '') {
-            return '';
-        }
-
-        $escaped = e($text);
-        $query = trim((string) $query);
-
-        if ($query === '') {
-            return $escaped;
-        }
-
-        return preg_replace(
-            '/(' . preg_quote(e($query), '/') . ')/iu',
-            '<mark class="bg-yellow-200 rounded px-0.5">$1</mark>',
-            $escaped
-        );
+        return \App\Support\WhatsappMessageSearch::highlight($text, $query);
     }
 
     public function render()
@@ -269,9 +205,9 @@ class WhatsappMessenger extends Component
 
         // 1. Список чатов слева — только превью (lastMessage), не вся
         // история. Пока идёт поиск (searchQuery не пустой) — список
-        // заменяется результатами searchLeads(), см. докблок там же.
+        // заменяется результатами поиска (WhatsappMessageSearch).
         if ($searchQuery !== '') {
-            $leads = $this->searchLeads($searchQuery);
+            $leads = \App\Support\WhatsappMessageSearch::search($searchQuery);
         } else {
             $leads = \App\Models\WhatsappLead::with('lastMessage')
                 ->orderBy('last_seen_at', 'desc')

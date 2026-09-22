@@ -7,6 +7,7 @@ use App\Models\WhatsappLead;
 use App\Models\WhatsappMessage;
 use App\Models\CrmActivityLog;
 use App\Support\LeadStatuses;
+use App\Support\WhatsappMessageSearch;
 
 class KanbanBoard extends Component
 {
@@ -14,6 +15,18 @@ class KanbanBoard extends Component
 
     /** Вкладка внутри колонки "Новые" — 'all' | 'unread'. См. render()/блейд. */
     public $newLeadsTab = 'all';
+
+    /**
+     * Поиск по переписке прямо с доски (просьба Романа 2026-09-22) —
+     * изначально сделан в WhatsappMessenger (/admin/whatsapp), но Роман
+     * подтвердил, что работает СТРОГО с канбана и той страницей вообще
+     * не пользуется — общая логика поиска вынесена в
+     * App\Support\WhatsappMessageSearch, здесь просто ещё один
+     * потребитель. Найденный чат открывается той же шторкой, что и обычный
+     * клик по карточке (openChat() ниже, сбрасывает searchQuery заодно —
+     * см. его докблок).
+     */
+    public $searchQuery = '';
 
     /**
      * Лог активности (просьба Романа 2026-09-18, см. докблок CrmActivityLog) —
@@ -160,6 +173,13 @@ class KanbanBoard extends Component
         CrmActivityLog::log('open_chat', $id);
 
         $this->dispatch('open-chat-side-panel');
+
+        // Сбрасываем поиск (если чат открыт из выдачи поиска) — иначе
+        // поле осталось бы заполненным при следующем открытии дропдауна,
+        // и каждый последующий wire:poll.5s.visible впустую пересчитывал
+        // бы результаты поиска, которые уже никто не видит (дропдаун
+        // закрыт клиентским Alpine-стейтом, серверу об этом неизвестно).
+        $this->searchQuery = '';
     }
 
     // app/Livewire/Admin/KanbanBoard.php
@@ -252,6 +272,12 @@ class KanbanBoard extends Component
             $leads['no_response'] = $leads['no_response']->sortBy('updated_at')->values();
         }
 
+        // Поиск по переписке (см. докблок $searchQuery выше) — считается
+        // только когда реально что-то набрано, тот же общий класс, что и
+        // у WhatsappMessenger.
+        $searchQuery = trim($this->searchQuery);
+        $searchResults = $searchQuery !== '' ? WhatsappMessageSearch::search($searchQuery) : collect();
+
         // См. computeFingerprint() — держим слепок свежим и после прямых
         // действий (не только после pollTick), чтобы следующий тик опроса
         // сравнивал с актуальным состоянием, а не устаревшим.
@@ -263,6 +289,7 @@ class KanbanBoard extends Component
             'statuses' => $this->statuses,
             'totalCount' => \App\Models\WhatsappLead::count(),
             'spamCount' => \App\Models\WhatsappLead::where('status', self::SPAM_STATUS)->count(),
+            'searchResults' => $searchResults,
         ]);
     }
 }
