@@ -55,7 +55,15 @@
                         <span class="text-sm font-black uppercase tracking-[0.15em]">{{ $info['title'] }}</span>
                     </div>
 
-                    <div class="grid grid-cols-4 gap-3 h-full min-h-0">
+                    {{-- grid-cols жёстко было 4 — верно для "Работы с возражениями",
+                         но "Не купили" 2026-09-22 доросла до 5 подпричин
+                         (добавлена "Не отвечает") и 5-я колонка вываливалась за
+                         пределы сетки. Число колонок теперь берётся из реального
+                         count($info['sub']) — подстраивается под любую группу
+                         автоматически, без ручной правки при следующем добавлении
+                         подпричины. Работает с Tailwind CDN (кладём в HTML разметку
+                         сразу нужный класс, интерпретатор сканирует итоговый DOM). --}}
+                    <div class="grid grid-cols-{{ count($info['sub']) }} gap-3 h-full min-h-0">
                         @foreach($info['sub'] as $subKey => $subTitle)
                             @php
                                 $subUnreadCount = isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->where('has_new', true)->count() : 0;
