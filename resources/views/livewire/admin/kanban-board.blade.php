@@ -214,14 +214,18 @@
                                     $cardKey = "card-{$lead->id}-" . ($lastMsg ? $lastMsg->id : 'none');
                                 @endphp
                                 {{-- Вёрстка ряда — по образцу списка чатов в самом WhatsApp
-                                     (просьба Романа 2026-09-17): без аватара, номер+источник
-                                     в одну строку, превью сообщения обрезано до 50 символов,
-                                     клик по всей строке открывает шторку (раньше была
-                                     отдельная кнопка "Открыть чат" на всю ширину — занимала
-                                     место и делала карточки "бледными"/разреженными).
-                                     wire:click на самом ряду не мешает Sortable — драг
-                                     отличается от клика по порогу смещения мыши, тот же
-                                     приём уже используется в других местах на сайте. --}}
+                                     (просьба Романа 2026-09-17, аватар добавлен 2026-09-22
+                                     — "давай сделаем чтобы колонка новые была как в
+                                     ватсапе список чатов", только для колонки "Новые",
+                                     см. $key === 'new' ниже — остальные колонки менее
+                                     "переписочные", там компактный вид без аватара
+                                     остаётся как раньше). Клик по всей строке открывает
+                                     шторку (раньше была отдельная кнопка "Открыть чат" на
+                                     всю ширину — занимала место и делала карточки
+                                     "бледными"/разреженными). wire:click на самом ряду не
+                                     мешает Sortable — драг отличается от клика по порогу
+                                     смещения мыши, тот же приём уже используется в других
+                                     местах на сайте. --}}
                                 <div
                                     wire:key="{{ $cardKey }}"
                                     data-id="{{ $lead->id }}"
@@ -231,6 +235,45 @@
                                     wire:target="openChat({{ $lead->id }})"
                                     class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} {{ $lead->has_new && $key !== 'new' ? 'kanban-card-pulse' : '' }} {{ $lead->needs_reminder ? 'kanban-card-reminder' : '' }} bg-white px-3 py-2.5 rounded-lg border border-slate-200 cursor-grab active:cursor-grabbing hover:bg-slate-50 hover:border-blue-300 transition-all"
                                 >
+                                @if($key === 'new')
+                                    @php
+                                        $avatarBg = match($lead->source) {
+                                            '2gis' => 'bg-emerald-100 text-emerald-500',
+                                            'site' => 'bg-sky-100 text-sky-500',
+                                            default => 'bg-slate-200 text-slate-400',
+                                        };
+                                    @endphp
+                                    <div class="flex items-start gap-2.5">
+                                        <div class="relative flex-shrink-0">
+                                            <div class="w-11 h-11 rounded-full flex items-center justify-center {{ $avatarBg }}">
+                                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12zm0 2.4c-3.3 0-9.8 1.6-9.8 4.9v2.5h19.6v-2.5c0-3.3-6.5-4.9-9.8-4.9z"/></svg>
+                                            </div>
+                                            @if($lead->needs_reminder)
+                                                <span class="absolute -top-0.5 -left-0.5 w-4 h-4 rounded-full bg-amber-400 border-2 border-white flex items-center justify-center" title="Пора напомнить">
+                                                    <svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[13px] {{ $lead->has_new ? 'font-black text-slate-900' : 'font-semibold text-slate-700' }} truncate">+{{ $lead->phone }}</span>
+                                                <span class="flex-shrink-0 text-[10px] {{ $lead->has_new ? 'text-green-600 font-bold' : 'text-slate-400 font-medium' }}">{{ $lead->updated_at->diffForHumans() }}</span>
+                                            </div>
+                                            <div class="flex items-center justify-between gap-2 mt-0.5">
+                                                <div class="flex items-center gap-1 min-w-0">
+                                                    @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
+                                                    @if($lastMsg)
+                                                        <p class="text-[12px] {{ $lead->has_new ? 'text-slate-700 font-medium' : 'text-slate-500' }} truncate">{{ \Illuminate\Support\Str::limit($lastMsg->message_text, 40) }}</p>
+                                                    @endif
+                                                </div>
+                                                @if($lead->has_new)
+                                                    <span class="flex-shrink-0 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-green-500 text-white text-[10px] font-black">{{ $lead->unread_count }}</span>
+                                                @endif
+                                            </div>
+                                            @include('livewire.admin.partials.status-select', ['lead' => $lead, 'statuses' => $statuses, 'disabled' => $lead->has_new])
+                                        </div>
+                                    </div>
+                                @else
                                     <div class="flex items-center justify-between gap-2 {{ $lastMsg ? 'mb-1' : '' }}">
                                         <div class="flex items-center gap-1.5 min-w-0">
                                             @if($lead->has_new)
@@ -250,6 +293,7 @@
                                     @endif
 
                                     @include('livewire.admin.partials.status-select', ['lead' => $lead, 'statuses' => $statuses, 'disabled' => $lead->has_new])
+                                @endif
                                 </div>
                             @endforeach
                         @endif
