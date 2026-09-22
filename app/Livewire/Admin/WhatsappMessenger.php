@@ -42,7 +42,13 @@ class WhatsappMessenger extends Component
     const ACTIVE_CHAT_MESSAGES_LIMIT = 60;
 
     protected $listeners = [
-        'echo:messages,MessageReceived' => 'handleIncomingMessage', // Если используешь Laravel Echo
+        // На практике никогда не срабатывает — в проекте нет Laravel Echo/
+        // WebSocket вообще (шаред-хостинг, см. CLAUDE.md), broadcast
+        // 'MessageReceived' никто не шлёт. handleIncomingMessage() реально
+        // вызывается из render() напрямую (см. там же, просьба Романа
+        // 2026-09-22) — на случай, если вебсокеты когда-нибудь добавятся,
+        // строку оставил как есть, а не удалил.
+        'echo:messages,MessageReceived' => 'handleIncomingMessage',
         'refreshChat' => '$refresh' // Обычный рефреш
     ];
 
@@ -184,6 +190,28 @@ class WhatsappMessenger extends Component
         if ($this->activeLeadId) {
             $activeLead = \App\Models\WhatsappLead::find($this->activeLeadId);
             if ($activeLead) {
+                // Просьба Романа 2026-09-22: клиент пишет НОВОЕ сообщение,
+                // пока чат УЖЕ открыт — раньше карточка на доске всё равно
+                // горела "непрочитано", потому что единственная точка
+                // пометки прочитанным была клик по карточке (selectLead()/
+                // openChat()), а сидя уже в открытом чате повторного клика
+                // не происходит. handleIncomingMessage() ниже как раз для
+                // этого и написан, но висел на Echo-слушателе
+                // ('echo:messages,MessageReceived') — в проекте нет
+                // вебсокетов вообще (CRM живёт на wire:poll, см. историю
+                // обсуждения с Романом про шаред-хостинг), событие никогда
+                // фактически не приходило. Дёшево — HTTP-запрос к Green API
+                // и refreshKanban шлём, только если реально было что
+                // помечать (exists() перед update()), не на каждый тик.
+                $hasNewIncoming = \App\Models\WhatsappMessage::where('whatsapp_lead_id', $activeLead->id)
+                    ->where('is_incoming', true)
+                    ->where('is_read', false)
+                    ->exists();
+
+                if ($hasNewIncoming) {
+                    $this->handleIncomingMessage();
+                }
+
                 $recentMessages = \App\Models\WhatsappMessage::where('whatsapp_lead_id', $activeLead->id)
                     ->latest()
                     ->limit(self::ACTIVE_CHAT_MESSAGES_LIMIT)
