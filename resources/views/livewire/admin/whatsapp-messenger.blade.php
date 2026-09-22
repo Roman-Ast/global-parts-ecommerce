@@ -13,12 +13,35 @@
                     <span class="text-xs font-medium text-gray-500">Live</span>
                 </div>
             </div>
-            
+
+            {{-- Поиск по переписке "как в WhatsApp" (просьба Романа
+                 2026-09-22) — пока поле не пустое, список ниже заменяется
+                 результатами поиска (см. WhatsappMessenger::searchLeads()),
+                 ищет и по тексту сообщений, и по номеру телефона. Крестик
+                 очистки показывается только когда есть что чистить.
+                 debounce.400ms — не долбим БД на каждое нажатие клавиши. --}}
+            <div class="p-3 border-b bg-white">
+                <div class="relative">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" /></svg>
+                    <input
+                        type="text"
+                        wire:model.live.debounce.400ms="searchQuery"
+                        placeholder="Поиск по переписке или номеру"
+                        class="w-full pl-9 pr-8 py-2 text-sm rounded-full bg-slate-100 border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                    >
+                    @if($searchQuery)
+                        <button type="button" wire:click="$set('searchQuery', '')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    @endif
+                </div>
+            </div>
+
             <div class="overflow-y-auto flex-1 custom-scrollbar">
                 @forelse($leads as $lead)
-                    <div wire:click="selectLead({{ $lead->id }})" 
+                    <div wire:click="selectLead({{ $lead->id }})"
                        class="cursor-pointer block p-4 border-b hover:bg-slate-50 transition-colors {{ $activeLeadId == $lead->id ? 'bg-blue-50 border-r-4 border-blue-500' : '' }}">
-                        
+
                         <div class="flex justify-between items-start mb-1">
                             <span class="flex items-center gap-1.5">
                                 <span class="font-bold text-slate-700">+{{ $lead->phone }}</span>
@@ -31,7 +54,7 @@
 
                         <div class="flex justify-between items-center">
                             <p class="text-sm text-gray-500 truncate pr-2">
-                                {{ $lead->lastMessage->message_text ?? 'Нет сообщений' }}
+                                {!! $this->highlightMatch($lead->search_snippet ?? ($lead->lastMessage->message_text ?? null), $searchQuery) ?: 'Нет сообщений' !!}
                             </p>
                             @if($lead->last_vin)
                                 <span class="flex-shrink-0 bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold">
@@ -41,7 +64,13 @@
                         </div>
                     </div>
                 @empty
-                    <div class="p-8 text-center text-gray-400">Пока чатов нет</div>
+                    <div class="p-8 text-center text-gray-400 text-sm">
+                        @if($searchQuery)
+                            Ничего не найдено по «{{ $searchQuery }}»
+                        @else
+                            Пока чатов нет
+                        @endif
+                    </div>
                 @endforelse
             </div>
         </div>
