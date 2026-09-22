@@ -1,4 +1,4 @@
-<div wire:poll.5s wire:init="syncReadOnWhatsApp" class="{{ $compactMode ? 'flex w-full h-full' : 'fixed inset-0 top-[64px] flex bg-gray-100 z-10' }}">
+<div wire:poll.5s.visible="pollTick" wire:init="syncReadOnWhatsApp" class="{{ $compactMode ? 'flex w-full h-full' : 'fixed inset-0 top-[64px] flex bg-gray-100 z-10' }}">
     
     {{-- ЛЕВАЯ КОЛОНКА: Отображается только в обычном режиме --}}
     @if(!$compactMode)

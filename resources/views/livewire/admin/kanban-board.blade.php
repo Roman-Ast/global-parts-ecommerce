@@ -1,6 +1,6 @@
 
 
-<div class="p-6 bg-slate-100 min-h-screen" wire:poll.5s>
+<div class="p-6 bg-slate-100 min-h-screen" wire:poll.5s.visible="pollTick">
     {{-- Хлебные крошки (просьба Романа 2026-09-17) --}}
     <nav class="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
         <a href="/admin" class="hover:text-slate-700 transition-colors">Главная</a>

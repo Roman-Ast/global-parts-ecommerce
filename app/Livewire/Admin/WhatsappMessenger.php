@@ -125,6 +125,50 @@ class WhatsappMessenger extends Component
         return [$creds['instance_id'], $creds['token']];
     }
 
+    /** См. computeFingerprint()/pollTick() — тот же приём, что и в KanbanBoard
+     *  (просьба Романа 2026-09-22, "дешёвые варианты без сокета"). */
+    public $lastFingerprint = '';
+
+    /**
+     * Дешёвый слепок состояния мессенджера — та же идея, что и в
+     * KanbanBoard::computeFingerprint(): 2 лёгких запроса вместо полного
+     * render() (список из 200 лидов + до 60 сообщений открытого чата +
+     * Blade-рендер) на каждый тик, когда за 5 секунд ничего не изменилось.
+     *
+     * `MAX(id)` по whatsapp_messages (не COUNT/MAX(updated_at) — у таблицы
+     * нет собственного индекса на updated_at, только составные с
+     * whatsapp_lead_id первым столбцом, см. индексы) — дёшево независимо
+     * от размера таблицы (первичный ключ). Ловит НОВЫЕ сообщения (основной
+     * случай); НЕ ловит чисто статусные обновления существующей записи
+     * (галочки sent→delivered→read у уже отрисованного сообщения без
+     * нового сообщения рядом) — приемлемый компромисс, статус галочки
+     * подтянется при следующем реальном изменении.
+     */
+    private function computeFingerprint(): string
+    {
+        $leadsAgg = WhatsappLead::selectRaw('COUNT(*) as cnt, MAX(last_seen_at) as max_seen')->first();
+        $maxMessageId = (int) \App\Models\WhatsappMessage::max('id');
+
+        return $leadsAgg->cnt . '|' . $leadsAgg->max_seen . '|' . $maxMessageId;
+    }
+
+    /**
+     * Цель wire:poll.5s.visible (не голый $refresh) — см. computeFingerprint().
+     * Прямые действия (selectLead/sendMessage/updateLeadStatus/...) сюда НЕ
+     * заходят — у них всегда полный рендер сразу, без этой проверки.
+     */
+    public function pollTick(): void
+    {
+        $fingerprint = $this->computeFingerprint();
+
+        if ($fingerprint === $this->lastFingerprint) {
+            $this->skipRender();
+            return;
+        }
+
+        $this->lastFingerprint = $fingerprint;
+    }
+
     public function render()
     {
         // 1. Список чатов слева — только превью (lastMessage), не вся история.
@@ -173,6 +217,11 @@ class WhatsappMessenger extends Component
         } else {
             $this->lastRenderedMessageId = null;
         }
+
+        // См. computeFingerprint() — держим слепок свежим и после прямых
+        // действий (не только после pollTick), чтобы следующий тик опроса
+        // сравнивал с актуальным состоянием, а не устаревшим.
+        $this->lastFingerprint = $this->computeFingerprint();
 
         // 3. ВОЗВРАЩАЕМ ВЬЮХУ МЕССЕНДЖЕРА, а не канбана!
         return view('livewire.admin.whatsapp-messenger', [
@@ -407,7 +456,8 @@ class WhatsappMessenger extends Component
     public function mount($activeLeadId = null, $compactMode = false)
     {
         $this->compactMode = $compactMode;
-        
+        $this->lastFingerprint = $this->computeFingerprint();
+
         if ($activeLeadId) {
             $this->dispatch('scroll-chat-to-bottom');
             $this->activeLeadId = $activeLeadId;

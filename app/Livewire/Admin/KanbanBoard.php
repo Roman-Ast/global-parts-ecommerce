@@ -33,6 +33,63 @@ class KanbanBoard extends Component
         // придёт ПОСЛЕ открытия. Тот же фильтр по статусу, что и в
         // render(), чтобы база и последующие сравнения считались одинаково.
         $this->lastTotalUnread = $this->currentTotalUnread();
+
+        $this->lastFingerprint = $this->computeFingerprint();
+    }
+
+    /**
+     * Дешёвый "слепок" состояния доски (просьба Романа 2026-09-22 —
+     * "дешёвые варианты без сокета") — 2 лёгких запроса (COUNT+MAX и
+     * EXISTS) вместо полного render() (до 200 лидов + lastMessage +
+     * withCount + Blade-рендер ~200 карточек). pollTick() сравнивает его
+     * с предыдущим значением и, если ничего не изменилось (обычный
+     * случай — новые сообщения приходят не каждые 5 секунд), вызывает
+     * skipRender() ДО того, как Livewire вообще позовёт render() —
+     * экономится не только HTML-ответ, но и сам тяжёлый запрос.
+     *
+     * "Пора напомнить" — отдельная забота: карточка может стать
+     * подходящей под напоминание чисто от течения времени, без единого
+     * изменения в БД (см. LeadStatuses::needsReminder() — порог в часах
+     * от последнего НАШЕГО сообщения). COUNT/MAX по лидам такое не
+     * поймает. Грубое решение — 5-минутные окна времени подмешиваются в
+     * слепок, но ТОЛЬКО если вообще есть лиды в подходящих статусах
+     * (иначе слепок держится по времени вхолостую, когда нечему
+     * подсвечиваться). Худший случай — подсветка "Пора напомнить"
+     * опаздывает до 5 минут вместо 5 секунд, не бесконечно.
+     */
+    private function computeFingerprint(): string
+    {
+        $agg = WhatsappLead::where('status', '!=', self::SPAM_STATUS)
+            ->selectRaw('COUNT(*) as cnt, MAX(updated_at) as max_updated')
+            ->first();
+
+        $hasReminderEligible = WhatsappLead::whereIn('status', LeadStatuses::REMINDER_ELIGIBLE_STATUSES)->exists();
+        $timeBucket = $hasReminderEligible ? intdiv(now()->timestamp, 300) : 0;
+
+        return $agg->cnt . '|' . $agg->max_updated . '|' . $timeBucket;
+    }
+
+    /** См. computeFingerprint(). Обновляется и здесь, и в конце render() —
+     *  на случай, если полный рендер случился не через pollTick (прямое
+     *  действие вроде updateLeadStatus/openChat), слепок всё равно должен
+     *  остаться свежим к следующему тику опроса. */
+    public $lastFingerprint = '';
+
+    /**
+     * Цель wire:poll.5s.visible (не голый $refresh) — см. computeFingerprint().
+     * Прямые действия (updateLeadStatus/openChat/setNewLeadsTab) сюда НЕ
+     * заходят — у них всегда полный рендер сразу, без этой проверки.
+     */
+    public function pollTick(): void
+    {
+        $fingerprint = $this->computeFingerprint();
+
+        if ($fingerprint === $this->lastFingerprint) {
+            $this->skipRender();
+            return;
+        }
+
+        $this->lastFingerprint = $fingerprint;
     }
 
     private function currentTotalUnread(): int
@@ -168,6 +225,11 @@ class KanbanBoard extends Component
         $remindersDue = $leads->filter(fn ($lead) => $lead->needs_reminder)->values();
 
         $leads = $leads->groupBy('status');
+
+        // См. computeFingerprint() — держим слепок свежим и после прямых
+        // действий (не только после pollTick), чтобы следующий тик опроса
+        // сравнивал с актуальным состоянием, а не устаревшим.
+        $this->lastFingerprint = $this->computeFingerprint();
 
         return view('livewire.admin.kanban-board', [
             'leadsByStatus' => $leads,
