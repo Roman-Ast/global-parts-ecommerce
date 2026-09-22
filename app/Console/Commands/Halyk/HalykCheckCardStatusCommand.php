@@ -46,7 +46,33 @@ class HalykCheckCardStatusCommand extends Command
             }
 
             if (!$result['ok']) {
-                $this->error("  ⨯ {$row->article} (id={$row->halyk_product_id}) — HTTP {$result['status']}");
+                // 404 — живым тестом 2026-09-16 подтверждено: черновик
+                // больше не существует на стороне Halyk (свежий, только что
+                // отправленный черновик отвечает нормально, а из бэклога,
+                // который неделю не проверяли — стабильно 404). Похоже,
+                // Halyk сам чистит неподтверждённые/непроверенные черновики
+                // спустя какое-то время. Раньше такие строки просто
+                // пропускались БЕЗ обновления статуса — застревали в
+                // 'submitted' навсегда и проверялись заново при каждом
+                // следующем запуске без единого шанса когда-либо
+                // разрешиться. Помечаем терминальным статусом 'expired' —
+                // pickCandidates() и так исключает по article независимо от
+                // статуса (тот же принцип, что и у остальных терминальных
+                // статусов в этой таблице), но теперь хотя бы видно, что
+                // случилось, и при желании можно точечно повторить через
+                // halyk:create-card --article=... Другие не-2xx (5xx и
+                // т.п.) — оставляем как есть, это может быть временный сбой
+                // на их стороне, есть смысл перепроверить в следующий раз.
+                if ($result['status'] === 404) {
+                    DB::table('halyk_created_cards')->where('id', $row->id)->update([
+                        'status'     => 'expired',
+                        'comment'    => 'draft not found on Halyk (404) — likely purged after being unchecked too long',
+                        'updated_at' => now(),
+                    ]);
+                    $this->error("  ⨯ {$row->article} (id={$row->halyk_product_id}) — HTTP 404, помечено expired");
+                } else {
+                    $this->error("  ⨯ {$row->article} (id={$row->halyk_product_id}) — HTTP {$result['status']}");
+                }
                 continue;
             }
 
