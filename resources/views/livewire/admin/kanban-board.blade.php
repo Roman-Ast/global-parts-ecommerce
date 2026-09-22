@@ -68,6 +68,12 @@
                             @php
                                 $subUnreadCount = isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->where('has_new', true)->count() : 0;
                                 $subReminderCount = isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->where('needs_reminder', true)->count() : 0;
+                                // "Залежался в Не отвечает" (просьба Романа 2026-09-22) —
+                                // is_stale_no_response всегда false вне статуса
+                                // 'no_response' (см. KanbanBoard::render()), так что для
+                                // остальных 4 подпричин "Не купили" счётчик просто не
+                                // покажется, отдельного условия по $subKey не нужно.
+                                $subStaleCount = isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->where('is_stale_no_response', true)->count() : 0;
                             @endphp
                             {{-- wire:key отсутствовал на этой обёртке (в отличие от всех
                                  остальных @foreach-элементов в файле) — найдено при разборе
@@ -95,6 +101,17 @@
                                             {{ $subReminderCount }}
                                         </span>
                                     @endif
+                                    {{-- Счётчик "залежался больше суток" — только у "Не
+                                         отвечает" (просьба Романа 2026-09-22, кандидаты на
+                                         повторный ручной контакт, как сегодняшняя продажа
+                                         на 103000₸ из старой заявки). Серый, не красный/
+                                         жёлтый — это не тревога, это просто "стоит глянуть". --}}
+                                    @if($subStaleCount > 0)
+                                        <span wire:key="stale-badge-{{ $subKey }}-{{ $subStaleCount }}" class="kanban-unread-badge flex items-center gap-0.5 justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-slate-400 text-white text-[8px] font-black leading-none" title="Молчат больше суток">
+                                            <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            {{ $subStaleCount }}
+                                        </span>
+                                    @endif
                                 </div>
 
                                 {{-- min-h-0 по всей цепочке flex/grid-родителей выше — классический
@@ -111,7 +128,7 @@
                                 >
                                     @if(isset($leadsByStatus[$subKey]))
                                         @foreach($leadsByStatus[$subKey] as $lead)
-                                            <div wire:key="card-{{ $lead->id }}-{{ $lead->lastMessage->id ?? 'none' }}" data-id="{{ $lead->id }}" class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} {{ $lead->has_new ? 'kanban-card-pulse' : '' }} {{ $lead->needs_reminder ? 'kanban-card-reminder' : '' }} bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all group">
+                                            <div wire:key="card-{{ $lead->id }}-{{ $lead->lastMessage->id ?? 'none' }}" data-id="{{ $lead->id }}" class="kanban-card {{ $lead->has_new ? 'kanban-card-unread' : '' }} {{ $lead->has_new ? 'kanban-card-pulse' : '' }} {{ $lead->needs_reminder ? 'kanban-card-reminder' : '' }} {{ $lead->is_stale_no_response ? 'kanban-card-stale' : '' }} bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all group">
                                                 <div class="flex justify-between items-start mb-2">
                                                     <div class="flex items-center space-x-2">
                                                         @if($lead->has_new)
@@ -119,6 +136,9 @@
                                                         @endif
                                                         @if($lead->needs_reminder)
                                                             <svg class="w-3 h-3 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Пора напомнить"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                        @endif
+                                                        @if($lead->is_stale_no_response)
+                                                            <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Молчит больше суток — кандидат на повторный контакт"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                                         @endif
                                                         <span class="text-xs font-bold text-slate-800 tracking-tighter">+{{ $lead->phone }}</span>
                                                         @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
@@ -420,6 +440,17 @@
         .kanban-card-reminder {
             background-color: #fffbeb !important;
             border-color: #f59e0b !important;
+        }
+
+        /* "Залежался в Не отвечает больше суток" (просьба Романа
+           2026-09-22) — нейтрально-серая, не тревожная (в отличие от
+           жёлтого "Пора напомнить" выше) — это не активная сделка,
+           просто подсказка "стоит глянуть", тот же !important-приём по
+           той же причине (Tailwind CDN). */
+        .kanban-card-stale {
+            background-color: #f8fafc !important;
+            border-color: #94a3b8 !important;
+            border-style: dashed !important;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>

@@ -47,15 +47,15 @@ class KanbanBoard extends Component
      * skipRender() ДО того, как Livewire вообще позовёт render() —
      * экономится не только HTML-ответ, но и сам тяжёлый запрос.
      *
-     * "Пора напомнить" — отдельная забота: карточка может стать
-     * подходящей под напоминание чисто от течения времени, без единого
-     * изменения в БД (см. LeadStatuses::needsReminder() — порог в часах
-     * от последнего НАШЕГО сообщения). COUNT/MAX по лидам такое не
-     * поймает. Грубое решение — 5-минутные окна времени подмешиваются в
-     * слепок, но ТОЛЬКО если вообще есть лиды в подходящих статусах
-     * (иначе слепок держится по времени вхолостую, когда нечему
-     * подсвечиваться). Худший случай — подсветка "Пора напомнить"
-     * опаздывает до 5 минут вместо 5 секунд, не бесконечно.
+     * "Пора напомнить" И "залежался в Не отвечает" — обе метки могут стать
+     * true чисто от течения времени, без единого изменения в БД
+     * (LeadStatuses::needsReminder() / is_stale_no_response выше).
+     * COUNT/MAX по лидам такое не поймает. Грубое решение — 5-минутные
+     * окна времени подмешиваются в слепок, но ТОЛЬКО если вообще есть
+     * лиды, для которых это имеет смысл (иначе слепок держится по
+     * времени вхолостую, когда нечему подсвечиваться). Худший случай —
+     * подсветка опаздывает до 5 минут вместо 5 секунд, не бесконечно; для
+     * порога "Не отвечает" в 24 часа этого запаса с головой хватает.
      */
     private function computeFingerprint(): string
     {
@@ -63,8 +63,9 @@ class KanbanBoard extends Component
             ->selectRaw('COUNT(*) as cnt, MAX(updated_at) as max_updated')
             ->first();
 
-        $hasReminderEligible = WhatsappLead::whereIn('status', LeadStatuses::REMINDER_ELIGIBLE_STATUSES)->exists();
-        $timeBucket = $hasReminderEligible ? intdiv(now()->timestamp, 300) : 0;
+        $timeSensitiveStatuses = array_merge(LeadStatuses::REMINDER_ELIGIBLE_STATUSES, ['no_response']);
+        $hasTimeSensitiveLeads = WhatsappLead::whereIn('status', $timeSensitiveStatuses)->exists();
+        $timeBucket = $hasTimeSensitiveLeads ? intdiv(now()->timestamp, 300) : 0;
 
         return $agg->cnt . '|' . $agg->max_updated . '|' . $timeBucket;
     }
@@ -176,6 +177,9 @@ class KanbanBoard extends Component
      */
     const LEADS_LIMIT = 200;
 
+    /** См. is_stale_no_response в render() — порог "залежался в игноре". */
+    const NO_RESPONSE_STALE_HOURS = 24;
+
     public function render()
     {
         // lastMessage (latestOfMany) + withCount вместо with(['messages' =>
@@ -203,6 +207,17 @@ class KanbanBoard extends Component
                 // подгружена выше ради превью, needsReminder() её просто
                 // переиспользует.
                 $lead->needs_reminder = LeadStatuses::needsReminder($lead);
+                // "Замороженные Не отвечает" (просьба Романа 2026-09-22,
+                // после разбора CSV-выгрузки — 33 лида в статусе
+                // 'no_response', среди них наверняка есть кандидаты вроде
+                // сегодняшней продажи на 103000₸, которую Роман поднял
+                // вручную из старой заявки). Порог отдельный от "Пора
+                // напомнить" (сутки, не 3 часа) — это финальный/потерянный
+                // статус, не активная сделка, нет смысла дёргать каждые
+                // 3 часа. Считается для ЛЮБОГО статуса (дёшево, поле само
+                // по себе), но реально используется только для 'no_response'.
+                $lead->is_stale_no_response = $lead->status === 'no_response'
+                    && $lead->updated_at->diffInHours(now()) >= self::NO_RESPONSE_STALE_HOURS;
                 return $lead;
             });
 
@@ -225,6 +240,17 @@ class KanbanBoard extends Component
         $remindersDue = $leads->filter(fn ($lead) => $lead->needs_reminder)->values();
 
         $leads = $leads->groupBy('status');
+
+        // "Не отвечает" — самые старые (дольше всего висят без ответа)
+        // наверх, а не по общей сортировке "кто последний написал" (та
+        // была бы бесполезна именно тут — если не отвечает, "последний
+        // написавший" почти всегда МЫ САМИ, порядок получался бы
+        // случайным). Просьба Романа 2026-09-22 — чтобы залежавшиеся
+        // кандидаты на повторный контакт сразу были видны сверху, без
+        // скролла по всей колонке.
+        if (isset($leads['no_response'])) {
+            $leads['no_response'] = $leads['no_response']->sortBy('updated_at')->values();
+        }
 
         // См. computeFingerprint() — держим слепок свежим и после прямых
         // действий (не только после pollTick), чтобы следующий тик опроса
