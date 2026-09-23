@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\PartsCatalog;
+use App\Models\PopularCategory;
 use App\Models\Review;
 use Auth;
 
@@ -36,43 +36,36 @@ class HomeController extends Controller
 
     public function index()
     {
-        // Обе выборки закэшированы на час (найдено 2026-09-23 — Роман
-        // пожаловался, что вся главная грузится ~9 сек; DevTools показал,
-        // что тормозит именно сам HTML-документ, не картинки/скрипты;
-        // профилирование этого GROUP BY дало 2.2 СЕК локально на 50к строк
-        // parts_catalog — без индекса, покрывающего группировку сразу по
-        // 3 колонкам, MySQL гонит temp table + filesort по всей таблице
-        // на КАЖДЫЙ заход на главную; на проде (91к+ строк) наверняка ещё
-        // дольше). Ни категории, ни отзывы не обязаны быть живыми на
-        // каждый запрос — первые меняются только при обновлении скрейпинга
-        // каталога (раз в дни), вторые почти никогда — час кэша полностью
-        // убирает эту нагрузку с горячего пути без потери актуальности.
+        // reviews — таблица всего из 10 захардкоженных строк (подтверждено
+        // Романом 2026-09-23), ORDER BY RAND() на таком объёме мгновенный —
+        // кэш тут не даёт ничего заметного, но и не мешает, оставлен как есть.
         $reviews = \Illuminate\Support\Facades\Cache::remember('home_random_reviews', 3600, function () {
-            // inRandomOrder() = ORDER BY RAND() — сам по себе тоже
-            // классический антипаттерн MySQL (сортирует ВСЮ таблицу на
-            // каждый вызов), но раз это теперь считается не чаще раза в
-            // час — не критично, чинить сам метод выборки не стали.
             return Review::query()
                 ->inRandomOrder()
                 ->limit(4)
                 ->get();
         });
 
-        $popularCategories = \Illuminate\Support\Facades\Cache::remember('home_popular_categories', 3600, function () {
-            return PartsCatalog::query()
-                ->where('scrape_status', 'done')
-                ->whereNotNull('name')
-                ->whereNotNull('category_slug')
-                ->selectRaw('category_slug, category_top_title, category_top_code, COUNT(*) as cnt')
-                ->groupBy('category_slug', 'category_top_title', 'category_top_code')
-                ->orderByDesc('cnt')
-                ->limit(20)
-                ->get()
-                ->map(function ($row) {
-                    $row->icon = self::CATEGORY_ICONS[$row->category_top_code] ?? self::DEFAULT_CATEGORY_ICON;
-                    return $row;
-                });
-        });
+        // popularCategories — раньше GROUP BY по ВСЕЙ parts_catalog (91к+
+        // строк) на каждый визит на главную (2.2 сек локально на 50к строк
+        // — реальная причина 9-секундной загрузки главной, пойманной
+        // Романом 2026-09-23 через DevTools). Сначала завели под часовой
+        // Cache::remember(), но Роман явно попросил убрать пересчёт с
+        // горячего пути вообще, не полагаясь на кэш ("посчитаем один раз
+        // и уберём этот процесс вообще, даже без кеша... редко ж её
+        // обновляем эту таблицу") — теперь просто читаем маленькую
+        // материализованную popular_categories (см. докблок миграции
+        // create_popular_categories_table и команды
+        // catalog:refresh-popular-categories). Она наполняется ТОЛЬКО той
+        // командой, вручную, после прогона скрейпинга — здесь только чтение.
+        $popularCategories = PopularCategory::query()
+            ->orderByDesc('cnt')
+            ->limit(20)
+            ->get()
+            ->map(function ($row) {
+                $row->icon = self::CATEGORY_ICONS[$row->category_top_code] ?? self::DEFAULT_CATEGORY_ICON;
+                return $row;
+            });
 
         return view('index', [
             'reviews' => $reviews,
