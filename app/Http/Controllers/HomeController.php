@@ -36,24 +36,43 @@ class HomeController extends Controller
 
     public function index()
     {
-        $reviews = Review::query()
-            ->inRandomOrder()
-            ->limit(4)
-            ->get();
+        // Обе выборки закэшированы на час (найдено 2026-09-23 — Роман
+        // пожаловался, что вся главная грузится ~9 сек; DevTools показал,
+        // что тормозит именно сам HTML-документ, не картинки/скрипты;
+        // профилирование этого GROUP BY дало 2.2 СЕК локально на 50к строк
+        // parts_catalog — без индекса, покрывающего группировку сразу по
+        // 3 колонкам, MySQL гонит temp table + filesort по всей таблице
+        // на КАЖДЫЙ заход на главную; на проде (91к+ строк) наверняка ещё
+        // дольше). Ни категории, ни отзывы не обязаны быть живыми на
+        // каждый запрос — первые меняются только при обновлении скрейпинга
+        // каталога (раз в дни), вторые почти никогда — час кэша полностью
+        // убирает эту нагрузку с горячего пути без потери актуальности.
+        $reviews = \Illuminate\Support\Facades\Cache::remember('home_random_reviews', 3600, function () {
+            // inRandomOrder() = ORDER BY RAND() — сам по себе тоже
+            // классический антипаттерн MySQL (сортирует ВСЮ таблицу на
+            // каждый вызов), но раз это теперь считается не чаще раза в
+            // час — не критично, чинить сам метод выборки не стали.
+            return Review::query()
+                ->inRandomOrder()
+                ->limit(4)
+                ->get();
+        });
 
-        $popularCategories = PartsCatalog::query()
-            ->where('scrape_status', 'done')
-            ->whereNotNull('name')
-            ->whereNotNull('category_slug')
-            ->selectRaw('category_slug, category_top_title, category_top_code, COUNT(*) as cnt')
-            ->groupBy('category_slug', 'category_top_title', 'category_top_code')
-            ->orderByDesc('cnt')
-            ->limit(20)
-            ->get()
-            ->map(function ($row) {
-                $row->icon = self::CATEGORY_ICONS[$row->category_top_code] ?? self::DEFAULT_CATEGORY_ICON;
-                return $row;
-            });
+        $popularCategories = \Illuminate\Support\Facades\Cache::remember('home_popular_categories', 3600, function () {
+            return PartsCatalog::query()
+                ->where('scrape_status', 'done')
+                ->whereNotNull('name')
+                ->whereNotNull('category_slug')
+                ->selectRaw('category_slug, category_top_title, category_top_code, COUNT(*) as cnt')
+                ->groupBy('category_slug', 'category_top_title', 'category_top_code')
+                ->orderByDesc('cnt')
+                ->limit(20)
+                ->get()
+                ->map(function ($row) {
+                    $row->icon = self::CATEGORY_ICONS[$row->category_top_code] ?? self::DEFAULT_CATEGORY_ICON;
+                    return $row;
+                });
+        });
 
         return view('index', [
             'reviews' => $reviews,
