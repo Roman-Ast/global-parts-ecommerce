@@ -194,8 +194,13 @@ class KanbanBoard extends Component
      * данным). Без лимита `render()` тянул ВСЕХ лидов на каждый
      * wire:poll.3s — с ростом базы это и есть тот рост нагрузки, о котором
      * предупреждал Роман.
+     *
+     * Снижено 200 → 100 (2026-09-23, вместе с переходом poll на 8s) —
+     * часть той же правки на снижение нагрузки на слабом железе (см.
+     * kanban-card-pulse тем же днём). Риск потерять "Пора напомнить" за
+     * пределами окна закрыт отдельно — см. reminderCandidates ниже.
      */
-    const LEADS_LIMIT = 200;
+    const LEADS_LIMIT = 100;
 
     /** См. is_stale_no_response в render() — порог "залежался в игноре". */
     const NO_RESPONSE_STALE_HOURS = 24;
@@ -240,6 +245,36 @@ class KanbanBoard extends Component
                     && $lead->updated_at->diffInHours(now()) >= self::NO_RESPONSE_STALE_HOURS;
                 return $lead;
             });
+
+        // Страховка от снижения LEADS_LIMIT 200→100 (просьба Романа
+        // 2026-09-23 — "чтобы из-за этого я не пропускал заявки"): лид,
+        // которому мы написали и который молчит, НЕ получает новых
+        // updated_at сам по себе — если за это время другие диалоги
+        // получили свежие входящие, такой лид может вытесниться из топ-100
+        // и "Пора напомнить" для него перестанет считаться вообще (она
+        // раньше бралась только из уже загруженного $leads). Отдельный
+        // узкий запрос — ТОЛЬКО статусы из REMINDER_ELIGIBLE_STATUSES
+        // (offer/thinking-подпричины/payment), не вся таблица, и только
+        // те, кто уже реально просрочен (needs_reminder), а не весь
+        // funnel этих статусов — иначе лимит терял бы смысл. Дёшево
+        // независимо от роста базы: это узкий срез воронки, не все лиды.
+        $loadedIds = $leads->pluck('id');
+        $overdueOutsideLimit = \App\Models\WhatsappLead::with('lastMessage')
+            ->withCount(['messages as unread_count' => function ($q) {
+                $q->where('is_incoming', true)->where('is_read', false);
+            }])
+            ->whereIn('status', LeadStatuses::REMINDER_ELIGIBLE_STATUSES)
+            ->whereNotIn('id', $loadedIds)
+            ->get()
+            ->map(function ($lead) {
+                $lead->has_new = $lead->unread_count > 0;
+                $lead->needs_reminder = LeadStatuses::needsReminder($lead);
+                $lead->is_stale_no_response = false; // эти статусы никогда не 'no_response'
+                return $lead;
+            })
+            ->filter(fn ($lead) => $lead->needs_reminder);
+
+        $leads = $leads->concat($overdueOutsideLimit);
 
         $currentTotalUnread = $leads->sum('unread_count');
         if ($currentTotalUnread > $this->lastTotalUnread) {
