@@ -195,12 +195,43 @@ class KanbanBoard extends Component
      * wire:poll.3s — с ростом базы это и есть тот рост нагрузки, о котором
      * предупреждал Роман.
      *
-     * Снижено 200 → 100 (2026-09-23, вместе с переходом poll на 8s) —
-     * часть той же правки на снижение нагрузки на слабом железе (см.
-     * kanban-card-pulse тем же днём). Риск потерять "Пора напомнить" за
-     * пределами окна закрыт отдельно — см. reminderCandidates ниже.
+     * ЗАМЕНЕНО на per-column лимиты 2026-09-23 (см. INITIAL_COLUMN_LIMIT
+     * ниже) — один общий лимит на ВСЮ доску страдал скрытой проблемой
+     * fairness: если "Новые" шумит (много свежих updated_at), они могли
+     * вытеснить из общего окна карточки из денежных колонок вроде "Оплата"
+     * просто потому что там давно не было новых сообщений. Per-column
+     * гарантирует каждой колонке свою пачку независимо от соседних.
      */
-    const LEADS_LIMIT = 100;
+    const INITIAL_COLUMN_LIMIT = 15;
+
+    /** См. loadMoreForStatus() — на сколько карточек увеличивать окно колонки за раз. */
+    const LOAD_MORE_INCREMENT = 15;
+
+    /** Ключ для лимита виртуальной колонки "Пора напомнить" в $columnLimits — та же строка, что и data-status в блейде. */
+    const REMINDERS_COLUMN_KEY = '__reminders__';
+
+    /**
+     * Сколько карточек сейчас "открыто" в каждой колонке — ключ статуса
+     * (или REMINDERS_COLUMN_KEY) => число. Публичное Livewire-свойство —
+     * должно пережить wire:poll.8s между тиками, иначе прогресс лэйзилоадинга
+     * сбрасывался бы каждый раз. Пусто = все колонки на INITIAL_COLUMN_LIMIT.
+     */
+    public array $columnLimits = [];
+
+    /**
+     * Вызывается из JS через @this.call() при скролле колонки до низа
+     * (IntersectionObserver на sentinel-элементе, см. initLazyLoad() в
+     * блейде) — просьба Романа 2026-09-23: "то что видно на экране
+     * (~5 карточек на колонку с запасом) сразу, остальное лэйзилоадингом
+     * при прокрутке конкретной колонки". Не через pollTick/skipRender —
+     * прямое действие пользователя, всегда полный рендер сразу, как и
+     * updateLeadStatus/openChat.
+     */
+    public function loadMoreForStatus(string $key): void
+    {
+        $current = $this->columnLimits[$key] ?? self::INITIAL_COLUMN_LIMIT;
+        $this->columnLimits[$key] = $current + self::LOAD_MORE_INCREMENT;
+    }
 
     /** См. is_stale_no_response в render() — порог "залежался в игноре". */
     const NO_RESPONSE_STALE_HOURS = 24;
@@ -213,19 +244,37 @@ class KanbanBoard extends Component
         // ограничивает общий запрос, не "по одному на лида" — реально
         // возвращалось одно сообщение на всю пачку), и N+1 (тот ->load()
         // был обходным путём под это, отдельный запрос на КАЖДОГО лида).
-        // При wire:poll.3s это был лишний удар по БД каждые 3 секунды.
-        $leads = \App\Models\WhatsappLead::with('lastMessage')
-            ->withCount(['messages as unread_count' => function ($q) {
-                $q->where('is_incoming', true)->where('is_read', false);
-            }])
-            // Спам не часть воронки — не тратим LEADS_LIMIT-окно на них здесь,
-            // они и так никогда не рендерятся (нет колонки в $statuses).
-            ->where('status', '!=', self::SPAM_STATUS)
-            // СОРТИРОВКА ПО ОБНОВЛЕНИЮ: кто последний написал, тот и сверху
-            ->orderByDesc('updated_at')
-            ->limit(self::LEADS_LIMIT)
-            ->get()
-            ->map(function($lead) {
+        // При wire:poll.8s это был лишний удар по БД на каждый реальный рендер.
+        //
+        // По одному узкому запросу НА КАЖДЫЙ реальный статус (leafStatuses())
+        // вместо одного общего с LIMIT — см. докблок INITIAL_COLUMN_LIMIT
+        // выше про fairness между колонками. ~16 маленьких индексных
+        // запросов (индекс на status уже есть) вместо одного большого —
+        // дешевле, чем кажется, и это происходит только на РЕАЛЬНОМ
+        // рендере (fingerprint изменился), не на каждом тике poll.
+        $statusCounts = \App\Models\WhatsappLead::whereIn('status', LeadStatuses::leafStatuses())
+            ->selectRaw('status, COUNT(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status')
+            ->all();
+
+        $leads = collect();
+        foreach (LeadStatuses::leafStatuses() as $status) {
+            $limit = $this->columnLimits[$status] ?? self::INITIAL_COLUMN_LIMIT;
+
+            $columnLeads = \App\Models\WhatsappLead::with('lastMessage')
+                ->withCount(['messages as unread_count' => function ($q) {
+                    $q->where('is_incoming', true)->where('is_read', false);
+                }])
+                ->where('status', $status)
+                ->orderByDesc('updated_at')
+                ->limit($limit)
+                ->get();
+
+            $leads = $leads->concat($columnLeads);
+        }
+
+        $leads = $leads->map(function($lead) {
                 $lead->has_new = $lead->unread_count > 0;
                 // "Пора напомнить" (просьба Романа 2026-09-21) — считаем
                 // здесь же, а не отдельным запросом: lastMessage уже
@@ -246,13 +295,13 @@ class KanbanBoard extends Component
                 return $lead;
             });
 
-        // Страховка от снижения LEADS_LIMIT 200→100 (просьба Романа
-        // 2026-09-23 — "чтобы из-за этого я не пропускал заявки"): лид,
-        // которому мы написали и который молчит, НЕ получает новых
-        // updated_at сам по себе — если за это время другие диалоги
-        // получили свежие входящие, такой лид может вытесниться из топ-100
-        // и "Пора напомнить" для него перестанет считаться вообще (она
-        // раньше бралась только из уже загруженного $leads). Отдельный
+        // Страховка от per-column лимитов (просьба Романа 2026-09-23 —
+        // "чтобы из-за этого я не пропускал заявки"): лид, которому мы
+        // написали и который молчит, НЕ получает новых updated_at сам по
+        // себе — если в его статусе накопилось много более свежих
+        // диалогов, такой лид может вытесниться за пределы лимита своей
+        // колонки, и "Пора напомнить" для него перестанет считаться вообще
+        // (она раньше бралась только из уже загруженного $leads). Отдельный
         // узкий запрос — ТОЛЬКО статусы из REMINDER_ELIGIBLE_STATUSES
         // (offer/thinking-подпричины/payment), не вся таблица, и только
         // те, кто уже реально просрочен (needs_reminder), а не весь
@@ -294,6 +343,15 @@ class KanbanBoard extends Component
         // данные, только ссылки на них в другом списке.
         $remindersDue = $leads->filter(fn ($lead) => $lead->needs_reminder)->values();
 
+        // Лэйзилоадинг и для самой виртуальной колонки (просьба Романа
+        // 2026-09-23) — показываем только $remindersLimit, остальное по
+        // тому же sentinel-механизму, что и у обычных колонок (см. блейд).
+        // Полный $remindersDue (до среза) уже посчитан выше — бейдж-счётчик
+        // в шапке колонки использует remindersDueTotal, не урезанный список.
+        $remindersDueTotal = $remindersDue->count();
+        $remindersLimit = $this->columnLimits[self::REMINDERS_COLUMN_KEY] ?? self::INITIAL_COLUMN_LIMIT;
+        $remindersDue = $remindersDue->take($remindersLimit)->values();
+
         $leads = $leads->groupBy('status');
 
         // "Не отвечает" — самые старые (дольше всего висят без ответа)
@@ -321,6 +379,8 @@ class KanbanBoard extends Component
         return view('livewire.admin.kanban-board', [
             'leadsByStatus' => $leads,
             'remindersDue' => $remindersDue,
+            'remindersDueTotal' => $remindersDueTotal,
+            'statusCounts' => $statusCounts,
             'statuses' => $this->statuses,
             'totalCount' => \App\Models\WhatsappLead::count(),
             'spamCount' => \App\Models\WhatsappLead::where('status', self::SPAM_STATUS)->count(),

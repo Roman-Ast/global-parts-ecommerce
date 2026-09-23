@@ -215,6 +215,15 @@
                                             </div>
                                         @endforeach
                                     @endif
+                                    {{-- Лэйзилоадинг (просьба Романа 2026-09-23) — sentinel вне
+                                         Sortable-управляемых карточек (сам div не .kanban-card,
+                                         draggable у Sortable ограничен этим селектором — см.
+                                         initKanban()), initLazyLoad() наблюдает за ним через
+                                         IntersectionObserver и дёргает loadMoreForStatus() при
+                                         скролле именно ЭТОЙ колонки до низа. --}}
+                                    @if(($statusCounts[$subKey] ?? 0) > (isset($leadsByStatus[$subKey]) ? $leadsByStatus[$subKey]->count() : 0))
+                                        <div class="kanban-loadmore-sentinel py-2 text-center text-[9px] text-slate-400 font-bold uppercase tracking-wide" data-loadmore-status="{{ $subKey }}">Загрузка ещё…</div>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach
@@ -378,6 +387,9 @@
                                 </div>
                             @endforeach
                         @endif
+                        @if(($statusCounts[$key] ?? 0) > (isset($leadsByStatus[$key]) ? $leadsByStatus[$key]->count() : 0))
+                            <div class="kanban-loadmore-sentinel py-2 text-center text-[9px] text-slate-400 font-bold uppercase tracking-wide" data-loadmore-status="{{ $key }}">Загрузка ещё…</div>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -401,7 +413,7 @@
                             <h3 class="font-black uppercase text-[10px] tracking-widest text-white">Пора напомнить</h3>
                         </div>
                         <div class="bg-white/40 px-2 py-0.5 rounded text-[10px] font-bold text-white">
-                            {{ $remindersDue->count() }}
+                            {{ $remindersDueTotal }}
                         </div>
                     </div>
 
@@ -443,6 +455,9 @@
                         @empty
                             <div class="text-[10px] text-amber-600/70 text-center py-6 italic">Пока некому напоминать</div>
                         @endforelse
+                        @if($remindersDueTotal > $remindersDue->count())
+                            <div class="kanban-loadmore-sentinel py-2 text-center text-[9px] text-amber-500/70 font-bold uppercase tracking-wide" data-loadmore-status="__reminders__">Загрузка ещё…</div>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -647,8 +662,54 @@
             }
         }
 
+        // Лэйзилоадинг по колонкам (просьба Романа 2026-09-23) — на экране
+        // одновременно видно порядка 4-5 карточек в высоту × ~17 колонок,
+        // остальное грузить по факту прокрутки конкретной колонки, а не
+        // одним общим лимитом на всю доску (см. INITIAL_COLUMN_LIMIT в
+        // KanbanBoard::render()). Каждая колонка, где ещё есть что
+        // подгрузить, несёт в конце sentinel-узел с data-loadmore-status —
+        // IntersectionObserver наблюдает за всеми сразу; когда прокрутка
+        // ДОВОДИТ sentinel до видимой области (это и есть "низ колонки"),
+        // дёргаем loadMoreForStatus(status), сервер отдаёт +LOAD_MORE_INCREMENT
+        // карточек этой колонки, DOM морфится, initLazyLoad() перевешивает
+        // наблюдение на новый (или уже исчезнувший, если догрузили всё) sentinel.
+        //
+        // root не указан (= viewport) — колонка сама по себе не выше
+        // viewport (h-[calc(100vh-180px)] на общем ряду), так что элемент,
+        // прокрученный за пределы видимой части колонки, всегда и вне
+        // viewport тоже — не нужен отдельный root на каждую колонку.
+        let lazyLoadObserver = null;
+        const lazyLoadPending = new Set();
+
+        function initLazyLoad() {
+            if (lazyLoadObserver) {
+                lazyLoadObserver.disconnect();
+            }
+
+            lazyLoadObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) {
+                        return;
+                    }
+                    const status = entry.target.dataset.loadmoreStatus;
+                    if (!status || lazyLoadPending.has(status)) {
+                        return;
+                    }
+                    lazyLoadPending.add(status);
+                    @this.call('loadMoreForStatus', status).finally(() => {
+                        lazyLoadPending.delete(status);
+                    });
+                });
+            }, { rootMargin: '150px' });
+
+            document.querySelectorAll('[data-loadmore-status]').forEach(el => {
+                lazyLoadObserver.observe(el);
+            });
+        }
+
         document.addEventListener('livewire:initialized', () => {
             initKanban();
+            initLazyLoad();
 
             Livewire.on('play-notification-sound', () => {
                 playNotificationSound();
@@ -662,11 +723,15 @@
             Livewire.hook('morph.updated', () => {
                 if (!kanbanDragActive) {
                     initKanban();
+                    initLazyLoad();
                 }
             });
         });
 
-        document.addEventListener('livewire:navigated', initKanban);
+        document.addEventListener('livewire:navigated', () => {
+            initKanban();
+            initLazyLoad();
+        });
     </script>
 
     {{-- Модалка-предупреждение при попытке перетащить непрочитанную заявку

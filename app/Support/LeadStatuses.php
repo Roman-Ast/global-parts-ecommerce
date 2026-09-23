@@ -79,6 +79,28 @@ class LeadStatuses
         return $lastMessage->created_at->diffInHours(now()) >= self::REMINDER_THRESHOLD_HOURS;
     }
 
+    /**
+     * Плоский список реальных статусов, по которым в БД можно фильтровать
+     * WHERE status = ... — то есть все ключи all() КРОМЕ групп-контейнеров
+     * с 'sub' (у 'thinking'/'lost' самого по себе такого статуса в БД
+     * никогда не бывает, только у их подпричин). Нужен KanbanBoard::render()
+     * для per-column лимитов (просьба Романа 2026-09-23, "5*17 с запасом,
+     * остальное лэйзилоадинг") — раньше был один общий запрос на всю
+     * доску, теперь по одному узкому запросу на каждый реальный статус.
+     */
+    public static function leafStatuses(): array
+    {
+        $leaf = [];
+        foreach (self::all() as $key => $info) {
+            if (isset($info['sub'])) {
+                $leaf = array_merge($leaf, array_keys($info['sub']));
+            } else {
+                $leaf[] = $key;
+            }
+        }
+        return $leaf;
+    }
+
     public static function all(): array
     {
         return [
