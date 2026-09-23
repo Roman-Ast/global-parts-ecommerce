@@ -285,6 +285,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     modeSelect.addEventListener('change', toggleAccountField);
     toggleAccountField();
+
+    // Живой баг 2026-09-23 (Роман) — "Общий статус возврата" и "Статус
+    // компенсации" два независимых select'а, ничего не мешало сохранить
+    // "Завершён" при компенсации "в ожидании": деньги от поставщика
+    // реально пришли, но раз "получена" не отмечено — ни зачёт, ни
+    // приход в кассу не создавались, а возврат при этом закрывался и
+    // становился недоступен для повторного заполнения (защита от
+    // повторного зачёта в контроллере срабатывает только для уже
+    // зачтённых, не для "просто закрытых без зачёта"). Блокируем сам
+    // клик — тот же guard продублирован и на сервере на случай прямого
+    // POST мимо формы.
+    const statusSelect = document.querySelector('select[name="status"]');
+    const refundStatusSelect = document.getElementById('supplier_refund_status');
+    const form = statusSelect.closest('form');
+
+    form.addEventListener('submit', function (e) {
+        if (statusSelect.value === 'completed' && refundStatusSelect.value === 'pending') {
+            e.preventDefault();
+            alert('Нельзя завершить возврат, пока статус компенсации от поставщика — "в ожидании". Сначала отметь "получена" (если деньги пришли) или "не ожидается".');
+        }
+    });
 });
 </script>
 @endsection
