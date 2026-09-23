@@ -104,8 +104,24 @@
                      подпричинами (напр. 'lost' — "Не купили") автоматически
                      получали ту же раскладку без правки блейда. --}}
                 <div class="flex-shrink-0 w-[900px] flex flex-col h-full min-h-0 bg-slate-200/30 rounded-[2.5rem] p-4 border border-slate-300/50" wire:key="group-{{ $key }}">
-                    <div class="flex items-center justify-center mb-4 py-2.5 {{ $info['color'] }} text-white rounded-2xl shadow-md">
-                        <span class="text-sm font-black uppercase tracking-[0.15em]">{{ $info['title'] }}</span>
+                    <div class="flex items-center {{ $key === 'lost' ? 'justify-between px-4' : 'justify-center' }} gap-3 mb-4 py-2.5 {{ $info['color'] }} text-white rounded-2xl shadow-md">
+                        {{-- "Не купили" свёрнута по умолчанию (просьба Романа 2026-09-23) —
+                             99% времени туда смотреть не нужно, но индикатор с РЕАЛЬНЫМ
+                             total (не количеством загруженных карточек — их 0, пока не
+                             развернули) держит на виду, что там что-то есть. Непрочитанные
+                             из этой группы (лид написал снова) всё равно всплывают в своей
+                             колонке независимо от этого тумблера — см. KanbanBoard::render(). --}}
+                        @if($key === 'lost')
+                            <span class="flex items-center gap-2">
+                                <span class="text-sm font-black uppercase tracking-[0.15em]">{{ $info['title'] }}</span>
+                                <span class="bg-white/25 px-2 py-0.5 rounded text-[10px] font-bold">{{ $lostGroupTotal }}</span>
+                            </span>
+                            <button wire:click="toggleLostGroup" class="text-[9px] font-black uppercase tracking-wider bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
+                                {{ $lostGroupExpanded ? 'Скрыть' : 'Показать' }}
+                            </button>
+                        @else
+                            <span class="text-sm font-black uppercase tracking-[0.15em]">{{ $info['title'] }}</span>
+                        @endif
                     </div>
 
                     {{-- grid-cols жёстко было 4 — верно для "Работы с возражениями",

@@ -233,6 +233,23 @@ class KanbanBoard extends Component
         $this->columnLimits[$key] = $current + self::LOAD_MORE_INCREMENT;
     }
 
+    /**
+     * "Не купили" свёрнута по умолчанию (просьба Романа 2026-09-23) — эта
+     * группа нужна ему только (а) когда он сам решил туда зайти разобрать
+     * отказы, или (б) когда лид ОТТУДА написал снова (тогда карточка
+     * должна всплыть сама — см. render(), непрочитанные из этой группы
+     * подгружаются ВСЕГДА, вне зависимости от $lostGroupExpanded). Раньше
+     * все 5 подпричин ("Нет в наличии"/"Дорого"/"Не нашли деталь"/
+     * "Передумал"/"Не отвечает") тянулись и рендерились наравне с активной
+     * воронкой, хотя 99% времени Роман туда не смотрит вообще.
+     */
+    public bool $lostGroupExpanded = false;
+
+    public function toggleLostGroup(): void
+    {
+        $this->lostGroupExpanded = !$this->lostGroupExpanded;
+    }
+
     /** См. is_stale_no_response в render() — порог "залежался в игноре". */
     const NO_RESPONSE_STALE_HOURS = 24;
 
@@ -258,20 +275,32 @@ class KanbanBoard extends Component
             ->pluck('c', 'status')
             ->all();
 
+        // Подпричины "Не купили" (см. toggleLostGroup() выше) — пока группа
+        // свёрнута, эти 5 статусов запрашиваются ТОЛЬКО на непрочитанное
+        // (лид написал снова после того как его списали) вместо обычного
+        // per-column лимита — визуально группа стоит пустой, пока в ней
+        // реально нечего смотреть.
+        $lostSubStatuses = array_keys(LeadStatuses::all()['lost']['sub'] ?? []);
+
         $leads = collect();
         foreach (LeadStatuses::leafStatuses() as $status) {
-            $limit = $this->columnLimits[$status] ?? self::INITIAL_COLUMN_LIMIT;
-
-            $columnLeads = \App\Models\WhatsappLead::with('lastMessage')
+            $query = \App\Models\WhatsappLead::with('lastMessage')
                 ->withCount(['messages as unread_count' => function ($q) {
                     $q->where('is_incoming', true)->where('is_read', false);
                 }])
                 ->where('status', $status)
-                ->orderByDesc('updated_at')
-                ->limit($limit)
-                ->get();
+                ->orderByDesc('updated_at');
 
-            $leads = $leads->concat($columnLeads);
+            if (in_array($status, $lostSubStatuses, true) && !$this->lostGroupExpanded) {
+                $query->whereHas('messages', function ($q) {
+                    $q->where('is_incoming', true)->where('is_read', false);
+                })->limit(50); // защитный потолок, реально это почти всегда единицы
+            } else {
+                $limit = $this->columnLimits[$status] ?? self::INITIAL_COLUMN_LIMIT;
+                $query->limit($limit);
+            }
+
+            $leads = $leads->concat($query->get());
         }
 
         $leads = $leads->map(function($lead) {
@@ -365,6 +394,12 @@ class KanbanBoard extends Component
             $leads['no_response'] = $leads['no_response']->sortBy('updated_at')->values();
         }
 
+        // Индикатор в шапке свёрнутой "Не купили" (просьба Романа
+        // 2026-09-23) — РЕАЛЬНЫЙ суммарный total по всем 5 подпричинам из
+        // $statusCounts, не количество загруженных карточек (которое пока
+        // группа свёрнута — почти всегда 0, см. toggleLostGroup() выше).
+        $lostGroupTotal = array_sum(array_intersect_key($statusCounts, array_flip($lostSubStatuses)));
+
         // Поиск по переписке (см. докблок $searchQuery выше) — считается
         // только когда реально что-то набрано, тот же общий класс, что и
         // у WhatsappMessenger.
@@ -381,6 +416,8 @@ class KanbanBoard extends Component
             'remindersDue' => $remindersDue,
             'remindersDueTotal' => $remindersDueTotal,
             'statusCounts' => $statusCounts,
+            'lostGroupTotal' => $lostGroupTotal,
+            'lostGroupExpanded' => $this->lostGroupExpanded,
             'statuses' => $this->statuses,
             'totalCount' => \App\Models\WhatsappLead::count(),
             'spamCount' => \App\Models\WhatsappLead::where('status', self::SPAM_STATUS)->count(),
