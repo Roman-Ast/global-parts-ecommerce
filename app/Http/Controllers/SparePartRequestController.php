@@ -198,19 +198,49 @@ class SparePartRequestController extends Controller
                     $summary .= "\nПримечание: " . $requestData['note'];
                 }
 
+                $siteInstanceId = (string) config('services.green_api.instances.site.instance_id');
+
                 $lead->messages()->create([
                     // instance_id NOT NULL в схеме, а реального Green API
                     // сообщения тут нет — берём инстанс 'site' (тот же,
                     // на который упадёт resolveInstanceCreds() для
                     // незнакомого source при реальной отправке), чтобы
                     // значение хотя бы было осмысленным, а не заглушкой.
-                    'instance_id' => (string) config('services.green_api.instances.site.instance_id'),
+                    'instance_id' => $siteInstanceId,
                     'message_text' => $summary,
                     'is_incoming' => true,
                     'is_read' => false,
                     'message_id' => 'form_' . uniqid('', true),
                     'type' => 'site_form',
                 ]);
+
+                // Фото/PDF техпаспорта — просьба Романа 2026-09-24 ("если
+                // клиент отправит фото... я его не увижу, грош цена таким
+                // лидам"). Тот же приём хранения, что и у
+                // WhatsappMessenger::sendPastedImage() — Storage::disk('public'),
+                // публичный URL, отдельное сообщение на файл (в чате
+                // рендерится по type: 'imageMessage' → <img>,
+                // 'documentMessage' → ссылка на файл, см.
+                // whatsapp-messenger.blade.php). Как и sendPastedImage(),
+                // это требует настроенного storage:link на сервере (см.
+                // CLAUDE.md — "storage:link не был создан на проде").
+                foreach ($photos as $file) {
+                    $extension = strtolower($file->getClientOriginalExtension());
+                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'webp']);
+
+                    $path = $file->store('site-form-uploads', 'public');
+                    $publicUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+
+                    $lead->messages()->create([
+                        'instance_id' => $siteInstanceId,
+                        'message_text' => $isImage ? 'Фото техпаспорта' : 'Файл техпаспорта',
+                        'file_url' => $publicUrl,
+                        'is_incoming' => true,
+                        'is_read' => false,
+                        'message_id' => 'form_file_' . uniqid('', true),
+                        'type' => $isImage ? 'imageMessage' : 'documentMessage',
+                    ]);
+                }
             }
         } catch (\Exception $e) {
             \Log::error('Ошибка создания CRM-лида из формы сайта: ' . $e->getMessage());
