@@ -22,8 +22,18 @@ use Illuminate\Support\Facades\DB;
  * supplier_refund_status=pending), это уже не повторится для НОВЫХ
  * возвратов — здесь только точечная починка конкретной старой записи.
  *
- * Guard по source_table+source_id — безопасно перезапускать, второй раз
- * зачёт не задвоится.
+ * Первый прогон 2026-09-24 упал на второй половине (UPDATE
+ * customer_returns) из-за отдельного бага схемы — ENUM
+ * supplier_refund_status не включал 'credited' (см.
+ * 2026_09_24_000002_add_credited_to_supplier_refund_status_enum). У этой
+ * миграции не было своей DB::transaction() (в отличие от аналогичного
+ * кода в CustomerReturnController::update()) — INSERT в supplier_credits
+ * успел закоммититься ДО того, как упал следующий UPDATE, и остался в
+ * БД (подтверждено Романом: id=8). Раз миграция не отработала целиком —
+ * Laravel её не засчитал как выполненную и переиграет заново, поэтому
+ * два шага теперь проверяются НЕЗАВИСИМО (было — один общий guard,
+ * из-за которого повторный прогон тихо пропустил бы уже назревший
+ * UPDATE, раз INSERT уже есть).
  */
 return new class extends Migration
 {
@@ -38,23 +48,22 @@ return new class extends Migration
             ->where('source_id', self::RETURN_ID)
             ->exists();
 
-        if ($alreadyCredited) {
-            return;
+        if (!$alreadyCredited) {
+            DB::table('supplier_credits')->insert([
+                'supplier_id' => self::SUPPLIER_ID,
+                'amount' => self::AMOUNT,
+                'source_table' => 'customer_returns',
+                'source_id' => self::RETURN_ID,
+                'comment' => 'Зачёт по возврату №' . self::RETURN_ID,
+                'date' => '2026-09-23',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
-
-        DB::table('supplier_credits')->insert([
-            'supplier_id' => self::SUPPLIER_ID,
-            'amount' => self::AMOUNT,
-            'source_table' => 'customer_returns',
-            'source_id' => self::RETURN_ID,
-            'comment' => 'Зачёт по возврату №' . self::RETURN_ID,
-            'date' => '2026-09-23',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
 
         DB::table('customer_returns')
             ->where('id', self::RETURN_ID)
+            ->where('supplier_refund_status', '!=', 'credited')
             ->update([
                 'supplier_refund_status' => 'credited',
                 'supplier_refund_date' => '2026-09-23',
