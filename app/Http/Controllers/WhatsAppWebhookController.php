@@ -70,10 +70,28 @@ class WhatsAppWebhookController extends Controller
             $typeMessage = $messageData['typeMessage'] ?? 'chat';
             $text = '';
             $fileUrl = null;
+            $isSweError = false;
+            $sweCode = null;
 
             if ($typeMessage === 'textMessage') {
                 $text = $messageData['textMessageData']['textMessage'] ?? '';
-            } 
+
+                // Ошибка расшифровки WhatsApp на связанных устройствах
+                // (см. https://green-api.com/docs/faq/why-does-the-SWE001-error-often-occur/,
+                // найдено 2026-09-24 — клиент реально отправлял 2 фото,
+                // но они "не долетели": WhatsApp не смог расшифровать
+                // самое первое сообщение в чате/после долгого перерыва и
+                // Green API вместо imageMessage присылает textMessage с
+                // таким плейсхолдером). Восстановить контент неоткуда —
+                // ни через webhook, ни через getChatHistory (проверено
+                // живьём, тот же мусор с обеих сторон) — рекомендация
+                // самого Green API: попросить клиента отправить повторно.
+                if (preg_match('/^\{\{(SWE\d+)\}\}$/i', trim($text), $sweMatch)) {
+                    $isSweError = true;
+                    $sweCode = strtoupper($sweMatch[1]);
+                    $text = "⚠️ Сообщение не получено (ошибка WhatsApp {$sweCode}) — клиенту отправлен запрос повторить";
+                }
+            }
             elseif ($typeMessage === 'extendedTextMessage') {
                 $text = $messageData['extendedTextMessageData']['text'] ?? '';
             } 
@@ -131,17 +149,27 @@ class WhatsAppWebhookController extends Controller
                 $fileUrl = $messageData['fileMessageData']['downloadUrl'];
             }
 
-            $lead->messages()->updateOrCreate(
+            $isIncoming = ($data['typeWebhook'] ?? '') === 'incomingMessageReceived';
+
+            $savedMessage = $lead->messages()->updateOrCreate(
                 ['message_id' => $data['idMessage'] ?? uniqid('api_', true)],
                 [
                     'instance_id' => $instanceId,
                     'message_text' => $text,
                     'file_url' => $fileUrl, // Теперь ссылка будет сохраняться
-                    'is_incoming' => ($data['typeWebhook'] ?? '') === 'incomingMessageReceived',
+                    'is_incoming' => $isIncoming,
                     'type' => $typeMessage,
                     'raw_body' => $data
                 ]
             );
+
+            // Автоответ клиенту при SWE0xx (просьба Романа 2026-09-24) —
+            // wasRecentlyCreated защищает от повторной отправки, если
+            // Green API повторит тот же webhook (updateOrCreate тогда
+            // просто обновит уже существующую строку, а не создаст новую).
+            if ($isSweError && $isIncoming && $savedMessage->wasRecentlyCreated) {
+                $this->sendSweRetryRequest($lead, $source, $instanceId);
+            }
 
             return response()->json(['status' => 'success']);
 
@@ -150,6 +178,53 @@ class WhatsAppWebhookController extends Controller
             return response()->json(['status' => 'error'], 500);
         }
     
+    }
+
+    /**
+     * Автоответ клиенту при ошибке расшифровки WhatsApp (SWE0xx) — просьба
+     * Романа 2026-09-24, формулировка по рекомендации самого Green API
+     * ("Please send your message again, I couldn't see it"). Токен берём
+     * по $source (site/2gis), НЕ по сырому $instanceId из вебхука — тот
+     * же приём, что и в WhatsappMessenger::resolveInstanceCreds(), чтобы
+     * ответ клиенту 2ГИС не ушёл случайно с чужого инстанса. Ошибка
+     * отправки только логируется — не должна ронять сам вебхук (Green
+     * API получит 'success' в любом случае, это не критично для доставки
+     * входящего).
+     */
+    private function sendSweRetryRequest(WhatsappLead $lead, string $source, string $instanceId): void
+    {
+        $creds = config("services.green_api.instances.{$source}") ?? config('services.green_api.instances.site');
+
+        if (!$creds || empty($creds['instance_id']) || empty($creds['token'])) {
+            Log::warning('SWE0xx auto-reply: нет кредов Green API для источника', ['source' => $source]);
+            return;
+        }
+
+        $text = 'Здравствуйте! Не удалось получить ваше сообщение (техническая ошибка WhatsApp) — отправьте, пожалуйста, ещё раз 🙏';
+        $url = "https://api.green-api.com/waInstance{$creds['instance_id']}/sendMessage/{$creds['token']}";
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::post($url, [
+                'chatId' => $lead->phone . '@c.us',
+                'message' => $text,
+            ]);
+
+            if ($response->successful()) {
+                $lead->messages()->create([
+                    'instance_id' => $creds['instance_id'],
+                    'message_text' => $text,
+                    'is_incoming' => false,
+                    'is_read' => true,
+                    'message_id' => $response->json()['idMessage'] ?? uniqid('swe_retry_', true),
+                    'type' => 'chat',
+                    'status' => 'sent',
+                ]);
+            } else {
+                Log::warning('SWE0xx auto-reply: Green API вернул ошибку', ['status' => $response->status(), 'body' => $response->body()]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('SWE0xx auto-reply: исключение при отправке — ' . $e->getMessage());
+        }
     }
 
     private function extractVin($lead, $text)
