@@ -92,6 +92,20 @@ class RepriceKaspiCommand extends Command
     ];
 
     /**
+     * Точечное исключение из SUPPLIER_FIXED_COST_KEYWORDS по КОНКРЕТНОМУ
+     * артикулу — просьба Романа 2026-09-24, найдено на живом примере
+     * ST4351232280 ("Диски SAT передние", autotrade_ast, закуп 6800,
+     * kaspi_qty=2): "за пару" — не универсальное правило самого
+     * поставщика, у Автотрейда "где за пару где за один", по каждому
+     * артикулу отдельно. Для перечисленных здесь — закуп честно ЗА ОДНУ
+     * штуку, и cost должен считаться как обычно (purchase * qty), а не
+     * фиксированно как для остальных дисков этого поставщика.
+     */
+    const SUPPLIER_FIXED_COST_EXCLUDE_ARTICLES = [
+        'ST4351232280', // SAT передние — закуп 6800 за 1 диск, не за пару
+    ];
+
+    /**
      * Тумблер надбавки для АвтоТрейда (Астана + Алматы) — 0 выключает,
      * 1 включает. Роман переключает по просьбе, ничего больше в коде
      * менять не нужно. Применяется в самом конце, поверх уже посчитанной
@@ -229,7 +243,10 @@ class RepriceKaspiCommand extends Command
             $qty      = (int)   ($item->qty_override ?? $item->kaspi_qty ?? 1);
             $qty      = max($qty, 1);
 
-            if ($this->isFixedCost($item->kaspi_name) || $this->isSupplierFixedCost($item->supplier_name, $item->kaspi_name)) {
+            $isSupplierFixedCost = $this->isSupplierFixedCost($item->supplier_name, $item->kaspi_name)
+                && !in_array($item->our_article, self::SUPPLIER_FIXED_COST_EXCLUDE_ARTICLES, true);
+
+            if ($this->isFixedCost($item->kaspi_name) || $isSupplierFixedCost) {
                 $cost = $purchase;
             } else {
                 $cost = $purchase * $qty;
