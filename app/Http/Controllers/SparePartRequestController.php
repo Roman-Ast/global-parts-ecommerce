@@ -168,6 +168,54 @@ class SparePartRequestController extends Controller
 
         $photos = $request->file('tech_passport', []);
 
+        // 1.5. КАРТОЧКА В CRM (просьба Романа 2026-09-24) — раньше заявки с
+        // формы сайта шли ТОЛЬКО в Telegram, а диалог с клиентом Роман вёл
+        // вручную через wa.me-ссылку из телеграм-уведомления (см. кнопку
+        // "Ответить в WhatsApp" ниже) — мимо CRM целиком, следующий ответ
+        // клиента в WhatsApp создавал уже НОВЫЙ, "пустой" лид без контекста
+        // заявки. Теперь лид заводится сразу при отправке формы (source
+        // 'site_form') — телефон уже на месте, карточка сразу видна в
+        // "Новые" со сводкой заявки вместо текста сообщения. Открыть чат
+        // и написать первое сообщение (КП) — это уже обычный, ничем не
+        // отличающийся путь: тот же клик по карточке, то же окно чата,
+        // что и для любого лида. firstOrCreate — если этот номер уже лид
+        // (писал раньше в WhatsApp), НЕ трогаем его текущий статус/источник,
+        // просто добавляем эту заявку как новое сообщение в ЕГО карточку.
+        try {
+            $phoneClean = preg_replace('/[^0-9]/', '', $requestData['phone']);
+
+            if ($phoneClean !== '') {
+                $lead = \App\Models\WhatsappLead::firstOrCreate(
+                    ['phone' => $phoneClean],
+                    ['source' => 'site_form', 'status' => 'new', 'last_seen_at' => now()]
+                );
+                $lead->update(['last_seen_at' => now()]);
+
+                $summary = "📋 Заявка с сайта\n";
+                $summary .= 'VIN: ' . ($requestData['vincode'] ?: 'не указан') . "\n";
+                $summary .= 'Запчасти: ' . $requestData['spareparts'];
+                if ($requestData['note']) {
+                    $summary .= "\nПримечание: " . $requestData['note'];
+                }
+
+                $lead->messages()->create([
+                    // instance_id NOT NULL в схеме, а реального Green API
+                    // сообщения тут нет — берём инстанс 'site' (тот же,
+                    // на который упадёт resolveInstanceCreds() для
+                    // незнакомого source при реальной отправке), чтобы
+                    // значение хотя бы было осмысленным, а не заглушкой.
+                    'instance_id' => (string) config('services.green_api.instances.site.instance_id'),
+                    'message_text' => $summary,
+                    'is_incoming' => true,
+                    'is_read' => false,
+                    'message_id' => 'form_' . uniqid('', true),
+                    'type' => 'site_form',
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Ошибка создания CRM-лида из формы сайта: ' . $e->getMessage());
+        }
+
         // 2. ОТПРАВКА В TELEGRAM
         try {
             $token = env('TELEGRAM_BOT_TOKEN');
