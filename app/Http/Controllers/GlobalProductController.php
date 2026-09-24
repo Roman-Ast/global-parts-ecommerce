@@ -13,6 +13,27 @@ use Illuminate\Support\Facades\Http;
 class GlobalProductController extends Controller
 {
     /**
+     * Жёсткий блок-лист конкретных страниц /product/{brand}/{article} —
+     * просьба Романа 2026-09-24, претензия правообладателя на три
+     * конкретные позиции АвтоВАЗ. Проверяется РАНЬШЕ и parts_catalog, и
+     * supplier_offers-фолбэка (см. show()/showFallback() ниже) — просто
+     * удалить строку из parts_catalog недостаточно, showFallback() тут
+     * же подхватил бы тот же артикул через живой supplier_offers и
+     * страница всё равно рендерилась бы, просто из другого источника.
+     * Ключ — brand_slug (SlugHelper::brandToSlug), значение — массив
+     * article_normalized (SeedOwnPartsCatalogCommand::normalizeArticle).
+     * Держит 410 навсегда, независимо от будущих скрейпов/обновлений
+     * прайсов — специально не просто разовая чистка БД.
+     */
+    const BLOCKED_PRODUCT_PAGES = [
+        'avtovaz' => [
+            '21126100301110', // /product/avtovaz/21126-1003011-10
+            '224332428R',     // /product/avtovaz/224332428r
+            '21179160113020', // /product/avtovaz/21179-1601130-20
+        ],
+    ];
+
+    /**
      * /product/{brand}/{article} — теперь смотрит в parts_catalog (контент
      * из скрейпа Kaspi-карточек), а не в устаревший global_catalog (цены там
      * зависли на 2026-05-20, см. CLAUDE.md). Три исхода:
@@ -57,6 +78,10 @@ class GlobalProductController extends Controller
         $articleNormalized = SeedOwnPartsCatalogCommand::normalizeArticle($decodedArticle);
 
         if ($brandSlug === '' || $articleNormalized === '') {
+            return $this->renderGone();
+        }
+
+        if (in_array($articleNormalized, self::BLOCKED_PRODUCT_PAGES[$brandSlug] ?? [], true)) {
             return $this->renderGone();
         }
 
