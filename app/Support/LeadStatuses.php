@@ -81,9 +81,44 @@ class LeadStatuses
     }
 
     /**
+     * Пресеты индивидуального интервала (просьба Романа 2026-09-26) —
+     * "Долгоиграющие" со ВСЕМИ одним фиксированным 10-дневным порогом не
+     * годится: живой пример — "на больничном, на след. неделе напишем"
+     * (11 дней уже много) против "ждём выплату по страховой" (у страховых
+     * от двух недель до месяца, 10 дней рано). Ключ — часы, значение —
+     * подпись для UI. Хранится на самом лиде (whatsapp_leads.
+     * custom_reminder_hours) — переопределяет дефолт по статусу в
+     * needsReminder() ниже, если задан.
+     */
+    const REMINDER_INTERVAL_PRESETS = [
+        3   => '3 часа',
+        24  => '1 день',
+        72  => '3 дня',
+        168 => '7 дней',
+        336 => '2 недели',
+        720 => '1 месяц',
+    ];
+
+    /**
+     * Проставляет индивидуальный интервал напоминания конкретному лиду —
+     * вызывается из UI-пикера (см. partials/reminder-interval-select.blade.php),
+     * который показывается только для LONG_TERM_STATUS. Молча игнорирует
+     * значение не из пресетов — тот же принцип защиты, что и в update()
+     * ниже (не пишем в БД то, чему нет соответствия в едином списке).
+     */
+    public static function setCustomReminderHours(int $leadId, int $hours): void
+    {
+        if (!array_key_exists($hours, self::REMINDER_INTERVAL_PRESETS)) {
+            return;
+        }
+
+        WhatsappLead::where('id', $leadId)->update(['custom_reminder_hours' => $hours]);
+    }
+
+    /**
      * Подсветка "залежался" в стиле "Не отвечает" ("Долгоиграющие" — та
      * же жёлтая подсветка "Пора напомнить", как только придёт время, но
-     * порог свой, см. REMINDER_THRESHOLDS_HOURS).
+     * порог свой, см. REMINDER_THRESHOLDS_HOURS/REMINDER_INTERVAL_PRESETS).
      *
      * Нужно ли напомнить менеджеру про этого лида — требует, чтобы
      * `lastMessage` (latestOfMany) уже была подгружена заранее (не делает
@@ -92,9 +127,17 @@ class LeadStatuses
      */
     public static function needsReminder(WhatsappLead $lead): bool
     {
+        // Индивидуальный интервал (если Роман его явно выбрал для этого
+        // лида) переопределяет дефолт по статусу — но только пока сам
+        // статус остаётся reminder-eligible (custom_reminder_hours
+        // сбрасывается в update() ниже при уходе с LONG_TERM_STATUS, но
+        // проверяем оба условия на всякий случай, а не полагаемся
+        // только на то, что сброс отработал).
         if (!isset(self::REMINDER_THRESHOLDS_HOURS[$lead->status])) {
             return false;
         }
+
+        $threshold = $lead->custom_reminder_hours ?? self::REMINDER_THRESHOLDS_HOURS[$lead->status];
 
         $lastMessage = $lead->lastMessage;
         if (!$lastMessage || $lastMessage->is_incoming) {
@@ -104,7 +147,7 @@ class LeadStatuses
             return false;
         }
 
-        return $lastMessage->created_at->diffInHours(now()) >= self::REMINDER_THRESHOLDS_HOURS[$lead->status];
+        return $lastMessage->created_at->diffInHours(now()) >= $threshold;
     }
 
     /**
@@ -192,7 +235,19 @@ class LeadStatuses
         }
 
         $oldStatus = $lead->status;
-        $lead->update(['status' => $newStatus]);
+        $updates = ['status' => $newStatus];
+
+        // Уход с "Долгоиграющие" сбрасывает индивидуальный интервал —
+        // иначе он мог бы случайно "прилипнуть" к лиду и повлиять на
+        // reminder уже в другом статусе, если тот статус тоже когда-нибудь
+        // окажется в REMINDER_THRESHOLDS_HOURS. Обычная смена статуса (этот
+        // метод) — единственный путь, где статус меняется, так что это
+        // единственное место, где нужен сброс.
+        if ($newStatus !== self::LONG_TERM_STATUS) {
+            $updates['custom_reminder_hours'] = null;
+        }
+
+        $lead->update($updates);
         CrmActivityLog::log('update_status', $lead->id, ['from' => $oldStatus, 'to' => $newStatus]);
 
         return $label;

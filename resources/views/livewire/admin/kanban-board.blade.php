@@ -399,6 +399,7 @@
                                     @endif
 
                                     @include('livewire.admin.partials.status-select', ['lead' => $lead, 'statuses' => $statuses, 'disabled' => $lead->has_new])
+                                    @include('livewire.admin.partials.reminder-interval-select', ['lead' => $lead])
                                 @endif
                                 </div>
                             @endforeach
@@ -467,6 +468,7 @@
                                 @endif
 
                                 @include('livewire.admin.partials.status-select', ['lead' => $lead, 'statuses' => $statuses])
+                                @include('livewire.admin.partials.reminder-interval-select', ['lead' => $lead])
                             </div>
                         @empty
                             <div class="text-[10px] text-amber-600/70 text-center py-6 italic">Пока некому напоминать</div>

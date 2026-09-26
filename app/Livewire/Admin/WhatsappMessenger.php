@@ -77,6 +77,13 @@ class WhatsappMessenger extends Component
         $this->dispatch('refreshKanban')->to('admin.kanban-board');
     }
 
+    /** См. KanbanBoard::setLeadReminderInterval() — то же самое, для окна чата. */
+    public function setLeadReminderInterval($leadId, $hours)
+    {
+        LeadStatuses::setCustomReminderHours((int) $leadId, (int) $hours);
+        $this->dispatch('refreshKanban')->to('admin.kanban-board');
+    }
+
     public function selectLead($id)
     {
         $this->activeLeadId = $id;

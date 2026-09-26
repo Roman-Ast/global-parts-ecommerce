@@ -99,6 +99,7 @@
                              самостоятельный элемент в шапке чата, без верхнего отступа
                              и с фиксированной шириной). --}}
                         @include('livewire.admin.partials.status-select', ['lead' => $activeLead, 'statuses' => $statuses, 'wrapperClass' => 'w-40'])
+                        @include('livewire.admin.partials.reminder-interval-select', ['lead' => $activeLead, 'wrapperClass' => 'w-40 mt-1'])
                     </div>
                 </div>
 

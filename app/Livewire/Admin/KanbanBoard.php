@@ -161,6 +161,23 @@ class KanbanBoard extends Component
         }
     }
 
+    /**
+     * Индивидуальный интервал "Пора напомнить" для "Долгоиграющие" (просьба
+     * Романа 2026-09-26) — пикер показывается только у лидов в этом
+     * статусе (см. partials/reminder-interval-select.blade.php), $hours —
+     * строго одно из LeadStatuses::REMINDER_INTERVAL_PRESETS, остальное
+     * тихо игнорируется внутри setCustomReminderHours().
+     */
+    public function setLeadReminderInterval($leadId, $hours)
+    {
+        LeadStatuses::setCustomReminderHours((int) $leadId, (int) $hours);
+
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'message' => 'Интервал напоминания обновлён: ' . (LeadStatuses::REMINDER_INTERVAL_PRESETS[(int) $hours] ?? $hours),
+        ]);
+    }
+
     public function openChat($id)
     {
         $this->activeLeadIdForChat = $id;
