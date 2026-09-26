@@ -76,7 +76,7 @@ class KanbanBoard extends Component
             ->selectRaw('COUNT(*) as cnt, MAX(updated_at) as max_updated')
             ->first();
 
-        $timeSensitiveStatuses = array_merge(LeadStatuses::REMINDER_ELIGIBLE_STATUSES, ['no_response']);
+        $timeSensitiveStatuses = array_merge(LeadStatuses::reminderEligibleStatuses(), ['no_response']);
         $hasTimeSensitiveLeads = WhatsappLead::whereIn('status', $timeSensitiveStatuses)->exists();
         $timeBucket = $hasTimeSensitiveLeads ? intdiv(now()->timestamp, 300) : 0;
 
@@ -331,7 +331,7 @@ class KanbanBoard extends Component
         // диалогов, такой лид может вытесниться за пределы лимита своей
         // колонки, и "Пора напомнить" для него перестанет считаться вообще
         // (она раньше бралась только из уже загруженного $leads). Отдельный
-        // узкий запрос — ТОЛЬКО статусы из REMINDER_ELIGIBLE_STATUSES
+        // узкий запрос — ТОЛЬКО статусы из reminderEligibleStatuses()
         // (offer/thinking-подпричины/payment), не вся таблица, и только
         // те, кто уже реально просрочен (needs_reminder), а не весь
         // funnel этих статусов — иначе лимит терял бы смысл. Дёшево
@@ -341,7 +341,7 @@ class KanbanBoard extends Component
             ->withCount(['messages as unread_count' => function ($q) {
                 $q->where('is_incoming', true)->where('is_read', false);
             }])
-            ->whereIn('status', LeadStatuses::REMINDER_ELIGIBLE_STATUSES)
+            ->whereIn('status', LeadStatuses::reminderEligibleStatuses())
             ->whereNotIn('id', $loadedIds)
             ->get()
             ->map(function ($lead) {
@@ -395,7 +395,7 @@ class KanbanBoard extends Component
         }
 
         // КП отправлено + все подпричины "Работы с возражениями" + Оплата
-        // (REMINDER_ELIGIBLE_STATUSES) — та же проблема, что и решали для
+        // (reminderEligibleStatuses()) — та же проблема, что и решали для
         // "Не отвечает" выше, только наоборот: просьба Романа 2026-09-24 —
         // "написал клиенту, карточка поднялась наверх, начинаешь путать
         // кому написал кому нет". Сортировка по updated_at здесь ломается
@@ -407,7 +407,7 @@ class KanbanBoard extends Component
         // по свежести: непрочитанные (клиент написал) → пора напомнить →
         // остальные (уже ответили, ждём клиента) — эти теперь тонут вниз,
         // а не всплывают наверх.
-        foreach (LeadStatuses::REMINDER_ELIGIBLE_STATUSES as $status) {
+        foreach (LeadStatuses::reminderEligibleStatuses() as $status) {
             if (!isset($leads[$status])) {
                 continue;
             }
