@@ -460,7 +460,16 @@
                                         <span class="text-[13px] font-bold text-slate-900 truncate">+{{ $lead->phone }}</span>
                                         @include('livewire.admin.partials.source-badge', ['source' => $lead->source])
                                     </div>
-                                    <span class="flex-shrink-0 text-[10px] text-slate-400 font-medium">{{ $lead->updated_at->diffForHumans() }}</span>
+                                    {{-- Именно время ПОСЛЕДНЕГО СООБЩЕНИЯ, не $lead->updated_at
+                                         (просьба Романа 2026-09-27) — updated_at может
+                                         тронуться по не связанной с перепиской причине
+                                         (например, смена статуса), тогда карточка в "Пора
+                                         напомнить" показывала бы обманчивое "8 минут назад",
+                                         хотя реальное последнее сообщение — например, 21 час
+                                         назад (ровно тот live-кейс, из-за которого это и
+                                         нашли) — то есть то самое время, которое реально
+                                         решает needsReminder(), должно быть на виду. --}}
+                                    <span class="flex-shrink-0 text-[10px] text-slate-400 font-medium">{{ $lastMsg ? $lastMsg->created_at->diffForHumans() : $lead->updated_at->diffForHumans() }}</span>
                                 </div>
 
                                 @if($lastMsg)
