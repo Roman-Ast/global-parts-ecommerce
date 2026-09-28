@@ -20,9 +20,17 @@ class HalykCheckCardStatusCommand extends Command
 
     public function handle(HalykMarketClient $client): int
     {
+        // orderByDesc('id') — просьба Романа 2026-09-28: без сортировки
+        // MySQL отдаёт строки примерно в порядке id ASC (самые старые
+        // первыми), а именно СВЕЖИЕ submitted обычно самые актуальные и
+        // важные для проверки прямо сейчас (например, вчерашняя партия,
+        // которую Halyk мог уже пометить дублями) — раньше при большом
+        // накопившемся хвосте команда упиралась в старьё часами, прежде
+        // чем добраться до вчерашнего.
         $rows = DB::table('halyk_created_cards')
             ->whereIn('status', ['submitted', 'moderation'])
             ->whereNotNull('halyk_product_id')
+            ->orderByDesc('id')
             ->get();
 
         if ($rows->isEmpty()) {
