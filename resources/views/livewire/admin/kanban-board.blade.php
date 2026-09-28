@@ -795,7 +795,7 @@
         <div x-show="open" class="fixed inset-0 overflow-hidden pointer-events-none">
             <div class="absolute inset-0 overflow-hidden pointer-events-none">
                 <div class="fixed inset-y-0 right-0 flex max-w-full pointer-events-none">
-                    <div x-show="open" x-transition:enter="transform transition ease-in-out duration-500" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transform transition ease-in-out duration-500" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="w-screen max-w-[50vw] pointer-events-auto">
+                    <div x-show="open" x-transition:enter="transform transition ease-in-out duration-500" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transform transition ease-in-out duration-500" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="w-screen max-w-[70vw] pointer-events-auto">
                         <div class="flex h-full flex-col bg-white shadow-2xl rounded-l-3xl overflow-hidden border-l">
                             <div class="px-6 py-4 bg-slate-50 border-b flex items-center justify-between">
                                 <div><h2 class="text-lg font-bold text-slate-800">Быстрый ответ</h2></div>
