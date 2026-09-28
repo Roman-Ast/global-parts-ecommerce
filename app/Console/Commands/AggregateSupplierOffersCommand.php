@@ -15,6 +15,19 @@ class AggregateSupplierOffersCommand extends Command
     const MIN_PRICE = 5000;
     const PROTECTED_SUPPLIER = 'avtozakup';
 
+    /**
+     * Живой баг, пойманный Романом 2026-09-28 на PBD1041: ForumAvto
+     * отдавал 12842₸/остаток 2, обновлено 24.09 — Шатэ-М в тот же день
+     * отдавал 21432₸/остаток 10, обновлено СЕГОДНЯ. Ранжирование ниже
+     * смотрело только на цену — 4-дневный оффер с тонким остатком (2 шт.)
+     * победил чисто по цене, хотя к моменту продажи ForumAvto эти 2 шт.
+     * уже давно разобрали, а мы продали клиенту по их цене, реально
+     * закупая у Шатэ-М — "в ноль без маржи". MIN_STOCK=2 сам по себе не
+     * спасает от этого: остаток мог быть верным 4 дня назад и не
+     * значить ничего сегодня.
+     */
+    const FRESHNESS_DAYS = 3;
+
     // SKU, которые нужно навсегда исключить из выдачи Kaspi
     // (мусорные/тестовые/неверно определённые позиции)
     const EXCLUDED_SKUS = [
@@ -93,8 +106,15 @@ class AggregateSupplierOffersCommand extends Command
          * здесь, которая схлопывала их в одного "победителя" до того,
          * как бренд вообще принимался во внимание.
          *
-         * Тай-брейк внутри ОДНОГО (sku, brand) — по цене, затем по
-         * preorder_days (быстрее доставка при равной цене), затем по id.
+         * Тай-брейк внутри ОДНОГО (sku, brand) — сначала свежесть
+         * (is_fresh DESC: обновлённые в пределах FRESHNESS_DAYS всегда
+         * выше устаревших, НЕЗАВИСИМО от цены — см. докблок
+         * FRESHNESS_DAYS выше), затем цена, затем preorder_days (быстрее
+         * доставка при равной цене), затем id. Устаревший оффер всё ещё
+         * может победить, но только если СВЕЖИХ конкурентов для этого
+         * (sku, brand) вообще нет — тот же принцип "лучше устаревшая
+         * цена, чем вообще ничего", просто больше не работает как
+         * "лучше устаревшая ДЕШЁВАЯ цена, чем свежая ДОРОЖЕ".
          */
         $brandNormalizeExpr = $this->buildBrandNormalizeCase();
 
@@ -108,9 +128,10 @@ class AggregateSupplierOffersCommand extends Command
                     eligible.purchase_price,
                     eligible.stock,
                     eligible.preorder_days,
+                    (eligible.updated_at >= (NOW() - INTERVAL ? DAY)) AS is_fresh,
                     ROW_NUMBER() OVER (
                         PARTITION BY eligible.sku, {$brandNormalizeExpr}
-                        ORDER BY eligible.purchase_price ASC, eligible.preorder_days ASC, eligible.id ASC
+                        ORDER BY (eligible.updated_at >= (NOW() - INTERVAL ? DAY)) DESC, eligible.purchase_price ASC, eligible.preorder_days ASC, eligible.id ASC
                     ) AS rn
                 FROM supplier_offers eligible
                 WHERE eligible.stock >= ?
@@ -122,7 +143,7 @@ class AggregateSupplierOffersCommand extends Command
             FROM ranked
             WHERE rn = 1
         ", array_merge(
-            [self::MIN_STOCK, self::MIN_PRICE, self::PROTECTED_SUPPLIER], self::EXCLUDED_SKUS
+            [self::FRESHNESS_DAYS, self::FRESHNESS_DAYS, self::MIN_STOCK, self::MIN_PRICE, self::PROTECTED_SUPPLIER], self::EXCLUDED_SKUS
         ));
 
         $this->info('Прошедших фильтр SKU: ' . count($bestOffers));
