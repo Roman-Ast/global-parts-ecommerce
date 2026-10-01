@@ -53,12 +53,22 @@ class SupplierOfferPricer
         $articles = $cards->pluck('article_normalized')->unique()->values();
         $brands = $cards->pluck('brand_normalized')->unique()->values();
 
-        $offersByKey = DB::table('supplier_offers')
-            ->select('sku_normalized', 'brand_normalized', 'purchase_price', 'stock', 'supplier_name', 'preorder_days')
-            ->whereIn('sku_normalized', $articles)
-            ->whereIn('brand_normalized', $brands)
-            ->get()
-            ->groupBy(fn ($offer) => $offer->sku_normalized . '|' . $offer->brand_normalized);
+        // MySQL отказывает на запросе с более чем 65535 плейсхолдеров
+        // (SQLSTATE[HY000] 1390 "Prepared statement contains too many
+        // placeholders") — обычные вызыватели (каталог, карточка товара)
+        // передают разом не больше нескольких сотен карточек, но большой
+        // батч (напр. halyk:create-card --limit=15000, пул limit*5=75000
+        // карточек) легко даёт десятки тысяч уникальных article_normalized
+        // в одном IN(...), переваливая лимит — живой случай 2026-10-01.
+        // brand_normalized всего ~600 уникальных значений на весь каталог,
+        // не проблема сама по себе — чанкуем только артикулы.
+        $offersByKey = $articles->chunk(3000)->flatMap(function ($articleChunk) use ($brands) {
+            return DB::table('supplier_offers')
+                ->select('sku_normalized', 'brand_normalized', 'purchase_price', 'stock', 'supplier_name', 'preorder_days')
+                ->whereIn('sku_normalized', $articleChunk->values())
+                ->whereIn('brand_normalized', $brands)
+                ->get();
+        })->groupBy(fn ($offer) => $offer->sku_normalized . '|' . $offer->brand_normalized);
 
         foreach ($cards as $card) {
             $matches = $offersByKey->get($card->article_normalized . '|' . $card->brand_normalized);
