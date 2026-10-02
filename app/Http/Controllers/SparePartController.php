@@ -1599,7 +1599,15 @@ class SparePartController extends Controller
         //$start = microtime(true);
         if ($brand == 'Citroen/Peugeot') {
             $brand = 'PSA';
-        } else if ($brand == 'HYUNDAI/KIA' || $brand == 'Hyndai/Kia') {
+        } else if (mb_strtolower($brand) === 'hyundai/kia' || mb_strtolower($brand) === 'hyndai/kia') {
+            // Было строгое сравнение только с 'HYUNDAI/KIA' (капс) и
+            // 'Hyndai/Kia' (опечатка, без буквы "u") — ни то, ни другое не
+            // совпадало с реальным значением бренда в системе, 'Hyundai/Kia'
+            // (см. ту же строку в searchSupplierStepFragment() этого файла) —
+            // Шатэм получал непреобразованный '/' вместо нужного '-' и не
+            // находил ничего. Найдено Романом 2026-10-02. Сравнение теперь
+            // регистронезависимое, плюс сохранена старая опечатка на случай,
+            // если где-то в системе бренд всё же приходит именно так.
             $brand = 'HYUNDAI-KIA';
         } else if ($brand == 'GM') {
             $brand = 'General Motors';
