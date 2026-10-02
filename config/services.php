@@ -74,4 +74,9 @@ return [
         'whatsapp_extraction_enabled' => (bool) env('WHATSAPP_LLM_EXTRACTION_ENABLED', false),
     ],
 
+    // Токен для /api/cron/whatsapp-recover (см. докблок роута в routes/api.php) —
+    // Plesk-тариф Романа без SSH, cron может только дёргать URL по расписанию,
+    // токен защищает эндпоинт от посторонних запросов.
+    'whatsapp_cron_token' => env('WHATSAPP_CRON_TOKEN'),
+
 ];
