@@ -281,14 +281,17 @@ PROMPT;
 }
 PROMPT;
 
-        // 2048 было мало для заявок с длинным списком деталей (живой случай
-        // 2026-10-03 — заявка на 14 позиций) — JSON-ответ обрезался
-        // посередине на max_tokens, json_decode падал, вся заявка уходила в
-        // "Claude не вернул вердикт". 4096 — тот же порядок, что и у
-        // parseRequest/parseAttachment, с запасом под самые длинные заявки.
+        // 2048, затем 4096 — всё ещё мало для части реальных заявок
+        // (живой случай 2026-10-03, несколько заявок на проде стабильно
+        // упирались в stop_reason=max_tokens ДАЖЕ с ни одного готового
+        // text-блока — синтетически похожую по объёму заявку воспроизвести
+        // не удалось, причина не до конца понятна). 8192 — щедрый запас,
+        // плюс теперь логируется состав блоков ответа при пустом результате
+        // (см. callAndParseJson), если повторится — будет видно, на чём
+        // именно модель застревает.
         return $this->callAndParseJson([
             ['role' => 'user', 'content' => $prompt],
-        ], maxTokens: 4096);
+        ], maxTokens: 8192);
     }
 
     private function callAndParseJson(array $messages, int $maxTokens): ?array
@@ -313,7 +316,11 @@ PROMPT;
             }
 
             if (!$jsonText) {
-                self::$lastError = 'Пустой ответ от модели (ни одного text-блока), stop_reason=' . ($message->stopReason ?? '?');
+                $blockTypes = array_map(fn ($b) => $b->type . ':' . (isset($b->text) ? mb_strlen($b->text) . 'симв' : '?'), $message->content);
+                self::$lastError = 'Пустой ответ от модели (ни одного text-блока), stop_reason=' . ($message->stopReason ?? '?')
+                    . ', блоков в ответе: ' . count($message->content)
+                    . ', типы: [' . implode(', ', $blockTypes) . ']'
+                    . ', output_tokens=' . ($message->usage->outputTokens ?? '?');
                 return null;
             }
 
