@@ -19,19 +19,27 @@ use Illuminate\Support\Facades\Log;
  */
 class ClaudeExtractionService
 {
-    // Haiku протестирован на реальном 50-лидовом прогоне 2026-10-03 и
-    // откачен обратно на sonnet в тот же день: на обычных диалогах
-    // справлялась, но на пограничных случаях (деталь, которую клиент не
-    // запрашивал явно; неоднозначный контекст) примерно в 1 из 5 заявок
-    // вместо строго одного из bought/declined/silent/pending выдумывала
-    // "unknown" — значения, которого нет в закрытом списке даже при том,
-    // что промпт прямым текстом его требует (см. VALID_OUTCOMES в
-    // AnalyzeDemandSignalsCommand — там теперь есть защита, чтобы такое
-    // больше не роняло прогон, но подмена на дефолт 'pending' — это потеря
-    // данных, не настоящий вердикт). Решение Романа: когда это будет
-    // крутиться в автомате каждую ночь без его контроля, цена такой ошибки
-    // выше, чем экономия на дешёвой модели.
-    private const MODEL = 'claude-sonnet-5';
+    // Модель РАЗНАЯ для двух разных по характеру задач (разделено 2026-10-03,
+    // после живого теста извлечения на haiku — "56 вызовов, без единого сбоя"):
+    //
+    // - EXTRACTION_MODEL (parseRequest/parseAttachment) — haiku. Открытый
+    //   текст (VIN/марка/модель/год/список запчастей), нет закрытого списка
+    //   значений, который можно нарушить — ровно тот типа задачи, где
+    //   дешёвая модель не подводила ни разу за весь день тестов.
+    // - ANALYSIS_MODEL (analyzeOutcome) — sonnet. Тут был реальный провал
+    //   haiku на живом 50-лидовом прогоне в тот же день: на пограничных
+    //   случаях (деталь, которую клиент не запрашивал явно; неоднозначный
+    //   контекст) примерно в 1 из 5 заявок вместо строго одного из
+    //   bought/declined/silent/pending выдумывала "unknown" — значения,
+    //   которого нет в закрытом списке, даже при том что промпт прямым
+    //   текстом его требует (защита от падения есть в VALID_OUTCOMES в
+    //   AnalyzeDemandSignalsCommand, но подмена на дефолт 'pending' — это
+    //   потеря данных, не настоящий вердикт). Сам этот метод сейчас не
+    //   вызывается в бою (анализ исхода перешёл на ручной разбор раз в
+    //   месяц, см. ImportAnalyzedDemandCommand) — константа оставлена
+    //   корректной на случай, если когда-нибудь вернём его через API.
+    private const EXTRACTION_MODEL = 'claude-haiku-4-5-20251001';
+    private const ANALYSIS_MODEL = 'claude-sonnet-5';
 
     private Client $client;
 
@@ -109,7 +117,7 @@ PROMPT;
 
         $parsed = $this->callAndParseJson([
             ['role' => 'user', 'content' => $prompt],
-        ], maxTokens: 512);
+        ], maxTokens: 512, model: self::EXTRACTION_MODEL);
 
         if ($parsed === null) {
             return null;
@@ -177,7 +185,7 @@ PROMPT;
                     ['type' => 'text', 'text' => $prompt],
                 ],
             ],
-        ], maxTokens: 256);
+        ], maxTokens: 256, model: self::EXTRACTION_MODEL);
 
         if ($parsed === null) {
             return null;
@@ -289,14 +297,14 @@ PROMPT;
         // на 15 деталях укладывался в 2233 токена).
         return $this->callAndParseJson([
             ['role' => 'user', 'content' => $prompt],
-        ], maxTokens: 4096);
+        ], maxTokens: 4096, model: self::ANALYSIS_MODEL);
     }
 
-    private function callAndParseJson(array $messages, int $maxTokens): ?array
+    private function callAndParseJson(array $messages, int $maxTokens, string $model): ?array
     {
         try {
             $message = $this->client->messages->create(
-                model: self::MODEL,
+                model: $model,
                 maxTokens: $maxTokens,
                 messages: $messages,
                 // Живой случай 2026-10-03: без явного отключения sonnet-5
