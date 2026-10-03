@@ -217,6 +217,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard/finance', [FinanceDashboardController::class, 'index'])->name('dashboard.finance');
 
+    Route::get('/dashboard/demand-analysis', [\App\Http\Controllers\DemandAnalysisController::class, 'index'])->name('dashboard.demand-analysis');
+
     Route::post('/whatsapp/webhook', [WhatsAppWebhookController::class, 'handle']);
 
     // Импорт прайсов
