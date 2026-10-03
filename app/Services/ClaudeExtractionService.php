@@ -335,6 +335,24 @@ PROMPT;
 
             $parsed = json_decode(trim($jsonText), true);
 
+            // Живой случай 2026-10-03 (stop_reason=end_turn, т.е. модель
+            // честно закончила, но json_decode всё равно падает с "Syntax
+            // error"/"Control character error") — модель иногда копирует
+            // перенос строки или другой управляющий символ из исходной
+            // переписки клиента ПРЯМО в значение поля (напр. notes),
+            // забывая его экранировать как \n — строгий json_decode такое
+            // не прощает. Сырые control-символы ВНУТРИ JSON-строки всегда
+            // невалидны по спеке (уже экранированные \n — это два обычных
+            // символа, их не затронет), так что просто вычищаем и пробуем
+            // распарсить повторно, прежде чем сдаваться.
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $cleaned = preg_replace('/[\x00-\x1F\x7F]/u', '', $jsonText);
+                $retryParsed = json_decode(trim($cleaned), true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return $retryParsed;
+                }
+            }
+
             if (json_last_error() !== JSON_ERROR_NONE) {
                 // stop_reason=max_tokens — явный признак того, что ответ
                 // обрезан на середине JSON (у длинных заявок со многими
