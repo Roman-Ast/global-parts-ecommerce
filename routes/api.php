@@ -22,6 +22,14 @@ Route::post('/whatsapp/webhook', [WhatsAppWebhookController::class, 'handle']);
  * Защищено токеном в query (не Laravel auth — у Plesk cron нет сессии/логина),
  * сравнение hash_equals() против timing-атак. Токен — WHATSAPP_CRON_TOKEN в
  * .env, не в коде.
+ *
+ * ИЗМЕНЕНО 2026-10-03 — живьём поймано 504 Gateway Time-out (nginx) дважды
+ * подряд: один HTTP-запрос гонял recover-history на ОБА инстанса сразу
+ * (site + 2gis), а у 2gis трафик заметно больше (10549 чатов против 8790
+ * у site, живьём видно по консоли Green API) — суммарно превышало таймаут
+ * nginx/PHP-FPM на этом тарифе. Теперь `source` — обязательный query-
+ * параметр, один вызов = один инстанс; под это нужны ДВЕ отдельные задачи в
+ * Plesk-планировщике (разные URL), не одна.
  */
 Route::get('/cron/whatsapp-recover', function () {
     $token = request()->query('token', '');
@@ -31,14 +39,20 @@ Route::get('/cron/whatsapp-recover', function () {
         abort(403);
     }
 
-    $results = [];
-    foreach (['site', '2gis'] as $source) {
-        Artisan::call('whatsapp:recover-history', [
-            '--since' => '24 hours ago',
-            '--source' => $source,
-        ]);
-        $results[$source] = trim(Artisan::output());
+    $source = request()->query('source');
+    if (!in_array($source, ['site', '2gis'], true)) {
+        return response()->json(['ok' => false, 'error' => 'missing or invalid source= (ожидается site или 2gis)'], 400);
     }
 
-    return response()->json(['ok' => true, 'ran_at' => now()->toDateTimeString(), 'results' => $results]);
+    Artisan::call('whatsapp:recover-history', [
+        '--since' => '24 hours ago',
+        '--source' => $source,
+    ]);
+
+    return response()->json([
+        'ok' => true,
+        'ran_at' => now()->toDateTimeString(),
+        'source' => $source,
+        'result' => trim(Artisan::output()),
+    ]);
 });
