@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Artisan;
  * (сколько сообщений, из них с вложением), чтобы прикинуть реальный масштаб
  * ДО того как платить. Точную стоимость в долларах эта команда не считает
  * (у нас нет надёжного способа предсказать токены без реального вызова) —
- * свериться с текущими тарифами Haiku на странице цен Anthropic самому.
+ * свериться с текущими тарифами модели (Sonnet) на странице цен Anthropic самому.
  */
 class BackfillDemandDataCommand extends Command
 {
@@ -81,7 +81,7 @@ class BackfillDemandDataCommand extends Command
         $this->line("  из них только текст: {$textOnly->count()}, суммарно ~{$totalChars} символов");
 
         if ($dryRun) {
-            $this->warn('--dry-run: ни одного обращения к Claude не сделано. Сверь объём с текущими тарифами Haiku на anthropic.com/pricing перед реальным запуском.');
+            $this->warn('--dry-run: ни одного обращения к Claude не сделано. Сверь объём с текущими тарифами модели (см. MODEL в ClaudeExtractionService) на anthropic.com/pricing перед реальным запуском.');
             return 0;
         }
 
@@ -122,7 +122,7 @@ class BackfillDemandDataCommand extends Command
         $this->line("Вызовов Claude: {$usage['calls']}");
         $this->line("Input токенов: {$usage['input_tokens']}");
         $this->line("Output токенов: {$usage['output_tokens']}");
-        $this->warn('Точная цена зависит от текущего тарифа Haiku за млн токенов — свериться на anthropic.com/pricing и посчитать от этих цифр (вход/выход считаются по-разному, не путать).');
+        $this->warn('Точная цена зависит от текущего тарифа модели (Sonnet) за млн токенов — свериться на anthropic.com/pricing и посчитать от этих цифр (вход/выход считаются по-разному, не путать).');
 
         return 0;
     }
