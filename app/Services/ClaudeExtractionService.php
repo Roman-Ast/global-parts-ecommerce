@@ -44,6 +44,18 @@ class ClaudeExtractionService
     private static int $totalOutputTokens = 0;
     private static int $totalCalls = 0;
 
+    // Причина последнего провала callAndParseJson() (просьба Романа
+    // 2026-10-03 — "Claude не вернул вердикт" в консоли без деталей
+    // заставляло лезть в лог на проде через Plesk за каждой причиной).
+    // Вызывающая сторона (AnalyzeDemandSignalsCommand) читает это сразу
+    // после null-результата и печатает прямо в свой вывод.
+    private static ?string $lastError = null;
+
+    public static function getLastError(): ?string
+    {
+        return self::$lastError;
+    }
+
     public function __construct()
     {
         $this->client = new Client(apiKey: config('services.anthropic.api_key'));
@@ -269,9 +281,14 @@ PROMPT;
 }
 PROMPT;
 
+        // 2048 было мало для заявок с длинным списком деталей (живой случай
+        // 2026-10-03 — заявка на 14 позиций) — JSON-ответ обрезался
+        // посередине на max_tokens, json_decode падал, вся заявка уходила в
+        // "Claude не вернул вердикт". 4096 — тот же порядок, что и у
+        // parseRequest/parseAttachment, с запасом под самые длинные заявки.
         return $this->callAndParseJson([
             ['role' => 'user', 'content' => $prompt],
-        ], maxTokens: 2048);
+        ], maxTokens: 4096);
     }
 
     private function callAndParseJson(array $messages, int $maxTokens): ?array
@@ -296,6 +313,7 @@ PROMPT;
             }
 
             if (!$jsonText) {
+                self::$lastError = 'Пустой ответ от модели (ни одного text-блока), stop_reason=' . ($message->stopReason ?? '?');
                 return null;
             }
 
@@ -305,12 +323,22 @@ PROMPT;
             $parsed = json_decode(trim($jsonText), true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                Log::warning('ClaudeExtractionService: невалидный JSON от модели', ['raw' => $jsonText]);
+                // stop_reason=max_tokens — явный признак того, что ответ
+                // обрезан на середине JSON (у длинных заявок со многими
+                // деталями список легко не влезает в лимит) — отдельно
+                // помечаем, это решается увеличением maxTokens, а не чем-то
+                // в самих данных.
+                $stopReason = $message->stopReason ?? '?';
+                $hint = $stopReason === 'max_tokens' ? ' (похоже, ответ обрезан — упёрлись в maxTokens)' : '';
+                self::$lastError = "Невалидный JSON от модели ({$stopReason}{$hint}): " . json_last_error_msg()
+                    . ' — конец ответа: "' . mb_substr($jsonText, -300) . '"';
+                Log::warning('ClaudeExtractionService: невалидный JSON от модели', ['raw' => $jsonText, 'stop_reason' => $stopReason]);
                 return null;
             }
 
             return $parsed;
         } catch (\Throwable $e) {
+            self::$lastError = get_class($e) . ': ' . $e->getMessage();
             Log::error('ClaudeExtractionService: ошибка запроса к Claude API — ' . $e->getMessage());
             return null;
         }

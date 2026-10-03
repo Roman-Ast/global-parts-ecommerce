@@ -104,7 +104,7 @@ class AnalyzeDemandSignalsCommand extends Command
             $result = $claude->analyzeOutcome($leadRequest->parts_json, $transcript, now()->toIso8601String());
 
             if (!$result || empty($result['parts'])) {
-                $this->warn('  ⨯ Claude не вернул вердикт — пропуск (см. лог на причину)');
+                $this->warn('  ⨯ Claude не вернул вердикт — пропуск. Причина: ' . (ClaudeExtractionService::getLastError() ?? 'неизвестна'));
                 continue;
             }
 
