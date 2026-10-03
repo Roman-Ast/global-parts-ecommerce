@@ -26,6 +26,19 @@ class AnalyzeDemandSignalsCommand extends Command
 
     protected $description = 'Анализирует переписку по заявкам (lead_requests) и заполняет demand_signals исходом по каждой детали';
 
+    // Зеркало enum-колонок demand_signals (миграции 2026_09_13_000004 /
+    // 2026_09_14_000004) — живой случай 2026-10-03 на бэкфилле: промпт прямым
+    // текстом требует от Claude строго одно из этих значений, но дешёвая
+    // Haiku на пограничном кейсе (деталь, которую клиент не запрашивал, её
+    // предложил сам магазин) всё равно вернула "unknown" вместо одного из
+    // bought/declined/silent/pending — SQLSTATE 1265 "Data truncated for
+    // column 'outcome'" уронил ВЕСЬ прогон на 56 сообщениях целиком. Теперь
+    // валидируем каждое значение перед записью и подменяем на безопасный
+    // дефолт с предупреждением в консоль, вместо падения.
+    const VALID_OUTCOMES = ['bought', 'declined', 'silent', 'pending'];
+    const VALID_AVAILABILITY_ANSWERS = ['in_stock', 'on_order', 'not_found', 'unknown'];
+    const VALID_DECLINE_REASONS = ['no_stock_wont_wait', 'in_stock_too_expensive', 'part_not_found', 'changed_mind'];
+
     public function handle(ClaudeExtractionService $claude): int
     {
         $limit = (int) $this->option('limit');
@@ -99,11 +112,28 @@ class AnalyzeDemandSignalsCommand extends Command
 
             foreach ($result['parts'] as $part) {
                 $outcome = $part['outcome'] ?? 'pending';
+                if (!in_array($outcome, self::VALID_OUTCOMES, true)) {
+                    $this->warn("  ⚠ Claude вернул недопустимый outcome='{$outcome}' для «{$part['name']}» — заменяю на 'pending'");
+                    $outcome = 'pending';
+                }
                 if ($outcome === 'pending') {
                     $allResolved = false;
                 }
 
-                DemandSignal::updateOrCreate(
+                $availabilityAnswer = $part['availability_answer'] ?? 'unknown';
+                if (!in_array($availabilityAnswer, self::VALID_AVAILABILITY_ANSWERS, true)) {
+                    $this->warn("  ⚠ Claude вернул недопустимый availability_answer='{$availabilityAnswer}' для «{$part['name']}» — заменяю на 'unknown'");
+                    $availabilityAnswer = 'unknown';
+                }
+
+                $declineReason = $part['decline_reason'] ?? null;
+                if ($declineReason !== null && !in_array($declineReason, self::VALID_DECLINE_REASONS, true)) {
+                    $this->warn("  ⚠ Claude вернул недопустимый decline_reason='{$declineReason}' для «{$part['name']}» — обнуляю");
+                    $declineReason = null;
+                }
+
+                try {
+                    DemandSignal::updateOrCreate(
                     [
                         'whatsapp_lead_id' => $lead->id,
                         'lead_request_id' => $leadRequest->id,
@@ -118,11 +148,11 @@ class AnalyzeDemandSignalsCommand extends Command
                         'brand' => $leadRequest->brand,
                         'car_model' => $leadRequest->car_model,
                         'car_year' => $leadRequest->car_year,
-                        'availability_answer' => $part['availability_answer'] ?? 'unknown',
+                        'availability_answer' => $availabilityAnswer,
                         'lead_time_days' => $part['lead_time_days'] ?? null,
                         'quoted_price' => $part['quoted_price'] ?? null,
                         'outcome' => $outcome,
-                        'decline_reason' => $part['decline_reason'] ?? null,
+                        'decline_reason' => $declineReason,
                         'outcome_amount' => $part['outcome_amount'] ?? null,
                         // Статус, который реально стоит у лида в CRM на момент анализа —
                         // для сверки с независимым вердиктом LLM выше, см. докблок миграции.
@@ -132,7 +162,15 @@ class AnalyzeDemandSignalsCommand extends Command
                         'raw_llm_response' => $result,
                         'analyzed_at' => now(),
                     ]
-                );
+                    );
+                } catch (\Throwable $e) {
+                    // Защита от ещё не предусмотренных сюрпризов модели (см.
+                    // докблок константы VALID_OUTCOMES выше) — один плохой
+                    // part не должен ронять весь прогон по остальным лидам.
+                    $this->error("  ⨯ не удалось записать demand_signal для «{$part['name']}»: {$e->getMessage()}");
+                    $allResolved = false;
+                    continue;
+                }
             }
 
             if ($allResolved) {
