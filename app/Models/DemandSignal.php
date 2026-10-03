@@ -11,7 +11,8 @@ class DemandSignal extends Model
         'vin', 'brand', 'car_model', 'car_year',
         'part_name', 'part_side', 'part_position',
         'availability_answer', 'lead_time_days', 'quoted_price',
-        'outcome', 'decline_reason', 'outcome_amount', 'notes', 'raw_llm_response', 'analyzed_at',
+        'outcome', 'decline_reason', 'outcome_amount', 'manager_status', 'manager_status_label',
+        'notes', 'raw_llm_response', 'analyzed_at',
     ];
 
     protected $casts = [

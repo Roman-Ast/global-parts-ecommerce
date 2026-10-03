@@ -19,16 +19,44 @@ use Illuminate\Support\Facades\Log;
  */
 class ClaudeExtractionService
 {
-    // По решению Романа (2026-09-13) — sonnet вместо opus, дешевле ($2/$10 за
-    // млн токенов против $5/$25), для извлечения VIN/марки/списка запчастей из
-    // JSON разница в качестве не критична.
-    private const MODEL = 'claude-sonnet-5';
+    // По решению Романа (2026-10-03, перед запуском бэкфилла по ~700 лидам) —
+    // haiku вместо sonnet, самая дешёвая модель. Смотрим, справится ли она с
+    // разбором фото/PDF техпаспорта и простых диалогов на нужном уровне
+    // качества — если нет, вернуться на sonnet именно здесь, больше нигде
+    // менять не нужно.
+    private const MODEL = 'claude-haiku-4-5-20251001';
 
     private Client $client;
+
+    // Счётчик токенов за текущий прогон (просьба Романа 2026-10-03 — "заодно
+    // прикинь сколько денег это обходится" при пробном бэкфилле). Статик, не
+    // per-instance — сервис создаётся по новой на каждый вызов через DI,
+    // инстанс-поле обнулялось бы между сообщениями. Сбрасывается явно вызовом
+    // resetUsageTotals() в начале прогона (см. BackfillDemandDataCommand).
+    private static int $totalInputTokens = 0;
+    private static int $totalOutputTokens = 0;
+    private static int $totalCalls = 0;
 
     public function __construct()
     {
         $this->client = new Client(apiKey: config('services.anthropic.api_key'));
+    }
+
+    public static function resetUsageTotals(): void
+    {
+        self::$totalInputTokens = 0;
+        self::$totalOutputTokens = 0;
+        self::$totalCalls = 0;
+    }
+
+    /** @return array{calls: int, input_tokens: int, output_tokens: int} */
+    public static function getUsageTotals(): array
+    {
+        return [
+            'calls' => self::$totalCalls,
+            'input_tokens' => self::$totalInputTokens,
+            'output_tokens' => self::$totalOutputTokens,
+        ];
     }
 
     /**
@@ -247,6 +275,10 @@ PROMPT;
                 maxTokens: $maxTokens,
                 messages: $messages,
             );
+
+            self::$totalCalls++;
+            self::$totalInputTokens += $message->usage->inputTokens ?? 0;
+            self::$totalOutputTokens += $message->usage->outputTokens ?? 0;
 
             $jsonText = null;
             foreach ($message->content as $block) {

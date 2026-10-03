@@ -34,10 +34,24 @@ class AnalyzeDemandSignalsCommand extends Command
         // должны попадать в анализ спроса. WhatsappMessageObserver уже не
         // создаёт им lead_requests вовсе, это доп. страховка на случай,
         // если такая запись всё же появится другим путём.
+        //
+        // Непрочитанные (просьба Романа 2026-10-03) — если у лида есть
+        // входящее сообщение, которое менеджер ещё не прочитал/не ответил на
+        // него, анализировать исход рано: Claude просто увидит "мы ничего не
+        // ответили" и вернёт pending по всем позициям — платный вызов
+        // впустую. Ждём, пока менеджер реально ответит (или прочитает и
+        // решит не отвечать — тогда сообщение станет прочитанным, но ответа
+        // в переписке всё равно не будет, и это уже осмысленный "unknown"/
+        // "silent" вердикт, не пустая трата).
         $query = LeadRequest::query()
             ->whereNotNull('parts_json')
             ->where('parts_json', '!=', '[]')
-            ->whereHas('lead', fn ($q) => $q->where('status', '!=', LeadStatuses::STAFF_STATUS));
+            ->whereHas('lead', function ($q) {
+                $q->where('status', '!=', LeadStatuses::STAFF_STATUS)
+                    ->whereDoesntHave('messages', function ($m) {
+                        $m->where('is_incoming', true)->where('is_read', false);
+                    });
+            });
 
         if (!$this->option('all')) {
             $query->where('status', 'pending');
@@ -110,6 +124,10 @@ class AnalyzeDemandSignalsCommand extends Command
                         'outcome' => $outcome,
                         'decline_reason' => $part['decline_reason'] ?? null,
                         'outcome_amount' => $part['outcome_amount'] ?? null,
+                        // Статус, который реально стоит у лида в CRM на момент анализа —
+                        // для сверки с независимым вердиктом LLM выше, см. докблок миграции.
+                        'manager_status' => $lead->status,
+                        'manager_status_label' => LeadStatuses::labelFor($lead->status),
                         'notes' => $part['notes'] ?? null,
                         'raw_llm_response' => $result,
                         'analyzed_at' => now(),
