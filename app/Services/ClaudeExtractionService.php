@@ -361,8 +361,15 @@ PROMPT;
                 // в самих данных.
                 $stopReason = $message->stopReason ?? '?';
                 $hint = $stopReason === 'max_tokens' ? ' (похоже, ответ обрезан — упёрлись в maxTokens)' : '';
+                // Было mb_substr(-300) — хвост почти всегда выглядит валидным,
+                // реальная синтаксическая ошибка может быть где угодно внутри
+                // длинного ответа (живой случай 2026-10-03: хвост чист, а
+                // json_decode всё равно падает). Показываем куда больше —
+                // проще один раз увидеть весь ответ и найти место глазами,
+                // чем гадать по обрезку.
                 self::$lastError = "Невалидный JSON от модели ({$stopReason}{$hint}): " . json_last_error_msg()
-                    . ' — конец ответа: "' . mb_substr($jsonText, -300) . '"';
+                    . ' — длина ответа: ' . mb_strlen($jsonText) . ' символов'
+                    . ' — ПОЛНЫЙ ОТВЕТ:' . PHP_EOL . $jsonText;
                 Log::warning('ClaudeExtractionService: невалидный JSON от модели', ['raw' => $jsonText, 'stop_reason' => $stopReason]);
                 return null;
             }
