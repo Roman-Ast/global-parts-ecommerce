@@ -59,9 +59,16 @@ class OzonCheckCardStatusCommand extends Command
             $productId = $result['product_id'] ?? null;
             $errors = $result['errors'] ?? [];
 
+            // Живая находка 2026-10-04: Ozon возвращает status=imported
+            // ДАЖЕ когда реальное содержимое карточки не изменилось (напр.
+            // clone_change_category_not_allowed на карточках, перенесённых
+            // из другого кабинета, — весь прежний экспорт 850 "мёртвых"
+            // слотов молча считался успешным именно из-за этого порядка
+            // проверки). errors — приоритетнее status, иначе ошибка просто
+            // складывается в comment, а карточка всё равно считается ОК.
             $newStatus = match (true) {
-                $status === 'imported' => 'imported',
                 !empty($errors) => 'failed',
+                $status === 'imported' => 'imported',
                 default => $status,
             };
 
@@ -108,7 +115,13 @@ class OzonCheckCardStatusCommand extends Command
                 continue;
             }
 
-            $offerId = mb_substr("{$row->brand}-{$row->article}", 0, 50);
+            // offer_id — явная колонка (миграция 2026_10_04_000001), НЕ
+            // пересчитываем из brand/article: строки, прошедшие через
+            // ozon:replace-dead-cards (forceOfferId), хранят article/brand
+            // НОВОЙ карточки, а offer_id — СТАРЫЙ слот; пересчёт давал
+            // чужой, несуществующий offer_id и стабильный NOT_FOUND_ERROR
+            // (живая находка 2026-10-04).
+            $offerId = $row->offer_id ?? mb_substr("{$row->brand}-{$row->article}", 0, 50);
 
             try {
                 $result = $client->updateStock($offerId, $stock, $warehouseId);
