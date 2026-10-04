@@ -90,7 +90,7 @@ class OzonCreateCardCommand extends Command
     }
 
     /** Тот же джойн на реальное наличие, что и у Halyk (SupplierOfferPricer). */
-    private function pickCandidates(int $limit, ?string $onlyArticle, ?string $onlyCategory)
+    protected function pickCandidates(int $limit, ?string $onlyArticle, ?string $onlyCategory)
     {
         $query = PartsCatalog::query()
             ->where('scrape_status', 'done')
@@ -128,7 +128,23 @@ class OzonCreateCardCommand extends Command
             ->values();
     }
 
-    private function processCard(OzonClient $client, PartsCatalog $card, bool $dryRun): void
+    /**
+     * $forceOfferId — просьба Романа 2026-10-04 (чистка Ozon-каталога под
+     * Rossko/Shatem): замена контента на уже существующем слоте вместо
+     * создания нового — новая карточка должна лечь на offer_id СТАРОГО
+     * (мёртвого) слота, а не получить свой обычный (от собственных
+     * article/brand), иначе получили бы дубль вместо замены. См.
+     * ozon:replace-dead-cards.
+     */
+    /**
+     * @return bool true — реально отправлено (submitted/dry_run), false —
+     *              пропущено (skipped по любой причине). Нужно вызывающей
+     *              стороне в ozon:replace-dead-cards, чтобы НЕ помечать
+     *              мёртвый слот как "заменён", если на деле ничего не
+     *              отправилось (живой баг 2026-10-04 — 16 из 30 слотов в
+     *              первом прогоне были бы потеряны без повторной попытки).
+     */
+    protected function processCard(OzonClient $client, PartsCatalog $card, bool $dryRun, ?string $forceOfferId = null): bool
     {
         // 1. Категория+тип. Ozon не разделяет категорию/тип по нашим 3
         // уровням Kaspi — ищем ЛЮБОЙ узел дерева с type_id, чьё имя
@@ -145,7 +161,7 @@ class OzonCreateCardCommand extends Command
         if (!$resolved) {
             $this->line('  ⨯ тип/категория не найдены в дереве Ozon — пропуск');
             $this->recordResult($card, status: 'skipped', skipReason: 'category_not_found');
-            return;
+            return false;
         }
 
         [$categoryId, $typeId, $typeName] = $resolved;
@@ -157,7 +173,7 @@ class OzonCreateCardCommand extends Command
         if ($missingRequired) {
             $this->line("  ⨯ не удалось заполнить обязательный атрибут «{$missingRequired}» — пропуск");
             $this->recordResult($card, status: 'skipped', skipReason: "missing_required_attr:{$missingRequired}", categoryId: $categoryId, typeId: $typeId);
-            return;
+            return false;
         }
 
         // 3. Фото — по ссылке напрямую, Ozon сам скачивает и перезаливает
@@ -166,7 +182,7 @@ class OzonCreateCardCommand extends Command
         if (empty($images)) {
             $this->line('  ⨯ нет фото — пропуск');
             $this->recordResult($card, status: 'skipped', skipReason: 'no_photo', categoryId: $categoryId, typeId: $typeId);
-            return;
+            return false;
         }
 
         // 4. Цена — от СЕБЕСТОИМОСТИ (не розницы сайта), прогрессивная
@@ -174,8 +190,10 @@ class OzonCreateCardCommand extends Command
         // нативно в KZT — см. App\Services\OzonPriceCalculator).
         $priceKzt = \App\Services\OzonPriceCalculator::calculate((float) $card->offer['purchase_price']);
 
+        $offerId = $forceOfferId ?? $this->resolveOfferId($card);
+
         $payload = [
-            'offer_id' => $this->resolveOfferId($card),
+            'offer_id' => $offerId,
             'name' => mb_substr($card->name, 0, 500),
             'description_category_id' => $categoryId,
             'type_id' => $typeId,
@@ -194,19 +212,20 @@ class OzonCreateCardCommand extends Command
 
         if ($dryRun) {
             $this->line('  · dry-run, payload собран, не отправляю: ' . json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-            $this->recordResult($card, status: 'dry_run', categoryId: $categoryId, typeId: $typeId);
-            return;
+            $this->recordResult($card, status: 'dry_run', categoryId: $categoryId, typeId: $typeId, offerId: $offerId);
+            return true;
         }
 
         $taskId = $client->importProduct($payload);
         $this->line("  · отправлено, task_id={$taskId}, статус проверяется отдельно (ozon:check-card-status)");
-        $this->recordResult($card, status: 'submitted', categoryId: $categoryId, typeId: $typeId, taskId: $taskId);
+        $this->recordResult($card, status: 'submitted', categoryId: $categoryId, typeId: $typeId, taskId: $taskId, offerId: $offerId);
+        return true;
     }
 
     /**
      * @return array<int, string>
      */
-    private function categoryPathQueries(PartsCatalog $card): array
+    protected function categoryPathQueries(PartsCatalog $card): array
     {
         $path = $card->characteristics['category_path'] ?? [];
         $titles = array_reverse(array_column($path, 'title'));
@@ -243,7 +262,7 @@ class OzonCreateCardCommand extends Command
      *
      * @return array{0:int,1:int,2:string}|null
      */
-    private function findTypeInTree(OzonClient $client, ?string $query): ?array
+    protected function findTypeInTree(OzonClient $client, ?string $query): ?array
     {
         if (!$query) {
             return null;
@@ -336,7 +355,7 @@ class OzonCreateCardCommand extends Command
      * под которые есть специальная обработка — по имени (см. константы
      * ATTR_*), остальные обязательные без обработки -> $missingRequired.
      */
-    private function buildAttributes(OzonClient $client, int $categoryId, int $typeId, string $typeName, PartsCatalog $card, ?string &$missingRequired): array
+    protected function buildAttributes(OzonClient $client, int $categoryId, int $typeId, string $typeName, PartsCatalog $card, ?string &$missingRequired): array
     {
         $missingRequired = null;
         $schema = $client->attributes($categoryId, $typeId);
@@ -373,7 +392,7 @@ class OzonCreateCardCommand extends Command
     }
 
     /** Поиск бренда в словаре — точное совпадение приоритетнее первого попавшегося. */
-    private function resolveDictionaryValue(OzonClient $client, int $categoryId, int $typeId, int $attributeId, string $query): ?array
+    protected function resolveDictionaryValue(OzonClient $client, int $categoryId, int $typeId, int $attributeId, string $query): ?array
     {
         $results = $client->searchAttributeValue($categoryId, $typeId, $attributeId, $query);
         if (empty($results)) {
@@ -406,7 +425,7 @@ class OzonCreateCardCommand extends Command
      * прежний докблок метода): поиск ПОЛНОЙ фразы даёт 0 результатов, а
      * ПЕРВОЕ СЛОВО — стабильно даёт совпадения.
      */
-    private function resolveHsCode(OzonClient $client, int $categoryId, int $typeId, int $attributeId, string $typeName): ?array
+    protected function resolveHsCode(OzonClient $client, int $categoryId, int $typeId, int $attributeId, string $typeName): ?array
     {
         $hintPrefix = $this->findHsCodeHintPrefix($typeName);
 
@@ -443,7 +462,7 @@ class OzonCreateCardCommand extends Command
     }
 
     /** Самое длинное (значит — самое специфичное) совпавшее ключевое слово побеждает. */
-    private function findHsCodeHintPrefix(string $typeName): ?string
+    protected function findHsCodeHintPrefix(string $typeName): ?string
     {
         if ($this->hsCodeHintsCache === null) {
             $this->hsCodeHintsCache = \Illuminate\Support\Facades\DB::table('hs_code_hints')->get();
@@ -473,7 +492,7 @@ class OzonCreateCardCommand extends Command
      * в описании (чем больше — тем более общая формулировка), при равенстве —
      * самую короткую (менее зауженную доп. условиями).
      */
-    private function pickMostGenericHsMatch(array $results, string $prefix): ?array
+    protected function pickMostGenericHsMatch(array $results, string $prefix): ?array
     {
         // Жёсткий фильтр: код должен реально НАЧИНАТЬСЯ с префикса, а не просто
         // содержать его цифры где-то внутри (см. докблок resolveHsCode).
@@ -505,12 +524,12 @@ class OzonCreateCardCommand extends Command
      * покупателям на витрине Ozon. Если понадобится та же защита, что и
      * у Halyk — заменить на source_kaspi_sku по аналогии.
      */
-    private function resolveOfferId(PartsCatalog $card): string
+    protected function resolveOfferId(PartsCatalog $card): string
     {
         return mb_substr("{$card->brand}-{$card->article}", 0, 50);
     }
 
-    private function recordResult(
+    protected function recordResult(
         PartsCatalog $card,
         string $status,
         ?string $skipReason = null,
@@ -518,10 +537,12 @@ class OzonCreateCardCommand extends Command
         ?int $typeId = null,
         ?int $taskId = null,
         ?string $comment = null,
+        ?string $offerId = null,
     ): void {
         DB::table('ozon_created_cards')->insert([
             'article' => $card->article,
             'brand' => $card->brand,
+            'offer_id' => $offerId ?? $this->resolveOfferId($card),
             'parts_catalog_id' => $card->id,
             'ozon_category_id' => $categoryId,
             'ozon_type_id' => $typeId,

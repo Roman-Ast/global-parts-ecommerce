@@ -63,7 +63,10 @@ class OzonPushStockCommand extends Command
                 continue;
             }
 
-            $offerId = mb_substr("{$row->brand}-{$row->article}", 0, 50);
+            // offer_id — явная колонка (миграция 2026_10_04_000001), не
+            // вычисляем заново из article/brand (см. тот же докблок в
+            // OzonFixToRosskoShatemCommand).
+            $offerId = $row->offer_id;
 
             try {
                 $result = $client->updateStock($offerId, $stock, $warehouseId);

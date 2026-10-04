@@ -129,20 +129,30 @@ class OzonClient
     }
 
     /**
-     * Полная информация по товару (статус модерации, комиссии,
-     * видимость) — использовалась для живой проверки пилота 2026-09-03,
-     * пригодится и для сверки комиссий по категориям.
+     * Полная информация по товарам (статус модерации, комиссии, видимость) —
+     * использовалась для живой проверки пилота 2026-09-03, пригодится и для
+     * сверки комиссий по категориям. Переписана на батч 2026-10-04 (была
+     * по одному offer_id за раз) для сверки ozon_created_cards с реальным
+     * состоянием каталога — проверено живьём: offer_id, которого реально не
+     * существует на Ozon, просто отсутствует в ответе ('items'), без явной
+     * ошибки на конкретную позицию — так и отличаем "существует" от "нет".
+     *
+     * @param array<int, string> $offerIds до ~100 за раз (не подтверждён
+     *        официальный максимум в доке, 100 проверено живьём без проблем)
+     * @return array<string, array> offer_id => полная карточка из ответа
      */
-    public function productInfo(string $offerId): array
+    public function productInfoBatch(array $offerIds): array
     {
-        $response = Http::timeout(20)->withHeaders($this->headers())
-            ->post(self::BASE_URL . '/v3/product/info/list', ['offer_id' => [$offerId]]);
+        $response = Http::timeout(30)->withHeaders($this->headers())
+            ->post(self::BASE_URL . '/v3/product/info/list', ['offer_id' => array_values($offerIds)]);
 
         if (!$response->successful()) {
-            throw new \RuntimeException('Ozon product/info/list недоступен: HTTP ' . $response->status());
+            throw new \RuntimeException('Ozon product/info/list недоступен: HTTP ' . $response->status() . ' — ' . $response->body());
         }
 
-        return $response->json('items.0') ?? [];
+        $items = $response->json('items') ?? [];
+
+        return collect($items)->keyBy('offer_id')->all();
     }
 
     public function archiveProduct(int $productId): bool
