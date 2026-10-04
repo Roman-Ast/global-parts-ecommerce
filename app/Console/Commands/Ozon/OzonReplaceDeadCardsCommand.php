@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
  */
 class OzonReplaceDeadCardsCommand extends OzonCreateCardCommand
 {
-    protected $signature = 'ozon:replace-dead-cards {--limit=20} {--dry-run}';
+    protected $signature = 'ozon:replace-dead-cards {--limit=20} {--dry-run} {--offer-id= : Точечная замена ОДНОГО конкретного слота вместо автоподбора} {--new-article= : Новый артикул для --offer-id (обязателен вместе с ним)} {--new-brand= : Новый бренд для --offer-id (обязателен вместе с ним)}';
 
     protected $description = 'Заменяет контент мёртвых Ozon-слотов (нет Rossko/Shatem) на свежие позиции по целевым категориям';
 
@@ -47,6 +47,17 @@ class OzonReplaceDeadCardsCommand extends OzonCreateCardCommand
     {
         $limit = (int) $this->option('limit');
         $dryRun = (bool) $this->option('dry-run');
+
+        // Точечная замена (просьба Романа 2026-10-04 — "если что-то
+        // исчезло напишу в консоль, я дам команду, закинешь туда что-то
+        // новое") — ozon:sync-price-stock печатает в консоль offer_id
+        // пропавших позиций, Роман сам решает чем заменить и просто
+        // указывает конкретный новый article/brand, без автоподбора по
+        // категориям.
+        $forcedOfferId = $this->option('offer-id');
+        if ($forcedOfferId) {
+            return $this->handleManualReplacement($client, $forcedOfferId, $dryRun);
+        }
 
         $deadSlots = $this->pickDeadSlots($limit);
 
@@ -173,5 +184,68 @@ class OzonReplaceDeadCardsCommand extends OzonCreateCardCommand
         });
 
         return $pool->filter(fn ($c) => $c->offer !== null)->take($limit)->values();
+    }
+
+    /**
+     * Точечная замена ОДНОГО конкретного offer_id вручную указанным
+     * article+brand — для случая "ozon:sync-price-stock написал, что эта
+     * позиция совсем пропала у Rossko/Shatem, Роман сам выбрал чем
+     * заменить". Ищет оффер по article+brand СТРОГО у Rossko/Shatem (та
+     * же логика надёжности, никаких других поставщиков).
+     */
+    private function handleManualReplacement(OzonClient $client, string $offerId, bool $dryRun): int
+    {
+        $newArticle = $this->option('new-article');
+        $newBrand = $this->option('new-brand');
+
+        if (!$newArticle || !$newBrand) {
+            $this->error('Для --offer-id обязательны --new-article и --new-brand.');
+            return 1;
+        }
+
+        $deadSlot = DB::table('ozon_created_cards')->where('offer_id', $offerId)->first();
+        if (!$deadSlot) {
+            $this->error("offer_id={$offerId} не найден в ozon_created_cards.");
+            return 1;
+        }
+
+        $newCard = PartsCatalog::where('article', $newArticle)->where('brand', $newBrand)->first();
+        if (!$newCard) {
+            $this->error("Не найдена parts_catalog-карточка article={$newArticle} brand={$newBrand}.");
+            return 1;
+        }
+
+        $offer = DB::table('supplier_offers')
+            ->whereIn('supplier_name', self::ALLOWED_SUPPLIERS)
+            ->where('sku_normalized', $newCard->article_normalized)
+            ->where('brand_normalized', $newCard->brand_normalized)
+            ->where('stock', '>', 0)
+            ->orderBy('purchase_price')
+            ->first();
+
+        if (!$offer) {
+            $this->error("У {$newBrand} {$newArticle} нет оффера Rossko/Shatem в наличии — нечего ставить.");
+            return 1;
+        }
+
+        $newCard->offer = [
+            'purchase_price' => (float) $offer->purchase_price,
+            'stock' => (int) $offer->stock,
+            'supplier_name' => $offer->supplier_name,
+        ];
+
+        $this->line("→ слот {$offerId} ⇒ {$newCard->brand} {$newCard->article} — {$newCard->name}");
+
+        $submitted = $this->processCard($client, $newCard, $dryRun, forceOfferId: $offerId);
+
+        if ($submitted && !$dryRun) {
+            DB::table('ozon_created_cards')->where('id', $deadSlot->id)->update([
+                'status' => 'replaced',
+                'comment' => "Ручная замена на {$newCard->brand} {$newCard->article} (" . now()->toDateString() . ')',
+                'updated_at' => now(),
+            ]);
+        }
+
+        return $submitted ? 0 : 1;
     }
 }
