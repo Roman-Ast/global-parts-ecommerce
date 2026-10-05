@@ -37,7 +37,7 @@ class AnalyzeDemandSignalsCommand extends Command
     // дефолт с предупреждением в консоль, вместо падения.
     const VALID_OUTCOMES = ['bought', 'declined', 'silent', 'pending'];
     const VALID_AVAILABILITY_ANSWERS = ['in_stock', 'on_order', 'not_found', 'unknown'];
-    const VALID_DECLINE_REASONS = ['no_stock_wont_wait', 'in_stock_too_expensive', 'part_not_found', 'changed_mind'];
+    const VALID_DECLINE_REASONS = ['no_stock_wont_wait', 'in_stock_too_expensive', 'part_not_found', 'changed_mind', 'no_response'];
 
     public function handle(ClaudeExtractionService $claude): int
     {

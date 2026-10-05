@@ -60,20 +60,36 @@ class ImportAnalyzedDemandCommand extends Command
                 ]
             );
 
-            // Тот же принцип, что в LeadRequestExtractor — ищем открытую
-            // заявку этого лида, иначе создаём новую.
-            $leadRequest = LeadRequest::firstOrCreate(
-                ['whatsapp_lead_id' => $lead->id, 'status' => 'pending'],
-                [
+            // Живая находка 2026-10-05: искать по ['whatsapp_lead_id','status'
+            // =>'pending'] ломалось при повторном/частичном прогоне — как
+            // только обработка лида завершалась (status='closed'), ПОВТОРНЫЙ
+            // запуск того же файла (напр. после сбоя посреди батча) не
+            // находил существующую заявку и создавал дубль с осиротевшими
+            // demand_signals. Теперь сначала ищем ТОЧНО по
+            // source_lead_request_id (сам ID заявки с прода, есть в каждом
+            // элементе разбора) — это однозначно; без него — любую заявку
+            // этого лида НЕЗАВИСИМО от статуса; создаём новую только если
+            // вообще ничего не нашлось.
+            $leadRequest = null;
+            if (!empty($leadData['source_lead_request_id'])) {
+                $leadRequest = LeadRequest::find($leadData['source_lead_request_id']);
+            }
+            if (!$leadRequest) {
+                $leadRequest = LeadRequest::where('whatsapp_lead_id', $lead->id)->orderByDesc('id')->first();
+            }
+            if (!$leadRequest) {
+                $leadRequest = LeadRequest::create([
+                    'whatsapp_lead_id' => $lead->id,
                     'source' => $leadData['source'] ?? null,
                     'vin' => $leadData['vin'] ?? null,
                     'brand' => $leadData['brand'] ?? null,
                     'car_model' => $leadData['car_model'] ?? null,
                     'car_year' => $leadData['car_year'] ?? null,
+                    'status' => 'pending',
                     'raw_request' => 'Импортировано из ручного разбора (прод lead_request_id=' . ($leadData['source_lead_request_id'] ?? '?') . ')',
                     'parts_json' => array_map(fn ($p) => ['name' => $p['name'], 'side' => $p['side'] ?? null, 'position' => $p['position'] ?? null], $leadData['parts']),
-                ]
-            );
+                ]);
+            }
 
             $allResolved = true;
 
