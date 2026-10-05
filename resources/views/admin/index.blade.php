@@ -33,6 +33,11 @@
                         <a href="/admin/kanban" class="accordion-button collapsed fw-semibold">СРМ</a>
                     </h2>
                 </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <a href="{{ route('dashboard.demand-analysis') }}" class="accordion-button collapsed fw-semibold">Анализ спроса</a>
+                    </h2>
+                </div>
                 <div class="accordion-item" >
                     <h2 class="accordion-header">
                         <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseFirst" aria-expanded="false" aria-controls="flush-collapseFirst">
