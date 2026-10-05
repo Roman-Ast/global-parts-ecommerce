@@ -2,20 +2,13 @@
 
 namespace App\Observers;
 
+use App\Jobs\ExtractLeadRequestJob;
 use App\Models\WhatsappLead;
 use App\Models\WhatsappMessage;
-use App\Services\LeadRequestExtractor;
 use App\Support\LeadStatuses;
 
 class WhatsappMessageObserver
 {
-    protected LeadRequestExtractor $extractor;
-
-    public function __construct(LeadRequestExtractor $extractor)
-    {
-        $this->extractor = $extractor;
-    }
-
     public function created(WhatsappMessage $message)
     {
         if (!$message->is_incoming) return;
@@ -44,7 +37,9 @@ class WhatsappMessageObserver
         // Сама логика разбора — в LeadRequestExtractor (вынесено 2026-10-03,
         // чтобы её же использовал батч-бэкфилл по накопленной истории,
         // whatsapp:backfill-demand — одна и та же логика что для новых
-        // сообщений на лету, что для старых задним числом).
-        $this->extractor->extract($message);
+        // сообщений на лету, что для старых задним числом). Через очередь
+        // (2026-10-05, см. ExtractLeadRequestJob) — НЕ вызываем синхронно
+        // прямо здесь, иначе обработка вебхука ждёт ответ Claude.
+        ExtractLeadRequestJob::dispatch($message->id);
     }
 }

@@ -59,6 +59,18 @@ class DemandAnalysisController extends Controller
             ->orderByDesc('cnt')
             ->get();
 
+        // Исход СОГЛАСНО МЕНЕДЖЕРУ (реальный статус лида в CRM на момент
+        // анализа, manager_status_label) — рядом с $byOutcome (исход
+        // СОГЛАСНО ЛЛМ), просьба Романа 2026-10-05, чтобы сверять одно с
+        // другим напрямую. Не LLM-вывод — просто снэпшот реального статуса
+        // из whatsapp_leads.status на момент whatsapp:analyze-demand (см.
+        // CLAUDE.md, добавлено 2026-09-?? в AnalyzeDemandSignalsCommand).
+        $byManagerStatus = DemandSignal::select('manager_status_label', DB::raw('count(*) as cnt'))
+            ->whereNotNull('manager_status_label')
+            ->groupBy('manager_status_label')
+            ->orderByDesc('cnt')
+            ->get();
+
         $byDeclineReason = DemandSignal::select('decline_reason', DB::raw('count(*) as cnt'))
             ->whereNotNull('decline_reason')
             ->groupBy('decline_reason')
@@ -80,7 +92,7 @@ class DemandAnalysisController extends Controller
             ->get();
 
         return view('admin.demand-analysis', compact(
-            'totalSignals', 'byPart', 'byBrand', 'byCarModel', 'byOutcome', 'byDeclineReason', 'byAvailability', 'lostToStockOrPrice'
+            'totalSignals', 'byPart', 'byBrand', 'byCarModel', 'byOutcome', 'byManagerStatus', 'byDeclineReason', 'byAvailability', 'lostToStockOrPrice'
         ));
     }
 }

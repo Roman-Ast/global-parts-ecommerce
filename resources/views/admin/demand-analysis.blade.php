@@ -19,8 +19,9 @@
         </p>
     </div>
 
-    {{-- Сводка по исходам --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    {{-- Сводка по исходам СОГЛАСНО ЛЛМ --}}
+    <div class="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Исход согласно ЛЛМ</div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         @foreach($byOutcome as $row)
             @php
                 $labels = ['bought' => 'Купили', 'declined' => 'Отказались', 'silent' => 'Замолчали', 'pending' => 'Ещё не ясно'];
@@ -31,6 +32,19 @@
                 <div class="text-[10px] font-bold uppercase tracking-widest">{{ $labels[$row->outcome] ?? $row->outcome }}</div>
             </div>
         @endforeach
+    </div>
+
+    {{-- Сводка по исходам СОГЛАСНО МЕНЕДЖЕРУ (реальный статус CRM на момент анализа, не вывод ЛЛМ) --}}
+    <div class="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Исход согласно менеджеру (реальный статус CRM)</div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        @forelse($byManagerStatus as $row)
+            <div class="rounded-xl border p-4 bg-indigo-50 text-indigo-700 border-indigo-200">
+                <div class="text-3xl font-black">{{ $row->cnt }}</div>
+                <div class="text-[10px] font-bold uppercase tracking-widest">{{ $row->manager_status_label }}</div>
+            </div>
+        @empty
+            <div class="text-xs text-slate-400 col-span-full">Нет данных — manager_status_label не заполнен ни у одной записи.</div>
+        @endforelse
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
