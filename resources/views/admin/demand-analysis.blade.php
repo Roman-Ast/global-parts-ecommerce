@@ -19,6 +19,35 @@
         </p>
     </div>
 
+    {{-- Воронка КП — считается от lead_requests + реального статуса CRM, не от LLM-анализа --}}
+    <div class="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        Воронка КП (по реальному статусу CRM, не по выводу ЛЛМ)
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="rounded-xl border p-4 bg-white border-slate-200">
+            <div class="text-3xl font-black text-slate-700">{{ $quoteFunnel['totalRequests'] }}</div>
+            <div class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Заявок обрабатываем всего</div>
+        </div>
+        <div class="rounded-xl border p-4 bg-indigo-50 border-indigo-200">
+            <div class="text-3xl font-black text-indigo-700">{{ $quoteFunnel['kpSent'] }}</div>
+            <div class="text-[10px] font-bold uppercase tracking-widest text-indigo-600">КП отправлено (и дальше по воронке)</div>
+        </div>
+        <div class="rounded-xl border p-4 bg-emerald-50 border-emerald-200">
+            <div class="text-3xl font-black text-emerald-700">{{ $quoteFunnel['bought'] }}</div>
+            <div class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Купили</div>
+        </div>
+        <div class="rounded-xl border p-4 bg-amber-50 border-amber-200">
+            <div class="text-3xl font-black text-amber-700">{{ $quoteFunnel['conversionPct'] !== null ? $quoteFunnel['conversionPct'] . '%' : '—' }}</div>
+            <div class="text-[10px] font-bold uppercase tracking-widest text-amber-600">% закрытия (купили / КП отправлено)</div>
+        </div>
+    </div>
+    <p class="text-[10px] text-slate-400 mb-8 -mt-6">
+        "КП отправлено" — это статус "КП Отправлено" и все статусы ДАЛЬШЕ по воронке (работа с возражениями, оплата,
+        купил/ждёт, продано), плюс отказы с причиной "дорого"/"передумал" (КП физически уже должно было уйти клиенту
+        на этих стадиях). Статусы ДО отправки КП ("не нашли деталь", "не отвечает", "нет в наличии") в счёт не идут.
+        Если граница не так, как считаешь правильным — скажи, поправим классификацию статусов.
+    </p>
+
     {{-- Сводка по исходам СОГЛАСНО ЛЛМ --}}
     <div class="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Исход согласно ЛЛМ</div>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DemandSignal;
+use App\Models\LeadRequest;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -91,8 +92,66 @@ class DemandAnalysisController extends Controller
             ->orderByDesc('cnt')
             ->get();
 
+        $quoteFunnel = $this->buildQuoteFunnel();
+
         return view('admin.demand-analysis', compact(
-            'totalSignals', 'byPart', 'byBrand', 'byCarModel', 'byOutcome', 'byManagerStatus', 'byDeclineReason', 'byAvailability', 'lostToStockOrPrice'
+            'totalSignals', 'byPart', 'byBrand', 'byCarModel', 'byOutcome', 'byManagerStatus', 'byDeclineReason', 'byAvailability', 'lostToStockOrPrice', 'quoteFunnel'
         ));
+    }
+
+    /**
+     * Воронка "сколько КП отправлено / сколько купили" — просьба Романа
+     * 2026-10-05 ("чтоб понимать процент закрытий и в целом сколько заявок
+     * обрабатываем"). Считаем на уровне lead_requests (одна заявка =
+     * один клиентский запрос, не одна деталь внутри него, как у
+     * demand_signals), join на whatsapp_leads.status — это РЕАЛЬНЫЙ
+     * текущий статус CRM, а не вывод ЛЛМ, поэтому не требует предварительно
+     * прогнанного whatsapp:analyze-demand — работает сразу после обычного
+     * whatsapp:backfill-demand (дешёвый Haiku-шаг).
+     *
+     * "КП отправлено" — это НЕ только статус `offer` буквально: если лид
+     * продвинулся дальше по воронке (работа с возражениями, оплата,
+     * купил/ждёт, продано) или отвалился с явно пост-КП причиной
+     * ("дорого", "передумал") — КП физически должно было уже уйти, иначе
+     * эти стадии были бы невозможны. Статусы ДО КП (искали деталь, не
+     * нашли, не ответил, молчит до всякого предложения) в счёт не идут.
+     * Граница спорная (особенно 'no_response' — не отвечает мог и после
+     * КП) — отмечено ниже константой на случай, если Роман скажет
+     * поправить классификацию.
+     */
+    private function buildQuoteFunnel(): array
+    {
+        // Статусы, при которых КП объективно уже должно было уйти клиенту.
+        $kpSentOrBeyondStatuses = [
+            'offer', 'thinking', 'silent', 'expensive', 'wait', 'pending',
+            'payment', 'bought_waiting', 'deal_closed',
+            'in_stock_too_expensive', 'changed_mind',
+        ];
+        $boughtStatuses = ['payment', 'bought_waiting', 'deal_closed'];
+
+        $totalRequests = LeadRequest::count();
+
+        $statusCounts = LeadRequest::join('whatsapp_leads', 'whatsapp_leads.id', '=', 'lead_requests.whatsapp_lead_id')
+            ->select('whatsapp_leads.status', DB::raw('count(*) as cnt'))
+            ->groupBy('whatsapp_leads.status')
+            ->pluck('cnt', 'status');
+
+        $kpSent = 0;
+        $bought = 0;
+        foreach ($statusCounts as $status => $cnt) {
+            if (in_array($status, $kpSentOrBeyondStatuses, true)) {
+                $kpSent += $cnt;
+            }
+            if (in_array($status, $boughtStatuses, true)) {
+                $bought += $cnt;
+            }
+        }
+
+        return [
+            'totalRequests' => $totalRequests,
+            'kpSent' => $kpSent,
+            'bought' => $bought,
+            'conversionPct' => $kpSent > 0 ? round($bought / $kpSent * 100, 1) : null,
+        ];
     }
 }
