@@ -197,6 +197,116 @@ class MatchKaspiSkuCommand extends Command
         return false;
     }
 
+    /**
+     * Кириллические буквы, визуально неотличимые от латинских (та же
+     * пара, что в HalykCreateCardCommand::normalizeHomoglyphs(), только
+     * в обратную сторону — там нужно было латиницу превращать в
+     * кириллицу под сравнение с Halyk, здесь наоборот: сводим всё к
+     * латинице, потому что дальше сравниваем строго латинские артикулы).
+     */
+    const CYRILLIC_TO_LATIN_HOMOGLYPHS = [
+        'А' => 'A', 'В' => 'B', 'Е' => 'E', 'К' => 'K', 'М' => 'M', 'Н' => 'H',
+        'О' => 'O', 'Р' => 'P', 'С' => 'C', 'Т' => 'T', 'Х' => 'X', 'У' => 'Y',
+    ];
+
+    /**
+     * Приводит артикул/фрагмент названия карточки к виду, пригодному для
+     * строгого сравнения "это тот же код или нет": верхний регистр,
+     * кириллические гомоглифы → латиница, дефисы и пробелы убраны
+     * полностью. Пробелы убираются здесь НАМЕРЕННО (в отличие от
+     * основной регулярки матчинга выше, где пробел — настоящая граница
+     * слова) — см. docблок rejectSiblingPrefixCollisions() за тем, какую
+     * конкретно проблему это решает.
+     */
+    private function cleanSkuForComparison(string $sku): string
+    {
+        $sku = mb_strtoupper($sku);
+        $sku = strtr($sku, self::CYRILLIC_TO_LATIN_HOMOGLYPHS);
+        return preg_replace('/[-\s]/u', '', $sku);
+    }
+
+    /**
+     * Живая находка Романа 2026-10-06 на LRH0101/LRH0101C (LUZAR, Rossko):
+     * у нас это два РАЗНЫХ товара с разной себестоимостью (LRH0101C —
+     * медный радиатор, в разы дороже обычного LRH0101), но 3 из 4 карточек
+     * Kaspi, реально относящихся к LRH0101C, матчились как LRH0101 и
+     * продавались по цене обычного — убыток, плюс конфликт с клиентом на
+     * Kaspi, когда ему привезли не то, что он ожидал по цене.
+     *
+     * Причина — не баг одной карточки, а системный слепое пятно основной
+     * регулярки матчинга выше (`(^|[^A-Z0-9])...([^A-Z0-9]|$)`): граница
+     * токена там — "что угодно, кроме латинской буквы/цифры". Из 3
+     * ошибочных карточек у двух название было "LRH0101С" с КИРИЛЛИЧЕСКОЙ
+     * "С" (U+0421) — визуально неотличима от латинской "C", но для
+     * регулярки это "не A-Z0-9", то есть законная граница слова, из-за
+     * чего "LRH0101" ложно засчитался отдельным токеном. У третьей
+     * карточки было "LRH0101 C" — настоящий пробел перед "C". Это уже не
+     * баг Unicode, а принципиальная неоднозначность: пробел — обычно
+     * ЗАКОННАЯ граница слова (без него "рычаг AB CD" ошибочно считался
+     * бы одним токеном), так что чинить это точечно в самой регулярке
+     * нельзя без риска новых ложных совпадений в другую сторону.
+     *
+     * Решение — не трогать регулярку, а защититься общим правилом: если
+     * среди НАШИХ собственных артикулов того же бренда есть более
+     * длинный, который (после той же нормализации — гомоглифы, без
+     * дефисов/пробелов) является продолжением текущего короткого
+     * артикула, и название карточки Kaspi (с той же нормализацией) под
+     * него тоже подходит — карточка принадлежит длинному артикулу, а не
+     * короткому, и матч на короткий отбрасывается. Так короткий LRH0101
+     * больше не ворует карточки, которые на самом деле про LRH0101C —
+     * независимо от того, кириллицей там "C" написано, пробелом отделено
+     * или как-то ещё, пока мы сами продаём оба артикула под одним
+     * брендом.
+     */
+    private function rejectSiblingPrefixCollisions($rows)
+    {
+        $skusByBrand = [];
+        foreach (DB::table('kaspi_initial_products')->select('sku', 'brand')->get() as $r) {
+            $brand = mb_strtolower($r->brand);
+            $skusByBrand[$brand][$this->cleanSkuForComparison($r->sku)] = true;
+        }
+
+        $rejected = [];
+        $filtered = $rows->filter(function ($row) use ($skusByBrand, &$rejected) {
+            $brand = mb_strtolower($row->brand);
+            $cleanOurs = $this->cleanSkuForComparison($row->article);
+            // Живая находка при проверке фикса 2026-10-06: названия карточек
+            // часто несут маркер количества вроде "AS27 1 шт" — если просто
+            // убрать пробелы, "1 шт" слипается с артикулом в "AS271ШТ", что
+            // МОЖЕТ случайно совпасть с совершенно другим нашим артикулом
+            // "AS271" (разные товары, не вариант текущего). Убираем маркер
+            // количества ДО очистки — тот же PAIR_QTY_MARKER_PATTERN, что
+            // уже используется в isIncompletePair() для той же природы
+            // проблемы (отличить реальный суффикс артикула от шумового "N шт").
+            $nameWithoutQtyMarker = preg_replace(self::PAIR_QTY_MARKER_PATTERN, ' ', $row->kaspi_name);
+            $cleanName = $this->cleanSkuForComparison($nameWithoutQtyMarker);
+
+            foreach (array_keys($skusByBrand[$brand] ?? []) as $siblingSku) {
+                if ($siblingSku === $cleanOurs || strlen($siblingSku) <= strlen($cleanOurs)) {
+                    continue;
+                }
+                if (str_starts_with($siblingSku, $cleanOurs) && str_contains($cleanName, $siblingSku)) {
+                    $rejected[] = ['article' => $row->article, 'sibling' => $siblingSku, 'kaspi_sku' => $row->kaspi_sku, 'kaspi_name' => $row->kaspi_name];
+                    return false;
+                }
+            }
+
+            return true;
+        })->values();
+
+        if (!empty($rejected)) {
+            $this->warn("⚠️  Отброшено как коллизия с более длинным артикулом того же бренда: " . count($rejected));
+            $this->table(
+                ['article', 'sibling_article', 'kaspi_sku', 'kaspi_name'],
+                collect($rejected)->map(fn($r) => [
+                    $r['article'], $r['sibling'], $r['kaspi_sku'], mb_strimwidth($r['kaspi_name'], 0, 80, '…'),
+                ])->toArray()
+            );
+        }
+
+        return $filtered;
+    }
+
     public function handle(): int
     {
         $supplier = $this->option('supplier');
@@ -300,6 +410,8 @@ class MatchKaspiSkuCommand extends Command
         }
 
         $this->info("Найдено совпадений: {$rows->count()}");
+
+        $rows = $this->rejectSiblingPrefixCollisions($rows);
 
         // Группируем по kaspi_sku — берём минимальную цену среди поставщиков.
         // При РАВНОЙ цене — предпочитаем поставщика с меньшим preorder_days

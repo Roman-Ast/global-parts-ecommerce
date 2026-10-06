@@ -56,3 +56,39 @@ Route::get('/cron/whatsapp-recover', function () {
         'result' => trim(Artisan::output()),
     ]);
 });
+
+/**
+ * Cron через HTTP для дренажа БД-очереди `ExtractLeadRequestJob` (просьба
+ * Романа 2026-10-06) — та же причина, что и у `/cron/whatsapp-recover` выше:
+ * на этом тарифе Plesk нет SSH, поэтому нельзя держать `php artisan
+ * queue:work` постоянным демоном (так задача и задумывалась с самого начала,
+ * см. докблок `ExtractLeadRequestJob` — там это было только описано, сам
+ * HTTP-триггер не был реализован). Без этого роута `WHATSAPP_LLM_EXTRACTION_
+ * ENABLED=true` на проде просто копил бы задачи в таблице `jobs` без единого
+ * обработчика — очередь росла бы бесконечно, ничего не разбиралось бы.
+ *
+ * `--stop-when-empty` — не висит, если очередь уже пуста; `--max-time=50` —
+ * тот же безопасный запас под 60-секундный таймаут nginx/PHP-FPM на этом
+ * хостинге, что и везде в этом файле. Токен — тот же `WHATSAPP_CRON_TOKEN`,
+ * что и у `/cron/whatsapp-recover` (общий внутренний cron-секрет, не отдельный
+ * под каждый роут).
+ */
+Route::get('/cron/queue-work', function () {
+    $token = request()->query('token', '');
+    $expected = config('services.whatsapp_cron_token');
+
+    if (!$expected || !hash_equals($expected, $token)) {
+        abort(403);
+    }
+
+    Artisan::call('queue:work', [
+        '--stop-when-empty' => true,
+        '--max-time' => 50,
+    ]);
+
+    return response()->json([
+        'ok' => true,
+        'ran_at' => now()->toDateTimeString(),
+        'result' => trim(Artisan::output()),
+    ]);
+});
