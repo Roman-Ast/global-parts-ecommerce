@@ -38,22 +38,30 @@ class LeadRequestExtractor
             $rawResponses = [];
 
             // 1. Парсим ВЛОЖЕНИЕ (фото/PDF техпаспорта), если есть — VIN+марка+модель+год одним запросом
+            // Своим try/catch: сбой вложения (таймаут скачивания с Green API,
+            // живые случаи 2026-10-03/07) раньше обрывал разбор ВСЕГО
+            // сообщения — текст рядом с фото так и оставался неразобранным.
             if (!empty($message->file_url)) {
                 \Log::info("LeadRequestExtractor: Обработка вложения...");
-                $fileParsed = $this->claude->parseAttachment($message->file_url);
+                try {
+                    $fileParsed = $this->claude->parseAttachment($message->file_url);
+                } catch (\Throwable $e) {
+                    \Log::warning("LeadRequestExtractor: вложение не обработано — " . $e->getMessage(), ['message_id' => $message->id]);
+                    $fileParsed = null;
+                }
                 \Log::info("LeadRequestExtractor: Ответ Claude по вложению", ['parsed' => $fileParsed]);
 
                 if ($fileParsed) {
                     $vin      = $this->nullIfLiteralNull($fileParsed['vin'] ?? null);
                     $brand    = $this->nullIfLiteralNull($fileParsed['brand'] ?? null);
                     $carModel = $this->nullIfLiteralNull($fileParsed['car_model'] ?? null);
-                    $carYear  = $this->nullIfLiteralNull($fileParsed['car_year'] ?? null);
+                    $carYear  = $this->normalizeYear($fileParsed['car_year'] ?? null);
                     $rawResponses['attachment'] = $fileParsed;
                 }
             }
 
             // 2. Парсим ТЕКСТ, если есть — запчасти + VIN/марка/модель/год, если упомянуты текстом
-            if (!empty($message->message_text)) {
+            if (!empty($message->message_text) && !$this->isPlaceholderText($message->message_text)) {
                 \Log::info("LeadRequestExtractor: Обработка текста...");
                 $textParsed = $this->claude->parseRequest($message->message_text);
                 \Log::info("LeadRequestExtractor: Ответ Claude по тексту", ['parsed' => $textParsed]);
@@ -63,7 +71,7 @@ class LeadRequestExtractor
                     $vin      = $vin ?? $this->nullIfLiteralNull($textParsed['vin'] ?? null);
                     $brand    = $brand ?? $this->nullIfLiteralNull($textParsed['brand'] ?? null);
                     $carModel = $carModel ?? $this->nullIfLiteralNull($textParsed['car_model'] ?? null);
-                    $carYear  = $carYear ?? $this->nullIfLiteralNull($textParsed['car_year'] ?? null);
+                    $carYear  = $carYear ?? $this->normalizeYear($textParsed['car_year'] ?? null);
                     $parts    = $textParsed['parts'] ?? [];
                     $rawResponses['text'] = $textParsed;
                 }
@@ -160,6 +168,38 @@ class LeadRequestExtractor
     private function nullIfLiteralNull(?string $value): ?string
     {
         return ($value === null || $value === 'null') ? null : $value;
+    }
+
+    /**
+     * Тексты, которые WhatsAppWebhookController подставляет сам вместо
+     * отсутствующего текста у медиа ("Изображение", "Голосовое сообщение",
+     * "Видео файл", "Файл: <имя>" без подписи, "[Реакция…]") — в них нет
+     * ничего от клиента, гонять их через Claude — пустая трата вызова.
+     */
+    private function isPlaceholderText(string $text): bool
+    {
+        $text = trim($text);
+        return in_array($text, ['Изображение', 'Голосовое сообщение', 'Видео файл'], true)
+            || preg_match('/^Файл: [^:]*$/u', $text)
+            || str_starts_with($text, '[Реакция');
+    }
+
+    /**
+     * car_year в БД — varchar(10). Claude иногда пишет "2015-2018 гг." или
+     * "примерно 2012 год" — длиннее 10 символов, и UPDATE падал целиком
+     * (живые случаи 2026-10-05, "Data too long for column extracted_car_year"),
+     * вместе с ним терялся и разбор запчастей. Берём год/диапазон из строки.
+     */
+    private function normalizeYear(?string $value): ?string
+    {
+        $value = $this->nullIfLiteralNull($value);
+        if ($value === null) {
+            return null;
+        }
+        if (preg_match('/\d{4}(\s*-\s*\d{4})?/', $value, $m)) {
+            return str_replace(' ', '', $m[0]);
+        }
+        return mb_substr(trim($value), 0, 10);
     }
 
     /**

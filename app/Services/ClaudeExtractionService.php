@@ -146,11 +146,24 @@ PROMPT;
             return null;
         }
 
-        $extension = strtolower(pathinfo(parse_url($fileUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
-        $isPdf = $extension === 'pdf';
-        $mediaType = $isPdf ? 'application/pdf' : 'image/jpeg';
-        $blockType = $isPdf ? 'document' : 'image';
-        $base64 = base64_encode($fileResponse->body());
+        // Тип определяем по СОДЕРЖИМОМУ файла, не по расширению. Раньше всё,
+        // что не .pdf, слалось как image/jpeg — на проде (лог 2026-10-03..07)
+        // это ~1000 отказов 400: голосовые .oga/видео .mp4/.xlsx ("Could not
+        // process image") и webp под видом jpg ("appears to be a image/webp").
+        // Неподдерживаемые типы просто пропускаем без платного вызова.
+        $body = $fileResponse->body();
+        $mediaType = (new \finfo(FILEINFO_MIME_TYPE))->buffer($body) ?: '';
+        $supported = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+        if (!in_array($mediaType, $supported, true)) {
+            return null;
+        }
+        // Лимит API — 10 МБ на base64 (живой случай: фото 16.9 МБ → 400).
+        if (strlen($body) * 4 / 3 > 10 * 1024 * 1024) {
+            Log::warning('ClaudeExtractionService: вложение слишком большое, пропущено', ['url' => $fileUrl, 'bytes' => strlen($body)]);
+            return null;
+        }
+        $blockType = $mediaType === 'application/pdf' ? 'document' : 'image';
+        $base64 = base64_encode($body);
 
         $prompt = <<<PROMPT
 Ты — ассистент по распознаванию автомобильных документов (техпаспорт РК, СРТС РФ
