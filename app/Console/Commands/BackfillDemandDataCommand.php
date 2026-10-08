@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\ExtractLeadRequestJob;
 use App\Models\WhatsappMessage;
 use App\Services\ClaudeExtractionService;
 use App\Services\LeadRequestExtractor;
@@ -29,7 +30,7 @@ use Illuminate\Support\Facades\Artisan;
  */
 class BackfillDemandDataCommand extends Command
 {
-    protected $signature = 'whatsapp:backfill-demand {--dry-run} {--limit=} {--leads= : Ограничить N САМЫМИ СТАРЫМИ лидами (не сообщениями) вместо --limit} {--with-analyze : Сразу же прогнать whatsapp:analyze-demand в конце (по умолчанию выключено)}';
+    protected $signature = 'whatsapp:backfill-demand {--dry-run} {--limit=} {--leads= : Ограничить N САМЫМИ СТАРЫМИ лидами (не сообщениями) вместо --limit} {--with-analyze : Сразу же прогнать whatsapp:analyze-demand в конце (по умолчанию выключено)} {--since= : Только сообщения не старше этой даты (напр. 2026-10-06)} {--queue : Не разбирать сразу, а поставить ExtractLeadRequestJob в очередь — её разберёт cron /api/cron/queue-work}';
 
     protected $description = 'Разовый бэкфилл накопленной истории WhatsApp в lead_requests/demand_signals';
 
@@ -42,7 +43,8 @@ class BackfillDemandDataCommand extends Command
         $baseQuery = fn () => WhatsappMessage::query()
             ->where('is_incoming', true)
             ->whereNull('llm_processed_at')
-            ->whereHas('lead', fn ($q) => $q->where('status', '!=', LeadStatuses::STAFF_STATUS));
+            ->whereHas('lead', fn ($q) => $q->where('status', '!=', LeadStatuses::STAFF_STATUS))
+            ->when($this->option('since'), fn ($q, $since) => $q->where('created_at', '>=', $since));
 
         if ($leadsLimit) {
             // Берём N самых старых лидов (по первому необработанному сообщению),
@@ -82,6 +84,17 @@ class BackfillDemandDataCommand extends Command
 
         if ($dryRun) {
             $this->warn('--dry-run: ни одного обращения к Claude не сделано. Сверь объём с текущими тарифами модели (см. MODEL в ClaudeExtractionService) на anthropic.com/pricing перед реальным запуском.');
+            return 0;
+        }
+
+        // --queue (2026-10-08): на проде синхронный прогон через Plesk упирается
+        // в ~60 сек и успевает ~20-30 сообщений за раз. Постановка в очередь
+        // мгновенная, а разбирает её уже существующий cron /api/cron/queue-work.
+        if ($this->option('queue')) {
+            foreach ($messages as $message) {
+                ExtractLeadRequestJob::dispatch($message->id);
+            }
+            $this->info("Поставлено в очередь: {$messages->count()}. Разберёт cron /api/cron/queue-work.");
             return 0;
         }
 
