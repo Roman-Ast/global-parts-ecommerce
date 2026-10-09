@@ -428,6 +428,32 @@ class KanbanBoard extends Component
             if (!isset($leads[$status])) {
                 continue;
             }
+
+            // "КП отправлено" — просьба Романа 2026-10-09, отменяет сортировку
+            // по приоритету выше ДЛЯ ЭТОЙ колонки: клиент пишет, менеджер
+            // отвечает, рамка гаснет — и карточка улетала вниз под все
+            // "требующие действия", где её потом не найти. Здесь — просто
+            // по времени последнего сообщения в переписке (любого
+            // направления): кто общался минуту назад, выше того, кто 5 минут
+            // назад. Кому пора напомнить — видно в виртуальной колонке
+            // "Пора напомнить", она по-прежнему отдельно.
+            // "Подбор" попал в reminderEligibleStatuses() только ради
+            // напоминаний (2026-10-09) — порядок колонки оставляем прежним
+            // (по updated_at из запроса), не трогаем без просьбы.
+            if ($status === 'selection') {
+                continue;
+            }
+
+            // То же для подпричин "Работы с возражениями" (просьба Романа
+            // 2026-10-09 — "так же, как в КП отправлено").
+            $thinkingSub = array_keys(LeadStatuses::all()['thinking']['sub'] ?? []);
+            if ($status === 'offer' || in_array($status, $thinkingSub, true)) {
+                $leads[$status] = $leads[$status]
+                    ->sortByDesc(fn ($lead) => optional($lead->lastMessage)->created_at ?? $lead->updated_at)
+                    ->values();
+                continue;
+            }
+
             $leads[$status] = $leads[$status]->sort(function ($a, $b) {
                 $priorityA = ($a->has_new ? 2 : 0) + ($a->needs_reminder ? 1 : 0);
                 $priorityB = ($b->has_new ? 2 : 0) + ($b->needs_reminder ? 1 : 0);

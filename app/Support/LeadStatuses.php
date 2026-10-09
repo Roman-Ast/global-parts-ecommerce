@@ -70,6 +70,8 @@ class LeadStatuses
      * который и так сказал, когда сам объявится.
      */
     const REMINDER_THRESHOLDS_HOURS = [
+        // "Подбор" добавлен 2026-10-09 (просьба Романа) — тот же порог 3 ч.
+        'selection' => 3,
         'offer'     => 3,
         'silent'    => 3,
         'expensive' => 3,
@@ -188,6 +190,9 @@ class LeadStatuses
         return [
             'new'       => ['title' => 'Новые', 'color' => 'bg-blue-500'],
             self::STAFF_STATUS => ['title' => 'Рабочие', 'color' => 'bg-gray-500'],
+            // Сразу после "Рабочих" (просьба Романа 2026-10-09) — обе колонки
+            // не воронка продаж, а "свои" контакты, им место рядом.
+            self::REGULAR_STATUS => ['title' => 'Постоянники', 'color' => 'bg-amber-600'],
             'selection' => ['title' => 'Подбор', 'color' => 'bg-yellow-500'],
             'offer'     => ['title' => 'КП Отправлено', 'color' => 'bg-indigo-500'],
 
@@ -209,8 +214,6 @@ class LeadStatuses
             'bought_waiting' => ['title' => 'Купил и ждёт', 'color' => 'bg-teal-500'],
 
             'deal_closed'   => ['title' => 'Продано (выдано)', 'color' => 'bg-sky-500'],
-
-            self::REGULAR_STATUS => ['title' => 'Постоянники', 'color' => 'bg-amber-600'],
 
             'lost'      => [
                 'title' => 'Не купили',
