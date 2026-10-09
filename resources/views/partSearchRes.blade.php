@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @push('styles')
-    <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}?v=9" rel="stylesheet">
+    <link href="{{ URL::asset('css/components/partSearchRes-mini.css') }}?v=10" rel="stylesheet">
     <link href="{{ URL::asset('css/components/partSearchRes.css') }}?v=7" rel="stylesheet">
 @endpush
 
