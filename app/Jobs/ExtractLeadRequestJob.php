@@ -40,7 +40,15 @@ class ExtractLeadRequestJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 1;
+    // tries=2 + maxExceptions=1 (2026-10-10): если сама задача бросила
+    // исключение (ошибка Claude) — в failed_jobs сразу, без повтора, как и
+    // раньше. Но если процесс УБИЛИ посреди работы (таймаут HTTP-крона), это
+    // не исключение — задача остаётся «занятой» и после retry_after (90 сек)
+    // подхватывается заново; с tries=1 такой подхват сразу давал
+    // MaxAttemptsExceededException вместо второй попытки.
+    public int $tries = 2;
+
+    public int $maxExceptions = 1;
 
     public function __construct(public int $messageId)
     {

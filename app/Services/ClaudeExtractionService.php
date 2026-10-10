@@ -66,7 +66,20 @@ class ClaudeExtractionService
 
     public function __construct()
     {
-        $this->client = new Client(apiKey: config('services.anthropic.api_key'));
+        // Явный HTTP-таймаут (2026-10-10): SDK сам таймаут не применяет (дефолт
+        // 600 сек — только «рекомендация», реально решает транспорт), а разбор
+        // идёт внутри HTTP-крона /api/cron/queue-work с жёстким ~60-сек лимитом
+        // хостинга. Зависший ответ Claude убивал весь запрос (500), задача
+        // оставалась «занятой» и при следующем запуске падала с
+        // MaxAttemptsExceededException. Теперь медленный вызов честно падает
+        // исключением за 25 сек, не дожидаясь убийства процесса.
+        $this->client = new Client(
+            apiKey: config('services.anthropic.api_key'),
+            requestOptions: [
+                'transporter' => new \GuzzleHttp\Client(['timeout' => 25, 'connect_timeout' => 5]),
+                'maxRetries' => 1,
+            ],
+        );
     }
 
     public static function resetUsageTotals(): void
