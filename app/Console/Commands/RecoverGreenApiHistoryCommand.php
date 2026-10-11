@@ -155,10 +155,21 @@ class RecoverGreenApiHistoryCommand extends Command
         $response = null;
 
         for ($attempt = 0; $attempt <= count($delays); $attempt++) {
-            $response = Http::timeout(20)->post(config('services.green_api.api_url') . "/waInstance{$instanceId}/getChatHistory/{$token}", [
-                'chatId' => $chatId,
-                'count'  => $count,
-            ]);
+            // Сетевые сбои (таймаут DNS/соединения) ретраим так же, как 429 —
+            // 2026-10-11 на проде во время сбоя Green API весь прогон падал на
+            // первом же "Resolving timed out", хотя getChats секундой раньше прошёл.
+            try {
+                $response = Http::timeout(20)->post(config('services.green_api.api_url') . "/waInstance{$instanceId}/getChatHistory/{$token}", [
+                    'chatId' => $chatId,
+                    'count'  => $count,
+                ]);
+            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                if ($attempt >= count($delays)) {
+                    throw $e;
+                }
+                sleep($delays[$attempt]);
+                continue;
+            }
 
             if ($response->successful() || $response->status() !== 429) {
                 return $response;
