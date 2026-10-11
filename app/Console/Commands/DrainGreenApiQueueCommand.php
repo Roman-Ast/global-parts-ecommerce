@@ -55,7 +55,7 @@ class DrainGreenApiQueueCommand extends Command
 
             while ($count < $limit) {
                 $response = Http::timeout(15)
-                    ->get("https://api.green-api.com/waInstance{$instanceId}/receiveNotification/{$token}");
+                    ->get(config('services.green_api.api_url') . "/waInstance{$instanceId}/receiveNotification/{$token}");
 
                 if (!$response->successful()) {
                     $this->error("[{$source}] receiveNotification HTTP {$response->status()} — {$response->body()}");
@@ -82,7 +82,7 @@ class DrainGreenApiQueueCommand extends Command
                 }
 
                 Http::timeout(15)
-                    ->delete("https://api.green-api.com/waInstance{$instanceId}/deleteNotification/{$token}/{$receiptId}");
+                    ->delete(config('services.green_api.api_url') . "/waInstance{$instanceId}/deleteNotification/{$token}/{$receiptId}");
 
                 $count++;
                 $this->line("  [{$source}] receiptId={$receiptId} " . ($body['typeWebhook'] ?? '?') . " — обработано и подтверждено");

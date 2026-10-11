@@ -201,7 +201,7 @@ class WhatsAppWebhookController extends Controller
         }
 
         $text = 'Здравствуйте! Не удалось получить ваше сообщение (техническая ошибка WhatsApp) — отправьте, пожалуйста, ещё раз 🙏';
-        $url = "https://api.green-api.com/waInstance{$creds['instance_id']}/sendMessage/{$creds['token']}";
+        $url = config('services.green_api.api_url') . "/waInstance{$creds['instance_id']}/sendMessage/{$creds['token']}";
 
         try {
             $response = \Illuminate\Support\Facades\Http::post($url, [

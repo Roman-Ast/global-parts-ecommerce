@@ -61,7 +61,7 @@ class RecoverGreenApiHistoryCommand extends Command
             }
 
             $this->info("[{$source}] получаю список чатов...");
-            $chatsResp = Http::timeout(30)->get("https://api.green-api.com/waInstance{$instanceId}/getChats/{$token}");
+            $chatsResp = Http::timeout(30)->get(config('services.green_api.api_url') . "/waInstance{$instanceId}/getChats/{$token}");
             if (!$chatsResp->successful()) {
                 $this->error("[{$source}] getChats HTTP {$chatsResp->status()}");
                 continue;
@@ -155,7 +155,7 @@ class RecoverGreenApiHistoryCommand extends Command
         $response = null;
 
         for ($attempt = 0; $attempt <= count($delays); $attempt++) {
-            $response = Http::timeout(20)->post("https://api.green-api.com/waInstance{$instanceId}/getChatHistory/{$token}", [
+            $response = Http::timeout(20)->post(config('services.green_api.api_url') . "/waInstance{$instanceId}/getChatHistory/{$token}", [
                 'chatId' => $chatId,
                 'count'  => $count,
             ]);

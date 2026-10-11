@@ -124,7 +124,7 @@ class WhatsappMessenger extends Component
             // на полминуты (жалоба Романа 2026-09-14: "шторка очень долго
             // открывается").
             \Illuminate\Support\Facades\Http::timeout(3)->post(
-                "https://api.green-api.com/waInstance{$instanceId}/readChat/{$token}",
+                config('services.green_api.api_url') . "/waInstance{$instanceId}/readChat/{$token}",
                 ['chatId' => $lead->phone . '@c.us']
             );
         } catch (\Exception $e) {
@@ -380,7 +380,7 @@ class WhatsappMessenger extends Component
 
         [$instanceId, $token] = $this->resolveInstanceCreds($lead);
 
-        $url = "https://api.green-api.com/waInstance{$instanceId}/sendMessage/{$token}";
+        $url = config('services.green_api.api_url') . "/waInstance{$instanceId}/sendMessage/{$token}";
 
         try {
             $response = \Illuminate\Support\Facades\Http::post($url, [
@@ -482,7 +482,7 @@ class WhatsappMessenger extends Component
             $publicUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
 
             $response = \Illuminate\Support\Facades\Http::post(
-                "https://api.green-api.com/waInstance{$instanceId}/sendFileByUrl/{$token}",
+                config('services.green_api.api_url') . "/waInstance{$instanceId}/sendFileByUrl/{$token}",
                 [
                     'chatId' => $lead->phone . '@c.us',
                     'urlFile' => $publicUrl,

@@ -42,6 +42,12 @@ return [
         'instance_id' => env('GREEN_API_INSTANCE_ID'),
         'token' => env('GREEN_API_TOKEN'),
 
+        // Базовый URL API (2026-10-11): выделенный хост инстансов (поле apiUrl в
+        // консоли Green API, по первым 4 цифрам idInstance — оба наших 7107...),
+        // а не общий api.green-api.com. 11.10 общий домен лёг целиком (таймауты
+        // readChat/sendMessage на проде), а выделенный хост продолжал отвечать.
+        'api_url' => rtrim(env('GREEN_API_URL', 'https://7107.api.greenapi.com'), '/'),
+
         // source-метка => креды конкретного инстанса. Для ИСХОДЯЩИХ сообщений
         // (WhatsappMessenger::sendMessage) — иначе ответ клиенту с номера 2ГИС
         // ушёл бы с номера сайта или вообще не тем инстансом.
