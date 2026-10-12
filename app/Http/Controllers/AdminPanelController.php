@@ -2023,7 +2023,16 @@ class AdminPanelController extends Controller
             // см. AUTO_PAYOUT_MARKETPLACES). Не в orderInfo (позиционный
             // массив) — отдельным полем в payload.
             'kaspi_bypassed' => (bool) ($request->data['kaspiBypassed'] ?? false),
+            // Номер заказа Kaspi, если форма заполнена из «Заказы Kaspi»
+            // (kaspi:sync-orders, 2026-10-12) — тоже отдельным полем payload.
+            'kaspi_order_code' => ($request->data['kaspiOrderCode'] ?? null) ?: null,
         ]);
+
+        if ($order->kaspi_order_code) {
+            \Illuminate\Support\Facades\DB::table('kaspi_orders')
+                ->where('code', $order->kaspi_order_code)
+                ->update(['order_id' => $order->id, 'updated_at' => now()]);
+        }
 
         // Заказы маркетплейсов с отложенной оплатой (Kaspi/Ozon/Halyk Market,
         // не kaspi_bypassed) приходят сюда с paymentInfo[2]=0 — JS-форма

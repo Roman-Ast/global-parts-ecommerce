@@ -23,6 +23,7 @@ class Order extends Model
         'customer_phone',
         'sale_channel',
         'kaspi_bypassed',
+        'kaspi_order_code',
         'delivery_type',
         'city',
         'address',

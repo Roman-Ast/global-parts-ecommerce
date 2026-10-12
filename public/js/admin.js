@@ -319,6 +319,9 @@ $('#manually-order-submit').on('click', function () {
         // (orderInfo[4] = sale_channel и т.д. по всему контроллеру),
         // добавление туда нового поля сдвинуло бы все существующие индексы.
         kaspiBypassed: $('#manualy_order_kaspi_bypassed').is(':checked') ? 1 : 0,
+        // Заполнено из блока «Заказы Kaspi» (см. loadKaspiPendingOrders) —
+        // связывает наш заказ с заказом Kaspi и его снимком карточки.
+        kaspiOrderCode: $('#manualy_order_kaspi_order_code').val() || '',
     };
 
     $('.manually-order-main-info').each(function (key, elem) {
@@ -882,3 +885,84 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
+// ---- Заказы Kaspi из Merchant API → подстановка в «Ручное создание заказа» ----
+// При канале «Каспи» под ним появляется селект с заказами, которые
+// kaspi:sync-orders забрал из API и которые ещё не оформлены у нас
+// (/kaspi-orders/pending). Выбор заказа заполняет форму: дату, имя клиента,
+// позиции (артикул/бренд из нашего фида, название, кол-во, цена продажи).
+// Поставщика и С/С выбираешь сам — от них считается долг поставщику.
+// Телефон API отдаёт замаскированным — его тоже вписываешь сам.
+window.kaspiPendingOrders = [];
+
+function loadKaspiPendingOrders() {
+    const $select = $('#manualy_order_kaspi_select');
+    if (!$select.length) return;
+
+    $.getJSON('/kaspi-orders/pending', function (orders) {
+        window.kaspiPendingOrders = orders || [];
+        $select.find('option:not(:first)').remove();
+        $.each(window.kaspiPendingOrders, function (i, o) {
+            const items = o.entries.map(e => e.name + (e.qty > 1 ? ' ×' + e.qty : '')).join('; ');
+            $select.append($('<option>', {
+                value: o.code,
+                text: `№${o.code} · ${o.date} · ${o.customer_name || ''} · ${Math.round(o.total_price).toLocaleString('ru-RU')} ₸ · ${items}`,
+            }));
+        });
+    });
+}
+
+$(document).on('change', '#manualy_order_sale_channel', function () {
+    const isKaspi = $(this).val() === 'kaspi';
+    $('#manualy_order_kaspi_select_wrapper').toggle(isKaspi);
+    if (!isKaspi) {
+        $('#manualy_order_kaspi_select').val('');
+        $('#manualy_order_kaspi_order_code').val('');
+    }
+});
+
+$(document).on('change', '#manualy_order_kaspi_select', function () {
+    const code = $(this).val();
+    $('#manualy_order_kaspi_order_code').val(code || '');
+    const o = window.kaspiPendingOrders.find(x => x.code === code);
+    if (!o) return;
+
+    $('#manually-order-main input[name="date"]').val(o.date);
+    $('#manually-order-main input[name="customer_name"]').val(o.customer_name || '');
+
+    // Нужное число строк товаров: лишние убираем, недостающие добавляем
+    // штатной кнопкой (она же подтягивает список поставщиков).
+    $('.manually-order-parts-list-item').slice(1).remove();
+    for (let i = 1; i < o.entries.length; i++) {
+        $('#add_parts_list_item').trigger('click');
+    }
+
+    const hints = [];
+    $('.manually-order-parts-list-item-content').each(function (i) {
+        const e = o.entries[i];
+        if (!e) return;
+        const $row = $(this);
+        $row.find('[name="article"]').val(e.article || '');
+        $row.find('[name="brand"]').val(e.brand || '');
+        $row.find('[name="name"]').val(e.name || '');
+        $row.find('[name="qty"]').val(e.qty);
+        $row.find('[name="price"]').val('');
+        $row.find('[name="priceWithMargine"]').val(Math.round(e.price));
+        if (!$row.find('[name="deliveryTime"]').val()) {
+            $row.find('[name="deliveryTime"]').val(o.date);
+        }
+        if (e.supplier_hint) {
+            hints.push(`${e.name}: в фиде ${e.supplier_hint}` + (e.purchase_price ? `, С/С ${Math.round(e.purchase_price)}` : ''));
+        }
+    });
+
+    $('.manually-order-parts-list-item-qty').first().trigger('input');
+
+    $('#alert-admin').removeAttr('class').addClass('alert alert-info')
+        .html(`Заполнено из заказа Kaspi №${o.code}. Впиши телефон клиента, выбери поставщика и С/С.`
+            + (hints.length ? '<br>' + hints.join('<br>') : '')).slideDown();
+    setTimeout(() => $('#alert-admin').slideUp(), 8000);
+});
+
+$(function () {
+    loadKaspiPendingOrders();
+});

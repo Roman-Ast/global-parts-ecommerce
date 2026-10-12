@@ -2234,6 +2234,7 @@
                 </div>
                 <div id="manually-order-wrapper">
                     @csrf
+                    <input type="hidden" id="manualy_order_kaspi_order_code" value="">
                     <div id="manually-order-main">
                         <input type="hidden" name="user_id" value="{{ Auth()->user()->id }}" class="manually-order-main-info">
                         <label for="basic-url" class="form-label">Дата</label>
@@ -2262,6 +2263,14 @@
                                 <option value="halyk_market">Halyk Market</option>
                                 <option value="satu">Satu</option>
                                 <option value="repeat_request">Повторное обращение</option>
+                            </select>
+                        </div>
+                        {{-- Заказы Kaspi из Merchant API (kaspi:sync-orders), ещё не оформленные
+                             у нас — появляется только при канале «Каспи», выбор заказа заполняет
+                             форму (admin.js, loadKaspiPendingOrders). Поставщика и С/С — сам. --}}
+                        <div class="input-group mb-2 manually-order-main" id="manualy_order_kaspi_select_wrapper" style="display:none;">
+                            <select id="manualy_order_kaspi_select" class="form-control">
+                                <option value="">— заказ Kaspi (необязательно) —</option>
                             </select>
                         </div>
                         {{-- Клиент пришёл через маркетплейс (звонок/переписка), но оформился

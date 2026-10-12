@@ -73,6 +73,29 @@ Route::get('/cron/whatsapp-recover', function () {
  * что и у `/cron/whatsapp-recover` (общий внутренний cron-секрет, не отдельный
  * под каждый роут).
  */
+/**
+ * Cron через HTTP для забора заказов Kaspi из Merchant API + снимка карточки
+ * (kaspi:sync-orders, 2026-10-12). Тот же токен, что у остальных cron-роутов.
+ * --days=2: новые заказы за двое суток; повторно уже сохранённые заказы
+ * только обновляют статус, позиции и снимки не задваиваются.
+ */
+Route::get('/cron/kaspi-orders', function () {
+    $token = request()->query('token', '');
+    $expected = config('services.whatsapp_cron_token');
+
+    if (!$expected || !hash_equals($expected, $token)) {
+        abort(403);
+    }
+
+    Artisan::call('kaspi:sync-orders', ['--days' => 2]);
+
+    return response()->json([
+        'ok' => true,
+        'ran_at' => now()->toDateTimeString(),
+        'result' => trim(Artisan::output()),
+    ]);
+});
+
 Route::get('/cron/queue-work', function () {
     $token = request()->query('token', '');
     $expected = config('services.whatsapp_cron_token');
